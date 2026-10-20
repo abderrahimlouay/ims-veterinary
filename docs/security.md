@@ -60,6 +60,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
   3. **Object-level checks** where a permission is not enough, e.g. a cashier may close **only their own** cash session unless they hold `cash.manage`.
   4. **State checks** (document status, lot status) are business rules, not authorization (`business-rules.md`).
 - Authorities are re-read from the database on every request (ADR-036); permission changes take effect on the next request.
+- **No lock-out (ADR-042):** a change that would leave no active user holding both `user.manage` and `role.manage` is refused (`INVALID_STATE_TRANSITION`); users cannot deactivate themselves.
 - **Default deny:** a controller method without an explicit permission annotation fails an architecture test (ArchUnit) in CI `[REC]`.
 - Authorization failures return `ACCESS_DENIED` (403); unauthenticated requests `AUTH_REQUIRED` (401). Existence of a forbidden resource is not leaked beyond what 403/404 conventions imply.
 
