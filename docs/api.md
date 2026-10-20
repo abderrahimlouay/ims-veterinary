@@ -123,10 +123,10 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/users` | list (filters `q`, `roleId`, `active`) | `user.read` | page of `UserSummary` |
 | POST | `/api/users` | create | `user.manage` | `{username, fullName, email?, roleId, initialPassword}` → 201 `UserDetail`; `DUPLICATE_RESOURCE` |
 | GET/PUT | `/api/users/{id}` | view / update (no password) | `user.read` / `user.manage` | `UserDetail` |
-| POST | `/api/users/{id}/deactivate` · `/activate` | toggle active | `user.manage` | → 200 |
+| POST | `/api/users/{id}/deactivate` · `/activate` | toggle active | `user.manage` | → 200; `INVALID_STATE_TRANSITION` for self-deactivation or administrator lock-out (ADR-042) |
 | POST | `/api/users/{id}/reset-password` | issue temporary password | `user.manage` | → one-time temporary password |
 | GET | `/api/roles`, `/api/roles/{id}`, `/api/permissions` | view | `user.read` | |
-| PUT | `/api/roles/{id}/permissions` | replace permission set | `role.manage` | `{permissionCodes[]}`; audited |
+| PUT | `/api/roles/{id}/permissions` | replace permission set | `role.manage` | `{permissionCodes[]}`; audited; `INVALID_STATE_TRANSITION` on administrator lock-out (ADR-042) |
 
 ### 4.3 `/api/products` and reference data
 

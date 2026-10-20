@@ -86,7 +86,7 @@ Each runs repeatedly (≥ 20 iterations) in CI to expose flakiness.
 | Area | Tests |
 |---|---|
 | Authentication | all endpoints except login reject missing/invalid/expired credentials (generated from the endpoint inventory in `api.md`); disabled user refused; generic failure message; throttle after repeated failures |
-| Authorisation | table-driven endpoint × role matrix from `security.md` §4 (every permission code has an allow and a deny test); object-level checks (own cash session) |
+| Authorisation | table-driven endpoint × role matrix from `security.md` §4 (every permission code has an allow and a deny test); object-level checks (own cash session); administrator lock-out refused for deactivation, role change and permission removal, self-deactivation refused (ADR-042) |
 | Input | SQL injection payloads in search/sort parameters; oversized payloads; mass-assignment (server-owned fields ignored) |
 | Output | no entity/stack/SQL in errors; no password/hash fields in any DTO; headers (HSTS, nosniff, frame) present |
 | Secrets | build fails on committed secrets (scanner in CI); logs scanned for passwords/tokens in test |

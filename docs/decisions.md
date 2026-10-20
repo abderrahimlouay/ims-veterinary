@@ -302,6 +302,12 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** `users.username` keeps the database default collation `utf8mb4_0900_ai_ci`: `Ahmed`, `ahmed` and `ahméd` are the same username, both for uniqueness and at login. The username is stored as entered.
 - **Consequences:** A repository test documents the behaviour. OD-025 remains open for `sku`, `lot_number` and other codes (Phase 3).
 
+## ADR-042 — Administration cannot be locked out (resolves OD-031)
+- **Status:** Accepted (user decision, 2026-10-20)
+- **Decision:** A user, role or role-permission change that would leave **no active user holding both `user.manage` and `role.manage`** is refused with `INVALID_STATE_TRANSITION` (422). A user cannot deactivate their own account. The check runs in the same transaction as the change, after locking the affected rows.
+- **Alternatives:** no guard with a documented SQL recovery (B); both (C).
+- **Consequences:** No new error code. Covered by user-administration tests (`testing.md` §7). `security.md` §3, `api.md` §4.2.
+
 ---
 
 # Part B — Open Decisions
@@ -450,6 +456,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** nothing in Phase 0; decide before Phase 4 (first stock/locking suites). **Related:** ADR-030, `testing.md` §1.7, DR-034.
 
 ## OD-031 — Protection against administrator lock-out
+- **Status:** Resolved 2026-10-20 → **ADR-042** (option A).
 - **Question:** Nothing prevents the last active user holding `user.manage`/`role.manage` from being deactivated (including by themselves), moved to another role, or having those permissions removed from their role. Afterwards nobody can administer users or roles; the only recovery is manual SQL.
 - **Options:** (A) server-side guard: an operation that would leave **no active user holding both `user.manage` and `role.manage`** is refused with `INVALID_STATE_TRANSITION` (422), and a user cannot deactivate themselves; (B) no guard, documented recovery procedure (SQL or re-running the bootstrap of ADR-040 on an empty-admin condition); (C) both.
 - **Leaning:** `[REC]` (A) — cheap, testable, no new error code.
@@ -462,7 +469,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | Phase | Decisions that must be *Accepted / decided* before it starts |
 |---|---|
 | 0 Foundation | ~~OD-024~~ → ADR-032, ~~OD-008~~ → ADR-033, ADR-034; ADR-009/010/013/018/019/023/024/025/026/030/031 confirmed Accepted 2026-10-20 |
-| 1 Auth | ~~OD-001~~ → ADR-036, ~~OD-023~~ → ADR-037; ADR-017/020/021/027 confirmed Accepted; ADR-038–041 (all 2026-10-20); **OD-031** |
+| 1 Auth | ~~OD-001~~ → ADR-036, ~~OD-023~~ → ADR-037; ADR-017/020/021/027 confirmed Accepted; ADR-038–041, ~~OD-031~~ → ADR-042 (all 2026-10-20) |
 | 2 Catalogue | OD-018, OD-022 |
 | 3 Lots & Units | OD-009, OD-019, OD-025, OD-027 |
 | 4 Inventory & Stock | OD-012, OD-013, ~~OD-030~~ → ADR-035, ADR-012, ADR-028 |
