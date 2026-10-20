@@ -16,3 +16,23 @@ frontend/playwright-report/
 .vscode/
 *.iml
 .DS_Store
+
+# logs, coverage and test reports (any module)
+*.log
+coverage/
+playwright-report/
+test-results/
+
+# database dumps and backups; SQL under backend/src (Flyway migrations, test fixtures) stays tracked
+*.sql
+!backend/src/**/*.sql
+*.sql.gz
+*.dump
+backups/
+
+# keys, certificates and keystores
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
