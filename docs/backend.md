@@ -151,7 +151,7 @@ Read-only; implemented as native/JPQL queries or the rewritten MySQL views (ADR-
 
 ## 15. Logging
 
-JSON logs with `traceId`, `userId` (id, not name), request path, outcome. No passwords, tokens, full PII payloads. Business events at INFO (document confirmed, recall), security events per `security.md` §12, errors at ERROR with stack trace only in logs.
+JSON logs (Spring Boot structured logging, ECS format, all profiles; Phase 0) with `traceId` (MDC, set by `TraceIdFilter` from a well-formed incoming `X-Trace-Id` or generated), `userId` (id, not name), request path, outcome. No passwords, tokens, full PII payloads. Business events at INFO (document confirmed, recall), security events per `security.md` §12, errors at ERROR with stack trace only in logs.
 
 ## 16. Testing approach (summary; see `testing.md`)
 

@@ -25,6 +25,20 @@ spring:
   flyway:
     locations: classpath:db/migration
 
+management: # ADR-031: health and info only, no details
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  structured:
+    format:
+      console: ecs # ADR-031: JSON logs; the traceId MDC entry is included
+
 ims:
   business: # ADR-033
     currency: DZD
