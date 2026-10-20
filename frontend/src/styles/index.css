@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* Tokens wired into the Tailwind theme; components use only these token classes (frontend.md §6). */
+@theme inline {
+  --color-bg: rgb(var(--bg));
+  --color-surface: rgb(var(--surface));
+  --color-line: rgb(var(--line));
+  --color-ink: rgb(var(--ink));
+  --color-mute: rgb(var(--mute));
+  --color-brand: rgb(var(--brand));
+  --color-brand-ink: rgb(var(--brand-ink));
+  --color-ok: rgb(var(--ok));
+  --color-warn: rgb(var(--warn));
+  --color-danger: rgb(var(--danger));
+  --radius-ctl: 8px;
+  --radius-card: 14px;
+  --font-sans: Figtree, system-ui, -apple-system, 'Segoe UI', 'Noto Sans Arabic', sans-serif;
+}
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}

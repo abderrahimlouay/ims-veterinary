@@ -1,0 +1,44 @@
+/*
+ * Design tokens from the design-system prototype (frontend.md §6), as RGB channels so Tailwind
+ * opacity modifiers work. Light by default; dark follows the OS unless data-theme forces one.
+ */
+:root {
+  --bg: 246 248 248;
+  --surface: 255 255 255;
+  --line: 219 226 227;
+  --ink: 20 33 38;
+  --mute: 96 112 118;
+  --brand: 13 107 100;
+  --brand-ink: 255 255 255;
+  --ok: 22 128 74;
+  --warn: 178 92 8;
+  --danger: 192 38 38;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: 12 20 23;
+    --surface: 20 31 35;
+    --line: 44 60 66;
+    --ink: 232 240 241;
+    --mute: 149 168 173;
+    --brand: 62 190 176;
+    --brand-ink: 6 30 28;
+    --ok: 74 200 130;
+    --warn: 240 160 70;
+    --danger: 248 113 113;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: 12 20 23;
+  --surface: 20 31 35;
+  --line: 44 60 66;
+  --ink: 232 240 241;
+  --mute: 149 168 173;
+  --brand: 62 190 176;
+  --brand-ink: 6 30 28;
+  --ok: 74 200 130;
+  --warn: 240 160 70;
+  --danger: 248 113 113;
+}

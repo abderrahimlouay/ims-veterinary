@@ -1,0 +1,24 @@
+{
+  "app": {
+    "name": "IMS Vétérinaire"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "home": "Home"
+  },
+  "language": {
+    "label": "Language",
+    "fr": "Français",
+    "ar": "العربية",
+    "en": "English"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "empty": "No modules are available yet."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The requested page does not exist.",
+    "back": "Back to home"
+  }
+}

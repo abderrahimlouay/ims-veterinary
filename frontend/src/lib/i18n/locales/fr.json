@@ -1,0 +1,24 @@
+{
+  "app": {
+    "name": "IMS Vétérinaire"
+  },
+  "nav": {
+    "label": "Navigation principale",
+    "home": "Accueil"
+  },
+  "language": {
+    "label": "Langue",
+    "fr": "Français",
+    "ar": "العربية",
+    "en": "English"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "empty": "Aucun module n'est encore disponible."
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "La page demandée n'existe pas.",
+    "back": "Retour à l'accueil"
+  }
+}
