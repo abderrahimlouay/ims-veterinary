@@ -24,3 +24,9 @@ spring:
           time_zone: UTC # ADR-010
   flyway:
     locations: classpath:db/migration
+
+ims:
+  business: # ADR-033
+    currency: DZD
+    locale: fr-DZ
+    time-zone: Africa/Algiers

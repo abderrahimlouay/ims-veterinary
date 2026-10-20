@@ -1,6 +1,13 @@
 package com.imsvet.ims;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.imsvet.ims.common.time.BusinessProperties;
+import java.time.ZoneId;
+import java.util.Currency;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
@@ -8,7 +15,13 @@ import org.springframework.context.annotation.Import;
 @Import(TestcontainersConfiguration.class)
 class ImsApplicationTests {
 
+    @Autowired
+    private BusinessProperties business;
+
     @Test
-    void contextLoads() {
+    void contextLoadsWithTheBusinessDefaultsOfAdr033() {
+        assertThat(business.currency()).isEqualTo(Currency.getInstance("DZD"));
+        assertThat(business.locale()).isEqualTo(Locale.forLanguageTag("fr-DZ"));
+        assertThat(business.timeZone()).isEqualTo(ZoneId.of("Africa/Algiers"));
     }
 }

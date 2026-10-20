@@ -49,6 +49,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 - `errors[]` is used for `VALIDATION_FAILED`: `{ "field": "lines[0].lotNumber", "code": "REQUIRED", "message": "…" }`.
 - `context` carries machine-readable facts (ids, quantities) so the UI can refresh the right lot.
 - No stack traces, SQL or internal class names are ever returned.
+- *As implemented (Phase 0):* `type` is `urn:ims:problem:<kebab-code>` (e.g. `urn:ims:problem:stock-insufficient`; the example host above is illustrative); `title` is the code in words; `errors` and `context` are always present (empty when unused); field-error `code` is `REQUIRED` for `@NotNull`/`@NotBlank`/`@NotEmpty`, otherwise the constraint name in upper snake case (`POSITIVE`, `SIZE`, `PATTERN`…). Framework errors map by status: 400 → `VALIDATION_FAILED`, 404 → `NOT_FOUND`, 405 → `METHOD_NOT_ALLOWED`, 415 → `MEDIA_TYPE_NOT_SUPPORTED`, any other 4xx → `VALIDATION_FAILED`, 5xx → `INTERNAL_ERROR`; the HTTP status is always the code's catalogue status. The catalogue below is checked against the `ErrorCode` enum by `ErrorCatalogueTest`.
 
 ## 3. Error code catalogue
 
@@ -60,6 +61,8 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | `AUTH_ACCOUNT_DISABLED` | 403 | user inactive | BR-SEC-004 |
 | `ACCESS_DENIED` | 403 | authenticated but lacks permission | BR-SEC-002 |
 | `NOT_FOUND` | 404 | resource does not exist | — |
+| `METHOD_NOT_ALLOWED` | 405 | HTTP method not supported on this path (added Phase 0) | — |
+| `MEDIA_TYPE_NOT_SUPPORTED` | 415 | request `Content-Type` not supported (added Phase 0) | — |
 | `DUPLICATE_RESOURCE` | 409 | uniqueness violated (generic) | BR-UNIT-001, BR-PAY-008 |
 | `PRODUCT_SKU_DUPLICATE` | 409 | SKU exists | BR-PROD-001 |
 | `BARCODE_DUPLICATE` | 409 | barcode exists | BR-PROD-002 |
