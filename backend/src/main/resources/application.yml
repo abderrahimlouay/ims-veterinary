@@ -8,9 +8,19 @@ spring:
     url: ${IMS_DB_URL}
     username: ${IMS_DB_USERNAME}
     password: ${IMS_DB_PASSWORD}
+    hikari:
+      transaction-isolation: TRANSACTION_READ_COMMITTED # ADR-013
+      # database-migration.md §9: strict SQL mode, UTC session (ADR-010)
+      connection-init-sql: >-
+        SET SESSION sql_mode = 'STRICT_TRANS_TABLES,ONLY_FULL_GROUP_BY,NO_ENGINE_SUBSTITUTION,ERROR_FOR_DIVISION_BY_ZERO',
+        time_zone = '+00:00'
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate # ADR-018: schema only via Flyway
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC # ADR-010
   flyway:
     locations: classpath:db/migration
