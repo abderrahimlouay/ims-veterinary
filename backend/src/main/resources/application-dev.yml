@@ -1,0 +1,5 @@
+# Local development against a MySQL 8.4 instance. The password has no default on purpose.
+spring:
+  datasource:
+    url: ${IMS_DB_URL:jdbc:mysql://localhost:3306/ims}
+    username: ${IMS_DB_USERNAME:ims}

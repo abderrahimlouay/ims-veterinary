@@ -1,0 +1,111 @@
+package com.imsvet.ims.architecture;
+
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
+import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
+
+import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.junit.AnalyzeClasses;
+import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchRule;
+import jakarta.persistence.Entity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * Module and layer rules of architecture.md §3 and testing.md §10 (ADR-006, ADR-034).
+ */
+@AnalyzeClasses(packages = "com.imsvet.ims", importOptions = ImportOption.DoNotIncludeTests.class)
+class ArchitectureTest {
+
+    private static final String ROOT = "com.imsvet.ims.";
+
+    @ArchTest
+    static final ArchRule modulesRespectAllowedDependencies = layeredArchitecture()
+            .consideringOnlyDependenciesInLayers()
+            .withOptionalLayers(true)
+            .layer("common").definedBy(ROOT + "common..")
+            .layer("auth").definedBy(ROOT + "auth..")
+            .layer("users").definedBy(ROOT + "users..")
+            .layer("catalog").definedBy(ROOT + "catalog..")
+            .layer("inventory").definedBy(ROOT + "inventory..")
+            .layer("purchasing").definedBy(ROOT + "purchasing..")
+            .layer("sales").definedBy(ROOT + "sales..")
+            .layer("finance").definedBy(ROOT + "finance..")
+            .layer("reporting").definedBy(ROOT + "reporting..")
+            .layer("audit").definedBy(ROOT + "audit..")
+            .layer("numbering").definedBy(ROOT + "numbering..")
+            .layer("settings").definedBy(ROOT + "settings..")
+            .layer("printing").definedBy(ROOT + "printing..")
+            .layer("backup").definedBy(ROOT + "backup..")
+            .whereLayer("auth").mayOnlyAccessLayers("common", "users")
+            .whereLayer("users").mayOnlyAccessLayers("common")
+            .whereLayer("catalog").mayOnlyAccessLayers("common", "settings")
+            .whereLayer("numbering").mayOnlyAccessLayers("common")
+            .whereLayer("settings").mayOnlyAccessLayers("common")
+            .whereLayer("audit").mayOnlyAccessLayers("common")
+            .whereLayer("inventory").mayOnlyAccessLayers("common", "catalog", "numbering", "settings", "audit")
+            .whereLayer("purchasing").mayOnlyAccessLayers(
+                    "common", "catalog", "inventory", "numbering", "settings", "audit")
+            .whereLayer("sales").mayOnlyAccessLayers(
+                    "common", "catalog", "inventory", "numbering", "settings", "audit")
+            .whereLayer("finance").mayOnlyAccessLayers(
+                    "common", "sales", "purchasing", "numbering", "audit", "settings")
+            .whereLayer("printing").mayOnlyAccessLayers("common", "purchasing", "sales", "finance")
+            .whereLayer("backup").mayOnlyAccessLayers("common", "settings", "audit");
+
+    @ArchTest
+    static final ArchRule commonDependsOnNoModule = noClasses()
+            .that().resideInAPackage(ROOT + "common..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                    ROOT + "auth..", ROOT + "users..", ROOT + "catalog..", ROOT + "inventory..",
+                    ROOT + "purchasing..", ROOT + "sales..", ROOT + "finance..", ROOT + "reporting..",
+                    ROOT + "audit..", ROOT + "numbering..", ROOT + "settings..", ROOT + "printing..",
+                    ROOT + "backup..");
+
+    @ArchTest
+    static final ArchRule modulesAreFreeOfCycles =
+            slices().matching(ROOT + "(*)..").should().beFreeOfCycles();
+
+    @ArchTest
+    static final ArchRule apiLayerDoesNotUseInfrastructure = noClasses()
+            .that().resideInAPackage(ROOT + "*.api..")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + "*.infrastructure..");
+
+    @ArchTest
+    static final ArchRule apiLayerDoesNotExposeEntities = noClasses()
+            .that().resideInAPackage(ROOT + "*.api..")
+            .should().dependOnClassesThat().areAnnotatedWith(Entity.class);
+
+    @ArchTest
+    static final ArchRule domainDoesNotDependOnOuterLayers = noClasses()
+            .that().resideInAPackage(ROOT + "*.domain..")
+            .should().dependOnClassesThat().resideInAnyPackage(ROOT + "*.api..", ROOT + "*.application..");
+
+    @ArchTest
+    static final ArchRule applicationDoesNotDependOnApi = noClasses()
+            .that().resideInAPackage(ROOT + "*.application..")
+            .should().dependOnClassesThat().resideInAPackage(ROOT + "*.api..");
+
+    @ArchTest
+    static final ArchRule controllersAreNotTransactional = noClasses()
+            .that().areAnnotatedWith(RestController.class)
+            .should().beAnnotatedWith(Transactional.class)
+            .orShould().beAnnotatedWith(jakarta.transaction.Transactional.class);
+
+    @ArchTest
+    static final ArchRule controllerMethodsAreNotTransactional = noMethods()
+            .that().areDeclaredInClassesThat().areAnnotatedWith(RestController.class)
+            .should().beAnnotatedWith(Transactional.class)
+            .orShould().beAnnotatedWith(jakarta.transaction.Transactional.class);
+
+    @ArchTest
+    static final ArchRule noBinaryFloatingPointFields = noFields()
+            .should().haveRawType(double.class)
+            .orShould().haveRawType(Double.class)
+            .orShould().haveRawType(float.class)
+            .orShould().haveRawType(Float.class)
+            .because("money and quantities use BigDecimal (CLAUDE.md §4)");
+}

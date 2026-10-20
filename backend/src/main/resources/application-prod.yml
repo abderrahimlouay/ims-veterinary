@@ -1,0 +1,5 @@
+# Production: every connection setting comes from the environment (no defaults).
+spring:
+  flyway:
+    # Production migrations are a controlled step (ADR-018), not run at application start.
+    enabled: false

@@ -1,0 +1,16 @@
+# Non-secret defaults only (development-workflow.md §7). Secrets come from the environment; see .env.example.
+spring:
+  application:
+    name: ims
+  profiles:
+    default: dev
+  datasource:
+    url: ${IMS_DB_URL}
+    username: ${IMS_DB_USERNAME}
+    password: ${IMS_DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate # ADR-018: schema only via Flyway
+  flyway:
+    locations: classpath:db/migration
