@@ -14,7 +14,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 4. **Atomicity is tested by fault injection:** force a failure mid-use-case and assert nothing persisted.
 5. **Open decisions are not guessed in tests.** Tests for behaviour under an `OPEN DECISION` are written only after the decision is recorded; until then they are marked `@Disabled("OD-nnn")` with the reason, and the roadmap phase does not complete with silent gaps.
 6. **Deterministic:** fixed `Clock` bean in tests; no sleeps; no dependency on the current date (expiry boundary tests inject the date).
-7. **Fast feedback:** unit tests < seconds; integration suite parallelisable per module with isolated schemas/containers reused per test class.
+7. **Fast feedback:** unit tests < seconds; integration suite parallelisable per module; one MySQL container per Spring test-context configuration, shared by the classes that use that configuration (ADR-035) — reuse the existing configurations instead of adding per-class variations.
 
 ## 2. Test pyramid and levels
 
@@ -35,7 +35,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 - Builders/fixtures per aggregate with sensible defaults; one canonical **seed scenario** (products with units and barcodes, lots with varied expiries and statuses, customers of each type, one supplier, open and closed cash sessions).
 - Never reuse production data; no personal data in fixtures.
 - Time-dependent fixtures use relative dates from the test `Clock`.
-- Database cleanup by container-per-class or transactional rollback; concurrency tests use committed data and explicit cleanup.
+- Database cleanup by transactional rollback (or a fresh container for a new test-context configuration, ADR-035) — classes sharing a configuration share one database, so tests must not depend on data left by another class; concurrency tests use committed data and explicit cleanup.
 
 ## 4. Backend test requirements by layer
 

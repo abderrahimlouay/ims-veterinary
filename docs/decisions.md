@@ -261,6 +261,13 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** The module packages are those of `backend.md` §2: `common`, `auth`, `users`, `catalog`, `inventory`, `purchasing`, `sales`, `finance`, `reporting`, `audit`, `numbering`, `settings`, `printing`, `backup`. Suppliers live in `purchasing`; customers and returns in `sales`; payments in `finance`. Base package **`com.imsvet.ims`** (Maven groupId `com.imsvet`, artifactId `ims`).
 - **Consequences:** ADR-006's module list is superseded by this ADR; its reasoning (lot merged into inventory, numbering separate, CreditLimitPort) still holds. ArchUnit tests encode `architecture.md` §3.
 
+## ADR-035 — Test MySQL container lifecycle (resolves OD-030)
+- **Status:** Accepted (user decision, 2026-10-20, Phase 0 close)
+- **Context:** The Testcontainers MySQL container is a bean of `TestcontainersConfiguration`, so Spring's test-context cache gives one container (~10 s start) per distinct test-context configuration. A warm `./mvnw verify` took 45 s with two contexts; the reported 7 min 46 s was a cold run (dependency download and first `mysql:8.4` pull).
+- **Decision:** Keep **one container per Spring test-context configuration** (OD-030 option A). Classes that share a configuration share the context and its container; each new configuration gets a fresh, empty database. No JVM-wide shared container and no Testcontainers reuse in CI.
+- **Alternatives:** (B) one container per JVM shared by all contexts — faster, but needs a cross-context cleanup convention and a dedicated container for empty-DB migration tests; (C) opt-in reuse on developer machines — leftovers between runs would make local results differ from CI.
+- **Consequences:** Strongest isolation; "Flyway on an empty DB" holds by construction. Build time grows ~10 s per new test-context configuration, so tests should reuse the existing configurations (`@SpringBootTest` + `TestcontainersConfiguration`, or the `RANDOM_PORT` variant) rather than add per-class variations. Revisit (new ADR) if the integration suite grows past ~4 configurations or the warm build becomes too slow. `testing.md` §1.7 and §3.
+
 ---
 
 # Part B — Open Decisions
@@ -399,9 +406,10 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 5. **Related:** BR-LOT-002, BR-SALE-009, `products.purchase_price` ("last/avg cost" is ambiguous in the Source).
 
 ## OD-030 — Test MySQL container lifecycle
+- **Status:** Resolved 2026-10-20 → **ADR-035** (option A).
 - **Question:** Testcontainers MySQL is a bean of `TestcontainersConfiguration`, so one container (~10 s start) runs per distinct Spring test-context configuration. Phase 0 has two (plain `@SpringBootTest`, and `RANDOM_PORT` + `RestTestClient`); later phases add more (`@DataJpaTest`, `@MockitoBean` variants). Measured 2026-10-20: warm `./mvnw verify` 45 s, of which ~20 s container start-up; the reported 7 min 46 s run was a cold run (first Maven dependency download and first pull of the 1.12 GB `mysql:8.4` image), not a test-design problem.
 - **Options:** (A) keep one container per context (current; strongest isolation, cost grows with each new context); (B) one container per JVM, started once and exposed as `JdbcConnectionDetails` (not as a container bean, so closing one context cannot stop it under another), each context sharing the database — needs a cleanup convention and a dedicated container for "Flyway on an empty DB" migration tests; (C) (A) plus opt-in Testcontainers reuse on developer machines only (`testcontainers.reuse.enable=true` in `~/.testcontainers.properties`, never in CI), which keeps a container alive across runs.
-- **Leaning:** `[REC]` keep (A) now; adopt (B) when the integration suite exceeds ~4 contexts, together with the cleanup convention of `testing.md` §2.
+- **Leaning:** `[REC]` keep (A) now; adopt (B) when the integration suite exceeds ~4 contexts, together with the cleanup convention of `testing.md` §3.
 - **Blocks:** nothing in Phase 0; decide before Phase 4 (first stock/locking suites). **Related:** ADR-030, `testing.md` §1.7, DR-034.
 
 ---
@@ -414,7 +422,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 1 Auth | OD-001, OD-023, ADR-027 |
 | 2 Catalogue | OD-018, OD-022 |
 | 3 Lots & Units | OD-009, OD-019, OD-025, OD-027 |
-| 4 Inventory & Stock | OD-012, OD-013, OD-030, ADR-012, ADR-028 |
+| 4 Inventory & Stock | OD-012, OD-013, ~~OD-030~~ → ADR-035, ADR-012, ADR-028 |
 | 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 Customers | OD-006, OD-011 |
 | 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006 |
