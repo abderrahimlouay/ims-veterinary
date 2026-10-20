@@ -1,5 +1,6 @@
 package com.imsvet.ims;
 
+import java.util.UUID;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
@@ -14,9 +15,12 @@ public class TestcontainersConfiguration {
 
     public static final DockerImageName MYSQL_IMAGE = DockerImageName.parse("mysql:8.4");
 
+    /** Distinctive so tests can assert it never reaches the logs (ADR-031). */
+    public static final String MYSQL_PASSWORD = "tc-canary-" + UUID.randomUUID();
+
     @Bean
     @ServiceConnection
     MySQLContainer mysqlContainer() {
-        return new MySQLContainer(MYSQL_IMAGE);
+        return new MySQLContainer(MYSQL_IMAGE).withPassword(MYSQL_PASSWORD);
     }
 }
