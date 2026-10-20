@@ -108,7 +108,7 @@ sequenceDiagram
   participant A as /api/auth
   participant API as Any endpoint
   UI->>A: login(username,password)
-  A-->>UI: credential + user + permissions   (mechanism: OD-001)
+  A-->>UI: session cookie + user + permissions   (ADR-036)
   UI->>API: request + credential
   API->>API: authenticate → authorities = role permissions
   API->>API: @PreAuthorize on application service
@@ -169,4 +169,4 @@ Backend = trust boundary; TLS everywhere; hashed passwords; permission-based RBA
 
 ## 16. Decisions index
 
-ADR-001…031 and OD-001…029 are in `decisions.md`; those most structural here: ADR-006 (modular monolith), ADR-012/013 (isolation/locking), ADR-017 (triggers), ADR-018 (Flyway), ADR-020 (errors), ADR-028 (stock representation), ADR-029 (RBAC).
+ADR-001…041 and OD-001…031 are in `decisions.md`; those most structural here: ADR-006 (modular monolith), ADR-012/013 (isolation/locking), ADR-017 (triggers), ADR-018 (Flyway), ADR-020 (errors), ADR-028 (stock representation), ADR-029 (RBAC).

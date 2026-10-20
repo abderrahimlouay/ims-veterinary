@@ -13,7 +13,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | Base path | `/api` (ADR-026); no version segment while the bundled SPA is the only consumer |
 | Format | `application/json; charset=utf-8`; PDFs as `application/pdf` |
 | Naming | resources plural kebab-case; JSON properties **camelCase**; enums as the lower-snake-case strings of the database (`purchase_receipt`) |
-| Authentication | per OD-001: `Authorization: Bearer <access token>` (A) **or** session cookie + CSRF header (B). Every endpoint except `POST /api/auth/login` requires it (BR-SEC-001) |
+| Authentication | session cookie + `X-XSRF-TOKEN` header on state-changing requests (ADR-036). Every endpoint except `POST /api/auth/login` requires a session (BR-SEC-001) |
 | Authorisation | one **permission** per endpoint (`security.md` §4), enforced on the service method (BR-SEC-002) |
 | Methods | `GET` read · `POST` create or **action** (`/confirm`, `/cancel`, `/recall`…) · `PUT` full replace of a mutable resource (with `version`) · `DELETE` only where physical removal is allowed (drafts, child rows). **No hard delete** of master/transactional data |
 | Success codes | `200` read/update/action · `201` create (+ `Location`) · `204` no body |
@@ -111,11 +111,10 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| POST | `/api/auth/login` ● | authenticate | public | `{username, password}` → user + role + permissions (+ credential per OD-001); `AUTH_INVALID_CREDENTIALS`, `AUTH_ACCOUNT_DISABLED`, `RATE_LIMITED` |
-| POST | `/api/auth/refresh` **[OPEN OD-001-A]** | renew access token | refresh credential | → new access token |
-| POST | `/api/auth/logout` | end session / revoke refresh | authenticated | → 204 |
+| POST | `/api/auth/login` ● | authenticate | public | `{username, password}` → user + role + permissions + `mustChangePassword`; sets the session cookie (ADR-036); `AUTH_INVALID_CREDENTIALS`, `AUTH_ACCOUNT_DISABLED`, `RATE_LIMITED` |
+| POST | `/api/auth/logout` | delete the session | authenticated | → 204 |
 | GET | `/api/auth/me` | current user, role, permission codes | authenticated | → `CurrentUser` |
-| POST | `/api/auth/change-password` | change own password | authenticated | `{currentPassword, newPassword}` → 204; `VALIDATION_FAILED` |
+| POST | `/api/auth/change-password` | change own password (also clears `mustChangePassword`) | authenticated | `{currentPassword, newPassword}` → 204; `VALIDATION_FAILED`, `AUTH_INVALID_CREDENTIALS` (wrong current password) |
 
 ### 4.2 `/api/users`, `/api/roles`, `/api/permissions`
 
@@ -309,7 +308,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 ### 5.1 Login
 - **POST `/api/auth/login`** — authenticate. **Auth:** none. **Permission:** public.
 - **Request:** `{ "username": "string(≤60)", "password": "string" }`
-- **Response 200:** `{ "user": {id, username, fullName, email, role}, "permissions": ["sale.create", …], …credential per OD-001 }`
+- **Response 200:** `{ "user": {id, username, fullName, email, role}, "permissions": ["sale.create", …], "mustChangePassword": false }` and a new session cookie (ADR-036). The request carries the CSRF header.
 - **Validation:** both fields non-blank. **Errors:** `AUTH_INVALID_CREDENTIALS` (401), `AUTH_ACCOUNT_DISABLED` (403), `RATE_LIMITED` (429).
 
 ### 5.2 Product search
@@ -396,4 +395,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-001 (auth endpoints), OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-012 (count scope), OD-013 (generate proposals), OD-015 (close PO), OD-018/019 (species filter, unit barcode), OD-020 (pdf formats), OD-021 (backup run).
+OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-012 (count scope), OD-013 (generate proposals), OD-015 (close PO), OD-018/019 (species filter, unit barcode), OD-020 (pdf formats), OD-021 (backup run).

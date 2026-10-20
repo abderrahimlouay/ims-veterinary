@@ -43,7 +43,7 @@ Business objectives stated by the Spec:
 | Supplier | External | Laboratory or wholesaler. | `[SRC §2.4]` |
 | System scheduler | Automated | Expiry alerts, reorder proposals, backups. | `[SRC §2.2, §2.3, §2.7]` |
 
-The Spec names the four roles but states only that they have "restricted rights". The permission matrix is therefore `[REC]` (see `security.md`, **OD-023**).
+The Spec names the four roles but states only that they have "restricted rights". The permission matrix was therefore `[REC]` and has been accepted by the project owner (`security.md` §4, ADR-037).
 
 ## 3. Assumptions and constraints
 

@@ -19,7 +19,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | Phase | Name | Main outcome | Decisions needed before start |
 |---|---|---|---|
 | 0 | Foundation | repo, build, CI, MySQL baseline, error handling, test harness | OD-024, OD-008, ADR confirmation |
-| 1 | Security & administration | login, users, roles/permissions, audit, settings | OD-001, OD-023, ADR-027 |
+| 1 | Security & administration | login, users, roles/permissions, audit, settings | ~~OD-001~~ ADR-036, ~~OD-023~~ ADR-037, ADR-027 (decided 2026-10-20) |
 | 2 | Catalogue | products, reference data, search | OD-018, OD-022 |
 | 3 | Lots & units | packaging units, barcodes, lots, status, expiry rules, FEFO allocator | OD-009, OD-019, OD-025, OD-027 |
 | 4 | Inventory & stock | ledger, stock levels, adjustments, opening stock, counts, reorder proposals | OD-012, OD-013 |
@@ -30,7 +30,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | OD-003, OD-011, OD-016 |
 | 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | OD-020, OD-026, OD-028 |
 | 11 | Reports & audit | reports, exports, backup | OD-021 |
-| 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | OD-021, OD-001 |
+| 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | OD-021, ADR-036 hardening |
 
 **Dependency adjustment (DR-003).** The POS in Phase 7 needs cash/anonymous-sale payment capture (OD-003) and a cash session (BR-SALE-013, BR-PAY-006), which belong to Phase 9. Two options, to be chosen when OD-003 is decided: **(a)** deliver a minimal counter-payment and cash-session slice inside Phase 7 (recommended `[REC]`), or **(b)** reorder so Phase 9's payment/cash core precedes Phase 7. The plan below assumes (a).
 
@@ -49,7 +49,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 1 — Security & administration
 - **Objective:** nobody can use the system without authenticating; permissions enforced server-side.
-- **Prerequisites:** Phase 0; OD-001 (auth mechanism), OD-023 (permission matrix), ADR-027.
+- **Prerequisites:** Phase 0; decided 2026-10-20: ADR-036 (sessions, was OD-001), ADR-037 (matrix, was OD-023), ADR-027, ADR-017, ADR-038–041.
 - **Features:** login/logout/me/change password; users; roles and permissions; audit log write/read; application settings (alert thresholds, default VAT, locale).
 - **Database work:** users, roles, permissions, role_permissions, audit_logs, app_settings (renamed key columns, SD register); seed roles and permissions; append-only protection of audit rows.
 - **Backend work:** `auth`, `users`, `audit`, `settings` modules; Spring Security chain; `@PreAuthorize` convention; brute-force limiter; password policy; `AuditRecorder`.
@@ -159,7 +159,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 12 — Testing, security hardening, deployment
 - **Objective:** release readiness.
-- **Prerequisites:** Phases 0–11; OD-021, OD-001 hardening items.
+- **Prerequisites:** Phases 0–11; OD-021; session-security hardening review (ADR-036).
 - **Features:** performance tuning at target volume; security review (OWASP ASVS-oriented checklist); accessibility audit; data-migration rehearsal from the legacy source (if any); operations runbook; UAT.
 - **Database work:** index tuning; least-privilege DB accounts (BR-SEC-006); restore rehearsal.
 - **Backend work:** rate limits, headers, config hardening, observability checks.
