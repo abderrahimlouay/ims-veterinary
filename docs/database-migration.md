@@ -207,8 +207,8 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 
 | ID | Delta | Linked decision | Status |
 |---|---|---|---|
-| SD-101 | `version` columns for optimistic locking | ADR-027 | Proposed |
-| SD-102 | Append-only triggers on `audit_log` (and possibly payment/cash ledgers) | ADR-017, OD-003 | Proposed |
+| SD-101 | `version` columns for optimistic locking | ADR-027 | Accepted 2026-10-20 |
+| SD-102 | Append-only triggers on `audit_log` (and possibly payment/cash ledgers) | ADR-017, OD-003 | Accepted 2026-10-20 for `audit_log`; ledgers open (OD-003) |
 | SD-103 | Composite uniqueness `lots (id, product_id)` and composite FKs so that `stock_movements`, `goods_receipt_lines`, `sales_document_lines` cannot reference a lot of another product | DR-008 | Proposed |
 | SD-104 | Higher precision for price-per-base-unit columns | OD-022 | Open |
 | SD-105 | `product_barcodes.unit_id` | OD-019 | Open |
@@ -217,7 +217,8 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-108 | Payment capture model for counter/anonymous sales | OD-003 | Open |
 | SD-109 | Link supplier return ↔ supplier credit note | OD-016 | Open |
 | SD-110 | Company profile / document header data | OD-026 | Open |
-| SD-111 | Refresh-token/session table, login-attempt tracking | OD-001 | Open |
+| SD-111 | Spring Session JDBC tables (no refresh-token or login-attempt table) | ADR-036, ADR-038 | Accepted 2026-10-20 |
+| SD-114 | `users.must_change_password` | ADR-039 | Accepted 2026-10-20 |
 | SD-112 | Uniqueness of one *pending* reorder proposal per product (generated-column technique) | OD-013 | Open |
 | SD-113 | Scope columns on `inventories` for cycle counts | OD-012 | Open |
 

@@ -91,7 +91,7 @@ Each runs repeatedly (≥ 20 iterations) in CI to expose flakiness.
 | Output | no entity/stack/SQL in errors; no password/hash fields in any DTO; headers (HSTS, nosniff, frame) present |
 | Secrets | build fails on committed secrets (scanner in CI); logs scanned for passwords/tokens in test |
 | Audit | every audited action code produces a row; audit immutability |
-| Transport/CORS | disallowed origin rejected; cookie flags / CSRF per OD-001 |
+| Transport/CORS | disallowed origin rejected; session cookie flags (`HttpOnly`, `Secure`, `SameSite=Strict`); state-changing request without CSRF header → 403 (ADR-036) |
 | Dependency | dependency vulnerability scan in CI |
 
 ## 8. Frontend and end-to-end tests
@@ -206,7 +206,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SEC-002 | SEC | Permission matrix test: each endpoint × role → expected 200/403 |
 | BR-SEC-003 | SEC,U | Password policy; stored hash never plaintext; never in logs/responses |
 | BR-SEC-004 | SEC | Disabled user cannot log in / existing credential refused |
-| BR-SEC-005 | SEC | N failed attempts → RATE_LIMITED, generic message |
+| BR-SEC-005 | SEC | `login_max_failures` failures → RATE_LIMITED even with the right password; other IP or username unaffected; window/lockout expiry with the test `Clock` (ADR-038) |
 | BR-SEC-006 | M | App DB account lacks DROP/ALTER and UPDATE/DELETE on append-only tables |
 | BR-AUDIT-001 | S | Each audited action code produces an audit row (table-driven) |
 | BR-AUDIT-002 | SEC,R | Audit rows cannot be updated or deleted; contain required fields |

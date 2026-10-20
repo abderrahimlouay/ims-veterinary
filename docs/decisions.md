@@ -143,7 +143,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** Rounding policy is **OD-007**. MySQL evaluates `discount_pct/100` as `DECIMAL` with extra scale (`div_precision_increment`, default 4) — safe for the stated precision, tested.
 
 ## ADR-017 — Trigger policy: append-only guards only
-- **Status:** Proposed
+- **Status:** ~~Proposed~~ → Accepted (user decision, 2026-10-20, Phase 1 preflight), including the `audit_log` guard (SD-102); payment/cash ledgers still follow OD-003
 - **Context:** The Source Schema keeps exactly one trigger (`BEFORE UPDATE OR DELETE` on `stock_movements`). MySQL does not allow one trigger for two events.
 - **Decision:** Create **two** triggers (`BEFORE UPDATE`, `BEFORE DELETE`) on `stock_movements` raising `SQLSTATE '45000'`. `[REC]` Apply the same guard to `audit_log` (Spec §2.7 "traçabilité complète") and to `customer_payments` / `cash_movements` if **OD-003** confirms history must be immutable. No other triggers.
 - **Alternatives:** Revoke `UPDATE/DELETE` only (does not protect against privileged accounts).
@@ -161,13 +161,13 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** Separate request and response DTOs per use case; no bidirectional entity serialisation.
 
 ## ADR-020 — Error responses use RFC 9457 Problem Details + business codes
-- **Status:** Proposed
+- **Status:** ~~Proposed~~ → Accepted (user decision, 2026-10-20, Phase 1 preflight); implemented in Phase 0
 - **Decision:** All errors return `application/problem+json` with `type`, `title`, `status`, `detail`, `instance` plus extensions `code` (stable business code, catalogue in `api.md` §3), `traceId`, and `errors[]` for field validation.
 - **Alternatives:** Ad-hoc JSON error body.
 - **Consequences:** The frontend switches on `code`, not on message text.
 
 ## ADR-021 — Decimal values travel as JSON strings
-- **Status:** Proposed
+- **Status:** ~~Proposed~~ → Accepted (user decision, 2026-10-20, Phase 1 preflight); implemented in Phase 0
 - **Decision:** Money, quantities, percentages are serialised as decimal **strings** (`"1234.50"`), parsed to `BigDecimal` in Java; the frontend uses them for display and never performs financial arithmetic that decides outcomes.
 - **Alternatives:** JSON numbers (binary floating-point loss in JavaScript).
 - **Consequences:** Client-side previews of totals are labelled "estimate"; the server is authoritative (BR-SALE-008).
@@ -201,7 +201,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** Backward-incompatible changes require coordinated frontend release.
 
 ## ADR-027 — Optimistic locking on mutable aggregates
-- **Status:** Proposed (schema addition)
+- **Status:** ~~Proposed~~ → Accepted (user decision, 2026-10-20, Phase 1 preflight). The version travels as a `version` field in the request body (not `If-Match`).
 - **Context:** Source Schema has no version columns; two users can overwrite each other's edits.
 - **Decision:** Add `version BIGINT NOT NULL DEFAULT 0` (JPA `@Version`) to mutable aggregates edited by humans: `products`, `customers`, `suppliers`, `purchase_orders`, `sales_documents` (draft), `inventories`, `users`. Stock quantities are protected by ADR-012, not by `@Version`.
 - **Consequences:** Updates carry the version (`If-Match`/body field); conflict → `CONCURRENT_MODIFICATION` (409).
@@ -268,6 +268,40 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** (B) one container per JVM shared by all contexts — faster, but needs a cross-context cleanup convention and a dedicated container for empty-DB migration tests; (C) opt-in reuse on developer machines — leftovers between runs would make local results differ from CI.
 - **Consequences:** Strongest isolation; "Flyway on an empty DB" holds by construction. Build time grows ~10 s per new test-context configuration, so tests should reuse the existing configurations (`@SpringBootTest` + `TestcontainersConfiguration`, or the `RANDOM_PORT` variant) rather than add per-class variations. Revisit (new ADR) if the integration suite grows past ~4 configurations or the warm build becomes too slow. `testing.md` §1.7 and §3.
 
+## ADR-036 — Authentication with server-side sessions (resolves OD-001)
+- **Status:** Accepted (user decision, 2026-10-20, Phase 1 preflight)
+- **Context:** OD-001 offered (A) JWT access + refresh tokens or (B) server-side session cookie. Single site, one bundled SPA, one application instance (A-001); BR-SEC-004 requires that a disabled user stops working.
+- **Decision:** Option B. Opaque session id in a `HttpOnly; Secure; SameSite=Strict` cookie; sessions stored in MySQL with Spring Session JDBC (tables created by a Flyway migration, never by Spring's initializer). The session holds only the user id; the user's active flag, role and permissions are re-read on every request, so deactivation and permission changes take effect on the next request. New session id at login (fixation protection); logout and user deactivation delete the user's sessions. Idle timeout 30 min, absolute timeout 10 h, both configuration properties. CSRF protection on every state-changing request, including login: token in a readable `XSRF-TOKEN` cookie, echoed by the SPA in the `X-XSRF-TOKEN` header.
+- **Alternatives:** (A) JWT — needs a signing key, a refresh endpoint and a refresh-token table; revocation only at access-token expiry.
+- **Consequences:** No `/api/auth/refresh`; no signing key to manage; SD-111 reduced to the session tables. `security.md` §2.3, `api.md` §1/§4.1/§5.1, `frontend.md` §8–§10, `backend.md`.
+
+## ADR-037 — Role × permission matrix (resolves OD-023)
+- **Status:** Accepted (user decision, 2026-10-20, Phase 1 preflight)
+- **Decision:** The catalogue and matrix of `security.md` §4 are adopted as written. All permission codes and the four role mappings are seeded by a Flyway migration in Phase 1, including codes whose endpoints arrive in later phases. Codes are never created at runtime; the Administrator may change role mappings through `PUT /api/roles/{id}/permissions` (`role.manage`, audited).
+- **Consequences:** The endpoint × role test matrix (BR-SEC-002) is generated from this table; later phases only add guarded endpoints.
+
+## ADR-038 — Login throttling (BR-SEC-005)
+- **Status:** Accepted (user decision, 2026-10-20, Phase 1 preflight)
+- **Decision:** Failed logins are counted per username + client IP in memory (single instance, A-001). After `login_max_failures` (5) failures within `login_window_minutes` (15), further attempts for that pair are refused with `RATE_LIMITED` (429) for `login_lockout_minutes` (15) — without checking the password. A successful login resets the counter. The three values are `app_settings` keys (seeded), not code constants. Accounts are never locked in the database.
+- **Alternatives:** account lock on the user row (lets anyone lock any account by guessing usernames); progressive delays.
+- **Consequences:** Counters reset on restart (accepted). No login-attempt table (SD-111).
+
+## ADR-039 — Password hashing and policy
+- **Status:** Accepted (user decision, 2026-10-20, Phase 1 preflight)
+- **Decision:** bcrypt with cost 12 through Spring Security's `DelegatingPasswordEncoder` (algorithm prefix stored, upgradable at next login; no extra library). Policy: minimum 12 characters, no composition rules, rejected if in a bundled common-password list, no forced periodic rotation; changing one's password requires the current one. An Administrator reset issues a one-time temporary password; `users.must_change_password` (SD-114) then restricts the user to `GET /api/auth/me`, `POST /api/auth/change-password` and `POST /api/auth/logout` — any other request returns `PASSWORD_CHANGE_REQUIRED` (403).
+- **Alternatives:** Argon2id (needs BouncyCastle).
+- **Consequences:** `security.md` §2.2. `PASSWORD_CHANGE_REQUIRED` is added to the `api.md` §3 catalogue together with the `ErrorCode` constant in the Phase 1 login slice (the catalogue test keeps both identical).
+
+## ADR-040 — Bootstrap of the first administrator
+- **Status:** Accepted (user decision, 2026-10-20, Phase 1 preflight)
+- **Decision:** At startup, if the `users` table is empty and `IMS_BOOTSTRAP_ADMIN_USERNAME` and `IMS_BOOTSTRAP_ADMIN_PASSWORD` are set, the application creates one Administrator with `must_change_password = true`, logs a security event (never the password) and writes an audit row. If users already exist, the variables are ignored. Nothing is hard-coded in a migration.
+- **Consequences:** The operator removes the variables after first start (`README.md`, `.env.example`).
+
+## ADR-041 — Usernames are case- and accent-insensitive (resolves OD-025 for `username` only)
+- **Status:** Accepted (user decision, 2026-10-20, Phase 1 preflight)
+- **Decision:** `users.username` keeps the database default collation `utf8mb4_0900_ai_ci`: `Ahmed`, `ahmed` and `ahméd` are the same username, both for uniqueness and at login. The username is stored as entered.
+- **Consequences:** A repository test documents the behaviour. OD-025 remains open for `sku`, `lot_number` and other codes (Phase 3).
+
 ---
 
 # Part B — Open Decisions
@@ -275,6 +309,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
 
 ## OD-001 — Authentication mechanism
+- **Status:** Resolved 2026-10-20 → **ADR-036** (option B).
 - **Question:** Stateless JWT (short-lived access token + rotating refresh token) or server-side session cookie (Spring Session)?
 - **Options:** (A) JWT access token in memory + refresh token in `HttpOnly; Secure; SameSite=Strict` cookie, refresh tokens stored hashed in a new table; (B) opaque session id in `HttpOnly` cookie + CSRF protection, sessions in DB.
 - **Leaning:** (A) for API-first design; (B) is simpler and gives instant revocation. Both satisfy FR-SEC-001.
@@ -375,6 +410,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 2/3. **Related:** BR-UNIT-002, DR-012.
 
 ## OD-023 — Permission matrix
+- **Status:** Resolved 2026-10-20 → **ADR-037** (matrix accepted as proposed).
 - **Question:** Validate or amend the proposed role × permission matrix (`security.md` §4).
 - **Blocks:** Phase 1.
 
@@ -384,6 +420,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 0.
 
 ## OD-025 — Case/accent sensitivity of code columns
+- **Status:** Partly resolved 2026-10-20: `username` → **ADR-041** (insensitive). Still open for `sku`, `lot_number` and other codes.
 - **Question:** Under `utf8mb4_0900_ai_ci`, are `LOT-a1` and `LOT-A1` the same lot? Should `sku`, `lot_number`, `username` use a case-sensitive collation?
 - **Blocks:** Phase 3. **Related:** ADR-024.
 
@@ -412,6 +449,12 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Leaning:** `[REC]` keep (A) now; adopt (B) when the integration suite exceeds ~4 contexts, together with the cleanup convention of `testing.md` §3.
 - **Blocks:** nothing in Phase 0; decide before Phase 4 (first stock/locking suites). **Related:** ADR-030, `testing.md` §1.7, DR-034.
 
+## OD-031 — Protection against administrator lock-out
+- **Question:** Nothing prevents the last active user holding `user.manage`/`role.manage` from being deactivated (including by themselves), moved to another role, or having those permissions removed from their role. Afterwards nobody can administer users or roles; the only recovery is manual SQL.
+- **Options:** (A) server-side guard: an operation that would leave **no active user holding both `user.manage` and `role.manage`** is refused with `INVALID_STATE_TRANSITION` (422), and a user cannot deactivate themselves; (B) no guard, documented recovery procedure (SQL or re-running the bootstrap of ADR-040 on an empty-admin condition); (C) both.
+- **Leaning:** `[REC]` (A) — cheap, testable, no new error code.
+- **Blocks:** Phase 1 (user and role administration slice). **Related:** ADR-037, ADR-040, BR-SEC-002.
+
 ---
 
 # Part C — Decision backlog by phase
@@ -419,7 +462,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | Phase | Decisions that must be *Accepted / decided* before it starts |
 |---|---|
 | 0 Foundation | ~~OD-024~~ → ADR-032, ~~OD-008~~ → ADR-033, ADR-034; ADR-009/010/013/018/019/023/024/025/026/030/031 confirmed Accepted 2026-10-20 |
-| 1 Auth | OD-001, OD-023, ADR-027 |
+| 1 Auth | ~~OD-001~~ → ADR-036, ~~OD-023~~ → ADR-037; ADR-017/020/021/027 confirmed Accepted; ADR-038–041 (all 2026-10-20); **OD-031** |
 | 2 Catalogue | OD-018, OD-022 |
 | 3 Lots & Units | OD-009, OD-019, OD-025, OD-027 |
 | 4 Inventory & Stock | OD-012, OD-013, ~~OD-030~~ → ADR-035, ADR-012, ADR-028 |
@@ -430,4 +473,4 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 9 Payments / Finance | OD-003, OD-011, OD-016 |
 | 10 Documents & Printing | OD-020, OD-026, OD-028, OD-008 |
 | 11 Reports & Audit | OD-021 (backup), OD-002 (margin scope), OD-003 |
-| 12 Testing, Security, Deployment | OD-021, OD-001 (hardening) |
+| 12 Testing, Security, Deployment | OD-021, ADR-036 hardening review |

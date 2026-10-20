@@ -86,11 +86,13 @@ Format: **Column | MySQL type | Null / default | Notes**. `PK`, `FK→`, `UQ`, `
 
 **role_permissions** — `role_id SMALLINT FK→roles ON DELETE CASCADE`, `permission_id INT FK→permissions ON DELETE CASCADE`, `PK(role_id, permission_id)`.
 
-**users** — `id BIGINT AI PK`, `username VARCHAR(60) NOT NULL UQ`, `password_hash TEXT NOT NULL`, `full_name VARCHAR(150) NOT NULL`, `email VARCHAR(150) NULL UQ`, `role_id SMALLINT NOT NULL FK→roles`, `is_active BOOLEAN NOT NULL DEFAULT TRUE`, `last_login_at DATETIME(6) NULL`, `created_at`, `version` (SD-101). Hash = bcrypt/argon2, never plaintext.
+**users** — `id BIGINT AI PK`, `username VARCHAR(60) NOT NULL UQ`, `password_hash TEXT NOT NULL`, `full_name VARCHAR(150) NOT NULL`, `email VARCHAR(150) NULL UQ`, `role_id SMALLINT NOT NULL FK→roles`, `is_active BOOLEAN NOT NULL DEFAULT TRUE`, `last_login_at DATETIME(6) NULL`, `must_change_password BOOLEAN NOT NULL DEFAULT FALSE` (SD-114, ADR-039), `created_at`, `version` (SD-101). Hash = bcrypt cost 12 (ADR-039), never plaintext. `username` uses the default `utf8mb4_0900_ai_ci`: case- and accent-insensitive (ADR-041).
 
-**app_settings** — `setting_key VARCHAR(80) PK` (SD-006), `setting_value TEXT NOT NULL`, `description TEXT`, `updated_at DATETIME(6) NOT NULL`. Seed: `expiry_alert_days = '60,30,15'`, `default_vat_rate = '9.00'`.
+**app_settings** — `setting_key VARCHAR(80) PK` (SD-006), `setting_value TEXT NOT NULL`, `description TEXT`, `updated_at DATETIME(6) NOT NULL`. Seed: `expiry_alert_days = '60,30,15'`, `default_vat_rate = '9.00'` (Source values; VAT computation is OD-007), `login_max_failures = '5'`, `login_window_minutes = '15'`, `login_lockout_minutes = '15'` (ADR-038).
 
-**audit_log** — `id BIGINT AI PK`, `user_id BIGINT NULL FK→users`, `action VARCHAR(60) NOT NULL` (PRICE_CHANGE, INVOICE_CANCEL, STOCK_CORRECTION, LOT_RECALL…), `entity VARCHAR(60) NOT NULL`, `entity_id BIGINT NULL`, `old_values JSON NULL`, `new_values JSON NULL` (SD-004), `ip_address VARCHAR(45) NULL` (SD-005), `created_at`. Indexes: `(entity, entity_id)`, `(user_id, created_at DESC)`. Append-only (SD-102, BR-AUDIT-002).
+**audit_log** — `id BIGINT AI PK`, `user_id BIGINT NULL FK→users`, `action VARCHAR(60) NOT NULL` (PRICE_CHANGE, INVOICE_CANCEL, STOCK_CORRECTION, LOT_RECALL…), `entity VARCHAR(60) NOT NULL`, `entity_id BIGINT NULL`, `old_values JSON NULL`, `new_values JSON NULL` (SD-004), `ip_address VARCHAR(45) NULL` (SD-005), `created_at`. Indexes: `(entity, entity_id)`, `(user_id, created_at DESC)`. Append-only (SD-102, BR-AUDIT-002): `BEFORE UPDATE` and `BEFORE DELETE` triggers raise `SQLSTATE '45000'` (ADR-017).
+
+**SPRING_SESSION**, **SPRING_SESSION_ATTRIBUTES** — Spring Session JDBC tables for server-side sessions (SD-111, ADR-036), created by a Flyway migration from the MySQL schema shipped with Spring Session; not business data.
 
 **backup_log** — `id BIGINT AI PK`, `file_path TEXT NOT NULL`, `size_bytes BIGINT NULL`, `status VARCHAR(20) NOT NULL DEFAULT 'success'`, `created_at`. Mechanism: OD-021.
 
@@ -294,7 +296,7 @@ All rows below are **one database transaction** (`@Transactional`, READ COMMITTE
 
 ## 8. Seed data
 
-Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), settings (2) as in the Source Schema. **Additional seed (proposed):** permission catalogue and role-permission mapping (`security.md` §4), subject to OD-023; one initial administrator created by a bootstrap step, never by a hard-coded password in a migration.
+Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), settings (2) as in the Source Schema. **Additional seed:** permission catalogue and role-permission mapping (`security.md` §4, ADR-037); login-throttle settings (ADR-038). The first administrator is created at startup from environment variables (ADR-040), never by a hard-coded password in a migration.
 
 ## 9. Data lifecycle
 

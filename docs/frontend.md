@@ -172,7 +172,7 @@ Derived from the prototype; implement as typed, accessible components in `compon
 | State kind | Where |
 |---|---|
 | Server data | TanStack Query; keys `[domain, resource, params]`; stale times: reference data long, stock/lots short (≈10 s), POS cart never cached stale |
-| Auth/session | small store (current user, permissions) hydrated from `/api/auth/me`; token handling per **OD-001** (memory only for access token; never `localStorage` for tokens) |
+| Auth/session | small store (current user, permissions) hydrated from `/api/auth/me`; session cookie set by the server (ADR-036); the SPA never sees or stores a credential; `X-XSRF-TOKEN` header from the `XSRF-TOKEN` cookie on every state-changing request |
 | UI state | local component state; URL holds filters/pagination/sort so pages are shareable and refresh-safe |
 | Global client state | avoided; no Redux |
 
@@ -183,7 +183,7 @@ Mutations: after stock-affecting actions invalidate `stock`, `lots`, `products` 
 | Situation | UX |
 |---|---|
 | 400 `VALIDATION_FAILED` | field errors + summary |
-| 401 | try refresh (if OD-001-A) else redirect to login with return URL |
+| 401 | session expired: clear state and redirect to login with return URL |
 | 403 `ACCESS_DENIED` | inline "not allowed" message; no redirect loop |
 | 404 | not-found state in place |
 | 409 conflicts | dedicated messages: stale version dialog, state-transition message, duplicate field error |
@@ -211,7 +211,7 @@ Server generates PDFs (`/api/sales/{id}/pdf`, reports); the UI opens them in a n
 
 ## 14. Security (frontend side)
 
-No secrets in the bundle; tokens never in `localStorage`; no `dangerouslySetInnerHTML` with API data; CSP-compatible (no inline eval); CSRF header if cookie sessions (OD-001-B); logout clears query cache; permission codes treated as UI hints only.
+No secrets in the bundle; tokens never in `localStorage`; no `dangerouslySetInnerHTML` with API data; CSP-compatible (no inline eval); CSRF header on every state-changing request (ADR-036); `PASSWORD_CHANGE_REQUIRED` redirects to the change-password page; logout clears query cache; permission codes treated as UI hints only.
 
 ## 15. Performance
 
@@ -223,4 +223,4 @@ Component tests for primitives and forms (RTL), API-mocked page tests (MSW) incl
 
 ## 17. Open frontend items
 
-OD-001 (token storage/refresh), OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-012 (count UX), OD-018/019 (search by species, unit barcode), OD-020 (print formats); DR-014 (design-token gaps), DR-015 (hard-coded thresholds).
+OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-012 (count UX), OD-018/019 (search by species, unit barcode), OD-020 (print formats); DR-014 (design-token gaps), DR-015 (hard-coded thresholds).

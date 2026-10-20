@@ -66,7 +66,7 @@ com.imsvet.ims        (ADR-034)
 | `audit` | audit_logs | `AuditRecorder` | — |
 | `numbering` | document_sequences | `NumberingService.next(type)` | — |
 | `settings` | app_settings | `SettingsProvider` | — |
-| `users`/`auth` | users, roles, permissions, refresh tokens | `CurrentUser` | — |
+| `users`/`auth` | users, roles, permissions, sessions (ADR-036) | `CurrentUser` | — |
 
 Ports invert dependencies so `sales` ↔ `finance` do not form a cycle; modules never read each other's tables directly except through views owned by `reporting`.
 
@@ -119,7 +119,7 @@ Detailed in `architecture.md` §5 and `workflows.md`. Rules summarised:
 
 ## 9. Security in the backend
 
-Per `security.md`: stateless filter chain (or session per OD-001), `@PreAuthorize("hasAuthority('perm.code')")` on **application service** methods (not only controllers), current user resolved from the security context only (never from request body), method-level checks for ownership (own cash session), no sensitive data in logs, CORS limited to configured origins, secrets from environment.
+Per `security.md`: session-based filter chain with CSRF (Spring Session JDBC, ADR-036), `@PreAuthorize("hasAuthority('perm.code')")` on **application service** methods (not only controllers), current user resolved from the security context only (never from request body), method-level checks for ownership (own cash session), no sensitive data in logs, CORS limited to configured origins, secrets from environment.
 
 ## 10. Auditing
 
@@ -137,7 +137,7 @@ Externalised per profile (`dev`, `test`, `prod`): datasource, Flyway, security (
 | Reorder planner | generate proposals **[OPEN OD-013]** | idempotent per day |
 | Backup | per OD-021 | logged in `backup_log` |
 | Integrity check | reconcile balances vs ledger (BR-STOCK-007) | report only |
-| Session cleanup | expired refresh tokens | |
+| Session cleanup | expired sessions (Spring Session JDBC cleanup job) | |
 
 Jobs run with a system identity recorded in audit; in multi-instance deployments a lock (e.g. DB-based) prevents duplicates (single instance assumed `[REC]`).
 
@@ -163,4 +163,4 @@ Constructor injection; no field injection; no static state; small services per u
 
 ## 18. Open backend items
 
-OD-001 (auth), OD-002/003 (sales stock/payment semantics), OD-006/007 (pricing/rounding), OD-011/012/013/015/017/020/021. (OD-024 resolved by ADR-032.)
+OD-002/003 (sales stock/payment semantics), OD-006/007 (pricing/rounding), OD-011/012/013/015/017/020/021. (OD-024 resolved by ADR-032.)

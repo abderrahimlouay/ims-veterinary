@@ -1,7 +1,7 @@
 # Security Architecture — IMS Vétérinaire
 
 > **Status:** Documentation / Architecture Phase — Implementation Not Started
-> **Last updated:** 2026-10-18
+> **Last updated:** 2026-10-20
 
 **Governing principle (ADR-029):** the backend is the authoritative security boundary. The frontend hides what a user cannot do, but every rule is re-checked on the server. Nothing in this document relies on the client behaving correctly.
 
@@ -32,25 +32,24 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 ### 2.2 Password storage and policy
 | Item | Decision |
 |---|---|
-| Hash | **Argon2id** preferred, **bcrypt** (cost ≥ 12) acceptable — both named in the Source Schema; produced by Spring Security `DelegatingPasswordEncoder` so the algorithm can be upgraded and hashes migrated at next login `[REC]` |
+| Hash | **bcrypt, cost 12** (ADR-039) via Spring Security `DelegatingPasswordEncoder`, so the algorithm can be upgraded and hashes migrated at next login |
 | Storage | `users.password_hash` only; never logged, never returned by any API, never in audit `old_values/new_values` |
-| Policy `[REC]` | minimum 12 characters, no common-password list, no forced periodic rotation; change requires current password; Administrator reset generates a one-time temporary password that must be changed at first login |
-| First administrator | created by a bootstrap step at installation with a password supplied through an environment variable/CLI prompt — **never** hard-coded in a migration or repository |
-| Disabled users | `is_active = false` blocks login and invalidates the credential at its next validation |
+| Policy (ADR-039) | minimum 12 characters, no composition rules, rejected if in the bundled common-password list, no forced periodic rotation; change requires current password; Administrator reset generates a one-time temporary password; `users.must_change_password` then limits the user to `me`, `change-password` and `logout` (`PASSWORD_CHANGE_REQUIRED` otherwise) |
+| First administrator (ADR-040) | created at startup only when `users` is empty, from `IMS_BOOTSTRAP_ADMIN_USERNAME` / `IMS_BOOTSTRAP_ADMIN_PASSWORD`, with `must_change_password = true` — **never** hard-coded in a migration or repository |
+| Disabled users | `is_active = false` blocks login; the user's sessions are deleted and any request is refused at once |
 
-### 2.3 Credential mechanism — **OPEN DECISION OD-001**
-Both options below satisfy FR-SEC-001; the choice is made before Phase 1.
+### 2.3 Credential mechanism — server-side session (ADR-036, resolves OD-001)
 
-| | **A — JWT access + refresh** | **B — Server-side session cookie** |
-|---|---|---|
-| Credential | short-lived (≈ 15 min) signed access token held **in memory** by the SPA; rotating refresh token in `HttpOnly; Secure; SameSite=Strict` cookie, stored **hashed** in a table (SD-111) | opaque session id in `HttpOnly; Secure; SameSite=Strict` cookie; session state in DB (Spring Session JDBC) |
-| Revocation | refresh token revoked at once; access token valid until expiry (short) | immediate |
-| CSRF | refresh endpoint needs CSRF defence (SameSite + custom header); API calls with `Authorization` header are not CSRF-prone | **CSRF protection mandatory** (synchroniser token / double-submit) |
-| XSS exposure | access token not in `localStorage` (in memory only) | session id not readable by JS |
-| Complexity | token rotation, key management | simpler; needs sticky/shared sessions if scaled out (not needed, A-001) |
-| Leaning | fits API-first design | simplest secure option for a single-site app |
+| Item | Decision |
+|---|---|
+| Credential | opaque session id in a `HttpOnly; Secure; SameSite=Strict` cookie; session state in MySQL (Spring Session JDBC, tables created by Flyway) |
+| Session content | user id only; active flag, role and permissions re-read on every request (deactivation and permission changes apply on the next request) |
+| Lifetime | idle timeout 30 min, absolute 10 h (configuration properties); new session id at login (fixation protection) |
+| Revocation | logout deletes the session; deactivating a user deletes all their sessions |
+| CSRF | mandatory on every state-changing request, login included: token in a readable `XSRF-TOKEN` cookie, sent back in the `X-XSRF-TOKEN` header |
+| Not used | no JWT, no refresh endpoint, no signing key |
 
-Whichever is chosen: **no credential in `localStorage`/`sessionStorage`; no credential in URLs; no credential in logs.**
+**No credential in `localStorage`/`sessionStorage`; no credential in URLs; no credential in logs.**
 
 ## 3. Authorization model
 
@@ -60,13 +59,13 @@ Whichever is chosen: **no credential in `localStorage`/`sessionStorage`; no cred
   2. **Method security** on application-service methods: `@PreAuthorize("hasAuthority('sale.cancel')")` style, one permission per use case. Controllers do not decide permissions on their own.
   3. **Object-level checks** where a permission is not enough, e.g. a cashier may close **only their own** cash session unless they hold `cash.manage`.
   4. **State checks** (document status, lot status) are business rules, not authorization (`business-rules.md`).
-- Authorities are loaded with the user; permission changes take effect at the next token refresh/session validation.
+- Authorities are re-read from the database on every request (ADR-036); permission changes take effect on the next request.
 - **Default deny:** a controller method without an explicit permission annotation fails an architecture test (ArchUnit) in CI `[REC]`.
 - Authorization failures return `ACCESS_DENIED` (403); unauthenticated requests `AUTH_REQUIRED` (401). Existence of a forbidden resource is not leaked beyond what 403/404 conventions imply.
 
-## 4. Permission catalogue and role matrix (proposed — OD-023)
+## 4. Permission catalogue and role matrix (accepted — ADR-037)
 
-The Spec names four roles with "restricted rights" but gives no matrix. The catalogue below is a **recommendation** (`REC`) to be validated by the project owner before Phase 1. `●` = granted, `–` = not granted. A = Administrator, P = Pharmacist, S = Seller, C = Accountant (Comptable).
+The Spec names four roles with "restricted rights" but gives no matrix. The catalogue below was proposed (`REC`) and **accepted as written by the project owner on 2026-10-20** (ADR-037); it is seeded by migration in Phase 1. `●` = granted, `–` = not granted. A = Administrator, P = Pharmacist, S = Seller, C = Accountant (Comptable).
 
 | Permission code | Meaning | A | P | S | C |
 |---|---|---|---|---|---|
@@ -166,7 +165,7 @@ Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD
 | **Path traversal / file access** | No user-supplied file paths; backup download addresses a record id, not a path. |
 | **Deserialisation** | Jackson default typing disabled; unknown properties rejected for write DTOs. |
 | **Numeric abuse** | `BigDecimal` with explicit scale; negative/zero checks per BR; no floating-point money. |
-| **CSRF** | Per OD-001 option (§2.3). |
+| **CSRF** | Mandatory, cookie-to-header token (§2.3, ADR-036). |
 | **Open redirect / SSRF** | No redirect or server-side fetch of user-supplied URLs. |
 
 ## 9. Data-level protection
@@ -180,7 +179,7 @@ Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD
 
 | Secret | Handling |
 |---|---|
-| DB passwords, JWT signing key (OD-001-A), mail credentials (none planned) | Supplied via **environment variables** or an external secret store at runtime; **never** committed; `.env*` and key files in `.gitignore`; sample file `application-example.yml` contains placeholders only |
+| DB passwords, bootstrap administrator password (ADR-040), mail credentials (none planned) | Supplied via **environment variables** or an external secret store at runtime; **never** committed; `.env*` and key files in `.gitignore`; sample file `application-example.yml` contains placeholders only |
 | Profiles | `dev`, `test`, `prod`; production values never in the repository |
 | Rotation | Signing key and DB passwords rotatable without code change (key id / reconnect) |
 | Build | Frontend build variables are **public** — no secrets in `VITE_*` |
@@ -194,7 +193,8 @@ Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD
 | TLS | HTTPS only in production (terminated at reverse proxy); HSTS enabled |
 | CORS | Production: frontend and API on the **same origin** behind the reverse proxy ⇒ CORS disabled. Development: Vite dev-server proxies `/api` (no CORS) or an explicit allow-list of `http://localhost:<vite-port>`; **never `*` with credentials** |
 | Headers | `Content-Security-Policy` (self + required font CDN decisions in `frontend.md`), `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`/`frame-ancestors 'none'`, `Cache-Control: no-store` on API responses with personal/financial data |
-| Rate limiting | Login endpoint throttled per username+IP (BR-SEC-005); coarse global limit at the proxy; `RATE_LIMITED` (429) |
+| Rate limiting | Login endpoint throttled per username+IP (BR-SEC-005, ADR-038; limits in `app_settings`); coarse global limit at the proxy; `RATE_LIMITED` (429) |
+| Client IP | Taken from `X-Forwarded-For` only when the request comes from the reverse proxy (production profile); otherwise the socket address. Used for throttling and `audit_log.ip_address` |
 | Error responses | Problem Details without stack traces or SQL text; correlation `traceId` only |
 
 ## 12. Logging of security events
