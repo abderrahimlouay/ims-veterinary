@@ -1,8 +1,8 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Documentation / Architecture Phase — Implementation Not Started
-> **Scope:** ordered plan for Claude Code to implement later. Nothing in this document is implemented.
-> **Last updated:** 2026-10-18
+> **Status:** Phase 0 implemented (2026-10-20), awaiting user approval; Phases 1–12 not started
+> **Scope:** ordered plan for Claude Code to implement.
+> **Last updated:** 2026-10-20
 
 Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` review item.
 
@@ -45,6 +45,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** Vite + TypeScript, router shell, token CSS/Tailwind build, API client, error normaliser, test setup (Vitest, MSW, Playwright smoke).
 - **Tests:** build, architecture rules, health, Problem Details mapping, migration on empty DB.
 - **Completion criteria:** CI green on empty project; documented commands to build/test/run; no secrets in repo; NFR-008 verified for the baseline.
+- **Delivered (2026-10-20):** branches `phase-0/common-backend-skeleton`, `phase-0/common-mysql-baseline`, `phase-0/common-errors-trace-clock`, `phase-0/common-health-logging`, `phase-0/frontend-shell`, `phase-0/ci-docs`. Commands in `README.md`. Deferred: Maven dependency-vulnerability scan (Phase 12); self-hosted fonts incl. an Arabic face (with the first real screens); semantic expiry/stock-status tokens (Phase 3).
 
 ## Phase 1 — Security & administration
 - **Objective:** nobody can use the system without authenticating; permissions enforced server-side.

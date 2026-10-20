@@ -221,7 +221,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 
 - **Architecture tests** (ArchUnit-style, from Phase 0): module dependency rules (`architecture.md` §3); controllers never touch repositories or entities; only `inventory` writes `stock_movements`; only `finance` writes payments; no `double`/`float` for money or quantity; no `@Transactional` on controllers.
   - *Implemented in Phase 0* (`backend/src/test/java/com/imsvet/ims/architecture/ArchitectureTest.java`): module dependencies (`auth → users` is the only edge between those two, to keep them acyclic), no cycles, `common` depends on no module, `api` never uses `infrastructure` or `@Entity` classes, `domain` never uses `api`/`application`, `application` never uses `api`, no `@Transactional` on controllers, **no `double`/`float` field anywhere in main code**. The "only `inventory` writes stock" and "only `finance` writes payments" rules are added with the first ledger/payment classes (Phases 4 and 9).
-- **Static analysis:** compiler warnings as errors, lint (ESLint/TypeScript strict), formatter check.
+- **Static analysis:** compiler warnings as errors (`-Xlint:all -Werror`), lint (oxlint, the Vite template's linter, instead of ESLint — Phase 0) and TypeScript `strict`; a formatter check is not configured yet.
 - **Coverage guidance `[REC]`:** domain and application packages ≥ 85 % line coverage, but the rule matrix (§9) is the real gate.
 - **CI pipeline stages:** build → unit → integration (Testcontainers) → API/security → migration tests → frontend unit → e2e (nightly or on release branch) → dependency/secret scans.
 

@@ -1,26 +1,55 @@
 # IMS Vétérinaire
 
-**Documentation / Architecture Phase — Implementation Not Started**
+**Phase 0 (Foundation) implemented — awaiting review before Phase 1**
 
 Inventory, purchasing, sales and finance management for a veterinary-medicine business: lot and expiry tracking (FEFO), withdrawal-period warnings, lot recall, credit sales and customer accounts, cash sessions, supplier management and reporting.
 
 ## Status
-This repository currently contains **documentation only**. No application code, entities, controllers, migrations or Docker files exist yet. The next step is for the user to review `docs/documentation-review.md`, answer the open decisions that block Phase 0, and then instruct Claude Code to implement Phase 0.
+Phase 0 delivers an empty but buildable, tested skeleton: Spring Boot backend with module packages, architecture tests, Flyway baseline, Problem Details error handling, trace id, JSON logs and Actuator health; React frontend shell with French/Arabic (RTL)/English, API client and design tokens; GitHub Actions CI. No business features exist yet. See `docs/roadmap.md`.
 
-## Stack (target)
-React + Vite + TypeScript · Java + Spring Boot + Maven · MySQL 8.4 · REST/JSON · Git · Linux.
+## Stack
+Java 21 · Spring Boot 4.1 · Maven · MySQL 8.4 LTS · Flyway · React 19 + Vite + TypeScript · Tailwind CSS 4 · Node.js 24 · GitHub Actions (ADR-032).
+
+## Prerequisites
+- JDK 21, Node.js 24 with npm.
+- Docker, usable **without sudo** by your user (Testcontainers starts MySQL for the backend tests). On Linux: `sudo usermod -aG docker $USER`, then log out and in.
+- For running the backend outside tests: a MySQL 8.4 database and the variables of `.env.example`.
+
+## Commands
+
+### Backend (`backend/`)
+| Purpose | Command |
+|---|---|
+| Full build with all tests (unit, architecture, API, migration on MySQL container) | `./mvnw verify` |
+| Tests without Docker (architecture, unit, MockMvc) | `./mvnw test -Dtest='ArchitectureTest,ErrorCatalogueTest,BusinessCalendarTest,DecimalJsonTest,ProblemDetailsHandlerTest'` |
+| Run locally against a throw-away MySQL container | `./mvnw spring-boot:test-run` |
+| Run locally against your own MySQL (profile `dev`) | `IMS_DB_PASSWORD=… ./mvnw spring-boot:run` |
+| Health check | `curl localhost:8080/actuator/health` |
+
+### Frontend (`frontend/`)
+| Purpose | Command |
+|---|---|
+| Install | `npm ci` |
+| Dev server (proxies `/api` to `localhost:8080`) | `npm run dev` |
+| Lint · typecheck · unit tests | `npm run lint` · `npm run typecheck` · `npm test` |
+| Production build | `npm run build` |
+| End-to-end smoke (first time: `npx playwright install chromium`) | `npm run test:e2e` |
+
+CI (`.github/workflows/ci.yml`) runs all of the above plus a secret scan and `npm audit` on every push to `main` and every pull request.
 
 ## Layout
 ```
 ims-veterinary/
   CLAUDE.md        instructions for Claude Code (read first)
   README.md
+  .env.example     environment variables (copy to .env, never commit it)
+  .github/         CI workflow
   docs/            requirements, architecture, database, migration, domain model,
                    business rules, workflows, security, api, frontend, backend,
                    testing, roadmap, development workflow, decisions, glossary,
                    documentation review
-  backend/         (empty — Spring Boot project to be created in Phase 0)
-  frontend/        (empty — React/Vite project to be created in Phase 0)
+  backend/         Spring Boot application (com.imsvet.ims, modules per ADR-034)
+  frontend/        React/Vite SPA
 ```
 
 ## Documentation map
@@ -46,9 +75,6 @@ ims-veterinary/
 
 ## Reading order for a new contributor
 `README.md` → `CLAUDE.md` → `docs/requirements.md` → `docs/decisions.md` → `docs/architecture.md` → `docs/roadmap.md` → the documents of the phase being implemented.
-
-## Starting implementation
-Open the project in Claude Code and say: *"Read CLAUDE.md and the docs. We are now ready to implement Phase 0."* Phases that depend on open decisions will pause and ask.
 
 ## Security note
 Never commit secrets or real data. The backend is the authoritative security boundary.
