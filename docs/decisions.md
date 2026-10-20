@@ -398,6 +398,12 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Options:** (A) weighted-average cost recomputed on each receipt; (B) keep the first cost and ignore the new one; (C) forbid a second receipt of the same lot at a different cost (force a distinct lot identity); (D) track cost per receipt line and value by FIFO layers (needs schema change).
 - **Blocks:** Phase 5. **Related:** BR-LOT-002, BR-SALE-009, `products.purchase_price` ("last/avg cost" is ambiguous in the Source).
 
+## OD-030 — Test MySQL container lifecycle
+- **Question:** Testcontainers MySQL is a bean of `TestcontainersConfiguration`, so one container (~10 s start) runs per distinct Spring test-context configuration. Phase 0 has two (plain `@SpringBootTest`, and `RANDOM_PORT` + `RestTestClient`); later phases add more (`@DataJpaTest`, `@MockitoBean` variants). Measured 2026-10-20: warm `./mvnw verify` 45 s, of which ~20 s container start-up; the reported 7 min 46 s run was a cold run (first Maven dependency download and first pull of the 1.12 GB `mysql:8.4` image), not a test-design problem.
+- **Options:** (A) keep one container per context (current; strongest isolation, cost grows with each new context); (B) one container per JVM, started once and exposed as `JdbcConnectionDetails` (not as a container bean, so closing one context cannot stop it under another), each context sharing the database — needs a cleanup convention and a dedicated container for "Flyway on an empty DB" migration tests; (C) (A) plus opt-in Testcontainers reuse on developer machines only (`testcontainers.reuse.enable=true` in `~/.testcontainers.properties`, never in CI), which keeps a container alive across runs.
+- **Leaning:** `[REC]` keep (A) now; adopt (B) when the integration suite exceeds ~4 contexts, together with the cleanup convention of `testing.md` §2.
+- **Blocks:** nothing in Phase 0; decide before Phase 4 (first stock/locking suites). **Related:** ADR-030, `testing.md` §1.7, DR-034.
+
 ---
 
 # Part C — Decision backlog by phase
@@ -408,7 +414,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 1 Auth | OD-001, OD-023, ADR-027 |
 | 2 Catalogue | OD-018, OD-022 |
 | 3 Lots & Units | OD-009, OD-019, OD-025, OD-027 |
-| 4 Inventory & Stock | OD-012, OD-013, ADR-012, ADR-028 |
+| 4 Inventory & Stock | OD-012, OD-013, OD-030, ADR-012, ADR-028 |
 | 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 Customers | OD-006, OD-011 |
 | 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006 |

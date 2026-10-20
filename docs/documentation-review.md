@@ -57,6 +57,7 @@ Gate for implementation: **Critical and High items marked for Phase 0–1 must b
 | DR-031 | Authentication mechanism and permission matrix | High | security.md, api.md §4.1, frontend.md §8 | Spec requires "secure authentication" and roles but not the mechanism nor the rights per role; the matrix in `security.md` is a proposal. | OD-001, OD-023 must be decided before Phase 1. | Phase 1 · OD-001, OD-023 |
 | DR-032 | Backend module list differs between ADR-006 and backend.md/architecture.md | Medium | decisions.md (ADR-006), backend.md §2, architecture.md §2.2/§3 | ADR-006 lists 18 modules (`product`, `user`, `supplier`, `customer`, `returns`, `payment`…); the other documents and the dependency rules use 14 (`catalog`, `users`, suppliers in `purchasing`, customers/returns in `sales`, payments in `finance`). | **Resolved 2026-10-20 by ADR-034** (user decision: backend.md list). | Phase 0 · ADR-034 |
 | DR-033 | Flyway file-name convention differs | Low | decisions.md (ADR-018), development-workflow.md §6 | ADR-018 shows `V001__…`; the workflow prescribes `V<phase>_<seq>__…`. | **Resolved 2026-10-20** (user decision: `V<phase>_<seq>__`, ADR-018 amended). | Phase 0 · ADR-018 |
+| DR-034 | Test container granularity worded as "per test class" | Low | testing.md §1.7 and §2, decisions.md (ADR-030) | `testing.md` speaks of containers "reused per test class" and "container-per-class" cleanup; with Spring's context cache a container actually lives per test-context configuration (classes sharing a configuration share it). | OD-030 decides the target lifecycle; reword `testing.md` after the decision. | Phase 4 · OD-030 |
 
 ## 3. Automated consistency audit (executed 2026-10-18)
 
@@ -90,7 +91,7 @@ It verifies identifiers and references, not the semantic correctness of rules. S
 | Business rule | Test matrix row | 100 % (110/110) |
 | Source table | `database.md` | 100 % (44/44) |
 | Workflow W1–W12 | API endpoints (`api.md` §4) and tests (`testing.md` §5) | covered; endpoints depending on OD marked `[OPEN]` |
-| Open decision OD-001…029 | `decisions.md` Part B and Part C phase gate | 100 % |
+| Open decision OD-001…030 | `decisions.md` Part B and Part C phase gate | 100 % |
 
 ## 5. Items the user should decide first
 
