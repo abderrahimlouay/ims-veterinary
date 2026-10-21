@@ -42,7 +42,7 @@ Allowed direction (A → B means A may call B's public port):
 common  <- everything
 auth -> common, users, settings      (settings: login throttling limits, ADR-038)
 users -> common, audit               (identity changes are audited, BR-AUDIT-001)
-catalog -> common, settings
+catalog -> common, settings, audit  (price changes are audited, BR-PROD-006)
 numbering -> common
 settings -> common, audit            (setting changes are audited, BR-AUDIT-001)
 audit -> common

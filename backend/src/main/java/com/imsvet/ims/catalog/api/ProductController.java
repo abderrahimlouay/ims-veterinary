@@ -28,15 +28,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/products")
 class ProductController {
 
-    /** {@code ProductWriteRequest}; {@code version} is required by PUT (ADR-027). */
+    /**
+     * {@code ProductWriteRequest}; {@code version} is required by PUT (ADR-027); prices per base unit are
+     * optional (0 at creation, unchanged on update when omitted).
+     */
     record ProductWriteRequest(@NotBlank @Size(max = 40) String sku, @NotBlank @Size(max = 200) String commercialName,
             Integer categoryId, Integer dosageFormId, Integer manufacturerId, @NotBlank @Size(max = 20) String baseUnit,
             @NotNull Boolean divisible, BigDecimal vatRate, BigDecimal minStock, BigDecimal maxStock,
-            BigDecimal reorderPoint, Long version) {
+            BigDecimal reorderPoint, BigDecimal purchasePrice, BigDecimal salePrice, Long version) {
 
         ProductInput input() {
             return new ProductInput(sku, commercialName, categoryId, dosageFormId, manufacturerId, baseUnit, divisible,
-                    vatRate, minStock, maxStock, reorderPoint);
+                    vatRate, minStock, maxStock, reorderPoint, purchasePrice, salePrice);
         }
     }
 

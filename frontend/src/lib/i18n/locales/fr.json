@@ -225,7 +225,8 @@
       "archived": "Archivé",
       "archive": "Archiver",
       "restore": "Restaurer",
-      "reload": "Recharger la dernière version"
+      "reload": "Recharger la dernière version",
+      "pricesReadOnly": "Les prix ne sont modifiables qu'avec la permission « modifier les prix »."
     }
   },
   "fieldErrors": {

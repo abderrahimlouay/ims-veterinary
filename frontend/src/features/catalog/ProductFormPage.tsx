@@ -11,7 +11,7 @@ import { Button } from '../../components/Button'
 import { SelectField } from '../../components/SelectField'
 import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
-import { formatDateTime, formatUnitPrice } from '../../lib/format'
+import { formatDateTime } from '../../lib/format'
 import { placeServerErrors } from '../../lib/formErrors'
 import { hasPermission, useCurrentUser } from '../auth'
 import { usePublicSettings } from '../settings'
@@ -26,6 +26,8 @@ import {
 import { referenceLabel, useReferenceList, type ReferenceListPath } from './referenceApi'
 
 const DECIMAL_3 = /^\d+(\.\d{1,3})?$/
+/** ADR-049: prices per base unit, up to 4 decimals. */
+const PRICE = /^\d+(\.\d{1,4})?$/
 const schema = z.object({
   sku: z.string().trim().min(1, 'validation.required').max(40, 'validation.tooLong'),
   commercialName: z.string().trim().min(1, 'validation.required').max(200, 'validation.tooLong'),
@@ -38,10 +40,12 @@ const schema = z.object({
   minStock: z.string().regex(DECIMAL_3, 'fieldErrors.SCALE'),
   maxStock: z.union([z.literal(''), z.string().regex(DECIMAL_3, 'fieldErrors.SCALE')]),
   reorderPoint: z.string().regex(DECIMAL_3, 'fieldErrors.SCALE'),
+  purchasePrice: z.string().regex(PRICE, 'fieldErrors.SCALE'),
+  salePrice: z.string().regex(PRICE, 'fieldErrors.SCALE'),
 })
 type Form = z.infer<typeof schema>
 const FIELDS = ['sku', 'commercialName', 'categoryId', 'dosageFormId', 'manufacturerId', 'baseUnit', 'vatRate',
-  'minStock', 'maxStock', 'reorderPoint'] as const
+  'minStock', 'maxStock', 'reorderPoint', 'purchasePrice', 'salePrice'] as const
 
 function toForm(p?: ProductDetail, defaultVat?: string): Form {
   return {
@@ -56,10 +60,13 @@ function toForm(p?: ProductDetail, defaultVat?: string): Form {
     minStock: p?.minStock ?? '0',
     maxStock: p?.maxStock ?? '',
     reorderPoint: p?.reorderPoint ?? '0',
+    purchasePrice: p?.purchasePrice ?? '0',
+    salePrice: p?.salePrice ?? '0',
   }
 }
 
-function toWrite(v: Form, version?: number): ProductWrite {
+/** Prices are sent only by a user holding `price.edit`; omitted, the server keeps them (BR-PROD-006). */
+function toWrite(v: Form, withPrices: boolean, version?: number): ProductWrite {
   const id = (value: string) => (value === '' ? null : Number(value))
   return {
     sku: v.sku,
@@ -73,6 +80,7 @@ function toWrite(v: Form, version?: number): ProductWrite {
     minStock: v.minStock,
     maxStock: v.maxStock === '' ? null : v.maxStock,
     reorderPoint: v.reorderPoint,
+    ...(withPrices ? { purchasePrice: v.purchasePrice, salePrice: v.salePrice } : {}),
     version,
   }
 }
@@ -105,6 +113,7 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
   const create = useCreateProduct()
   const update = useUpdateProduct(product?.id ?? 0)
   const editable = product ? hasPermission(current, 'product.update') : hasPermission(current, 'product.create')
+  const canEditPrices = editable && hasPermission(current, 'price.edit')
   const [problem, setProblem] = useState<Problem>()
   const [saved, setSaved] = useState(false)
   const { register, handleSubmit, formState, setError } = useForm<Form>({
@@ -120,7 +129,7 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
   const onSubmit = handleSubmit((v) => {
     setProblem(undefined)
     setSaved(false)
-    mutation.mutate(toWrite(v, product?.version), {
+    mutation.mutate(toWrite(v, canEditPrices, product?.version), {
       onSuccess: (p) => {
         setSaved(true)
         onSaved(p)
@@ -149,13 +158,12 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
         <TextField label={t('catalog.products.minStock')} inputMode="decimal" disabled={!editable} error={fieldError('minStock')} {...register('minStock')} />
         <TextField label={t('catalog.products.maxStock')} inputMode="decimal" disabled={!editable} error={fieldError('maxStock')} {...register('maxStock')} />
         <TextField label={t('catalog.products.reorderPoint')} inputMode="decimal" disabled={!editable} error={fieldError('reorderPoint')} {...register('reorderPoint')} />
+        <TextField label={t('catalog.products.purchasePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('purchasePrice')} {...register('purchasePrice')} />
+        <TextField label={t('catalog.products.salePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('salePrice')} {...register('salePrice')} />
       </div>
+      {editable && !canEditPrices && <p className="text-sm text-mute">{t('catalog.products.pricesReadOnly')}</p>}
       {product && (
         <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm">
-          <dt className="text-mute">{t('catalog.products.salePrice')}</dt>
-          <dd>{formatUnitPrice(product.salePrice)}</dd>
-          <dt className="text-mute">{t('catalog.products.purchasePrice')}</dt>
-          <dd>{formatUnitPrice(product.purchasePrice)}</dd>
           <dt className="text-mute">{t('catalog.products.updatedAt')}</dt>
           <dd>{formatDateTime(product.updatedAt)}</dd>
         </dl>
@@ -229,7 +237,7 @@ export function ProductDetailPage() {
         )}
       </div>
       {setArchived.error instanceof ApiError && <Alert tone="danger">{problemMessage(setArchived.error.problem, t)}</Alert>}
-      <ProductForm key={p.version} product={p} onSaved={() => undefined} />
+      <ProductForm key={p.id} product={p} onSaved={() => undefined} />
     </section>
   )
 }
