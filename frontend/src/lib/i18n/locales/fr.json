@@ -10,7 +10,8 @@
     "users": "Utilisateurs",
     "roles": "Rôles et permissions",
     "settings": "Paramètres",
-    "audit": "Journal d'audit"
+    "audit": "Journal d'audit",
+    "references": "Données de référence"
   },
   "language": {
     "label": "Langue",
@@ -72,7 +73,9 @@
     "ACCESS_DENIED": "Vous n'avez pas l'autorisation pour cette action.",
     "NETWORK_ERROR": "Le serveur est injoignable. Vérifiez la connexion et réessayez.",
     "INTERNAL_ERROR": "Une erreur inattendue est survenue (référence {{traceId}}).",
-    "UNKNOWN": "La demande a échoué (référence {{traceId}})."
+    "UNKNOWN": "La demande a échoué (référence {{traceId}}).",
+    "RESOURCE_IN_USE": "Cette entrée est utilisée et ne peut pas être supprimée.",
+    "DUPLICATE_RESOURCE": "Cette valeur existe déjà."
   },
   "pager": {
     "label": "Pagination",
@@ -162,6 +165,52 @@
       "oldValues": "Avant",
       "newValues": "Après",
       "empty": "Aucune entrée ne correspond."
+    }
+  },
+  "reference": {
+    "species": {
+      "BOVINE": "Bovin",
+      "OVINE": "Ovin",
+      "CAPRINE": "Caprin",
+      "POULTRY": "Volaille",
+      "EQUINE": "Équin",
+      "CANINE": "Canin",
+      "FELINE": "Félin"
+    },
+    "categories": {
+      "ANTIBIOTIC": "Antibiotique",
+      "ANTIPARASITIC": "Antiparasitaire",
+      "VACCINE": "Vaccin",
+      "ANTI_INFLAMMATORY": "Anti-inflammatoire",
+      "VITAMIN_SUPPLEMENT": "Vitamine / Complément"
+    },
+    "dosageForms": {
+      "INJECTABLE": "Injectable",
+      "POWDER": "Poudre",
+      "TABLET": "Comprimé",
+      "SOLUTION": "Solution",
+      "POUR_ON": "Pour-on"
+    }
+  },
+  "catalog": {
+    "references": {
+      "title": "Données de référence",
+      "empty": "Aucune entrée pour le moment.",
+      "seeded": "Valeur de base",
+      "rename": "Renommer",
+      "delete": "Supprimer",
+      "add": "Ajouter",
+      "addLabel": "Nouvelle entrée",
+      "newName": "Nouveau nom",
+      "country": "Pays",
+      "cancel": "Annuler",
+      "lists": {
+        "species": "Espèces animales",
+        "categories": "Catégories thérapeutiques",
+        "dosageForms": "Formes galéniques",
+        "ingredients": "Principes actifs (DCI)",
+        "manufacturers": "Laboratoires"
+      }
     }
   }
 }
