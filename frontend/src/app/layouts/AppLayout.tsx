@@ -4,6 +4,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router'
 import { Button } from '../../components/Button'
 import { LanguageSelect } from '../../components/LanguageSelect'
 import { useCurrentUser, useLogout } from '../../features/auth'
+import { usePublicSettings } from '../../features/settings'
 import { NAV_ITEMS, visibleNavItems } from '../navigation'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -15,6 +16,7 @@ export function AppLayout() {
   const navigate = useNavigate()
   const { data: current } = useCurrentUser()
   const logout = useLogout()
+  usePublicSettings(current !== null && current !== undefined && !current.mustChangePassword)
 
   useEffect(() => {
     document.title = t('app.name')

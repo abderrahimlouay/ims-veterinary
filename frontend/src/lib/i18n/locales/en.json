@@ -6,7 +6,11 @@
   "nav": {
     "label": "Main navigation",
     "home": "Home",
-    "account": "My account"
+    "account": "My account",
+    "users": "Users",
+    "roles": "Roles and permissions",
+    "settings": "Settings",
+    "audit": "Audit log"
   },
   "language": {
     "label": "Language",
@@ -69,5 +73,95 @@
     "NETWORK_ERROR": "The server cannot be reached. Check the connection and try again.",
     "INTERNAL_ERROR": "An unexpected error occurred (reference {{traceId}}).",
     "UNKNOWN": "The request failed (reference {{traceId}})."
+  },
+  "pager": {
+    "label": "Pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "position": "Page {{page}} of {{pages}} ({{total}} in total)"
+  },
+  "admin": {
+    "all": "All",
+    "save": "Save",
+    "saved": "Changes saved.",
+    "close": "Close",
+    "stale": "Someone else changed this record. Reload the page before editing.",
+    "fieldErrors": {
+      "REQUIRED": "This field is required.",
+      "DUPLICATE": "This value is already used.",
+      "EMAIL": "Invalid e-mail address.",
+      "TOO_SHORT": "Use at least {{min}} characters.",
+      "TOO_COMMON": "This password is too common.",
+      "UNKNOWN": "Unknown value.",
+      "INVALID_FORMAT": "Invalid format.",
+      "READ_ONLY": "This setting cannot be changed here."
+    },
+    "users": {
+      "title": "Users",
+      "new": "New user",
+      "search": "Search",
+      "role": "Role",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Deactivated",
+      "empty": "No user matches.",
+      "username": "Username",
+      "fullName": "Full name",
+      "email": "E-mail",
+      "lastLogin": "Last login",
+      "createdAt": "Created on",
+      "password": "Password",
+      "mustChange": "Temporary, to be changed at next login",
+      "initialPassword": "Initial password",
+      "initialPasswordHint": "The user must change it at first login.",
+      "deactivate": "Deactivate",
+      "activate": "Reactivate",
+      "resetPassword": "Reset password",
+      "temporaryPassword": "Temporary password:",
+      "temporaryPasswordOnce": "Give it to the user: it will not be shown again."
+    },
+    "roles": {
+      "title": "Roles and permissions",
+      "permission": "Permission",
+      "reviewButton": "Review changes ({{count}})",
+      "review": "Changes to save",
+      "confirm": "Save these changes",
+      "back": "Back to the grid"
+    },
+    "settings": {
+      "title": "Settings",
+      "readOnly": "read-only",
+      "updatedAt": "Changed on {{at}}",
+      "keys": {
+        "expiry_alert_days": "Expiry alert thresholds (days)",
+        "default_vat_rate": "Default VAT rate (%)",
+        "login_max_failures": "Failed logins before lockout",
+        "login_window_minutes": "Counting window (minutes)",
+        "login_lockout_minutes": "Lockout duration (minutes)",
+        "currency": "Currency",
+        "locale": "Regional format",
+        "business_time_zone": "Time zone"
+      },
+      "hints": {
+        "expiry_alert_days": "Three decreasing numbers: notice, warning, critical (e.g. 60,30,15).",
+        "default_vat_rate": "From 0 to 100, at most two decimals.",
+        "locale": "For example fr-DZ."
+      }
+    },
+    "audit": {
+      "title": "Audit log",
+      "action": "Action",
+      "entity": "Object",
+      "from": "From",
+      "to": "To",
+      "date": "Date",
+      "user": "User",
+      "ip": "IP address",
+      "details": "Details",
+      "system": "System",
+      "oldValues": "Before",
+      "newValues": "After",
+      "empty": "No entry matches."
+    }
   }
 }
