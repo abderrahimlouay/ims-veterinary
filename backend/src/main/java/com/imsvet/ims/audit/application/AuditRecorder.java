@@ -24,7 +24,7 @@ import tools.jackson.databind.json.JsonMapper;
 @InternalService
 public class AuditRecorder {
 
-    /** security.md §7: passwords, tokens and hashes never reach audit values. */
+    /** security.md §7: passwords, tokens and hashes never reach audit values (boolean flags are fine). */
     private static final Set<String> FORBIDDEN_KEY_PARTS = Set.of("password", "token", "hash", "secret");
 
     private final AuditEntryRepository repository;
@@ -65,7 +65,7 @@ public class AuditRecorder {
         }
         for (Map.Entry<?, ?> e : values.entrySet()) {
             String key = String.valueOf(e.getKey()).toLowerCase(Locale.ROOT);
-            if (FORBIDDEN_KEY_PARTS.stream().anyMatch(key::contains)) {
+            if (!(e.getValue() instanceof Boolean) && FORBIDDEN_KEY_PARTS.stream().anyMatch(key::contains)) {
                 throw new IllegalArgumentException("Audit values must not contain '" + e.getKey() + "'");
             }
             if (e.getValue() instanceof Map<?, ?> nested) {

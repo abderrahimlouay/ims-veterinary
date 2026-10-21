@@ -36,6 +36,20 @@ public class Role {
     protected Role() {
     }
 
+    public Short id() {
+        return id;
+    }
+
+    public String description() {
+        return description;
+    }
+
+    /** Replaces the whole permission set (ADR-037: codes come from the seeded catalogue). */
+    public void replacePermissions(Set<Permission> newPermissions) {
+        permissions.clear();
+        permissions.addAll(newPermissions);
+    }
+
     public String name() {
         return name;
     }
