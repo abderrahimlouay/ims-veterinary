@@ -156,7 +156,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** Because **MySQL DDL is non-transactional** (implicit commit), each migration must be small, single-purpose and re-runnable; take a backup before production migrations. Applied migrations are never edited.
 
 ## ADR-019 — DTOs everywhere; entities never leave the service layer
-- **Status:** ~~Proposed~~ → Accepted including MapStruct (user confirmation, 2026-10-20, Phase 0 gate). The dependency is added with the first mapper (Phase 1), not in Phase 0.
+- **Status:** ~~Proposed~~ → Accepted including MapStruct (user confirmation, 2026-10-20, Phase 0 gate). The dependency is added with the first mapper (Phase 1), not in Phase 0. *Implementation note 2026-10-21: Phase 1 uses the hand-written fallback — entities expose fluent accessors (`username()`), which MapStruct does not detect as properties without a custom naming strategy; the mappers are small static methods next to the views. Revisit when a module has many DTOs.*
 - **Decision:** Controllers accept/return DTOs (Java `record`s). Mapping via MapStruct `[REC]` (new dependency — must be justified in Phase 0; hand-written mappers are the fallback).
 - **Consequences:** Separate request and response DTOs per use case; no bidirectional entity serialisation.
 
@@ -304,7 +304,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 
 ## ADR-042 — Administration cannot be locked out (resolves OD-031)
 - **Status:** Accepted (user decision, 2026-10-20)
-- **Decision:** A user, role or role-permission change that would leave **no active user holding both `user.manage` and `role.manage`** is refused with `INVALID_STATE_TRANSITION` (422). A user cannot deactivate their own account. The check runs in the same transaction as the change, after locking the affected rows.
+- **Decision:** A user, role or role-permission change that would leave **no active user holding both `user.manage` and `role.manage`** is refused with `INVALID_STATE_TRANSITION` (409, as in the `api.md` §3 catalogue; corrected 2026-10-21). A user cannot deactivate their own account. The check runs in the same transaction as the change: all role rows are locked `FOR UPDATE` in id order first (serialising such changes), the change is applied and flushed, then active holders of both permissions are counted.
 - **Alternatives:** no guard with a documented SQL recovery (B); both (C).
 - **Consequences:** No new error code. Covered by user-administration tests (`testing.md` §7). `security.md` §3, `api.md` §4.2.
 
@@ -327,6 +327,16 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
   - The application refuses to start when stored settings and definitions disagree (missing, unknown or malformed key).
 - **Alternatives:** batch update in one transaction; editable currency and time zone; keeping the business values in configuration.
 - **Consequences:** `api.md` §4.14, BR-LOT-010, `database.md` §3.1; `BusinessSettings` (common port) is implemented by the `settings` module.
+
+## ADR-045 — User administration rules
+- **Status:** Accepted (user decision, 2026-10-21, Phase 1 user-administration slice)
+- **Decision:**
+  - A user created with `initialPassword` must change it at first login (`must_change_password = true`), like after a reset.
+  - `POST /api/users/{id}/reset-password` generates the temporary password: 16 random characters from an alphabet without look-alikes (no `0/o`, `1/l/i`), shown as four groups (`k7mq-3xht-9pwd-r2va`, ≈ 79 bits). It is returned once and never stored in clear, logged or audited.
+  - The username is immutable; `PUT /api/users/{id}` changes full name, e-mail and role, with `version` (ADR-027).
+  - A password reset and a deactivation end the user's sessions after commit; a role change does not (permissions are re-read on every request, ADR-036).
+  - Username and e-mail are unique case- and accent-insensitively (ADR-041); a duplicate is `DUPLICATE_RESOURCE` with `context.field`.
+- **Consequences:** `api.md` §4.2, `security.md` §2.2. Sessions are ended through the `UserSessions` port implemented by `auth`.
 
 ---
 
