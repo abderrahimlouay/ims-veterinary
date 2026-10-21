@@ -15,7 +15,11 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // J1 bootstraps the administrator's own password; the other journeys log in with it, so they run after J1.
+  projects: [
+    { name: 'j1', testMatch: /j1-.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', testIgnore: /j1-.*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
+  ],
   webServer: [
     {
       command: './mvnw -q spring-boot:test-run',

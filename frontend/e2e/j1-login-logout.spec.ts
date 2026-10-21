@@ -1,17 +1,12 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { ADMIN } from './fixtures'
+import { changePassword, logIn, logOut } from './session'
 
 /**
  * J1 (testing.md §8): first login of the bootstrapped administrator with the forced password change
  * (ADR-039/040), logout, login again. Stateful, so serial and never retried.
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
-
-async function logIn(page: Page, username: string, password: string) {
-  await page.getByLabel("Nom d'utilisateur").fill(username)
-  await page.getByLabel('Mot de passe', { exact: true }).fill(password)
-  await page.getByRole('button', { name: 'Se connecter' }).click()
-}
 
 test('J1: first login, forced password change, logout and login again', async ({ page }) => {
   await page.goto('/')
@@ -27,10 +22,7 @@ test('J1: first login, forced password change, logout and login again', async ({
   await page.goto('/')
   await expect(page).toHaveURL(/\/account$/)
 
-  await page.getByLabel('Mot de passe actuel', { exact: true }).fill(ADMIN.bootstrapPassword)
-  await page.getByLabel('Nouveau mot de passe', { exact: true }).fill(ADMIN.newPassword)
-  await page.getByLabel('Confirmer le nouveau mot de passe').fill(ADMIN.newPassword)
-  await page.getByRole('button', { name: 'Changer le mot de passe' }).click()
+  await changePassword(page, ADMIN.bootstrapPassword, ADMIN.newPassword)
 
   await expect(page.getByRole('heading', { level: 1, name: 'Tableau de bord' })).toBeVisible()
   await expect(page.getByRole('banner')).toContainText('E2E Administrator')
@@ -41,8 +33,7 @@ test('J1: first login, forced password change, logout and login again', async ({
   await page.goto('/nowhere')
   await expect(page.getByRole('heading', { level: 1, name: 'Page introuvable' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Se déconnecter' }).click()
-  await expect(page).toHaveURL(/\/login$/)
+  await logOut(page)
   await page.goto('/')
   await expect(page).toHaveURL(/\/login$/)
 
