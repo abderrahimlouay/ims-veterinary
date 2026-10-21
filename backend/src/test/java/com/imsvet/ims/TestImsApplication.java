@@ -8,6 +8,6 @@ import org.springframework.boot.SpringApplication;
 public class TestImsApplication {
 
     public static void main(String[] args) {
-        SpringApplication.from(ImsApplication::main).with(TestcontainersConfiguration.class).run(args);
+        SpringApplication.from(ImsApplication::main).with(MySqlContainerConfiguration.class).run(args);
     }
 }

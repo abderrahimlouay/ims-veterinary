@@ -1,33 +1,18 @@
 package com.imsvet.ims;
 
-import java.util.UUID;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.testcontainers.mysql.MySQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
 /**
- * Real MySQL for every integration test (ADR-030): same release line as production (ADR-032), plus the
- * settable test clock. Every integration test imports exactly this configuration, so they share one
- * context and one container (ADR-035).
+ * The configuration every integration test imports: real MySQL plus the settable test clock. Importing
+ * exactly this keeps all tests in one context and one container (ADR-035). Not used by
+ * {@link TestImsApplication}, whose local run keeps the real clock.
  */
 @TestConfiguration(proxyBeanMethods = false)
+@Import(MySqlContainerConfiguration.class)
 public class TestcontainersConfiguration {
-
-    public static final DockerImageName MYSQL_IMAGE = DockerImageName.parse("mysql:8.4");
-
-    /** Distinctive so tests can assert it never reaches the logs (ADR-031). */
-    public static final String MYSQL_PASSWORD = "tc-canary-" + UUID.randomUUID();
-
-    @Bean
-    @ServiceConnection
-    MySQLContainer mysqlContainer() {
-        // ADR-043: binary logging is on by default; this lets the non-SUPER user create triggers (ADR-017).
-        return new MySQLContainer(MYSQL_IMAGE).withPassword(MYSQL_PASSWORD)
-                .withCommand("--log-bin-trust-function-creators=1");
-    }
 
     @Bean
     @Primary
