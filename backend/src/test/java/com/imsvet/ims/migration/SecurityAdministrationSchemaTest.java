@@ -13,7 +13,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Migration test (M) for the Phase 1 schema (database.md §3.1): tables, append-only triggers (ADR-017)
- * and the settings seed (ADR-038).
+ * and the settings seed (ADR-038, ADR-044).
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -49,6 +49,9 @@ class SecurityAdministrationSchemaTest {
                 "default_vat_rate", "9.00",
                 "login_max_failures", "5",
                 "login_window_minutes", "15",
-                "login_lockout_minutes", "15"));
+                "login_lockout_minutes", "15",
+                "currency", "DZD",
+                "locale", "fr-DZ",
+                "business_time_zone", "Africa/Algiers"));
     }
 }

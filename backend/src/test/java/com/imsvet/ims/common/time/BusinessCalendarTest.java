@@ -13,7 +13,10 @@ import org.junit.jupiter.api.Test;
 
 class BusinessCalendarTest {
 
-    private static final BusinessProperties ALGIERS = new BusinessProperties(
+    private record Fixed(Currency currency, Locale locale, ZoneId timeZone) implements BusinessSettings {
+    }
+
+    private static final BusinessSettings ALGIERS = new Fixed(
             Currency.getInstance("DZD"), Locale.forLanguageTag("fr-DZ"), ZoneId.of("Africa/Algiers"));
 
     @Test

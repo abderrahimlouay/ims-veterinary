@@ -2,7 +2,7 @@ package com.imsvet.ims;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.imsvet.ims.common.time.BusinessProperties;
+import com.imsvet.ims.common.time.BusinessSettings;
 import java.time.ZoneId;
 import java.util.Currency;
 import java.util.Locale;
@@ -16,10 +16,10 @@ import org.springframework.context.annotation.Import;
 class ImsApplicationTests {
 
     @Autowired
-    private BusinessProperties business;
+    private BusinessSettings business;
 
     @Test
-    void contextLoadsWithTheBusinessDefaultsOfAdr033() {
+    void contextLoadsWithTheSeededBusinessSettingsOfAdr033() {
         assertThat(business.currency()).isEqualTo(Currency.getInstance("DZD"));
         assertThat(business.locale()).isEqualTo(Locale.forLanguageTag("fr-DZ"));
         assertThat(business.timeZone()).isEqualTo(ZoneId.of("Africa/Algiers"));

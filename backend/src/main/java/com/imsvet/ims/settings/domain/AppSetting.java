@@ -29,6 +29,12 @@ public class AppSetting {
     protected AppSetting() {
     }
 
+    /** Stores an already validated, normalised value. */
+    public void change(String newValue, Instant at) {
+        this.value = newValue;
+        this.updatedAt = at;
+    }
+
     public String key() {
         return key;
     }

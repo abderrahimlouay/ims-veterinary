@@ -2,6 +2,7 @@ package com.imsvet.ims.settings.application;
 
 import com.imsvet.ims.common.security.InternalService;
 import com.imsvet.ims.settings.domain.AppSetting;
+import com.imsvet.ims.settings.domain.SettingDefinition;
 import com.imsvet.ims.settings.infrastructure.AppSettingRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,13 @@ public class SettingsProvider {
 
     public SettingsProvider(AppSettingRepository repository) {
         this.repository = repository;
+    }
+
+    /** The stored, normalised value of a defined setting. */
+    @Transactional(readOnly = true)
+    public String value(SettingDefinition definition) {
+        return repository.findById(definition.key()).map(AppSetting::value)
+                .orElseThrow(() -> new IllegalStateException("Missing setting " + definition.key()));
     }
 
     @Transactional(readOnly = true)
