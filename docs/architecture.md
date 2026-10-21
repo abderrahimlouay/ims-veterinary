@@ -40,10 +40,11 @@ Allowed direction (A → B means A may call B's public port):
 
 ```
 common  <- everything
-auth/users -> common
+auth -> common, users, settings      (settings: login throttling limits, ADR-038)
+users -> common, audit               (identity changes are audited, BR-AUDIT-001)
 catalog -> common, settings
 numbering -> common
-settings -> common
+settings -> common, audit            (setting changes are audited, BR-AUDIT-001)
 audit -> common
 inventory -> catalog, numbering?, settings, audit
 purchasing -> catalog, inventory, numbering, settings, audit

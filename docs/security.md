@@ -34,7 +34,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 |---|---|
 | Hash | **bcrypt, cost 12** (ADR-039) via Spring Security `DelegatingPasswordEncoder`, so the algorithm can be upgraded and hashes migrated at next login |
 | Storage | `users.password_hash` only; never logged, never returned by any API, never in audit `old_values/new_values` |
-| Policy (ADR-039) | minimum 12 characters, no composition rules, rejected if in the bundled common-password list, no forced periodic rotation; change requires current password; Administrator reset generates a one-time temporary password; `users.must_change_password` then limits the user to `me`, `change-password` and `logout` (`PASSWORD_CHANGE_REQUIRED` otherwise) |
+| Policy (ADR-039) | minimum 12 characters, no composition rules, rejected if in the bundled common-password list (`security/common-passwords.txt`: the ≥ 12-character entries of the SecLists NCSC top-100k list, pinned commit), no forced periodic rotation; change requires current password; Administrator reset generates a one-time temporary password; `users.must_change_password` then limits the user to `me`, `change-password` and `logout` (`PASSWORD_CHANGE_REQUIRED` otherwise) |
 | First administrator (ADR-040) | created at startup only when `users` is empty, from `IMS_BOOTSTRAP_ADMIN_USERNAME` / `IMS_BOOTSTRAP_ADMIN_PASSWORD`, with `must_change_password = true` — **never** hard-coded in a migration or repository |
 | Disabled users | `is_active = false` blocks login; the user's sessions are deleted and any request is refused at once |
 
@@ -121,7 +121,7 @@ Rules: permissions are additive per role; a user has one role; permission codes 
 
 ## 5. Endpoint security
 
-- Default deny; explicit allow-list of public routes (`/api/auth/login`, and `/actuator/health` only on the internal interface).
+- Default deny; explicit allow-list of public routes: `POST /api/auth/login` and `GET /actuator/health` (exposed on the internal interface only). `/actuator/info` needs a session; other actuator endpoints are not exposed. Enforced by `DenyByDefaultTest`, which enumerates every mapped endpoint.
 - Each endpoint in `api.md` states its **Required permission**. The permission is on the service method; a controller test per endpoint asserts 401 (anonymous), 403 (wrong role), 2xx (right role).
 - **Mass-assignment protection:** only DTO fields are bound; server-owned fields (status, totals, numbers, `quantity_base`, `unit_cost`, `created_by`) are never accepted from the client.
 - **Idempotency:** `POST` operations that create numbered documents or money records accept an `Idempotency-Key` header (BR-SALE-016).
