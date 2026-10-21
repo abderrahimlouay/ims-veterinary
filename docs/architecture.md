@@ -170,4 +170,4 @@ Backend = trust boundary; TLS everywhere; hashed passwords; permission-based RBA
 
 ## 16. Decisions index
 
-ADR-001…043 and OD-001…031 are in `decisions.md`; those most structural here: ADR-006 (modular monolith), ADR-012/013 (isolation/locking), ADR-017 (triggers), ADR-018 (Flyway), ADR-020 (errors), ADR-028 (stock representation), ADR-029 (RBAC).
+ADR-001…044 and OD-001…031 are in `decisions.md`; those most structural here: ADR-006 (modular monolith), ADR-012/013 (isolation/locking), ADR-017 (triggers), ADR-018 (Flyway), ADR-020 (errors), ADR-028 (stock representation), ADR-029 (RBAC).
