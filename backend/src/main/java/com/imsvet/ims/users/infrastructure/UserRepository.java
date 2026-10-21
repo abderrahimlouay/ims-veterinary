@@ -2,6 +2,8 @@ package com.imsvet.ims.users.infrastructure;
 
 import com.imsvet.ims.users.domain.User;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,8 @@ public interface UserRepository extends Repository<User, Long> {
     void flush();
 
     Optional<User> findById(Long id);
+
+    List<User> findAllByIdIn(Collection<Long> ids);
 
     /** Case- and accent-insensitive through the column collation (ADR-041). */
     Optional<User> findByUsername(String username);

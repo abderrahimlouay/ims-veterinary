@@ -1,5 +1,6 @@
 package com.imsvet.ims.audit.application;
 
+import com.imsvet.ims.audit.application.UserDirectory.UserName;
 import com.imsvet.ims.audit.domain.AuditEntry;
 import com.imsvet.ims.audit.infrastructure.AuditEntryRepository;
 import com.imsvet.ims.common.error.BusinessException;
@@ -10,6 +11,9 @@ import com.imsvet.ims.common.time.BusinessSettings;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -30,11 +34,14 @@ public class AuditLogQuery {
     private final AuditEntryRepository repository;
     private final BusinessSettings business;
     private final JsonMapper json;
+    private final UserDirectory users;
 
-    public AuditLogQuery(AuditEntryRepository repository, BusinessSettings business, JsonMapper json) {
+    public AuditLogQuery(AuditEntryRepository repository, BusinessSettings business, JsonMapper json,
+            UserDirectory users) {
         this.repository = repository;
         this.business = business;
         this.json = json;
+        this.users = users;
     }
 
     @PreAuthorize("hasAuthority('audit.read')")
@@ -45,17 +52,20 @@ public class AuditLogQuery {
                     Map.of("from", filter.from().toString(), "to", filter.to().toString()));
         }
         LocalDate dayAfterTo = filter.to() == null ? null : filter.to().plusDays(1);
-        return PageResponse.of(repository.search(filter.entity(), filter.entityId(), filter.userId(),
-                filter.action(), startOf(filter.from()), startOf(dayAfterTo),
-                PageRequests.of(page, size, NEWEST_FIRST)), this::toView);
+        Page<AuditEntry> entries = repository.search(filter.entity(), filter.entityId(), filter.userId(),
+                filter.action(), startOf(filter.from()), startOf(dayAfterTo), PageRequests.of(page, size, NEWEST_FIRST));
+        Map<Long, UserName> names = users.namesOf(entries.stream().map(AuditEntry::userId)
+                .filter(Objects::nonNull).collect(Collectors.toSet()));
+        return PageResponse.of(entries, e -> toView(e, e.userId() == null ? null : names.get(e.userId())));
     }
 
     private Instant startOf(LocalDate day) {
         return day == null ? null : day.atStartOfDay(business.timeZone()).toInstant();
     }
 
-    private AuditEntryView toView(AuditEntry e) {
-        return new AuditEntryView(e.id(), e.userId(), e.action(), e.entity(), e.entityId(), fromJson(e.oldValues()),
+    private AuditEntryView toView(AuditEntry e, UserName name) {
+        return new AuditEntryView(e.id(), e.userId(), name == null ? null : name.username(),
+                name == null ? null : name.fullName(), e.action(), e.entity(), e.entityId(), fromJson(e.oldValues()),
                 fromJson(e.newValues()), e.ipAddress(), e.createdAt());
     }
 
