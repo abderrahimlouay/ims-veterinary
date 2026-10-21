@@ -338,6 +338,12 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
   - Username and e-mail are unique case- and accent-insensitively (ADR-041); a duplicate is `DUPLICATE_RESOURCE` with `context.field`.
 - **Consequences:** `api.md` §4.2, `security.md` §2.2. Sessions are ended through the `UserSessions` port implemented by `auth`.
 
+## ADR-046 — The audit viewer names the acting user
+- **Status:** Accepted (user decision, 2026-10-21, Phase 1 frontend-admin slice; option C of A id only / B client-side lookup / C server-side)
+- **Context:** `audit_log` stores `user_id`. A client-side lookup through `GET /api/users` would fail for Accountants, who hold `audit.read` but not `user.read`.
+- **Decision:** `GET /api/audit-logs` returns `username` and `userFullName` with each entry (`null` for system actions). `audit` defines a `UserDirectory` port; `users` implements it (dependency inversion: `audit` must not depend on `users`). One batched query per page; no schema change. Usernames are immutable (ADR-045), so the name is the one that acted.
+- **Consequences:** `api.md` §4.14; audit viewer in the frontend.
+
 ---
 
 # Part B — Open Decisions

@@ -13,8 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -55,6 +57,22 @@ class AuditLogEndpointTest {
                 .andExpect(jsonPath("$.page.number").value(0))
                 .andExpect(jsonPath("$.page.size").value(5))
                 .andExpect(jsonPath("$.page.totalElements").value(0));
+    }
+
+    /** ADR-046: an auditor without {@code user.read} still sees who acted. */
+    @Test
+    void entriesNameTheActingUser() throws Exception {
+        TestUser admin = new TestUsers(jdbc, encoder).create("Administrator");
+        ApiClient adminClient = ApiClient.create(context, "198.51.100.61");
+        adminClient.login(admin.username(), admin.password()).andExpect(status().isOk());
+        adminClient.perform(MockMvcRequestBuilders.put("/api/settings/default_vat_rate")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"value\":\"19\"}"), true)
+                .andExpect(status().isOk());
+
+        auditor.get("/api/audit-logs?entity=app_settings&action=SETTING_CHANGE").andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].userId").value(admin.id()))
+                .andExpect(jsonPath("$.content[0].username").value(admin.username()))
+                .andExpect(jsonPath("$.content[0].userFullName").value("Test User"));
     }
 
     @Test
