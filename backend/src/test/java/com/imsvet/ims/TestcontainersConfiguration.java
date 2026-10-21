@@ -4,11 +4,14 @@ import java.util.UUID;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * Real MySQL for every integration test (ADR-030): same release line as production (ADR-032).
+ * Real MySQL for every integration test (ADR-030): same release line as production (ADR-032), plus the
+ * settable test clock. Every integration test imports exactly this configuration, so they share one
+ * context and one container (ADR-035).
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
@@ -24,5 +27,11 @@ public class TestcontainersConfiguration {
         // ADR-043: binary logging is on by default; this lets the non-SUPER user create triggers (ADR-017).
         return new MySQLContainer(MYSQL_IMAGE).withPassword(MYSQL_PASSWORD)
                 .withCommand("--log-bin-trust-function-creators=1");
+    }
+
+    @Bean
+    @Primary
+    TestClock testClock() {
+        return new TestClock();
     }
 }
