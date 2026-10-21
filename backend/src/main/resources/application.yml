@@ -61,7 +61,3 @@ ims:
       username: ${IMS_BOOTSTRAP_ADMIN_USERNAME:}
       password: ${IMS_BOOTSTRAP_ADMIN_PASSWORD:}
       full-name: ${IMS_BOOTSTRAP_ADMIN_FULL_NAME:Administrator}
-  business: # ADR-033
-    currency: DZD
-    locale: fr-DZ
-    time-zone: Africa/Algiers

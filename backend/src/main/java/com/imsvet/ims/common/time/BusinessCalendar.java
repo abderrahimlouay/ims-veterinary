@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
 public class BusinessCalendar {
 
     private final Clock clock;
-    private final BusinessProperties business;
+    private final BusinessSettings business;
 
-    public BusinessCalendar(Clock clock, BusinessProperties business) {
+    public BusinessCalendar(Clock clock, BusinessSettings business) {
         this.clock = clock;
         this.business = business;
     }

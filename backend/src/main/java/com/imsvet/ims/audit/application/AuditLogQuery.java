@@ -6,7 +6,7 @@ import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
 import com.imsvet.ims.common.paging.PageRequests;
 import com.imsvet.ims.common.paging.PageResponse;
-import com.imsvet.ims.common.time.BusinessProperties;
+import com.imsvet.ims.common.time.BusinessSettings;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
@@ -28,10 +28,10 @@ public class AuditLogQuery {
     };
 
     private final AuditEntryRepository repository;
-    private final BusinessProperties business;
+    private final BusinessSettings business;
     private final JsonMapper json;
 
-    public AuditLogQuery(AuditEntryRepository repository, BusinessProperties business, JsonMapper json) {
+    public AuditLogQuery(AuditEntryRepository repository, BusinessSettings business, JsonMapper json) {
         this.repository = repository;
         this.business = business;
         this.json = json;

@@ -15,9 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
@@ -32,11 +34,22 @@ import org.springframework.web.context.WebApplicationContext;
 @Transactional
 class EndpointPermissionMatrixTest {
 
-    record Endpoint(HttpMethod method, String uri, String permission) {
+    /** {@code permission} {@value #AUTHENTICATED}: any logged-in user; {@code body}: a valid request body. */
+    record Endpoint(HttpMethod method, String uri, String permission, String body) {
+
+        Endpoint(HttpMethod method, String uri, String permission) {
+            this(method, uri, permission, null);
+        }
     }
 
+    static final String AUTHENTICATED = "authenticated";
+
     static final List<Endpoint> ENDPOINTS = List.of(
-            new Endpoint(HttpMethod.GET, "/api/audit-logs", "audit.read"));
+            new Endpoint(HttpMethod.GET, "/api/audit-logs", "audit.read"),
+            new Endpoint(HttpMethod.GET, "/api/settings/public", AUTHENTICATED),
+            new Endpoint(HttpMethod.GET, "/api/settings", "settings.manage"),
+            new Endpoint(HttpMethod.GET, "/api/settings/default_vat_rate", "settings.manage"),
+            new Endpoint(HttpMethod.PUT, "/api/settings/default_vat_rate", "settings.manage", "{\"value\":\"9.00\"}"));
 
     static final List<String> ROLES = List.of("Administrator", "Pharmacist", "Seller", "Accountant");
 
@@ -69,12 +82,15 @@ class EndpointPermissionMatrixTest {
         client.login(user.username(), user.password());
 
         for (Endpoint endpoint : ENDPOINTS) {
-            boolean granted = jdbc.queryForObject("""
+            boolean granted = AUTHENTICATED.equals(endpoint.permission()) || jdbc.queryForObject("""
                     SELECT COUNT(*) FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
                     JOIN permissions p ON p.id = rp.permission_id WHERE r.name = ? AND p.code = ?""",
                     Integer.class, role, endpoint.permission()) > 0;
-            MockHttpServletResponse response = client.perform(
-                    MockMvcRequestBuilders.request(endpoint.method(), endpoint.uri()), true).andReturn().getResponse();
+            MockHttpServletRequestBuilder request = MockMvcRequestBuilders.request(endpoint.method(), endpoint.uri());
+            if (endpoint.body() != null) {
+                request.contentType(MediaType.APPLICATION_JSON).content(endpoint.body());
+            }
+            MockHttpServletResponse response = client.perform(request, true).andReturn().getResponse();
 
             if (granted) {
                 assertThat(response.getStatus()).as("%s %s as %s", endpoint.method(), endpoint.uri(), role)
