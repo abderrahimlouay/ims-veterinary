@@ -13,7 +13,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | Base path | `/api` (ADR-026); no version segment while the bundled SPA is the only consumer |
 | Format | `application/json; charset=utf-8`; PDFs as `application/pdf` |
 | Naming | resources plural kebab-case; JSON properties **camelCase**; enums as the lower-snake-case strings of the database (`purchase_receipt`) |
-| Authentication | session cookie + `X-XSRF-TOKEN` header on state-changing requests (ADR-036). Every endpoint except `POST /api/auth/login` requires a session (BR-SEC-001) |
+| Authentication | session cookie `SESSION` + `X-XSRF-TOKEN` header on state-changing requests, login included (ADR-036). The CSRF token arrives in the readable `XSRF-TOKEN` cookie on any response (the SPA calls `GET /api/auth/me` first). Every endpoint except `POST /api/auth/login` (and `GET /actuator/health`) requires a session (BR-SEC-001) |
 | Authorisation | one **permission** per endpoint (`security.md` §4), enforced on the service method (BR-SEC-002) |
 | Methods | `GET` read · `POST` create or **action** (`/confirm`, `/cancel`, `/recall`…) · `PUT` full replace of a mutable resource (with `version`) · `DELETE` only where physical removal is allowed (drafts, child rows). **No hard delete** of master/transactional data |
 | Success codes | `200` read/update/action · `201` create (+ `Location`) · `204` no body |
@@ -59,7 +59,8 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | `AUTH_REQUIRED` | 401 | no/invalid/expired credential | BR-SEC-001 |
 | `AUTH_INVALID_CREDENTIALS` | 401 | login failed (generic) | BR-SEC-001 |
 | `AUTH_ACCOUNT_DISABLED` | 403 | user inactive | BR-SEC-004 |
-| `ACCESS_DENIED` | 403 | authenticated but lacks permission | BR-SEC-002 |
+| `ACCESS_DENIED` | 403 | authenticated but lacks permission, or missing/invalid CSRF token | BR-SEC-002, ADR-036 |
+| `PASSWORD_CHANGE_REQUIRED` | 403 | temporary password must be changed first | ADR-039 |
 | `NOT_FOUND` | 404 | resource does not exist | — |
 | `METHOD_NOT_ALLOWED` | 405 | HTTP method not supported on this path (added Phase 0) | — |
 | `MEDIA_TYPE_NOT_SUPPORTED` | 415 | request `Content-Type` not supported (added Phase 0) | — |
@@ -113,8 +114,8 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 |---|---|---|---|---|
 | POST | `/api/auth/login` ● | authenticate | public | `{username, password}` → user + role + permissions + `mustChangePassword`; sets the session cookie (ADR-036); `AUTH_INVALID_CREDENTIALS`, `AUTH_ACCOUNT_DISABLED`, `RATE_LIMITED` |
 | POST | `/api/auth/logout` | delete the session | authenticated | → 204 |
-| GET | `/api/auth/me` | current user, role, permission codes | authenticated | → `CurrentUser` |
-| POST | `/api/auth/change-password` | change own password (also clears `mustChangePassword`) | authenticated | `{currentPassword, newPassword}` → 204; `VALIDATION_FAILED`, `AUTH_INVALID_CREDENTIALS` (wrong current password) |
+| GET | `/api/auth/me` | current user, role, permission codes | authenticated | → `CurrentUser {user: {id, username, fullName, email, role}, permissions: [code…], mustChangePassword}` (same body as login) |
+| POST | `/api/auth/change-password` | change own password (also clears `mustChangePassword`) | authenticated | `{currentPassword, newPassword}` → 204 and a new session id; `VALIDATION_FAILED` with field errors: `currentPassword`/`INVALID`, `newPassword`/`TOO_SHORT` or `TOO_COMMON` (a wrong current password is not a 401, which would end the SPA session) |
 
 ### 4.2 `/api/users`, `/api/roles`, `/api/permissions`
 
@@ -309,7 +310,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 - **POST `/api/auth/login`** — authenticate. **Auth:** none. **Permission:** public.
 - **Request:** `{ "username": "string(≤60)", "password": "string" }`
 - **Response 200:** `{ "user": {id, username, fullName, email, role}, "permissions": ["sale.create", …], "mustChangePassword": false }` and a new session cookie (ADR-036). The request carries the CSRF header.
-- **Validation:** both fields non-blank. **Errors:** `AUTH_INVALID_CREDENTIALS` (401), `AUTH_ACCOUNT_DISABLED` (403), `RATE_LIMITED` (429).
+- **Validation:** both fields non-blank. **Errors:** `AUTH_INVALID_CREDENTIALS` (401, same detail for unknown user and wrong password), `AUTH_ACCOUNT_DISABLED` (403, only after the right password), `RATE_LIMITED` (429 with `Retry-After`), `ACCESS_DENIED` (403, missing CSRF header).
 
 ### 5.2 Product search
 - **GET `/api/products?q=amox&categoryId=1&page=0&size=20`** — fast search for POS/catalogue. **Permission:** `product.read`.

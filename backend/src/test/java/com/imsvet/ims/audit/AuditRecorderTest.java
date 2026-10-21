@@ -7,9 +7,12 @@ import com.imsvet.ims.TestClock;
 import com.imsvet.ims.TestcontainersConfiguration;
 import com.imsvet.ims.audit.application.AuditRecorder;
 import com.imsvet.ims.audit.domain.AuditAction;
+import com.imsvet.ims.common.actor.ActingUser;
+import com.imsvet.ims.support.TestUsers;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +22,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -42,6 +48,9 @@ class AuditRecorderTest {
 
     @Autowired
     private TestClock clock;
+
+    @Autowired
+    private PasswordEncoder encoder;
 
     @BeforeEach
     void resetClock() {
@@ -84,6 +93,21 @@ class AuditRecorderTest {
 
         assertThat(jdbc.queryForObject("SELECT ip_address FROM audit_log WHERE entity = ?", String.class, ENTITY))
                 .isEqualTo("2001:db8::17");
+    }
+
+    @Test
+    void recordsTheAuthenticatedUser() {
+        long userId = new TestUsers(jdbc, encoder).create("Administrator").id();
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
+                (ActingUser) () -> userId, null, List.of()));
+        try {
+            recorder.record(AuditAction.SETTING_CHANGE, ENTITY, null, null, Map.of("value", "1"));
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        assertThat(jdbc.queryForObject("SELECT user_id FROM audit_log WHERE entity = ?", Long.class, ENTITY))
+                .isEqualTo(userId);
     }
 
     @Test

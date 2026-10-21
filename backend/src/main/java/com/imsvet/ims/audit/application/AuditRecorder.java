@@ -5,6 +5,7 @@ import com.imsvet.ims.audit.domain.AuditEntry;
 import com.imsvet.ims.audit.infrastructure.AuditEntryRepository;
 import com.imsvet.ims.common.actor.Actor;
 import com.imsvet.ims.common.actor.ActorProvider;
+import com.imsvet.ims.common.security.InternalService;
 import java.time.Clock;
 import java.util.Locale;
 import java.util.Map;
@@ -20,6 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
  * entry commits with the audited action or not at all (BR-AUDIT-003); outside a transaction it fails.
  */
 @Service
+@InternalService
 public class AuditRecorder {
 
     /** security.md §7: passwords, tokens and hashes never reach audit values. */

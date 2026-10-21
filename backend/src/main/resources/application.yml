@@ -24,6 +24,17 @@ spring:
           time_zone: UTC # ADR-010
   flyway:
     locations: classpath:db/migration
+  autoconfigure:
+    # Users come from the database only: no generated in-memory user (its password would be logged).
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  session:
+    jdbc:
+      initialize-schema: never # tables come from Flyway (V01_008, ADR-036)
+
+server:
+  servlet:
+    session:
+      timeout: 30m # ADR-036 idle timeout; cookie flags are set by SecurityConfiguration
 
 management: # ADR-031: health and info only, no details
   endpoints:
@@ -40,6 +51,16 @@ logging:
       console: ecs # ADR-031: JSON logs; the traceId MDC entry is included
 
 ims:
+  security:
+    session:
+      absolute-timeout: 10h # ADR-036
+    password:
+      min-length: 12 # ADR-039
+  bootstrap: # ADR-040: first administrator, only when the users table is empty
+    admin:
+      username: ${IMS_BOOTSTRAP_ADMIN_USERNAME:}
+      password: ${IMS_BOOTSTRAP_ADMIN_PASSWORD:}
+      full-name: ${IMS_BOOTSTRAP_ADMIN_FULL_NAME:Administrator}
   business: # ADR-033
     currency: DZD
     locale: fr-DZ

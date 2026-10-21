@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -27,6 +29,7 @@ import org.springframework.test.web.servlet.MvcResult;
  */
 @WebMvcTest(controllers = ProblemDetailsTestController.class)
 @Import({ProblemDetailsHandler.class, TraceIdFilter.class, DecimalJsonConfiguration.class})
+@WithMockUser
 class ProblemDetailsHandlerTest {
 
     private static final String PROBLEM_JSON = "application/problem+json";
@@ -58,7 +61,7 @@ class ProblemDetailsHandlerTest {
 
     @Test
     void beanValidationFailureListsFieldErrors() throws Exception {
-        mvc.perform(post("/api/test-problems/validated")
+        mvc.perform(post("/api/test-problems/validated").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"lotNumber\":\"\",\"quantity\":\"-1\"}"))
                 .andExpect(status().isBadRequest())
@@ -71,7 +74,7 @@ class ProblemDetailsHandlerTest {
 
     @Test
     void malformedJsonIsAValidationFailure() throws Exception {
-        mvc.perform(post("/api/test-problems/validated")
+        mvc.perform(post("/api/test-problems/validated").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"lotNumber\":"))
                 .andExpect(status().isBadRequest())
@@ -89,14 +92,14 @@ class ProblemDetailsHandlerTest {
 
     @Test
     void unsupportedMethodIsMethodNotAllowed() throws Exception {
-        mvc.perform(delete("/api/test-problems/business"))
+        mvc.perform(delete("/api/test-problems/business").with(csrf()))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
     }
 
     @Test
     void unsupportedMediaTypeIsReported() throws Exception {
-        mvc.perform(post("/api/test-problems/validated").contentType(MediaType.TEXT_PLAIN).content("x"))
+        mvc.perform(post("/api/test-problems/validated").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("x"))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("MEDIA_TYPE_NOT_SUPPORTED"));
     }
@@ -136,5 +139,29 @@ class ProblemDetailsHandlerTest {
     void malformedIncomingTraceIdIsReplaced() throws Exception {
         mvc.perform(get("/api/test-problems/price").header(TraceIdFilter.HEADER, "bad id\r\ninjected"))
                 .andExpect(header().string(TraceIdFilter.HEADER, matchesPattern("[0-9a-f]{32}")));
+    }
+
+    @Test
+    void methodSecurityDenialIsAccessDenied() throws Exception {
+        mvc.perform(get("/api/test-problems/forbidden"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void rateLimitCarriesRetryAfter() throws Exception {
+        mvc.perform(get("/api/test-problems/rate-limited"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("RATE_LIMITED"))
+                .andExpect(header().string("Retry-After", "60"));
+    }
+
+    @Test
+    void serviceValidationFailureListsFieldErrors() throws Exception {
+        mvc.perform(get("/api/test-problems/field-violation"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors[0].field").value("newPassword"))
+                .andExpect(jsonPath("$.errors[0].code").value("TOO_SHORT"));
     }
 }

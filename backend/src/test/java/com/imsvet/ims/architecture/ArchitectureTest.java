@@ -1,16 +1,21 @@
 package com.imsvet.ims.architecture;
 
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameEndingWith;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
+import com.imsvet.ims.common.security.InternalService;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import jakarta.persistence.Entity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,11 +45,11 @@ class ArchitectureTest {
             .layer("settings").definedBy(ROOT + "settings..")
             .layer("printing").definedBy(ROOT + "printing..")
             .layer("backup").definedBy(ROOT + "backup..")
-            .whereLayer("auth").mayOnlyAccessLayers("common", "users")
-            .whereLayer("users").mayOnlyAccessLayers("common")
+            .whereLayer("auth").mayOnlyAccessLayers("common", "users", "settings")
+            .whereLayer("users").mayOnlyAccessLayers("common", "audit")
             .whereLayer("catalog").mayOnlyAccessLayers("common", "settings")
             .whereLayer("numbering").mayOnlyAccessLayers("common")
-            .whereLayer("settings").mayOnlyAccessLayers("common")
+            .whereLayer("settings").mayOnlyAccessLayers("common", "audit")
             .whereLayer("audit").mayOnlyAccessLayers("common")
             .whereLayer("inventory").mayOnlyAccessLayers("common", "catalog", "numbering", "settings", "audit")
             .whereLayer("purchasing").mayOnlyAccessLayers(
@@ -100,6 +105,23 @@ class ArchitectureTest {
             .that().areDeclaredInClassesThat().areAnnotatedWith(RestController.class)
             .should().beAnnotatedWith(Transactional.class)
             .orShould().beAnnotatedWith(jakarta.transaction.Transactional.class);
+
+    /** BR-SEC-002: every use case declares its permission; ports for other services are marked instead. */
+    @ArchTest
+    static final ArchRule applicationServicesDeclareAPermission = methods()
+            .that().arePublic()
+            .and().areDeclaredInClassesThat().resideInAPackage(ROOT + "*.application..")
+            .and().areDeclaredInClassesThat().areAnnotatedWith(Service.class)
+            .and().areDeclaredInClassesThat().areNotAnnotatedWith(InternalService.class)
+            .should().beAnnotatedWith(PreAuthorize.class)
+            .because("security.md §3: permissions are enforced on application-service methods");
+
+    /** security.md §14: no password or hash value in anything returned to a client (flags are fine). */
+    @ArchTest
+    static final ArchRule responsesCarryNoPasswordData = noFields()
+            .that().areDeclaredInClassesThat(simpleNameEndingWith("Response").or(simpleNameEndingWith("View")))
+            .and().doNotHaveRawType(boolean.class)
+            .should().haveNameMatching("(?i).*(password|hash).*");
 
     @ArchTest
     static final ArchRule noBinaryFloatingPointFields = noFields()

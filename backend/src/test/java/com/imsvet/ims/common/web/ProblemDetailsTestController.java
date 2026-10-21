@@ -2,12 +2,15 @@ package com.imsvet.ims.common.web;
 
 import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
+import com.imsvet.ims.common.error.ValidationException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,6 +48,23 @@ class ProblemDetailsTestController {
     @GetMapping("/unexpected")
     void unexpected() {
         throw new IllegalStateException("SELECT password_hash FROM users failed at com.imsvet.Secret");
+    }
+
+    @GetMapping("/forbidden")
+    void forbidden() {
+        throw new AccessDeniedException("denied by method security");
+    }
+
+    @GetMapping("/rate-limited")
+    void rateLimited() {
+        throw new BusinessException(ErrorCode.RATE_LIMITED, "Too many attempts.",
+                Map.of(ProblemDetailsHandler.RETRY_AFTER_SECONDS, 60L));
+    }
+
+    @GetMapping("/field-violation")
+    void fieldViolation() {
+        throw new ValidationException("Invalid.",
+                List.of(new ValidationException.Violation("newPassword", "TOO_SHORT", "Too short.")));
     }
 
     @GetMapping("/price")

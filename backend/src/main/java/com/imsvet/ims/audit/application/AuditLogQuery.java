@@ -11,14 +11,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Searches the audit log, newest first. The permission check ({@code audit.read}) is added with the
- * endpoint once the security chain exists (ADR-036).
+ * Searches the audit log, newest first (permission {@code audit.read}, security.md §4).
  */
 @Service
 public class AuditLogQuery {
@@ -37,6 +37,7 @@ public class AuditLogQuery {
         this.json = json;
     }
 
+    @PreAuthorize("hasAuthority('audit.read')")
     @Transactional(readOnly = true)
     public PageResponse<AuditEntryView> search(AuditLogFilter filter, int page, int size) {
         if (filter.from() != null && filter.to() != null && filter.from().isAfter(filter.to())) {

@@ -2,6 +2,7 @@ package com.imsvet.ims.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.imsvet.ims.MySqlContainerConfiguration;
 import com.imsvet.ims.TestcontainersConfiguration;
 import com.imsvet.ims.common.web.TraceIdFilter;
 import java.util.List;
@@ -21,8 +22,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * ADR-031: only Actuator health and info are exposed, health shows no details, logs are JSON with the
- * request trace id and without secrets.
+ * ADR-031 over real HTTP: health is public without details, every other actuator endpoint needs a session
+ * (BR-SEC-001), logs are JSON with the request trace id and without secrets.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
@@ -46,34 +47,38 @@ class HealthAndLoggingTest {
     }
 
     @Test
-    void infoIsExposed() {
-        client.get().uri("/actuator/info").exchange().expectStatus().isOk();
-    }
-
-    @Test
-    void otherActuatorEndpointsAreNotExposed() {
-        for (String endpoint : new String[] {"env", "beans", "configprops", "heapdump", "loggers", "mappings"}) {
+    void everyOtherActuatorEndpointRequiresAuthentication() {
+        for (String endpoint : new String[] {"info", "env", "beans", "configprops", "heapdump", "loggers", "mappings"}) {
             client.get().uri("/actuator/" + endpoint).exchange()
-                    .expectStatus().isNotFound()
+                    .expectStatus().isUnauthorized()
                     .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
-                    .expectBody().jsonPath("$.code").isEqualTo("NOT_FOUND");
+                    .expectBody().jsonPath("$.code").isEqualTo("AUTH_REQUIRED");
         }
     }
 
     /**
      * The ECS format nests fields ({@code {"log":{"level":"INFO"}}}), so lines are parsed, not searched.
-     * {@code /api/test-problems/stale} logs at INFO inside the request, which is where the MDC trace id applies.
+     * A failed login logs a security event inside the request, which is where the MDC trace id applies; the
+     * submitted password and other secrets must never appear in any line (ADR-031).
      */
     @Test
     void applicationLogsAreStructuredJsonWithTraceIdAndNoSecrets(CapturedOutput output) {
         String traceId = "logtest-" + UUID.randomUUID();
+        String password = "canary-password-" + UUID.randomUUID();
         String bearerToken = "canary-bearer-" + UUID.randomUUID();
         String queryToken = "canary-query-" + UUID.randomUUID();
-        client.get().uri("/api/test-problems/stale?token=" + queryToken)
+        String csrf = client.get().uri("/api/auth/me").exchange().returnResult()
+                .getResponseCookies().getFirst("XSRF-TOKEN").getValue();
+
+        client.post().uri("/api/auth/login?token=" + queryToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .cookie("XSRF-TOKEN", csrf)
+                .header("X-XSRF-TOKEN", csrf)
                 .header(TraceIdFilter.HEADER, traceId)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken)
+                .body("{\"username\":\"nobody-logtest\",\"password\":\"" + password + "\"}")
                 .exchange()
-                .expectStatus().isEqualTo(409);
+                .expectStatus().isUnauthorized();
 
         List<String> lines = output.getOut().lines().filter(l -> l.startsWith("{")).toList();
         List<JsonNode> entries = lines.stream().map(JSON::readTree).toList();
@@ -88,9 +93,11 @@ class HealthAndLoggingTest {
                 .singleElement()
                 .satisfies(entry -> {
                     assertThat(entry.at("/log/level").asString()).isEqualTo("INFO");
-                    assertThat(entry.at("/message").asString()).startsWith("Concurrent modification");
+                    assertThat(entry.at("/log/logger").asString()).isEqualTo("ims.security");
+                    assertThat(entry.path("event").asString()).isEqualTo("login_failed");
+                    assertThat(entry.path("username").asString()).isEqualTo("nobody-logtest");
                 });
         assertThat(lines).noneSatisfy(line -> assertThat(line)
-                .containsAnyOf(TestcontainersConfiguration.MYSQL_PASSWORD, bearerToken, queryToken));
+                .containsAnyOf(MySqlContainerConfiguration.MYSQL_PASSWORD, password, bearerToken, queryToken));
     }
 }
