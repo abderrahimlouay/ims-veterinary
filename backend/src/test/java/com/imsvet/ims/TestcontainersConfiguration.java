@@ -21,6 +21,8 @@ public class TestcontainersConfiguration {
     @Bean
     @ServiceConnection
     MySQLContainer mysqlContainer() {
-        return new MySQLContainer(MYSQL_IMAGE).withPassword(MYSQL_PASSWORD);
+        // ADR-043: binary logging is on by default; this lets the non-SUPER user create triggers (ADR-017).
+        return new MySQLContainer(MYSQL_IMAGE).withPassword(MYSQL_PASSWORD)
+                .withCommand("--log-bin-trust-function-creators=1");
     }
 }

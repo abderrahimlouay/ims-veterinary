@@ -13,7 +13,7 @@ Java 21 · Spring Boot 4.1 · Maven · MySQL 8.4 LTS · Flyway · React 19 + Vit
 ## Prerequisites
 - JDK 21, Node.js 24 with npm.
 - Docker, usable **without sudo** by your user (Testcontainers starts MySQL for the backend tests). On Linux: `sudo usermod -aG docker $USER`, then log out and in.
-- For running the backend outside tests: a MySQL 8.4 database and the variables of `.env.example`.
+- For running the backend outside tests: a MySQL 8.4 database started with `log_bin_trust_function_creators=1` (ADR-043; Flyway creates triggers) and the variables of `.env.example`.
 
 ## Commands
 

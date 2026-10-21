@@ -232,7 +232,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | Server/JDBC time zone | UTC | ADR-010 |
 | Isolation | `READ COMMITTED` (pool setting) | ADR-013 |
 | `innodb_lock_wait_timeout` | short (e.g. 5–10 s) `[REC]` | POS must fail fast instead of freezing |
-| `log_bin_trust_function_creators` | `1` if binlog enabled and migration user lacks elevated rights | trigger creation |
+| `log_bin_trust_function_creators` | **`1` on every server** (tests, dev, prod); binary logging stays on | trigger creation without SUPER (ADR-043) |
 | DB accounts | `migrator` (DDL), `app` (DML only; **no `UPDATE/DELETE/TRUNCATE` on `stock_movements`, `audit_log`**), `backup` (read + lock) | ADR-008, security |
 | Backups | before every production migration | non-transactional DDL |
 
