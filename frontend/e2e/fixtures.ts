@@ -7,3 +7,11 @@ export const ADMIN = {
   bootstrapPassword: 'E2e-bootstrap-admin-2026', // gitleaks:allow
   newPassword: 'E2e-chosen-admin-pass-2026', // gitleaks:allow
 }
+
+/** Created through the users page by J11. */
+export const SELLER = {
+  username: 'e2e.seller',
+  fullName: 'E2E Seller',
+  initialPassword: 'E2e-seller-initial-2026', // gitleaks:allow
+  newPassword: 'E2e-seller-chosen-2026', // gitleaks:allow
+}
