@@ -13,6 +13,8 @@ import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { formatDateTime } from '../../lib/format'
 import { placeServerErrors } from '../../lib/formErrors'
+import { IngredientsPanel } from './IngredientsPanel'
+import { SubstitutesPanel } from './SubstitutesPanel'
 import { hasPermission, useCurrentUser } from '../auth'
 import { usePublicSettings } from '../settings'
 import {
@@ -203,6 +205,40 @@ export function NewProductPage() {
   )
 }
 
+const TABS = ['general', 'ingredients', 'substitutes'] as const
+
+/** The detail tabs of frontend.md §4.1; each slice adds its own. */
+function ProductTabs({ product }: { product: ProductDetail }) {
+  const { t } = useTranslation()
+  const { data: current } = useCurrentUser()
+  const [tab, setTab] = useState<(typeof TABS)[number]>('general')
+  return (
+    <>
+      <div role="tablist" aria-label={product.commercialName} className="flex gap-1 border-b border-line">
+        {TABS.map((name) => (
+          <button
+            key={name}
+            type="button"
+            role="tab"
+            aria-selected={tab === name}
+            onClick={() => setTab(name)}
+            className={`px-3 py-2 text-sm font-medium border-b-2 ${tab === name ? 'border-brand text-brand' : 'border-transparent text-ink'}`}
+          >
+            {t(`catalog.products.tabs.${name}`)}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel">
+        {tab === 'general' && <ProductForm key={product.id} product={product} onSaved={() => undefined} />}
+        {tab === 'ingredients' && (
+          <IngredientsPanel key={product.version} product={product} editable={hasPermission(current, 'product.update')} />
+        )}
+        {tab === 'substitutes' && <SubstitutesPanel productId={product.id} />}
+      </div>
+    </>
+  )
+}
+
 /** `/products/:id` (`product.read`; editing `product.update`; archive `product.archive`). */
 export function ProductDetailPage() {
   const { t } = useTranslation()
@@ -237,7 +273,7 @@ export function ProductDetailPage() {
         )}
       </div>
       {setArchived.error instanceof ApiError && <Alert tone="danger">{problemMessage(setArchived.error.problem, t)}</Alert>}
-      <ProductForm key={p.id} product={p} onSaved={() => undefined} />
+      <ProductTabs product={p} />
     </section>
   )
 }

@@ -2,7 +2,9 @@ package com.imsvet.ims.catalog.api;
 
 import com.imsvet.ims.catalog.application.ProductCatalog;
 import com.imsvet.ims.catalog.application.ProductCatalog.ProductInput;
+import com.imsvet.ims.catalog.application.ProductIngredients;
 import com.imsvet.ims.catalog.application.ProductViews.ProductDetail;
+import com.imsvet.ims.catalog.application.ProductViews.ProductIngredientView;
 import com.imsvet.ims.catalog.application.ProductViews.ProductSummary;
 import com.imsvet.ims.common.paging.PageResponse;
 import jakarta.validation.Valid;
@@ -11,6 +13,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,10 +46,15 @@ class ProductController {
         }
     }
 
-    private final ProductCatalog catalog;
+    record IngredientLineRequest(@NotNull Integer ingredientId, String strength) {
+    }
 
-    ProductController(ProductCatalog catalog) {
+    private final ProductCatalog catalog;
+    private final ProductIngredients ingredients;
+
+    ProductController(ProductCatalog catalog, ProductIngredients ingredients) {
         this.catalog = catalog;
+        this.ingredients = ingredients;
     }
 
     @GetMapping
@@ -69,6 +77,18 @@ class ProductController {
     @PutMapping("/{id}")
     ProductDetail update(@PathVariable long id, @Valid @RequestBody ProductWriteRequest body) {
         return catalog.update(id, body.input(), body.version() == null ? -1 : body.version());
+    }
+
+    @PutMapping("/{id}/ingredients")
+    List<ProductIngredientView> replaceIngredients(@PathVariable long id,
+            @RequestBody List<@Valid IngredientLineRequest> body) {
+        return ingredients.replace(id, body.stream()
+                .map(l -> new ProductIngredients.IngredientLine(l.ingredientId(), l.strength())).toList());
+    }
+
+    @GetMapping("/{id}/substitutes")
+    List<ProductSummary> substitutes(@PathVariable long id) {
+        return ingredients.substitutes(id);
     }
 
     @PostMapping("/{id}/archive")

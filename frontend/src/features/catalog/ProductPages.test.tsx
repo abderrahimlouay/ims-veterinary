@@ -26,6 +26,7 @@ function aProduct(overrides: Record<string, unknown> = {}) {
     maxStock: null,
     reorderPoint: '0.000',
     archived: false,
+    ingredients: [],
     createdAt: '2026-10-20T08:00:00Z',
     updatedAt: '2026-10-20T08:00:00Z',
     version: 0,
@@ -172,5 +173,64 @@ describe('product pages', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     await screen.findByText('Modifications enregistrées.')
     expect(body).toMatchObject({ salePrice: '0.015', purchasePrice: '0.0000' })
+  })
+
+  it('edits the active ingredients as a set and lists substitutes', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    let saved: unknown
+    server.use(
+      http.get('/api/products/5', () =>
+        HttpResponse.json(aProduct({ ingredients: [{ ingredient: { id: 3, name: 'Amoxicilline', code: null, country: null }, strength: '500 mg' }] })),
+      ),
+      http.get('/api/active-ingredients', () =>
+        HttpResponse.json([
+          { id: 3, name: 'Amoxicilline', code: null, country: null },
+          { id: 4, name: 'Acide clavulanique', code: null, country: null },
+        ]),
+      ),
+      http.put('/api/products/5/ingredients', async ({ request }) => {
+        saved = await request.json()
+        return HttpResponse.json([])
+      }),
+      http.get('/api/products/5/substitutes', () =>
+        HttpResponse.json([{ id: 9, sku: 'CLAV-1', commercialName: 'Clavamox', category: null, baseUnit: 'tablet', salePrice: '1.5000', archived: false }]),
+      ),
+    )
+    renderApp('/products/5')
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Principes actifs' }))
+    expect(screen.getByLabelText('Dosage 1')).toHaveValue('500 mg')
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter un principe actif' }))
+    await userEvent.selectOptions(screen.getByLabelText('Principe actif 2'), '4')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await screen.findByText('Modifications enregistrées.')
+    expect(saved).toEqual([
+      { ingredientId: 3, strength: '500 mg' },
+      { ingredientId: 4, strength: null },
+    ])
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Substituts' }))
+    expect(await screen.findByRole('link', { name: 'Clavamox' })).toHaveAttribute('href', '/products/9')
+  })
+
+  it('reports a duplicated ingredient', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    server.use(
+      http.get('/api/products/5', () => HttpResponse.json(aProduct())),
+      http.get('/api/active-ingredients', () => HttpResponse.json([{ id: 3, name: 'Amoxicilline', code: null, country: null }])),
+      http.put('/api/products/5/ingredients', () =>
+        problem(400, 'VALIDATION_FAILED', { errors: [{ field: 'ingredients', code: 'DUPLICATE', message: 'x' }] }),
+      ),
+    )
+    renderApp('/products/5')
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Principes actifs' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter un principe actif' }))
+    await userEvent.selectOptions(screen.getByLabelText('Principe actif 1'), '3')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Un principe actif figure deux fois.')
   })
 })

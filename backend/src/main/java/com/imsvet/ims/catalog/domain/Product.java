@@ -1,6 +1,8 @@
 package com.imsvet.ims.catalog.domain;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -12,6 +14,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import org.hibernate.annotations.OptimisticLock;
 
 /**
  * A product sheet (FR-PROD-001/002/009, database.md §3.2). Archived products stay readable and editable;
@@ -85,6 +90,12 @@ public class Product {
     @Version
     private long version;
 
+    /** Edited on its own tab: excluded from the optimistic lock so it causes no false conflict there. */
+    @ElementCollection
+    @CollectionTable(name = "product_active_ingredients", joinColumns = @JoinColumn(name = "product_id"))
+    @OptimisticLock(excluded = true)
+    private List<ProductIngredient> ingredients = new ArrayList<>();
+
     protected Product() {
     }
 
@@ -102,6 +113,16 @@ public class Product {
         this.purchasePrice = newPurchasePrice;
         this.salePrice = newSalePrice;
         this.updatedAt = now;
+    }
+
+    /** Replaces the whole ingredient set (FR-PROD-004). */
+    public void replaceIngredients(List<ProductIngredient> newIngredients) {
+        ingredients.clear();
+        ingredients.addAll(newIngredients);
+    }
+
+    public List<ProductIngredient> ingredients() {
+        return List.copyOf(ingredients);
     }
 
     public void archive(Instant now) {

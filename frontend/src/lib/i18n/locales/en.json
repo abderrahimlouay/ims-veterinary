@@ -226,7 +226,27 @@
       "archive": "Archive",
       "restore": "Restore",
       "reload": "Reload the latest version",
-      "pricesReadOnly": "Prices can be changed only with the “edit prices” permission."
+      "pricesReadOnly": "Prices can be changed only with the “edit prices” permission.",
+      "tabs": {
+        "general": "General",
+        "ingredients": "Active ingredients",
+        "substitutes": "Substitutes"
+      }
+    },
+    "ingredients": {
+      "none": "No active ingredient.",
+      "ingredient": "Active ingredient {{n}}",
+      "strength": "Strength {{n}}",
+      "remove": "Remove line {{n}}",
+      "add": "Add an active ingredient",
+      "errors": {
+        "DUPLICATE": "An ingredient is listed twice.",
+        "UNKNOWN": "Unknown active ingredient.",
+        "SIZE": "The strength is too long."
+      }
+    },
+    "substitutes": {
+      "none": "No product shares its active ingredients."
     }
   },
   "fieldErrors": {
