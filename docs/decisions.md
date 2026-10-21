@@ -308,6 +308,13 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** no guard with a documented SQL recovery (B); both (C).
 - **Consequences:** No new error code. Covered by user-administration tests (`testing.md` §7). `security.md` §3, `api.md` §4.2.
 
+## ADR-043 — MySQL servers run with `log_bin_trust_function_creators=1`
+- **Status:** Accepted (user decision, 2026-10-21, Phase 1 slice 1)
+- **Context:** MySQL 8.4 enables binary logging by default; creating a trigger (ADR-017) then requires the SUPER privilege or `log_bin_trust_function_creators=1`. The first trigger migration (`V01_005`) failed with error 1419 under the normal database user.
+- **Decision:** Every MySQL server of the project — test containers, development, production — runs with `log_bin_trust_function_creators=1` (server option or `my.cnf`). Binary logging stays enabled (needed for point-in-time recovery, OD-021); no account receives SUPER.
+- **Alternatives:** (B) a privileged migrator account for Flyway (two datasources, root in tests); (C) no triggers (weakens BR-AUDIT-002 and later the stock ledger guard).
+- **Consequences:** `TestcontainersConfiguration` starts MySQL with the option; `README.md` prerequisites and `database-migration.md` §9 make it mandatory. The relaxed check concerns stored routines and triggers; migrations create only the append-only triggers of ADR-017, since business logic stays out of the database (ADR-007).
+
 ---
 
 # Part B — Open Decisions
