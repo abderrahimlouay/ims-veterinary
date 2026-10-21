@@ -6,7 +6,11 @@
   "nav": {
     "label": "Navigation principale",
     "home": "Accueil",
-    "account": "Mon compte"
+    "account": "Mon compte",
+    "users": "Utilisateurs",
+    "roles": "Rôles et permissions",
+    "settings": "Paramètres",
+    "audit": "Journal d'audit"
   },
   "language": {
     "label": "Langue",
@@ -69,5 +73,95 @@
     "NETWORK_ERROR": "Le serveur est injoignable. Vérifiez la connexion et réessayez.",
     "INTERNAL_ERROR": "Une erreur inattendue est survenue (référence {{traceId}}).",
     "UNKNOWN": "La demande a échoué (référence {{traceId}})."
+  },
+  "pager": {
+    "label": "Pagination",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "position": "Page {{page}} sur {{pages}} ({{total}} au total)"
+  },
+  "admin": {
+    "all": "Tous",
+    "save": "Enregistrer",
+    "saved": "Modifications enregistrées.",
+    "close": "Fermer",
+    "stale": "Cette fiche a été modifiée par quelqu'un d'autre. Rechargez la page avant de modifier.",
+    "fieldErrors": {
+      "REQUIRED": "Ce champ est obligatoire.",
+      "DUPLICATE": "Cette valeur est déjà utilisée.",
+      "EMAIL": "Adresse e-mail invalide.",
+      "TOO_SHORT": "Utilisez au moins {{min}} caractères.",
+      "TOO_COMMON": "Ce mot de passe est trop courant.",
+      "UNKNOWN": "Valeur inconnue.",
+      "INVALID_FORMAT": "Format invalide.",
+      "READ_ONLY": "Ce paramètre ne peut pas être modifié ici."
+    },
+    "users": {
+      "title": "Utilisateurs",
+      "new": "Nouvel utilisateur",
+      "search": "Rechercher",
+      "role": "Rôle",
+      "status": "Statut",
+      "active": "Actif",
+      "inactive": "Désactivé",
+      "empty": "Aucun utilisateur ne correspond.",
+      "username": "Nom d'utilisateur",
+      "fullName": "Nom complet",
+      "email": "E-mail",
+      "lastLogin": "Dernière connexion",
+      "createdAt": "Créé le",
+      "password": "Mot de passe",
+      "mustChange": "Temporaire, à changer à la prochaine connexion",
+      "initialPassword": "Mot de passe initial",
+      "initialPasswordHint": "L'utilisateur devra le changer à sa première connexion.",
+      "deactivate": "Désactiver",
+      "activate": "Réactiver",
+      "resetPassword": "Réinitialiser le mot de passe",
+      "temporaryPassword": "Mot de passe temporaire :",
+      "temporaryPasswordOnce": "Communiquez-le à l'utilisateur : il ne sera plus affiché."
+    },
+    "roles": {
+      "title": "Rôles et permissions",
+      "permission": "Permission",
+      "reviewButton": "Vérifier les modifications ({{count}})",
+      "review": "Modifications à enregistrer",
+      "confirm": "Enregistrer ces modifications",
+      "back": "Revenir à la grille"
+    },
+    "settings": {
+      "title": "Paramètres",
+      "readOnly": "lecture seule",
+      "updatedAt": "Modifié le {{at}}",
+      "keys": {
+        "expiry_alert_days": "Seuils d'alerte de péremption (jours)",
+        "default_vat_rate": "Taux de TVA par défaut (%)",
+        "login_max_failures": "Échecs de connexion avant blocage",
+        "login_window_minutes": "Fenêtre de comptage (minutes)",
+        "login_lockout_minutes": "Durée du blocage (minutes)",
+        "currency": "Devise",
+        "locale": "Format régional",
+        "business_time_zone": "Fuseau horaire"
+      },
+      "hints": {
+        "expiry_alert_days": "Trois nombres décroissants : avis, avertissement, critique (ex. 60,30,15).",
+        "default_vat_rate": "De 0 à 100, deux décimales au plus.",
+        "locale": "Par exemple fr-DZ."
+      }
+    },
+    "audit": {
+      "title": "Journal d'audit",
+      "action": "Action",
+      "entity": "Objet",
+      "from": "Du",
+      "to": "Au",
+      "date": "Date",
+      "user": "Utilisateur",
+      "ip": "Adresse IP",
+      "details": "Détails",
+      "system": "Système",
+      "oldValues": "Avant",
+      "newValues": "Après",
+      "empty": "Aucune entrée ne correspond."
+    }
   }
 }
