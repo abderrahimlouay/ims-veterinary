@@ -230,7 +230,8 @@
       "tabs": {
         "general": "General",
         "ingredients": "Active ingredients",
-        "substitutes": "Substitutes"
+        "substitutes": "Substitutes",
+        "species": "Species and withdrawal periods"
       }
     },
     "ingredients": {
@@ -247,6 +248,30 @@
     },
     "substitutes": {
       "none": "No product shares its active ingredients."
+    },
+    "species": {
+      "targets": "Target species",
+      "saveTargets": "Save target species",
+      "periods": "Withdrawal periods (days)",
+      "notSpecifiedHint": "An empty field means \"not specified\", not zero.",
+      "species": "Species {{n}}",
+      "meatDays": "Meat {{n}}",
+      "milkDays": "Milk {{n}}",
+      "eggsDays": "Eggs {{n}}",
+      "addPeriod": "Add a species",
+      "savePeriods": "Save withdrawal periods",
+      "noPeriods": "No withdrawal period.",
+      "notSpecified": "not specified",
+      "speciesHeader": "Species",
+      "meatDaysHeader": "Meat",
+      "milkDaysHeader": "Milk",
+      "eggsDaysHeader": "Eggs",
+      "errors": {
+        "DUPLICATE": "A species is listed twice.",
+        "NOT_NEGATIVE": "Days cannot be negative.",
+        "RANGE": "Too many days.",
+        "UNKNOWN": "Unknown species."
+      }
     }
   },
   "fieldErrors": {

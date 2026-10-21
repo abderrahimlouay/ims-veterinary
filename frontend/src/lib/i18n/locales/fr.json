@@ -230,7 +230,8 @@
       "tabs": {
         "general": "Général",
         "ingredients": "Principes actifs",
-        "substitutes": "Substituts"
+        "substitutes": "Substituts",
+        "species": "Espèces et délais d'attente"
       }
     },
     "ingredients": {
@@ -247,6 +248,30 @@
     },
     "substitutes": {
       "none": "Aucun produit ne partage ses principes actifs."
+    },
+    "species": {
+      "targets": "Espèces cibles",
+      "saveTargets": "Enregistrer les espèces cibles",
+      "periods": "Délais d'attente (jours)",
+      "notSpecifiedHint": "Un champ vide signifie « non précisé », pas zéro.",
+      "species": "Espèce {{n}}",
+      "meatDays": "Viande {{n}}",
+      "milkDays": "Lait {{n}}",
+      "eggsDays": "Œufs {{n}}",
+      "addPeriod": "Ajouter une espèce",
+      "savePeriods": "Enregistrer les délais d'attente",
+      "noPeriods": "Aucun délai d'attente.",
+      "notSpecified": "non précisé",
+      "speciesHeader": "Espèce",
+      "meatDaysHeader": "Viande",
+      "milkDaysHeader": "Lait",
+      "eggsDaysHeader": "Œufs",
+      "errors": {
+        "DUPLICATE": "Une espèce figure deux fois.",
+        "NOT_NEGATIVE": "Un délai ne peut pas être négatif.",
+        "RANGE": "Délai trop grand.",
+        "UNKNOWN": "Espèce inconnue."
+      }
     }
   },
   "fieldErrors": {

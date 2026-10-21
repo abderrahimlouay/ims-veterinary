@@ -230,7 +230,8 @@
       "tabs": {
         "general": "عام",
         "ingredients": "المواد الفعالة",
-        "substitutes": "البدائل"
+        "substitutes": "البدائل",
+        "species": "الأنواع وفترات السحب"
       }
     },
     "ingredients": {
@@ -247,6 +248,30 @@
     },
     "substitutes": {
       "none": "لا يوجد منتج يشترك في موادّه الفعالة."
+    },
+    "species": {
+      "targets": "الأنواع المستهدفة",
+      "saveTargets": "حفظ الأنواع المستهدفة",
+      "periods": "فترات السحب (أيام)",
+      "notSpecifiedHint": "الحقل الفارغ يعني «غير محدد» وليس صفرًا.",
+      "species": "النوع {{n}}",
+      "meatDays": "اللحم {{n}}",
+      "milkDays": "الحليب {{n}}",
+      "eggsDays": "البيض {{n}}",
+      "addPeriod": "إضافة نوع",
+      "savePeriods": "حفظ فترات السحب",
+      "noPeriods": "لا توجد فترة سحب.",
+      "notSpecified": "غير محدد",
+      "speciesHeader": "النوع",
+      "meatDaysHeader": "اللحم",
+      "milkDaysHeader": "الحليب",
+      "eggsDaysHeader": "البيض",
+      "errors": {
+        "DUPLICATE": "نوع مذكور مرتين.",
+        "NOT_NEGATIVE": "لا يمكن أن تكون الفترة سالبة.",
+        "RANGE": "الفترة كبيرة جدًا.",
+        "UNKNOWN": "نوع غير معروف."
+      }
     }
   },
   "fieldErrors": {
