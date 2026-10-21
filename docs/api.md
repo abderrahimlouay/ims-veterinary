@@ -296,8 +296,9 @@ Scope of revenue/margin per OD-002 / OD-003 and BR-RPT-001 (net of credit notes)
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
 | GET | `/api/audit-logs` | filters `entity`, `entityId`, `userId`, `action`, `from`, `to` (business dates, both inclusive, business time zone); newest first | `audit.read` | page of `AuditEntry {id, userId, action, entity, entityId, oldValues, newValues, ipAddress, createdAt}` (read-only; values are JSON objects) |
-| GET | `/api/settings/public` | settings needed by the UI (alert thresholds, default VAT, locale) | authenticated | |
-| GET/PUT | `/api/settings`, `/api/settings/{key}` | read / change setting (audited) | `settings.manage` | `VALIDATION_FAILED` on bad format |
+| GET | `/api/settings/public` | settings needed by the UI | authenticated | → `{expiryAlertDays: [60,30,15], defaultVatRate: "9.00", currency, locale, timeZone}` (no security settings) |
+| GET | `/api/settings`, `/api/settings/{key}` | list / read settings | `settings.manage` | `[SettingView {key, value, description, editable, updatedAt}]`; unknown key → `NOT_FOUND` |
+| PUT | `/api/settings/{key}` | change one setting (audited `SETTING_CHANGE` when the value changes) | `settings.manage` | `{value}` → `SettingView` with the canonical value; `VALIDATION_FAILED` field `value`: `INVALID_FORMAT` or `READ_ONLY` (currency, time zone). No batch update (ADR-044) |
 | GET | `/api/backups` | backup log | `backup.manage` | page |
 | POST | `/api/backups` | run a backup now **[OPEN OD-021]** | `backup.manage` | → `BackupRecord` |
 | GET | `/api/backups/{id}/download` | download (audited) | `backup.manage` | stream |

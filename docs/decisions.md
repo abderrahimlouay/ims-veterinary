@@ -251,7 +251,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
   - **Currency:** Algerian dinar, ISO code **DZD**, 2 decimal places.
   - **Formatting locale:** `fr-DZ` for numbers, dates and currency regardless of UI language `[REC]`, so amounts read the same for every user (Latin digits); can be revisited per document in Phase 10.
   - **Business time zone:** `Africa/Algiers` (used for "today", expiry and document year; storage stays UTC per ADR-010).
-  - These values are **settings with defaults**, not literals scattered in code (CLAUDE.md §11): backend `ims.business.*` configuration in Phase 0, moved to/overridable by `app_settings` in Phase 1.
+  - These values are **settings with defaults**, not literals scattered in code (CLAUDE.md §11): backend `ims.business.*` configuration in Phase 0, moved to/overridable by `app_settings` in Phase 1. *Done 2026-10-21 by ADR-044: rows in `app_settings`, only the locale editable.*
 - **Alternatives:** EUR/fr-FR (prototype); French only (no RTL).
 - **Consequences:** The i18n layer (i18next) with `fr`, `ar`, `en` catalogues and RTL switching is built in Phase 0; every UI string is externalised. Document templates (Phase 10) must support Arabic text. DR-014 currency/locale part is resolved.
 
@@ -314,6 +314,19 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** Every MySQL server of the project — test containers, development, production — runs with `log_bin_trust_function_creators=1` (server option or `my.cnf`). Binary logging stays enabled (needed for point-in-time recovery, OD-021); no account receives SUPER.
 - **Alternatives:** (B) a privileged migrator account for Flyway (two datasources, root in tests); (C) no triggers (weakens BR-AUDIT-002 and later the stock ledger guard).
 - **Consequences:** `TestcontainersConfiguration` starts MySQL with the option; `README.md` prerequisites and `database-migration.md` §9 make it mandatory. The relaxed check concerns stored routines and triggers; migrations create only the append-only triggers of ADR-017, since business logic stays out of the database (ADR-007).
+
+## ADR-044 — Settings API, value formats and business settings
+- **Status:** Accepted (user decision, 2026-10-21, Phase 1 settings slice)
+- **Context:** `api.md` listed `PUT /api/settings` without semantics; BR-LOT-010 gave `expiry_alert_days` only as "positive integers"; ADR-033 moves currency, locale and time zone to `app_settings` in Phase 1 without saying whether they are editable.
+- **Decision:**
+  - Endpoints: `GET /api/settings/public` (authenticated), `GET /api/settings`, `GET /api/settings/{key}`, `PUT /api/settings/{key}` (`settings.manage`). **No batch `PUT /api/settings`.**
+  - Keys exist only through migrations; an unknown key is `NOT_FOUND`. Each key has a format; the value is validated, stored in canonical form and every real change is audited `SETTING_CHANGE` (an unchanged value is not).
+  - Formats: `expiry_alert_days` = **exactly three distinct positive integers, strictly decreasing** (notice, warning, critical), e.g. `60,30,15`; `default_vat_rate` = 0–100 with at most two decimals, stored with two; `login_*` = integers ≥ 1; `locale` = a language tag the JVM supports; `currency` = ISO 4217; `business_time_zone` = an IANA zone.
+  - `currency`, `locale`, `business_time_zone` are `app_settings` rows (seeded `DZD`, `fr-DZ`, `Africa/Algiers`); the `ims.business.*` configuration is removed. **Only `locale` is editable**; `currency` and `business_time_zone` are read-only (`VALIDATION_FAILED`, code `READ_ONLY`) because changing them would relabel stored amounts or move "today" for expiry and document years — they change only through a reviewed migration.
+  - The public view holds the thresholds, default VAT, currency, locale and time zone — never the security settings.
+  - The application refuses to start when stored settings and definitions disagree (missing, unknown or malformed key).
+- **Alternatives:** batch update in one transaction; editable currency and time zone; keeping the business values in configuration.
+- **Consequences:** `api.md` §4.14, BR-LOT-010, `database.md` §3.1; `BusinessSettings` (common port) is implemented by the `settings` module.
 
 ---
 
