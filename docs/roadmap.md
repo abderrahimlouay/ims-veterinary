@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0 and 1 complete (tags `phase-0-done`, `phase-1-done`); Phases 2–12 not started
+> **Status:** Phases 0–2 complete (tags `phase-0-done`, `phase-1-done`, `phase-2-done`); Phases 3–12 not started
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-10-21
 
@@ -67,6 +67,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** product list/detail pages, reference-data screens, search UX.
 - **Tests:** BR-PROD-*; search performance dataset of 50,000 products (NFR-002, `testing.md` §8.1).
 - **Completion criteria:** FR-PROD-001..005, 008, 009 done; search < 1 s on the reference dataset; price changes audited.
+- **Delivered (2026-10-21):** PRs #13–#19 (decisions, then slices catalog-reference, product-core, product-prices, ingredients-substitutes, species-withdrawal, product-search); ADR-047…054; migrations V02_001…006. Search on the 50,000-product dataset: 71–153 ms per search in CI. Within the agreed scope split, FR-PROD-003 barcodes and FR-PROD-006/007 units are Phase 3; stock columns, the in-stock filter and stock-aware substitutes are Phase 4; withdrawal warnings on documents Phases 7/10; refusal of archived products on documents from Phase 5.
 
 ## Phase 3 — Lots & units
 - **Objective:** sell/store in multiple units and trace by lot.
