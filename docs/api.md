@@ -138,10 +138,10 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 |---|---|---|---|---|
 | GET | `/api/products` ● | search/list: `q` (name/SKU/active ingredient, contains, ADR-048), `categoryId`, `manufacturerId`, `ingredientId`, `speciesId` (target or withdrawal species, ADR-047), `includeArchived`; from Phase 3 `barcode`, from Phase 4 `inStockOnly` | `product.read` | page of `ProductSummary` (`sellableQtyBase`, `stockStatus` from Phase 4) |
 | GET | `/api/products/by-barcode/{code}` | scan lookup | `product.read` | `ProductSummary` + matched unit **[OPEN OD-019]**; `NOT_FOUND` |
-| POST | `/api/products` | create | `product.create` | `ProductWriteRequest` → 201 `ProductDetail`; `PRODUCT_SKU_DUPLICATE`, `VALIDATION_FAILED` |
-| GET | `/api/products/{id}` | detail (units, barcodes, ingredients, withdrawal periods) | `product.read` | `ProductDetail` |
-| PUT | `/api/products/{id}` | update (price fields need `price.edit` and are audited) | `product.update` (+ `price.edit`) | `ProductWriteRequest` + `version`; `CONCURRENT_MODIFICATION` |
-| POST | `/api/products/{id}/archive` · `/restore` | archive / restore | `product.archive` | → 200 |
+| POST | `/api/products` | create | `product.create` | `ProductWriteRequest {sku, commercialName, categoryId?, dosageFormId?, manufacturerId?, baseUnit, divisible, vatRate? (default: `default_vat_rate` setting), minStock?, maxStock?, reorderPoint?}` → 201 `ProductDetail` + `Location`; `PRODUCT_SKU_DUPLICATE` (`context.field = sku`), `VALIDATION_FAILED` (field codes `REQUIRED`, `UNKNOWN`, `RANGE`, `NOT_NEGATIVE`, `SCALE`, `WHOLE_NUMBER` for a non-divisible product, `BELOW_MIN`) |
+| GET | `/api/products/{id}` | detail | `product.read` | `ProductDetail {id, sku, commercialName, category, dosageForm, manufacturer (each `{id, name, code, country}` or null), baseUnit, divisible, vatRate, purchasePrice, salePrice, minStock, maxStock, reorderPoint, archived, createdAt, updatedAt, version}`; ingredients, species and withdrawal periods from their slices, units and barcodes Phase 3; readable when archived (BR-PROD-004) |
+| PUT | `/api/products/{id}` | update, also when archived (price fields need `price.edit` and are audited) | `product.update` (+ `price.edit`) | `ProductWriteRequest` + `version`, `vatRate` required; `CONCURRENT_MODIFICATION` |
+| POST | `/api/products/{id}/archive` · `/restore` | archive / restore (idempotent) | `product.archive` | → 200 `ProductDetail` |
 | GET | `/api/products/{id}/substitutes` | same active ingredient products with sellable stock | `product.read` | list of `ProductSummary` |
 | GET | `/api/products/{id}/lots` | lots in FEFO order | `lot.read` | list of `LotSummary` |
 | GET/POST | `/api/products/{id}/units` | list / add packaging unit | `product.read` / `product.update` | `{name, factorToBase, salePrice?, sellable}`; `DUPLICATE_RESOURCE` |

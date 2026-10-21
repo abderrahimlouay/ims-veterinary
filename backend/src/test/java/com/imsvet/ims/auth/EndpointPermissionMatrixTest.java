@@ -68,7 +68,16 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/categories", "product.read"),
             new Endpoint(HttpMethod.POST, "/api/manufacturers", "reference.manage", "{\"name\":\"Matrix Labs\"}"),
             new Endpoint(HttpMethod.PUT, "/api/dosage-forms/999999", "reference.manage", "{\"name\":\"X\"}"),
-            new Endpoint(HttpMethod.DELETE, "/api/active-ingredients/999999", "reference.manage"));
+            new Endpoint(HttpMethod.DELETE, "/api/active-ingredients/999999", "reference.manage"),
+            new Endpoint(HttpMethod.GET, "/api/products", "product.read"),
+            new Endpoint(HttpMethod.GET, "/api/products/999999", "product.read"),
+            new Endpoint(HttpMethod.POST, "/api/products", "product.create",
+                    "{\"sku\":\"MATRIX-1\",\"commercialName\":\"Matrix\",\"baseUnit\":\"ml\",\"divisible\":true}"),
+            new Endpoint(HttpMethod.PUT, "/api/products/999999", "product.update",
+                    "{\"sku\":\"MATRIX-2\",\"commercialName\":\"Matrix\",\"baseUnit\":\"ml\",\"divisible\":true,"
+                            + "\"vatRate\":\"9\",\"version\":0}"),
+            new Endpoint(HttpMethod.POST, "/api/products/999999/archive", "product.archive"),
+            new Endpoint(HttpMethod.POST, "/api/products/999999/restore", "product.archive"));
 
     static final List<String> ROLES = List.of("Administrator", "Pharmacist", "Seller", "Accountant");
 

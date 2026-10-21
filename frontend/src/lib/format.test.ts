@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDateTime, formatMoney, formatQuantity } from './format'
+import { formatDateTime, formatUnitPrice, formatMoney, formatQuantity } from './format'
 
 describe('format (ADR-033: DZD, fr-DZ, Africa/Algiers)', () => {
   it('formats money strings as Algerian dinars with two decimals', () => {
@@ -21,5 +21,10 @@ describe('format (ADR-033: DZD, fr-DZ, Africa/Algiers)', () => {
   it('uses a 24-hour clock (ADR-033)', () => {
     expect(formatDateTime('2026-12-31T23:30:00Z')).toBe('01/01/2027 00:30')
     expect(formatDateTime('2026-12-31T13:05:00Z')).toBe('31/12/2026 14:05')
+  })
+
+  it('shows prices per base unit with up to four decimals (ADR-049)', () => {
+    expect(formatUnitPrice('0.0125')).toMatch(/^0,0125\s?DA$/)
+    expect(formatUnitPrice('12.5000')).toMatch(/^12,50\s?DA$/)
   })
 })

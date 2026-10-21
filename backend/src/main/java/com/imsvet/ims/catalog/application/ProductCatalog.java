@@ -1,0 +1,204 @@
+package com.imsvet.ims.catalog.application;
+
+import com.imsvet.ims.catalog.application.ProductViews.ProductDetail;
+import com.imsvet.ims.catalog.application.ProductViews.ProductSummary;
+import com.imsvet.ims.catalog.domain.Product;
+import com.imsvet.ims.catalog.domain.ReferenceEntry;
+import com.imsvet.ims.catalog.infrastructure.DosageFormRepository;
+import com.imsvet.ims.catalog.infrastructure.ManufacturerRepository;
+import com.imsvet.ims.catalog.infrastructure.ProductRepository;
+import com.imsvet.ims.catalog.infrastructure.ReferenceRepository;
+import com.imsvet.ims.catalog.infrastructure.TherapeuticCategoryRepository;
+import com.imsvet.ims.common.error.BusinessException;
+import com.imsvet.ims.common.error.ErrorCode;
+import com.imsvet.ims.common.error.ValidationException;
+import com.imsvet.ims.common.error.ValidationException.Violation;
+import com.imsvet.ims.common.paging.PageRequests;
+import com.imsvet.ims.common.paging.PageResponse;
+import com.imsvet.ims.settings.application.SettingsProvider;
+import com.imsvet.ims.settings.domain.SettingDefinition;
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Product sheets without prices (FR-PROD-001/002/009; prices: {@code ProductPrices}, BR-PROD-006).
+ * Validates BR-PROD-003/005 and ADR-050 (whole thresholds unless divisible); SKU unique (BR-PROD-001).
+ */
+@Service
+public class ProductCatalog {
+
+    /** The request fields; {@code vatRate} {@code null} at creation takes the {@code default_vat_rate} setting. */
+    public record ProductInput(String sku, String commercialName, Integer categoryId, Integer dosageFormId,
+            Integer manufacturerId, String baseUnit, boolean divisible, BigDecimal vatRate, BigDecimal minStock,
+            BigDecimal maxStock, BigDecimal reorderPoint) {
+    }
+
+    private static final Sort BY_NAME = Sort.by("commercialName", "id");
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
+
+    private final ProductRepository products;
+    private final TherapeuticCategoryRepository categories;
+    private final DosageFormRepository dosageForms;
+    private final ManufacturerRepository manufacturers;
+    private final SettingsProvider settings;
+    private final Clock clock;
+
+    public ProductCatalog(ProductRepository products, TherapeuticCategoryRepository categories,
+            DosageFormRepository dosageForms, ManufacturerRepository manufacturers, SettingsProvider settings,
+            Clock clock) {
+        this.products = products;
+        this.categories = categories;
+        this.dosageForms = dosageForms;
+        this.manufacturers = manufacturers;
+        this.settings = settings;
+        this.clock = clock;
+    }
+
+    @PreAuthorize("hasAuthority('product.read')")
+    @Transactional(readOnly = true)
+    public PageResponse<ProductSummary> list(boolean includeArchived, int page, int size) {
+        var request = PageRequests.of(page, size, BY_NAME);
+        return PageResponse.of(includeArchived ? products.findAll(request) : products.findByArchivedFalse(request),
+                ProductViews::summary);
+    }
+
+    @PreAuthorize("hasAuthority('product.read')")
+    @Transactional(readOnly = true)
+    public ProductDetail get(long id) {
+        return ProductViews.detail(find(id));
+    }
+
+    @PreAuthorize("hasAuthority('product.create')")
+    @Transactional
+    public ProductDetail create(ProductInput input) {
+        BigDecimal vat = input.vatRate() != null ? input.vatRate()
+                : new BigDecimal(settings.value(SettingDefinition.DEFAULT_VAT_RATE));
+        Product.Core core = validate(input, vat);
+        rejectDuplicateSku(core.sku(), null);
+        return ProductViews.detail(save(new Product(core, clock.instant())));
+    }
+
+    /** An archived product stays editable (user decision 2026-10-21). */
+    @PreAuthorize("hasAuthority('product.update')")
+    @Transactional
+    public ProductDetail update(long id, ProductInput input, long version) {
+        Product product = find(id);
+        if (product.version() != version) {
+            throw new ObjectOptimisticLockingFailureException(Product.class, id);
+        }
+        if (input.vatRate() == null) {
+            throw invalid(List.of(new Violation("vatRate", "REQUIRED", "VAT is required.")));
+        }
+        Product.Core core = validate(input, input.vatRate());
+        rejectDuplicateSku(core.sku(), product.id());
+        product.update(core, clock.instant());
+        return ProductViews.detail(save(product));
+    }
+
+    @PreAuthorize("hasAuthority('product.archive')")
+    @Transactional
+    public ProductDetail archive(long id) {
+        Product product = find(id);
+        if (!product.archived()) {
+            product.archive(clock.instant());
+        }
+        return ProductViews.detail(save(product));
+    }
+
+    @PreAuthorize("hasAuthority('product.archive')")
+    @Transactional
+    public ProductDetail restore(long id) {
+        Product product = find(id);
+        if (product.archived()) {
+            product.restore(clock.instant());
+        }
+        return ProductViews.detail(save(product));
+    }
+
+    private Product save(Product product) {
+        try {
+            return products.saveAndFlush(product);
+        } catch (DataIntegrityViolationException e) {
+            throw duplicateSku();
+        }
+    }
+
+    private Product find(long id) {
+        return products.findById(id).orElseThrow(
+                () -> new BusinessException(ErrorCode.NOT_FOUND, "Product not found.", Map.of("id", id)));
+    }
+
+    private void rejectDuplicateSku(String sku, Long self) {
+        if (products.findBySku(sku).filter(p -> !p.id().equals(self)).isPresent()) {
+            throw duplicateSku();
+        }
+    }
+
+    private static BusinessException duplicateSku() {
+        return new BusinessException(ErrorCode.PRODUCT_SKU_DUPLICATE, "This SKU is already used.",
+                Map.of("field", "sku"));
+    }
+
+    private Product.Core validate(ProductInput in, BigDecimal vat) {
+        List<Violation> violations = new ArrayList<>();
+        if (vat.signum() < 0 || vat.compareTo(HUNDRED) > 0 || vat.stripTrailingZeros().scale() > 2) {
+            violations.add(new Violation("vatRate", "RANGE", "VAT is a percentage from 0 to 100, two decimals."));
+        }
+        BigDecimal min = quantity("minStock", in.minStock(), BigDecimal.ZERO, in.divisible(), violations);
+        BigDecimal max = in.maxStock() == null ? null
+                : quantity("maxStock", in.maxStock(), null, in.divisible(), violations);
+        BigDecimal reorder = quantity("reorderPoint", in.reorderPoint(), BigDecimal.ZERO, in.divisible(), violations);
+        if (min != null && max != null && max.compareTo(min) < 0) {
+            violations.add(new Violation("maxStock", "BELOW_MIN", "The maximum stock is below the minimum."));
+        }
+        var category = reference(categories, in.categoryId(), "categoryId", violations);
+        var dosageForm = reference(dosageForms, in.dosageFormId(), "dosageFormId", violations);
+        var manufacturer = reference(manufacturers, in.manufacturerId(), "manufacturerId", violations);
+        if (!violations.isEmpty()) {
+            throw invalid(violations);
+        }
+        return new Product.Core(in.sku().trim(), in.commercialName().trim(), category, dosageForm, manufacturer,
+                in.baseUnit().trim(), in.divisible(), vat.setScale(2), min, max, reorder);
+    }
+
+    /** ≥ 0, at most 3 decimals, whole for a non-divisible product (ADR-050). */
+    private static BigDecimal quantity(String field, BigDecimal value, BigDecimal fallback, boolean divisible,
+            List<Violation> violations) {
+        BigDecimal v = value == null ? fallback : value;
+        if (v.signum() < 0) {
+            violations.add(new Violation(field, "NOT_NEGATIVE", "The value cannot be negative."));
+        } else if (v.stripTrailingZeros().scale() > 3) {
+            violations.add(new Violation(field, "SCALE", "At most three decimals."));
+        } else if (!divisible && v.stripTrailingZeros().scale() > 0) {
+            violations.add(new Violation(field, "WHOLE_NUMBER", "This product is counted in whole units."));
+        } else {
+            return v.setScale(3);
+        }
+        return null;
+    }
+
+    private static <T extends ReferenceEntry> T reference(ReferenceRepository<T> repository, Integer id, String field,
+            List<Violation> violations) {
+        if (id == null) {
+            return null;
+        }
+        T entry = repository.findById(id).orElse(null);
+        if (entry == null) {
+            violations.add(new Violation(field, "UNKNOWN", "This entry does not exist."));
+        }
+        return entry;
+    }
+
+    private static ValidationException invalid(List<Violation> violations) {
+        return new ValidationException("The product contains invalid fields.", violations);
+    }
+}

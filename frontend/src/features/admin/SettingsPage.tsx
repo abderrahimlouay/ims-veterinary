@@ -51,7 +51,7 @@ function SettingRow({ setting }: { setting: Setting }) {
   const serverError = update.error instanceof ApiError ? update.error.problem : undefined
   const fieldError =
     localError ??
-    (serverError?.errors[0] ? t(`admin.fieldErrors.${serverError.errors[0].code}`) : undefined)
+    (serverError?.errors[0] ? t(`fieldErrors.${serverError.errors[0].code}`) : undefined)
 
   if (!setting.editable) {
     return (
@@ -67,7 +67,7 @@ function SettingRow({ setting }: { setting: Setting }) {
   const save = () => {
     const check = LOCAL_CHECKS[setting.key]
     if (check !== undefined && !check(value)) {
-      setLocalError(t('admin.fieldErrors.INVALID_FORMAT'))
+      setLocalError(t('fieldErrors.INVALID_FORMAT'))
       return
     }
     setLocalError(undefined)

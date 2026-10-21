@@ -1,0 +1,40 @@
+-- Products (database.md §3.2, FR-PROD-001/002/009). SKU unique ignoring case and accents (ADR-051); prices per
+-- base unit with 4 decimals (ADR-049); is_divisible decides whole or 3-decimal quantities (ADR-050, enforced by
+-- the services). vat_rate has no database default: new products take the default_vat_rate setting (CLAUDE.md:
+-- VAT is never hard-coded). Bounds of BR-PROD-005 are CHECKs; version for optimistic locking (ADR-027).
+CREATE TABLE products (
+    id              BIGINT        NOT NULL AUTO_INCREMENT,
+    sku             VARCHAR(40)   NOT NULL,
+    commercial_name VARCHAR(200)  NOT NULL,
+    dosage_form_id  INT           NULL,
+    category_id     INT           NULL,
+    manufacturer_id INT           NULL,
+    base_unit       VARCHAR(20)   NOT NULL,
+    is_divisible    BOOLEAN       NOT NULL,
+    vat_rate        DECIMAL(5,2)  NOT NULL,
+    purchase_price  DECIMAL(14,4) NOT NULL DEFAULT 0,
+    sale_price      DECIMAL(14,4) NOT NULL DEFAULT 0,
+    min_stock       DECIMAL(14,3) NOT NULL DEFAULT 0,
+    max_stock       DECIMAL(14,3) NULL,
+    reorder_point   DECIMAL(14,3) NOT NULL DEFAULT 0,
+    is_archived     BOOLEAN       NOT NULL DEFAULT FALSE,
+    created_at      DATETIME(6)   NOT NULL,
+    updated_at      DATETIME(6)   NOT NULL,
+    version         BIGINT        NOT NULL DEFAULT 0,
+    CONSTRAINT pk_products PRIMARY KEY (id),
+    CONSTRAINT uq_products_sku UNIQUE (sku),
+    CONSTRAINT fk_products_dosage_form_id FOREIGN KEY (dosage_form_id) REFERENCES dosage_forms (id),
+    CONSTRAINT fk_products_category_id FOREIGN KEY (category_id) REFERENCES therapeutic_categories (id),
+    CONSTRAINT fk_products_manufacturer_id FOREIGN KEY (manufacturer_id) REFERENCES manufacturers (id),
+    CONSTRAINT ck_products_sku_not_blank CHECK (CHAR_LENGTH(TRIM(sku)) > 0),
+    CONSTRAINT ck_products_commercial_name_not_blank CHECK (CHAR_LENGTH(TRIM(commercial_name)) > 0),
+    CONSTRAINT ck_products_base_unit_not_blank CHECK (CHAR_LENGTH(TRIM(base_unit)) > 0),
+    CONSTRAINT ck_products_vat_rate_range CHECK (vat_rate >= 0 AND vat_rate <= 100),
+    CONSTRAINT ck_products_purchase_price_non_negative CHECK (purchase_price >= 0),
+    CONSTRAINT ck_products_sale_price_non_negative CHECK (sale_price >= 0),
+    CONSTRAINT ck_products_min_stock_non_negative CHECK (min_stock >= 0),
+    CONSTRAINT ck_products_max_stock_not_below_min CHECK (max_stock IS NULL OR max_stock >= min_stock),
+    CONSTRAINT ck_products_reorder_point_non_negative CHECK (reorder_point >= 0),
+    INDEX idx_products_commercial_name (commercial_name),
+    INDEX idx_products_category (category_id)
+);

@@ -11,7 +11,8 @@
     "roles": "Rôles et permissions",
     "settings": "Paramètres",
     "audit": "Journal d'audit",
-    "references": "Données de référence"
+    "references": "Données de référence",
+    "products": "Produits"
   },
   "language": {
     "label": "Langue",
@@ -89,16 +90,6 @@
     "saved": "Modifications enregistrées.",
     "close": "Fermer",
     "stale": "Cette fiche a été modifiée par quelqu'un d'autre. Rechargez la page avant de modifier.",
-    "fieldErrors": {
-      "REQUIRED": "Ce champ est obligatoire.",
-      "DUPLICATE": "Cette valeur est déjà utilisée.",
-      "EMAIL": "Adresse e-mail invalide.",
-      "TOO_SHORT": "Utilisez au moins {{min}} caractères.",
-      "TOO_COMMON": "Ce mot de passe est trop courant.",
-      "UNKNOWN": "Valeur inconnue.",
-      "INVALID_FORMAT": "Format invalide.",
-      "READ_ONLY": "Ce paramètre ne peut pas être modifié ici."
-    },
     "users": {
       "title": "Utilisateurs",
       "new": "Nouvel utilisateur",
@@ -211,6 +202,46 @@
         "ingredients": "Principes actifs (DCI)",
         "manufacturers": "Laboratoires"
       }
+    },
+    "products": {
+      "title": "Produits",
+      "new": "Nouveau produit",
+      "showArchived": "Afficher les produits archivés",
+      "empty": "Aucun produit.",
+      "sku": "SKU",
+      "name": "Nom commercial",
+      "category": "Catégorie thérapeutique",
+      "dosageForm": "Forme galénique",
+      "manufacturer": "Laboratoire",
+      "baseUnit": "Unité de base",
+      "divisible": "Divisible (ml, g…) — sinon unités entières (comprimés, seringues…)",
+      "vatRate": "TVA (%)",
+      "minStock": "Stock minimum",
+      "maxStock": "Stock maximum",
+      "reorderPoint": "Seuil de réapprovisionnement",
+      "salePrice": "Prix de vente (unité de base)",
+      "purchasePrice": "Prix d'achat (unité de base)",
+      "updatedAt": "Modifié le",
+      "archived": "Archivé",
+      "archive": "Archiver",
+      "restore": "Restaurer",
+      "reload": "Recharger la dernière version"
     }
+  },
+  "fieldErrors": {
+    "REQUIRED": "Ce champ est obligatoire.",
+    "DUPLICATE": "Cette valeur est déjà utilisée.",
+    "EMAIL": "Adresse e-mail invalide.",
+    "TOO_SHORT": "Utilisez au moins {{min}} caractères.",
+    "TOO_COMMON": "Ce mot de passe est trop courant.",
+    "UNKNOWN": "Valeur inconnue.",
+    "INVALID_FORMAT": "Format invalide.",
+    "READ_ONLY": "Ce paramètre ne peut pas être modifié ici.",
+    "NOT_NEGATIVE": "La valeur ne peut pas être négative.",
+    "SCALE": "Trop de décimales.",
+    "WHOLE_NUMBER": "Ce produit se compte en unités entières.",
+    "BELOW_MIN": "Le stock maximum est inférieur au minimum.",
+    "RANGE": "Valeur hors limites.",
+    "SIZE": "Ce texte est trop long."
   }
 }

@@ -118,7 +118,7 @@ Reference names are unique case- and accent-insensitively and never blank (CHECK
 | manufacturer_id | INT | FK→manufacturers | |
 | base_unit | VARCHAR(20) | NOT NULL | smallest stock unit |
 | is_divisible | BOOLEAN | NOT NULL | ADR-050, SD-115: whole quantities only when false |
-| vat_rate | DECIMAL(5,2) | NOT NULL DEFAULT 9.00, CK ≥ 0 | default also in `app_settings` |
+| vat_rate | DECIMAL(5,2) | NOT NULL, CK 0–100 | **no database default**: a new product takes the `default_vat_rate` setting (VAT is never hard-coded, CLAUDE.md §11) |
 | purchase_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049); last/average definition: OD-029 (Phase 5) |
 | sale_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049) |
 | min_stock | DECIMAL(14,3) | NOT NULL DEFAULT 0, CK ≥ 0 | alert level |

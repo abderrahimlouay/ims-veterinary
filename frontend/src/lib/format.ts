@@ -27,3 +27,16 @@ export function formatDateTime(instant: string): string {
     new Date(instant),
   )
 }
+
+const unitPrice = () =>
+  new Intl.NumberFormat(business().locale, {
+    style: 'currency',
+    currency: business().currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  })
+
+/** A price per base unit (4 decimals, ADR-049): `"0.0125"` → `"0,0125 DA"`, `"12.5000"` → `"12,50 DA"`. */
+export function formatUnitPrice(price: DecimalString): string {
+  return unitPrice().format(price as Intl.StringNumericLiteral)
+}

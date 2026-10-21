@@ -122,9 +122,9 @@ function ReferenceForm({ list, editing, onDone }: { list: ListSpec; editing?: Re
   const problem = save.error instanceof ApiError ? save.error.problem : undefined
   const nameError =
     problem?.code === 'DUPLICATE_RESOURCE'
-      ? t('admin.fieldErrors.DUPLICATE')
+      ? t('fieldErrors.DUPLICATE')
       : problem?.errors.find((e) => e.field === 'name')
-        ? t('admin.fieldErrors.INVALID_FORMAT')
+        ? t('fieldErrors.INVALID_FORMAT')
         : undefined
 
   return (

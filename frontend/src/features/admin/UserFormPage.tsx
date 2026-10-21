@@ -21,16 +21,16 @@ import {
   useUser,
   type UserDetail,
 } from './api'
-import { placeServerErrors } from './formErrors'
+import { placeServerErrors } from '../../lib/formErrors'
 
 const editSchema = z.object({
   fullName: z.string().trim().min(1, 'validation.required').max(150, 'validation.tooLong'),
-  email: z.union([z.literal(''), z.email('admin.fieldErrors.EMAIL').max(150, 'validation.tooLong')]),
+  email: z.union([z.literal(''), z.email('fieldErrors.EMAIL').max(150, 'validation.tooLong')]),
   roleId: z.string().min(1, 'validation.required'),
 })
 const createSchema = editSchema.extend({
   username: z.string().trim().min(1, 'validation.required').max(60, 'validation.tooLong'),
-  initialPassword: z.string().min(12, 'admin.fieldErrors.TOO_SHORT'),
+  initialPassword: z.string().min(12, 'fieldErrors.TOO_SHORT'),
 })
 type CreateForm = z.infer<typeof createSchema>
 type EditForm = z.infer<typeof editSchema>
