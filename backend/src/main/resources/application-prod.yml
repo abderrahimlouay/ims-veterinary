@@ -3,3 +3,7 @@ spring:
   flyway:
     # Production migrations are a controlled step (ADR-018), not run at application start.
     enabled: false
+
+server:
+  # security.md §11: X-Forwarded-For is honoured only from internal proxy addresses (Tomcat RemoteIpValve).
+  forward-headers-strategy: native
