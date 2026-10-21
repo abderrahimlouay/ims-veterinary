@@ -1,10 +1,12 @@
 {
   "app": {
-    "name": "IMS Vétérinaire"
+    "name": "IMS Vétérinaire",
+    "loading": "Loading…"
   },
   "nav": {
     "label": "Main navigation",
-    "home": "Home"
+    "home": "Home",
+    "account": "My account"
   },
   "language": {
     "label": "Language",
@@ -20,5 +22,52 @@
     "title": "Page not found",
     "body": "The requested page does not exist.",
     "back": "Back to home"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Sign in"
+    },
+    "logout": "Sign out",
+    "account": {
+      "title": "My account",
+      "mustChange": "Your password is temporary: choose a new one to continue.",
+      "username": "Username",
+      "fullName": "Full name",
+      "email": "E-mail",
+      "role": "Role"
+    },
+    "password": {
+      "title": "Change password",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "submit": "Change password",
+      "changed": "Your password has been changed.",
+      "mismatch": "The two passwords do not match.",
+      "TOO_SHORT": "Use at least {{min}} characters.",
+      "TOO_COMMON": "This password is too common.",
+      "INVALID": "The current password is not correct."
+    }
+  },
+  "validation": {
+    "required": "This field is required.",
+    "tooLong": "This text is too long."
+  },
+  "forbidden": {
+    "title": "Access denied",
+    "body": "You do not have permission to open this page."
+  },
+  "errors": {
+    "AUTH_INVALID_CREDENTIALS": "Wrong username or password.",
+    "AUTH_ACCOUNT_DISABLED": "This account is disabled. Contact an administrator.",
+    "RATE_LIMITED": "Too many attempts. Try again in {{minutes}} min.",
+    "AUTH_REQUIRED": "Your session has expired. Please sign in again.",
+    "ACCESS_DENIED": "You do not have permission for this action.",
+    "NETWORK_ERROR": "The server cannot be reached. Check the connection and try again.",
+    "INTERNAL_ERROR": "An unexpected error occurred (reference {{traceId}}).",
+    "UNKNOWN": "The request failed (reference {{traceId}})."
   }
 }

@@ -1,21 +1,15 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMemoryRouter, RouterProvider } from 'react-router'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { i18n } from '../lib/i18n'
-import { AppProviders } from './providers'
-import { routes } from './router'
-
-function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] })
-  return render(
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>,
-  )
-}
+import { aUser, serveMe } from '../test/auth'
+import { renderApp as renderAt } from '../test/render'
 
 describe('application shell', () => {
+  beforeEach(() => {
+    serveMe(aUser())
+  })
+
   afterEach(async () => {
     await i18n.changeLanguage('fr')
   })

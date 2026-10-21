@@ -16,6 +16,31 @@ export type ApiInit = Omit<RequestInit, 'body'> & {
   json?: unknown
 }
 
+/** ADR-036: the CSRF token arrives in a readable cookie and goes back in a header on state changes. */
+export const CSRF_COOKIE = 'XSRF-TOKEN'
+export const CSRF_HEADER = 'X-XSRF-TOKEN'
+const SAFE_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'OPTIONS'])
+
+function readCookie(name: string): string | undefined {
+  const prefix = `${name}=`
+  const cookie = document.cookie.split('; ').find((c) => c.startsWith(prefix))
+  return cookie === undefined ? undefined : decodeURIComponent(cookie.slice(prefix.length))
+}
+
+/** Any response sets the CSRF cookie; on a first visit a harmless GET obtains it before a state change. */
+async function csrfToken(): Promise<string | undefined> {
+  const existing = readCookie(CSRF_COOKIE)
+  if (existing !== undefined) {
+    return existing
+  }
+  try {
+    await fetch(new URL('/api/auth/me', window.location.origin), { headers: { Accept: 'application/json' } })
+  } catch {
+    return undefined
+  }
+  return readCookie(CSRF_COOKIE)
+}
+
 async function readBody(response: Response): Promise<unknown> {
   const text = await response.text()
   try {
@@ -33,6 +58,12 @@ export async function apiFetch<T = void>(path: string, init: ApiInit = {}): Prom
   const { json, headers, ...rest } = init
   const requestHeaders = new Headers(headers)
   requestHeaders.set('Accept', 'application/json, application/problem+json')
+  if (!SAFE_METHODS.has((rest.method ?? 'GET').toUpperCase())) {
+    const token = await csrfToken()
+    if (token !== undefined) {
+      requestHeaders.set(CSRF_HEADER, token)
+    }
+  }
   let body: string | undefined
   if (json !== undefined) {
     requestHeaders.set('Content-Type', 'application/json')
