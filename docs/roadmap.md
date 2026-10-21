@@ -1,8 +1,8 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phase 0 implemented (2026-10-20), awaiting user approval; Phases 1–12 not started
+> **Status:** Phases 0 and 1 complete (tags `phase-0-done`, `phase-1-done`); Phases 2–12 not started
 > **Scope:** ordered plan for Claude Code to implement.
-> **Last updated:** 2026-10-20
+> **Last updated:** 2026-10-21
 
 Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` review item.
 
@@ -56,6 +56,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** login page, guards, app layout with permission-filtered menu, account page, users/roles/settings/audit admin pages.
 - **Tests:** BR-SEC-*, BR-AUDIT-*; endpoint × role matrix framework; e2e J1, J11.
 - **Completion criteria:** every endpoint authenticated by default (deny-by-default test); passwords hashed; audit rows immutable; permission matrix test passes.
+- **Delivered (2026-10-21):** PRs #4–#11 (slices auth-schema, audit-recorder, auth-login, settings, users-admin, frontend-auth, frontend-admin, 24-hour clock); decisions ADR-036…046. All four completion criteria pass (`DenyByDefaultTest`, bcrypt cost 12 tests, `AuditLogAppendOnlyTest`, `EndpointPermissionMatrixTest` with 21 endpoints × 4 roles); BR-SEC-001…005 and BR-AUDIT-001…003 tested; e2e J1 and J11 against the real backend. Deferred: BR-SEC-006 database grants (Phase 12); a concurrency test of the lock-out guard (would commit shared test data); MapStruct (hand-written mappers, ADR-019 note).
 
 ## Phase 2 — Catalogue
 - **Objective:** maintain the product master data and find products quickly.
