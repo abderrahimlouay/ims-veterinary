@@ -226,7 +226,27 @@
       "archive": "Archiver",
       "restore": "Restaurer",
       "reload": "Recharger la dernière version",
-      "pricesReadOnly": "Les prix ne sont modifiables qu'avec la permission « modifier les prix »."
+      "pricesReadOnly": "Les prix ne sont modifiables qu'avec la permission « modifier les prix ».",
+      "tabs": {
+        "general": "Général",
+        "ingredients": "Principes actifs",
+        "substitutes": "Substituts"
+      }
+    },
+    "ingredients": {
+      "none": "Aucun principe actif.",
+      "ingredient": "Principe actif {{n}}",
+      "strength": "Dosage {{n}}",
+      "remove": "Retirer la ligne {{n}}",
+      "add": "Ajouter un principe actif",
+      "errors": {
+        "DUPLICATE": "Un principe actif figure deux fois.",
+        "UNKNOWN": "Principe actif inconnu.",
+        "SIZE": "Le dosage est trop long."
+      }
+    },
+    "substitutes": {
+      "none": "Aucun produit ne partage ses principes actifs."
     }
   },
   "fieldErrors": {

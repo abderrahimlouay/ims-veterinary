@@ -23,9 +23,15 @@ export interface ProductDetail extends ProductSummary {
   minStock: string
   maxStock: string | null
   reorderPoint: string
+  ingredients: ProductIngredient[]
   createdAt: string
   updatedAt: string
   version: number
+}
+
+export interface ProductIngredient {
+  ingredient: ReferenceItem
+  strength: string | null
 }
 
 /** `ProductWriteRequest` (api.md §4.3). */
@@ -87,6 +93,27 @@ export function useUpdateProduct(id: number) {
   return useProductMutation((product: ProductWrite) =>
     apiFetch<ProductDetail>(`/api/products/${id}`, { method: 'PUT', json: product }),
   )
+}
+
+/** Replaces the ingredient set (FR-PROD-004); the detail is refreshed afterwards. */
+export function useReplaceIngredients(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (lines: { ingredientId: number; strength: string | null }[]) =>
+      apiFetch<ProductIngredient[]>(`/api/products/${id}/ingredients`, { method: 'PUT', json: lines }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: productKeys.detail(id) })
+      void queryClient.invalidateQueries({ queryKey: [...productKeys.all, 'substitutes'] })
+    },
+  })
+}
+
+/** Same-ingredient products (FR-PROD-004), without stock until Phase 4. */
+export function useSubstitutes(id: number) {
+  return useQuery({
+    queryKey: [...productKeys.all, 'substitutes', id],
+    queryFn: () => apiFetch<ProductSummary[]>(`/api/products/${id}/substitutes`),
+  })
 }
 
 export function useSetArchived(id: number) {

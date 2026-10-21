@@ -77,7 +77,9 @@ class EndpointPermissionMatrixTest {
                     "{\"sku\":\"MATRIX-2\",\"commercialName\":\"Matrix\",\"baseUnit\":\"ml\",\"divisible\":true,"
                             + "\"vatRate\":\"9\",\"version\":0}"),
             new Endpoint(HttpMethod.POST, "/api/products/999999/archive", "product.archive"),
-            new Endpoint(HttpMethod.POST, "/api/products/999999/restore", "product.archive"));
+            new Endpoint(HttpMethod.POST, "/api/products/999999/restore", "product.archive"),
+            new Endpoint(HttpMethod.PUT, "/api/products/999999/ingredients", "product.update", "[]"),
+            new Endpoint(HttpMethod.GET, "/api/products/999999/substitutes", "product.read"));
 
     static final List<String> ROLES = List.of("Administrator", "Pharmacist", "Seller", "Accountant");
 
