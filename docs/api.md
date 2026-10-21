@@ -119,15 +119,18 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 ### 4.2 `/api/users`, `/api/roles`, `/api/permissions`
 
+`UserSummary {id, username, fullName, email, role: {id, name}, active, mustChangePassword, lastLoginAt}`; `UserDetail` = summary + `createdAt`, `version`. `RoleDetail {id, name, description, permissions: [code…]}`. No password data in any response except the one-time temporary password (ADR-045).
+
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET | `/api/users` | list (filters `q`, `roleId`, `active`) | `user.read` | page of `UserSummary` |
-| POST | `/api/users` | create | `user.manage` | `{username, fullName, email?, roleId, initialPassword}` → 201 `UserDetail`; `DUPLICATE_RESOURCE` |
-| GET/PUT | `/api/users/{id}` | view / update (no password) | `user.read` / `user.manage` | `UserDetail` |
-| POST | `/api/users/{id}/deactivate` · `/activate` | toggle active | `user.manage` | → 200; `INVALID_STATE_TRANSITION` for self-deactivation or administrator lock-out (ADR-042) |
-| POST | `/api/users/{id}/reset-password` | issue temporary password | `user.manage` | → one-time temporary password |
-| GET | `/api/roles`, `/api/roles/{id}`, `/api/permissions` | view | `user.read` | |
-| PUT | `/api/roles/{id}/permissions` | replace permission set | `role.manage` | `{permissionCodes[]}`; audited; `INVALID_STATE_TRANSITION` on administrator lock-out (ADR-042) |
+| GET | `/api/users` | list (filters `q` = contains in username/full name/e-mail, `roleId`, `active`; sorted by username) | `user.read` | page of `UserSummary` |
+| POST | `/api/users` | create | `user.manage` | `{username, fullName, email?, roleId, initialPassword}` → 201 `UserDetail` + `Location`; the user must change the password at first login; `DUPLICATE_RESOURCE` (`context.field` = `username`/`email`), `VALIDATION_FAILED` (`initialPassword` `TOO_SHORT`/`TOO_COMMON`, `roleId` `UNKNOWN`); audited `USER_CREATE` |
+| GET | `/api/users/{id}` | view | `user.read` | `UserDetail` |
+| PUT | `/api/users/{id}` | update full name, e-mail, role (username immutable) | `user.manage` | `{fullName, email?, roleId, version}` → `UserDetail`; `CONCURRENT_MODIFICATION`, `DUPLICATE_RESOURCE`, `INVALID_STATE_TRANSITION` (lock-out, ADR-042); audited `USER_UPDATE` with the changed fields |
+| POST | `/api/users/{id}/deactivate` · `/activate` | toggle active | `user.manage` | → 200 `UserDetail`; deactivation ends the user's sessions; `INVALID_STATE_TRANSITION` for self-deactivation or administrator lock-out (ADR-042); audited `USER_DEACTIVATE` / `USER_UPDATE` |
+| POST | `/api/users/{id}/reset-password` | issue temporary password | `user.manage` | → `{temporaryPassword}` shown once (ADR-045); ends the user's sessions; audited `PASSWORD_RESET` (without the password) |
+| GET | `/api/roles`, `/api/roles/{id}`, `/api/permissions` | view | `user.read` | `RoleDetail[]`, `RoleDetail`, `[{code, description}]` |
+| PUT | `/api/roles/{id}/permissions` | replace permission set | `role.manage` | `{permissionCodes[]}` → `RoleDetail`; `VALIDATION_FAILED` (`permissionCodes` `UNKNOWN`); `INVALID_STATE_TRANSITION` on administrator lock-out (ADR-042); audited `ROLE_PERMISSION_CHANGE` |
 
 ### 4.3 `/api/products` and reference data
 
