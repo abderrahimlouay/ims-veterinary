@@ -2,8 +2,7 @@ package com.imsvet.ims.common.web;
 
 import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
-import jakarta.servlet.http.HttpServletRequest;
-import java.net.URI;
+import com.imsvet.ims.common.error.ValidationException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,6 +16,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,6 +37,8 @@ public class ProblemDetailsHandler extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(ProblemDetailsHandler.class);
 
     private static final Set<String> REQUIRED_CONSTRAINTS = Set.of("NotNull", "NotBlank", "NotEmpty");
+    /** Context key of a {@link BusinessException} that becomes a {@code Retry-After} header (api.md §1). */
+    public static final String RETRY_AFTER_SECONDS = "retryAfterSeconds";
     private static final String NEUTRAL_DETAIL = "An unexpected error occurred. Quote the trace id to support.";
 
     @ExceptionHandler(BusinessException.class)
@@ -43,7 +46,37 @@ public class ProblemDetailsHandler extends ResponseEntityExceptionHandler {
         if (ex.code().status().is5xxServerError()) {
             log.error("Business failure {}", ex.code(), ex);
         }
-        return respond(ex.code(), ex.getMessage(), List.of(), ex.context(), new HttpHeaders(), request);
+        HttpHeaders headers = new HttpHeaders();
+        if (ex.context().get(RETRY_AFTER_SECONDS) instanceof Number seconds) {
+            headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(seconds.longValue()));
+        }
+        return respond(ex.code(), ex.getMessage(), List.of(), ex.context(), headers, request);
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    ResponseEntity<Object> handleValidation(ValidationException ex, WebRequest request) {
+        List<Map<String, Object>> errors = ex.violations().stream()
+                .map(v -> {
+                    Map<String, Object> error = new LinkedHashMap<>();
+                    error.put("field", v.field());
+                    error.put("code", v.code());
+                    error.put("message", v.message());
+                    return error;
+                }).toList();
+        return respond(ErrorCode.VALIDATION_FAILED, ex.getMessage(), errors, Map.of(), new HttpHeaders(), request);
+    }
+
+    /** Method security denial (BR-SEC-002); CSRF and URL-level denials are written by the security chain. */
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<Object> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
+        return respond(ErrorCode.ACCESS_DENIED, "You do not have the permission for this action.", List.of(),
+                Map.of(), new HttpHeaders(), request);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    ResponseEntity<Object> handleAuthentication(AuthenticationException ex, WebRequest request) {
+        return respond(ErrorCode.AUTH_REQUIRED, "Authentication is required.", List.of(), Map.of(),
+                new HttpHeaders(), request);
     }
 
     @ExceptionHandler(ConcurrencyFailureException.class)
@@ -95,17 +128,8 @@ public class ProblemDetailsHandler extends ResponseEntityExceptionHandler {
 
     private ResponseEntity<Object> respond(ErrorCode code, String detail, List<Map<String, Object>> errors,
             Map<String, Object> context, HttpHeaders headers, WebRequest request) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(code.status(), detail);
-        problem.setType(URI.create(code.typeUri()));
-        problem.setTitle(code.title());
-        if (request instanceof ServletWebRequest servlet) {
-            HttpServletRequest http = servlet.getRequest();
-            problem.setInstance(URI.create(http.getRequestURI()));
-        }
-        problem.setProperty("code", code.name());
-        problem.setProperty("traceId", TraceIdFilter.current());
-        problem.setProperty("errors", errors);
-        problem.setProperty("context", context);
+        String path = request instanceof ServletWebRequest servlet ? servlet.getRequest().getRequestURI() : null;
+        ProblemDetail problem = Problems.of(code, detail, errors, context, path);
         return ResponseEntity.status(code.status()).headers(headers).body(problem);
     }
 

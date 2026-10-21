@@ -21,15 +21,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service test (S) of the audit read path (api.md §4.14): filters, newest first, paging envelope, business
- * dates in Africa/Algiers (UTC+1, ADR-033), bounds.
+ * dates in Africa/Algiers (UTC+1, ADR-033), bounds, permission {@code audit.read}.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @Transactional
+@WithMockUser(authorities = "audit.read")
 class AuditLogQueryTest {
 
     private static final String ENTITY = "audit_query_test";
@@ -100,6 +103,13 @@ class AuditLogQueryTest {
                 filter(null, null, LocalDate.of(2026, 10, 21), LocalDate.of(2026, 10, 20)), 0, 20))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.code()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+    }
+
+    @Test
+    @WithMockUser(authorities = "sale.read")
+    void requiresTheAuditReadPermission() {
+        assertThatThrownBy(() -> query.search(filter(null, null, null, null), 0, 20))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     private void record(String at, AuditAction action, long entityId) {
