@@ -188,7 +188,7 @@ Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → 
 
 | Concept | Kind | Description |
 |---|---|---|
-| **Quantity (base)** | Value object | `BigDecimal` in base units; conversion via ProductUnit factor; precision rules OD-022 |
+| **Quantity (base)** | Value object | `BigDecimal` in base units; conversion via ProductUnit factor; whole numbers for non-divisible products (ADR-050) |
 | **Money** | Value object | `BigDecimal` + scale/rounding policy (OD-007); currency DZD (ADR-033) |
 | **Percentage** | Value object | 0–100 |
 | **LotIdentity** | Value object | (product, lot number, expiry date) |

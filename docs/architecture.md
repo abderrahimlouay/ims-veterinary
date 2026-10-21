@@ -154,7 +154,7 @@ Backend = trust boundary; TLS everywhere; hashed passwords; permission-based RBA
 | Attribute | Target | Mechanism |
 |---|---|---|
 | Correctness of stock | zero negative / drifting balances | ledger + CHECK + locks + integrity check |
-| Performance | search < 1 s, confirm sale < 2 s `[REC]` at ~50 k products | indexes, FULLTEXT/prefix (OD-018), short tx |
+| Performance | search < 1 s, confirm sale < 2 s `[REC]` at ~50 k products | indexes, contains-search on 50,000-product reference dataset (ADR-048), short tx |
 | Availability | business hours; restore RTO/RPO per OD-021 | backups |
 | Maintainability | module boundaries tested | architecture tests, ADRs |
 | Auditability | all sensitive actions traced | audit module |
@@ -165,9 +165,9 @@ Backend = trust boundary; TLS everywhere; hashed passwords; permission-based RBA
 1. Hidden PostgreSQL assumptions in the source schema (see `database-migration.md`).
 2. Sales/payment semantics unresolved (OD-002, OD-003) — blocks the POS design if left open.
 3. Lock contention at the counter on popular lots — mitigated by short transactions and ordering.
-4. Collation making codes case-insensitive (ADR-024, OD-025).
+4. Collation making codes case-insensitive (ADR-024; usernames ADR-041, SKUs ADR-051; lot numbers OD-025).
 5. Numbering gaps vs legal requirement (OD-017).
 
 ## 16. Decisions index
 
-ADR-001…046 and OD-001…031 are in `decisions.md`; those most structural here: ADR-006 (modular monolith), ADR-012/013 (isolation/locking), ADR-017 (triggers), ADR-018 (Flyway), ADR-020 (errors), ADR-028 (stock representation), ADR-029 (RBAC).
+ADR-001…053 and OD-001…032 are in `decisions.md`; those most structural here: ADR-006 (modular monolith), ADR-012/013 (isolation/locking), ADR-017 (triggers), ADR-018 (Flyway), ADR-020 (errors), ADR-028 (stock representation), ADR-029 (RBAC).
