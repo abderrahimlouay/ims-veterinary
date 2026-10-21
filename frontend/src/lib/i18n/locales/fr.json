@@ -1,10 +1,12 @@
 {
   "app": {
-    "name": "IMS Vétérinaire"
+    "name": "IMS Vétérinaire",
+    "loading": "Chargement…"
   },
   "nav": {
     "label": "Navigation principale",
-    "home": "Accueil"
+    "home": "Accueil",
+    "account": "Mon compte"
   },
   "language": {
     "label": "Langue",
@@ -20,5 +22,52 @@
     "title": "Page introuvable",
     "body": "La page demandée n'existe pas.",
     "back": "Retour à l'accueil"
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "username": "Nom d'utilisateur",
+      "password": "Mot de passe",
+      "submit": "Se connecter"
+    },
+    "logout": "Se déconnecter",
+    "account": {
+      "title": "Mon compte",
+      "mustChange": "Votre mot de passe est temporaire : choisissez-en un nouveau pour continuer.",
+      "username": "Nom d'utilisateur",
+      "fullName": "Nom complet",
+      "email": "E-mail",
+      "role": "Rôle"
+    },
+    "password": {
+      "title": "Changer le mot de passe",
+      "current": "Mot de passe actuel",
+      "new": "Nouveau mot de passe",
+      "confirm": "Confirmer le nouveau mot de passe",
+      "submit": "Changer le mot de passe",
+      "changed": "Votre mot de passe a été changé.",
+      "mismatch": "Les deux mots de passe ne sont pas identiques.",
+      "TOO_SHORT": "Utilisez au moins {{min}} caractères.",
+      "TOO_COMMON": "Ce mot de passe est trop courant.",
+      "INVALID": "Le mot de passe actuel n'est pas correct."
+    }
+  },
+  "validation": {
+    "required": "Ce champ est obligatoire.",
+    "tooLong": "Ce texte est trop long."
+  },
+  "forbidden": {
+    "title": "Accès refusé",
+    "body": "Vous n'avez pas l'autorisation d'ouvrir cette page."
+  },
+  "errors": {
+    "AUTH_INVALID_CREDENTIALS": "Nom d'utilisateur ou mot de passe incorrect.",
+    "AUTH_ACCOUNT_DISABLED": "Ce compte est désactivé. Contactez un administrateur.",
+    "RATE_LIMITED": "Trop de tentatives. Réessayez dans {{minutes}} min.",
+    "AUTH_REQUIRED": "Votre session a expiré. Reconnectez-vous.",
+    "ACCESS_DENIED": "Vous n'avez pas l'autorisation pour cette action.",
+    "NETWORK_ERROR": "Le serveur est injoignable. Vérifiez la connexion et réessayez.",
+    "INTERNAL_ERROR": "Une erreur inattendue est survenue (référence {{traceId}}).",
+    "UNKNOWN": "La demande a échoué (référence {{traceId}})."
   }
 }

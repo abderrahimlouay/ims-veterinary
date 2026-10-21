@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { server } from '../test/server'
 import { ApiError, apiFetch } from './client'
 
@@ -57,5 +57,49 @@ describe('apiFetch', () => {
     const error = await apiFetch('/api/down').catch((e: unknown) => e)
 
     expect((error as ApiError).problem.code).toBe('NETWORK_ERROR')
+  })
+
+  describe('CSRF (ADR-036)', () => {
+    afterEach(() => {
+      document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+    })
+
+    it('sends the token from the cookie on state-changing requests only', async () => {
+      document.cookie = 'XSRF-TOKEN=tok-123; path=/'
+      const seen: Record<string, string | null> = {}
+      server.use(
+        http.get('/api/things', ({ request }) => {
+          seen.get = request.headers.get('X-XSRF-TOKEN')
+          return HttpResponse.json([])
+        }),
+        http.put('/api/things/1', ({ request }) => {
+          seen.put = request.headers.get('X-XSRF-TOKEN')
+          return new HttpResponse(null, { status: 204 })
+        }),
+      )
+
+      await apiFetch('/api/things')
+      await apiFetch('/api/things/1', { method: 'PUT', json: {} })
+
+      expect(seen).toEqual({ get: null, put: 'tok-123' })
+    })
+
+    it('obtains the cookie first when it is missing', async () => {
+      let header: string | null = null
+      server.use(
+        http.get('/api/auth/me', () => {
+          document.cookie = 'XSRF-TOKEN=fresh-456; path=/'
+          return HttpResponse.json({}, { status: 401 })
+        }),
+        http.post('/api/auth/login', ({ request }) => {
+          header = request.headers.get('X-XSRF-TOKEN')
+          return HttpResponse.json({})
+        }),
+      )
+
+      await apiFetch('/api/auth/login', { method: 'POST', json: {} })
+
+      expect(header).toBe('fresh-456')
+    })
   })
 })
