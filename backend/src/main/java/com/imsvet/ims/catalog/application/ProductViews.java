@@ -24,7 +24,13 @@ public final class ProductViews {
             ReferenceItemView dosageForm, ReferenceItemView manufacturer, String baseUnit, boolean divisible,
             BigDecimal vatRate, BigDecimal purchasePrice, BigDecimal salePrice, BigDecimal minStock,
             BigDecimal maxStock, BigDecimal reorderPoint, boolean archived, List<ProductIngredientView> ingredients,
-            Instant createdAt, Instant updatedAt, long version) {
+            List<ReferenceItemView> targetSpecies, List<WithdrawalPeriodView> withdrawalPeriods, Instant createdAt,
+            Instant updatedAt, long version) {
+    }
+
+    /** Days are {@code null} when not specified (BR-PROD-007). */
+    public record WithdrawalPeriodView(ReferenceItemView species, Integer meatDays, Integer milkDays,
+            Integer eggsDays) {
     }
 
     public record ProductIngredientView(ReferenceItemView ingredient, String strength) {
@@ -38,8 +44,27 @@ public final class ProductViews {
     static ProductDetail detail(Product p) {
         return new ProductDetail(p.id(), p.sku(), p.commercialName(), ref(p.category()), ref(p.dosageForm()),
                 ref(p.manufacturer()), p.baseUnit(), p.divisible(), p.vatRate(), p.purchasePrice(), p.salePrice(),
-                p.minStock(), p.maxStock(), p.reorderPoint(), p.archived(), ingredients(p), p.createdAt(),
-                p.updatedAt(), p.version());
+                p.minStock(), p.maxStock(), p.reorderPoint(), p.archived(), ingredients(p), targetSpecies(p),
+                withdrawalPeriods(p), p.createdAt(), p.updatedAt(), p.version());
+    }
+
+    /** Sorted by species name. */
+    static List<ReferenceItemView> targetSpecies(Product p) {
+        return p.targetSpecies().stream().map(ProductViews::ref)
+                .sorted(Comparator.comparing(ReferenceItemView::name)).toList();
+    }
+
+    /** Sorted by species name. */
+    static List<WithdrawalPeriodView> withdrawalPeriods(Product p) {
+        return p.withdrawalPeriods().stream()
+                .map(w -> new WithdrawalPeriodView(ref(w.species()), days(w.meatDays()), days(w.milkDays()),
+                        days(w.eggsDays())))
+                .sorted(Comparator.comparing(v -> v.species().name()))
+                .toList();
+    }
+
+    private static Integer days(Short days) {
+        return days == null ? null : days.intValue();
     }
 
     /** Sorted by ingredient name. */

@@ -24,6 +24,8 @@ export interface ProductDetail extends ProductSummary {
   maxStock: string | null
   reorderPoint: string
   ingredients: ProductIngredient[]
+  targetSpecies: ReferenceItem[]
+  withdrawalPeriods: WithdrawalPeriod[]
   createdAt: string
   updatedAt: string
   version: number
@@ -32,6 +34,14 @@ export interface ProductDetail extends ProductSummary {
 export interface ProductIngredient {
   ingredient: ReferenceItem
   strength: string | null
+}
+
+/** Days `null` = not specified, never 0 (BR-PROD-007). */
+export interface WithdrawalPeriod {
+  species: ReferenceItem
+  meatDays: number | null
+  milkDays: number | null
+  eggsDays: number | null
 }
 
 /** `ProductWriteRequest` (api.md §4.3). */
@@ -105,6 +115,24 @@ export function useReplaceIngredients(id: number) {
       void queryClient.invalidateQueries({ queryKey: productKeys.detail(id) })
       void queryClient.invalidateQueries({ queryKey: [...productKeys.all, 'substitutes'] })
     },
+  })
+}
+
+export function useReplaceTargetSpecies(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (speciesIds: number[]) =>
+      apiFetch<ReferenceItem[]>(`/api/products/${id}/target-species`, { method: 'PUT', json: { speciesIds } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: productKeys.detail(id) }),
+  })
+}
+
+export function useReplaceWithdrawalPeriods(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (periods: { speciesId: number; meatDays: number | null; milkDays: number | null; eggsDays: number | null }[]) =>
+      apiFetch<WithdrawalPeriod[]>(`/api/products/${id}/withdrawal-periods`, { method: 'PUT', json: periods }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: productKeys.detail(id) }),
   })
 }
 

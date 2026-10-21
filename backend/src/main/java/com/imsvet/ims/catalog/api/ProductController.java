@@ -3,9 +3,12 @@ package com.imsvet.ims.catalog.api;
 import com.imsvet.ims.catalog.application.ProductCatalog;
 import com.imsvet.ims.catalog.application.ProductCatalog.ProductInput;
 import com.imsvet.ims.catalog.application.ProductIngredients;
+import com.imsvet.ims.catalog.application.ProductSpecies;
+import com.imsvet.ims.catalog.application.ReferenceItemView;
 import com.imsvet.ims.catalog.application.ProductViews.ProductDetail;
 import com.imsvet.ims.catalog.application.ProductViews.ProductIngredientView;
 import com.imsvet.ims.catalog.application.ProductViews.ProductSummary;
+import com.imsvet.ims.catalog.application.ProductViews.WithdrawalPeriodView;
 import com.imsvet.ims.common.paging.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -49,12 +52,20 @@ class ProductController {
     record IngredientLineRequest(@NotNull Integer ingredientId, String strength) {
     }
 
+    record TargetSpeciesRequest(@NotNull List<@NotNull Integer> speciesIds) {
+    }
+
+    record WithdrawalPeriodRequest(@NotNull Integer speciesId, Integer meatDays, Integer milkDays, Integer eggsDays) {
+    }
+
     private final ProductCatalog catalog;
     private final ProductIngredients ingredients;
+    private final ProductSpecies species;
 
-    ProductController(ProductCatalog catalog, ProductIngredients ingredients) {
+    ProductController(ProductCatalog catalog, ProductIngredients ingredients, ProductSpecies species) {
         this.catalog = catalog;
         this.ingredients = ingredients;
+        this.species = species;
     }
 
     @GetMapping
@@ -84,6 +95,19 @@ class ProductController {
             @RequestBody List<@Valid IngredientLineRequest> body) {
         return ingredients.replace(id, body.stream()
                 .map(l -> new ProductIngredients.IngredientLine(l.ingredientId(), l.strength())).toList());
+    }
+
+    @PutMapping("/{id}/target-species")
+    List<ReferenceItemView> replaceTargetSpecies(@PathVariable long id, @Valid @RequestBody TargetSpeciesRequest body) {
+        return species.replaceTargetSpecies(id, body.speciesIds());
+    }
+
+    @PutMapping("/{id}/withdrawal-periods")
+    List<WithdrawalPeriodView> replaceWithdrawalPeriods(@PathVariable long id,
+            @RequestBody List<@Valid WithdrawalPeriodRequest> body) {
+        return species.replaceWithdrawalPeriods(id, body.stream()
+                .map(p -> new ProductSpecies.PeriodLine(p.speciesId(), p.meatDays(), p.milkDays(), p.eggsDays()))
+                .toList());
     }
 
     @GetMapping("/{id}/substitutes")

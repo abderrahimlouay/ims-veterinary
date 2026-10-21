@@ -27,6 +27,8 @@ function aProduct(overrides: Record<string, unknown> = {}) {
     reorderPoint: '0.000',
     archived: false,
     ingredients: [],
+    targetSpecies: [],
+    withdrawalPeriods: [],
     createdAt: '2026-10-20T08:00:00Z',
     updatedAt: '2026-10-20T08:00:00Z',
     version: 0,
@@ -232,5 +234,58 @@ describe('product pages', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Un principe actif figure deux fois.')
+  })
+
+  it('saves target species and withdrawal periods with empty days as not specified', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    const bodies: unknown[] = []
+    server.use(
+      http.get('/api/products/5', () => HttpResponse.json(aProduct())),
+      http.get('/api/animal-species', () =>
+        HttpResponse.json([
+          { id: 1, name: 'Bovine', code: 'BOVINE', country: null },
+          { id: 2, name: 'Ovine', code: 'OVINE', country: null },
+        ]),
+      ),
+      http.put('/api/products/5/target-species', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json([])
+      }),
+      http.put('/api/products/5/withdrawal-periods', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json([])
+      }),
+    )
+    renderApp('/products/5')
+
+    await userEvent.click(await screen.findByRole('tab', { name: "Espèces et délais d'attente" }))
+    await userEvent.click(await screen.findByLabelText('Bovin'))
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer les espèces cibles' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter une espèce' }))
+    await userEvent.selectOptions(screen.getByLabelText('Espèce 1'), '2')
+    await userEvent.type(screen.getByLabelText('Viande 1'), '28')
+    await userEvent.type(screen.getByLabelText('Lait 1'), '0')
+    await userEvent.click(screen.getByRole('button', { name: "Enregistrer les délais d'attente" }))
+
+    await screen.findAllByText('Modifications enregistrées.')
+    expect(bodies).toEqual([{ speciesIds: [1] }, [{ speciesId: 2, meatDays: 28, milkDays: 0, eggsDays: null }]])
+  })
+
+  it('shows not-specified days to a reader', async () => {
+    serveMe(aUser({ permissions: ['product.read'] }))
+    serveReferences()
+    server.use(
+      http.get('/api/products/5', () =>
+        HttpResponse.json(aProduct({ withdrawalPeriods: [{ species: { id: 1, name: 'Bovine', code: 'BOVINE', country: null }, meatDays: 28, milkDays: null, eggsDays: 0 }] })),
+      ),
+    )
+    renderApp('/products/5')
+
+    await userEvent.click(await screen.findByRole('tab', { name: "Espèces et délais d'attente" }))
+    const row = screen.getByRole('cell', { name: 'Bovin' }).closest('tr')!
+    expect(row).toHaveTextContent('28')
+    expect(row).toHaveTextContent('non précisé')
+    expect(row).toHaveTextContent('0')
   })
 })

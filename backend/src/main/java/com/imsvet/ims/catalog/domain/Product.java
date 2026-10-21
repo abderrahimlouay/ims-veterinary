@@ -9,13 +9,17 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.hibernate.annotations.OptimisticLock;
 
 /**
@@ -96,6 +100,19 @@ public class Product {
     @OptimisticLock(excluded = true)
     private List<ProductIngredient> ingredients = new ArrayList<>();
 
+    /** Target species (ADR-047); edited on its own tab, excluded from the optimistic lock. */
+    @ManyToMany
+    @JoinTable(name = "product_target_species", joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "species_id"))
+    @OptimisticLock(excluded = true)
+    private Set<AnimalSpecies> targetSpecies = new HashSet<>();
+
+    /** Withdrawal periods per species (FR-PROD-005); edited on its own tab, excluded from the optimistic lock. */
+    @ElementCollection
+    @CollectionTable(name = "product_withdrawal_periods", joinColumns = @JoinColumn(name = "product_id"))
+    @OptimisticLock(excluded = true)
+    private List<WithdrawalPeriod> withdrawalPeriods = new ArrayList<>();
+
     protected Product() {
     }
 
@@ -123,6 +140,25 @@ public class Product {
 
     public List<ProductIngredient> ingredients() {
         return List.copyOf(ingredients);
+    }
+
+    public void replaceTargetSpecies(Set<AnimalSpecies> species) {
+        targetSpecies.clear();
+        targetSpecies.addAll(species);
+    }
+
+    public Set<AnimalSpecies> targetSpecies() {
+        return Set.copyOf(targetSpecies);
+    }
+
+    /** BR-PROD-007: at most one period per species; the caller checks it. */
+    public void replaceWithdrawalPeriods(List<WithdrawalPeriod> periods) {
+        withdrawalPeriods.clear();
+        withdrawalPeriods.addAll(periods);
+    }
+
+    public List<WithdrawalPeriod> withdrawalPeriods() {
+        return List.copyOf(withdrawalPeriods);
     }
 
     public void archive(Instant now) {
