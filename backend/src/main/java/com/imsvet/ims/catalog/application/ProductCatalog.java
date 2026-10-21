@@ -1,5 +1,7 @@
 package com.imsvet.ims.catalog.application;
 
+import com.imsvet.ims.audit.application.AuditRecorder;
+import com.imsvet.ims.audit.domain.AuditAction;
 import com.imsvet.ims.catalog.application.ProductViews.ProductDetail;
 import com.imsvet.ims.catalog.application.ProductViews.ProductSummary;
 import com.imsvet.ims.catalog.domain.Product;
@@ -15,32 +17,42 @@ import com.imsvet.ims.common.error.ValidationException;
 import com.imsvet.ims.common.error.ValidationException.Violation;
 import com.imsvet.ims.common.paging.PageRequests;
 import com.imsvet.ims.common.paging.PageResponse;
+import com.imsvet.ims.common.security.Permissions;
 import com.imsvet.ims.settings.application.SettingsProvider;
 import com.imsvet.ims.settings.domain.SettingDefinition;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Product sheets without prices (FR-PROD-001/002/009; prices: {@code ProductPrices}, BR-PROD-006).
- * Validates BR-PROD-003/005 and ADR-050 (whole thresholds unless divisible); SKU unique (BR-PROD-001).
+ * Product sheets (FR-PROD-001/002/009). Validates BR-PROD-003/005 and ADR-050 (whole thresholds unless
+ * divisible); SKU unique (BR-PROD-001). Prices per base unit (ADR-049): setting or changing one needs
+ * {@code price.edit}, and every change after creation is audited {@code PRICE_CHANGE} in the same
+ * transaction, before the save (BR-PROD-006).
  */
 @Service
 public class ProductCatalog {
 
-    /** The request fields; {@code vatRate} {@code null} at creation takes the {@code default_vat_rate} setting. */
+    /**
+     * The request fields. {@code vatRate} {@code null} at creation takes the {@code default_vat_rate} setting; a
+     * {@code null} price is 0 at creation and unchanged on update.
+     */
     public record ProductInput(String sku, String commercialName, Integer categoryId, Integer dosageFormId,
             Integer manufacturerId, String baseUnit, boolean divisible, BigDecimal vatRate, BigDecimal minStock,
-            BigDecimal maxStock, BigDecimal reorderPoint) {
+            BigDecimal maxStock, BigDecimal reorderPoint, BigDecimal purchasePrice, BigDecimal salePrice) {
     }
+
+    private static final String PRICE_EDIT = "price.edit";
 
     private static final Sort BY_NAME = Sort.by("commercialName", "id");
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
@@ -50,16 +62,18 @@ public class ProductCatalog {
     private final DosageFormRepository dosageForms;
     private final ManufacturerRepository manufacturers;
     private final SettingsProvider settings;
+    private final AuditRecorder audit;
     private final Clock clock;
 
     public ProductCatalog(ProductRepository products, TherapeuticCategoryRepository categories,
             DosageFormRepository dosageForms, ManufacturerRepository manufacturers, SettingsProvider settings,
-            Clock clock) {
+            AuditRecorder audit, Clock clock) {
         this.products = products;
         this.categories = categories;
         this.dosageForms = dosageForms;
         this.manufacturers = manufacturers;
         this.settings = settings;
+        this.audit = audit;
         this.clock = clock;
     }
 
@@ -83,8 +97,15 @@ public class ProductCatalog {
         BigDecimal vat = input.vatRate() != null ? input.vatRate()
                 : new BigDecimal(settings.value(SettingDefinition.DEFAULT_VAT_RATE));
         Product.Core core = validate(input, vat);
+        BigDecimal purchase = orZero(input.purchasePrice());
+        BigDecimal sale = orZero(input.salePrice());
+        if ((purchase.signum() != 0 || sale.signum() != 0) && !Permissions.granted(PRICE_EDIT)) {
+            throw new AccessDeniedException("Setting a price needs price.edit");
+        }
         rejectDuplicateSku(core.sku(), null);
-        return ProductViews.detail(save(new Product(core, clock.instant())));
+        Product product = new Product(core, clock.instant());
+        product.setPrices(purchase, sale, clock.instant());
+        return ProductViews.detail(save(product));
     }
 
     /** An archived product stays editable (user decision 2026-10-21). */
@@ -99,8 +120,21 @@ public class ProductCatalog {
             throw invalid(List.of(new Violation("vatRate", "REQUIRED", "VAT is required.")));
         }
         Product.Core core = validate(input, input.vatRate());
+        BigDecimal purchase = input.purchasePrice() == null ? product.purchasePrice() : price(input.purchasePrice());
+        BigDecimal sale = input.salePrice() == null ? product.salePrice() : price(input.salePrice());
+        Map<String, Object> oldPrices = new LinkedHashMap<>();
+        Map<String, Object> newPrices = new LinkedHashMap<>();
+        collectChange("purchasePrice", product.purchasePrice(), purchase, oldPrices, newPrices);
+        collectChange("salePrice", product.salePrice(), sale, oldPrices, newPrices);
+        if (!newPrices.isEmpty() && !Permissions.granted(PRICE_EDIT)) {
+            throw new AccessDeniedException("Changing a price needs price.edit");
+        }
         rejectDuplicateSku(core.sku(), product.id());
         product.update(core, clock.instant());
+        if (!newPrices.isEmpty()) {
+            product.setPrices(purchase, sale, clock.instant());
+            audit.record(AuditAction.PRICE_CHANGE, "products", product.id(), oldPrices, newPrices);
+        }
         return ProductViews.detail(save(product));
     }
 
@@ -148,8 +182,27 @@ public class ProductCatalog {
                 Map.of("field", "sku"));
     }
 
+    private static void collectChange(String field, BigDecimal before, BigDecimal after, Map<String, Object> oldValues,
+            Map<String, Object> newValues) {
+        if (before.compareTo(after) != 0) {
+            oldValues.put(field, before.toPlainString());
+            newValues.put(field, after.toPlainString());
+        }
+    }
+
+    private static BigDecimal orZero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO.setScale(4) : price(value);
+    }
+
+    /** Already validated (≥ 0, at most 4 decimals). */
+    private static BigDecimal price(BigDecimal value) {
+        return value.setScale(4);
+    }
+
     private Product.Core validate(ProductInput in, BigDecimal vat) {
         List<Violation> violations = new ArrayList<>();
+        priceViolation("purchasePrice", in.purchasePrice(), violations);
+        priceViolation("salePrice", in.salePrice(), violations);
         if (vat.signum() < 0 || vat.compareTo(HUNDRED) > 0 || vat.stripTrailingZeros().scale() > 2) {
             violations.add(new Violation("vatRate", "RANGE", "VAT is a percentage from 0 to 100, two decimals."));
         }
@@ -168,6 +221,18 @@ public class ProductCatalog {
         }
         return new Product.Core(in.sku().trim(), in.commercialName().trim(), category, dosageForm, manufacturer,
                 in.baseUnit().trim(), in.divisible(), vat.setScale(2), min, max, reorder);
+    }
+
+    /** ADR-049: ≥ 0 with at most 4 decimals. */
+    private static void priceViolation(String field, BigDecimal value, List<Violation> violations) {
+        if (value == null) {
+            return;
+        }
+        if (value.signum() < 0) {
+            violations.add(new Violation(field, "NOT_NEGATIVE", "A price cannot be negative."));
+        } else if (value.stripTrailingZeros().scale() > 4) {
+            violations.add(new Violation(field, "SCALE", "At most four decimals."));
+        }
     }
 
     /** ≥ 0, at most 3 decimals, whole for a non-divisible product (ADR-050). */

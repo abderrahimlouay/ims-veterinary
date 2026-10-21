@@ -97,6 +97,13 @@ public class Product {
         apply(core, now);
     }
 
+    /** Prices per base unit (ADR-049); the caller checks {@code price.edit} and audits (BR-PROD-006). */
+    public void setPrices(BigDecimal newPurchasePrice, BigDecimal newSalePrice, Instant now) {
+        this.purchasePrice = newPurchasePrice;
+        this.salePrice = newSalePrice;
+        this.updatedAt = now;
+    }
+
     public void archive(Instant now) {
         this.archived = true;
         this.updatedAt = now;

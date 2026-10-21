@@ -28,7 +28,7 @@ export interface ProductDetail extends ProductSummary {
   version: number
 }
 
-/** `ProductWriteRequest` without prices (prices: BR-PROD-006). */
+/** `ProductWriteRequest` (api.md §4.3). */
 export interface ProductWrite {
   sku: string
   commercialName: string
@@ -41,6 +41,9 @@ export interface ProductWrite {
   minStock: string
   maxStock: string | null
   reorderPoint: string
+  /** Sent only with `price.edit`; omitted, the server keeps the current prices (BR-PROD-006). */
+  purchasePrice?: string
+  salePrice?: string
   version?: number
 }
 

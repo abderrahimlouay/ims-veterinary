@@ -125,4 +125,52 @@ describe('product pages', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Archiver' }))
     expect(await screen.findByRole('button', { name: 'Restaurer' })).toBeInTheDocument()
   })
+
+  it('sends prices only with price.edit (BR-PROD-006)', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    let body: Record<string, unknown> = {}
+    server.use(
+      http.get('/api/products/5', () => HttpResponse.json(aProduct())),
+      http.put('/api/products/5', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(aProduct({ version: 1 }))
+      }),
+    )
+    renderApp('/products/5')
+
+    expect(await screen.findByLabelText('Prix de vente (unité de base)')).toBeDisabled()
+    expect(screen.getByText(/Les prix ne sont modifiables/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await screen.findByText('Modifications enregistrées.')
+    expect(body).not.toHaveProperty('salePrice')
+    expect(body).not.toHaveProperty('purchasePrice')
+  })
+
+  it('edits a price with up to four decimals when allowed', async () => {
+    serveMe(aUser({ permissions: [...PHARMACIST.permissions, 'price.edit'] }))
+    serveReferences()
+    let body: Record<string, unknown> = {}
+    server.use(
+      http.get('/api/products/5', () => HttpResponse.json(aProduct())),
+      http.put('/api/products/5', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(aProduct({ version: 1, salePrice: '0.0150' }))
+      }),
+    )
+    renderApp('/products/5')
+
+    const sale = await screen.findByLabelText('Prix de vente (unité de base)')
+    await userEvent.clear(sale)
+    await userEvent.type(sale, '0.00001')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    expect(await screen.findByText('Trop de décimales.')).toBeInTheDocument()
+
+    await userEvent.clear(sale)
+    await userEvent.type(sale, '0.015')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await screen.findByText('Modifications enregistrées.')
+    expect(body).toMatchObject({ salePrice: '0.015', purchasePrice: '0.0000' })
+  })
 })
