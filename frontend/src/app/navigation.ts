@@ -8,6 +8,7 @@ export interface NavItem {
 /** Entries are added with their pages, phase by phase (frontend.md §3.1). */
 export const NAV_ITEMS: readonly NavItem[] = [
   { to: '/', labelKey: 'nav.home' },
+  { to: '/products', labelKey: 'nav.products', permission: 'product.read' },
   { to: '/catalog/references', labelKey: 'nav.references', permission: 'product.read' },
   { to: '/admin/users', labelKey: 'nav.users', permission: 'user.read' },
   { to: '/admin/roles', labelKey: 'nav.roles', permission: 'role.manage' },

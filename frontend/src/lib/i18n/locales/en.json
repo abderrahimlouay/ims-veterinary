@@ -11,7 +11,8 @@
     "roles": "Roles and permissions",
     "settings": "Settings",
     "audit": "Audit log",
-    "references": "Reference data"
+    "references": "Reference data",
+    "products": "Products"
   },
   "language": {
     "label": "Language",
@@ -89,16 +90,6 @@
     "saved": "Changes saved.",
     "close": "Close",
     "stale": "Someone else changed this record. Reload the page before editing.",
-    "fieldErrors": {
-      "REQUIRED": "This field is required.",
-      "DUPLICATE": "This value is already used.",
-      "EMAIL": "Invalid e-mail address.",
-      "TOO_SHORT": "Use at least {{min}} characters.",
-      "TOO_COMMON": "This password is too common.",
-      "UNKNOWN": "Unknown value.",
-      "INVALID_FORMAT": "Invalid format.",
-      "READ_ONLY": "This setting cannot be changed here."
-    },
     "users": {
       "title": "Users",
       "new": "New user",
@@ -211,6 +202,46 @@
         "ingredients": "Active ingredients (INN)",
         "manufacturers": "Manufacturers"
       }
+    },
+    "products": {
+      "title": "Products",
+      "new": "New product",
+      "showArchived": "Show archived products",
+      "empty": "No products.",
+      "sku": "SKU",
+      "name": "Commercial name",
+      "category": "Therapeutic category",
+      "dosageForm": "Dosage form",
+      "manufacturer": "Manufacturer",
+      "baseUnit": "Base unit",
+      "divisible": "Divisible (ml, g…) — otherwise whole units (tablets, syringes…)",
+      "vatRate": "VAT (%)",
+      "minStock": "Minimum stock",
+      "maxStock": "Maximum stock",
+      "reorderPoint": "Reorder point",
+      "salePrice": "Sale price (base unit)",
+      "purchasePrice": "Purchase price (base unit)",
+      "updatedAt": "Changed on",
+      "archived": "Archived",
+      "archive": "Archive",
+      "restore": "Restore",
+      "reload": "Reload the latest version"
     }
+  },
+  "fieldErrors": {
+    "REQUIRED": "This field is required.",
+    "DUPLICATE": "This value is already used.",
+    "EMAIL": "Invalid e-mail address.",
+    "TOO_SHORT": "Use at least {{min}} characters.",
+    "TOO_COMMON": "This password is too common.",
+    "UNKNOWN": "Unknown value.",
+    "INVALID_FORMAT": "Invalid format.",
+    "READ_ONLY": "This setting cannot be changed here.",
+    "NOT_NEGATIVE": "The value cannot be negative.",
+    "SCALE": "Too many decimals.",
+    "WHOLE_NUMBER": "This product is counted in whole units.",
+    "BELOW_MIN": "The maximum stock is below the minimum.",
+    "RANGE": "Value out of range.",
+    "SIZE": "This text is too long."
   }
 }
