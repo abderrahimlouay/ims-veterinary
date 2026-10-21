@@ -318,9 +318,11 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 - **Validation:** both fields non-blank. **Errors:** `AUTH_INVALID_CREDENTIALS` (401, same detail for unknown user and wrong password), `AUTH_ACCOUNT_DISABLED` (403, only after the right password), `RATE_LIMITED` (429 with `Retry-After`), `ACCESS_DENIED` (403, missing CSRF header).
 
 ### 5.2 Product search
-- **GET `/api/products?q=amox&categoryId=1&page=0&size=20`** — fast search for POS/catalogue. **Permission:** `product.read`.
-- **Response:** page of `{ id, sku, commercialName, baseUnit, category, manufacturer, salePrice, sellableQtyBase, totalQtyBase, stockStatus: "in_stock|low|out", nearestExpiry, archived }`. `stockStatus`: out = sellable 0, low = ≤ `min_stock`.
-- **Validation:** `size ≤ 100`; sort whitelist. **Performance:** < 1 s on the 50,000-product reference dataset (NFR-002, ADR-048). **Errors:** `VALIDATION_FAILED`.
+- **GET `/api/products?q=amox&categoryId=1&speciesId=2&page=0&size=20`** — fast search for POS/catalogue. **Permission:** `product.read`.
+- **Criteria (all optional, ADR-047/048):** `q` anywhere in the commercial name, the SKU or an active-ingredient name, case- and accent-insensitive, `%` and `_` taken literally; `categoryId`, `manufacturerId`, `ingredientId`, `speciesId` (target or withdrawal-period species); `includeArchived` (default `false`). From Phase 3 `barcode`, from Phase 4 `inStockOnly`.
+- **Order:** exact SKU match, then names starting with `q`, then the other matches, then by name.
+- **Response:** page of `ProductSummary {id, sku, commercialName, category, baseUnit, salePrice, archived}`; from Phase 4 also `sellableQtyBase`, `totalQtyBase`, `stockStatus` (`in_stock|low|out`, out = sellable 0, low = ≤ `min_stock`) and `nearestExpiry`.
+- **Validation:** `size ≤ 100`. **Performance:** < 1 s on the 50,000-product reference dataset (NFR-002, ADR-048; measured 61–125 ms, `testing.md` §8.1). **Errors:** `VALIDATION_FAILED`.
 
 ### 5.3 FEFO preview
 - **GET `/api/lots/fefo?productId=12&quantity=3&unitId=7`** — **Permission:** `lot.read`.

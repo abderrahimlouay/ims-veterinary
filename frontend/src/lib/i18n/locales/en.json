@@ -232,7 +232,12 @@
         "ingredients": "Active ingredients",
         "substitutes": "Substitutes",
         "species": "Species and withdrawal periods"
-      }
+      },
+      "search": "Search",
+      "searchHint": "Name, SKU or active ingredient",
+      "ingredient": "Active ingredient",
+      "species": "Species",
+      "noMatch": "No product matches the search."
     },
     "ingredients": {
       "none": "No active ingredient.",

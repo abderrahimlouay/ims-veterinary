@@ -232,7 +232,12 @@
         "ingredients": "Principes actifs",
         "substitutes": "Substituts",
         "species": "Espèces et délais d'attente"
-      }
+      },
+      "search": "Rechercher",
+      "searchHint": "Nom, SKU ou principe actif",
+      "ingredient": "Principe actif",
+      "species": "Espèce",
+      "noMatch": "Aucun produit ne correspond à la recherche."
     },
     "ingredients": {
       "none": "Aucun principe actif.",

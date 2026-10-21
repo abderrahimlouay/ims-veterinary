@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
@@ -54,7 +55,6 @@ public class ProductCatalog {
 
     private static final String PRICE_EDIT = "price.edit";
 
-    private static final Sort BY_NAME = Sort.by("commercialName", "id");
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     private final ProductRepository products;
@@ -77,12 +77,28 @@ public class ProductCatalog {
         this.clock = clock;
     }
 
+    /** The search criteria of {@code GET /api/products} (ADR-047, ADR-048); all optional. */
+    public record SearchCriteria(String q, Integer categoryId, Integer manufacturerId, Integer ingredientId,
+            Integer speciesId, boolean includeArchived) {
+    }
+
+    /**
+     * NFR-002 search: {@code q} anywhere in the name, the SKU or an active-ingredient name, ignoring case and
+     * accents (collation); exact SKU first, then names starting with {@code q}, then the others, by name.
+     */
     @PreAuthorize("hasAuthority('product.read')")
     @Transactional(readOnly = true)
-    public PageResponse<ProductSummary> list(boolean includeArchived, int page, int size) {
-        var request = PageRequests.of(page, size, BY_NAME);
-        return PageResponse.of(includeArchived ? products.findAll(request) : products.findByArchivedFalse(request),
-                ProductViews::summary);
+    public PageResponse<ProductSummary> search(SearchCriteria c, int page, int size) {
+        var request = PageRequests.of(page, size, Sort.unsorted());
+        String term = c.q() == null || c.q().isBlank() ? null : c.q().trim();
+        String escaped = term == null ? null : term.replaceAll("([!%_])", "!$1");
+        String pattern = escaped == null ? null : "%" + escaped + "%";
+        String prefix = escaped == null ? null : escaped + "%";
+        List<Product> found = products.search(term, pattern, prefix, c.categoryId(), c.manufacturerId(),
+                c.ingredientId(), c.speciesId(), c.includeArchived(), request);
+        long total = products.countSearch(pattern, c.categoryId(), c.manufacturerId(), c.ingredientId(),
+                c.speciesId(), c.includeArchived());
+        return PageResponse.of(new PageImpl<>(found, request, total), ProductViews::summary);
     }
 
     @PreAuthorize("hasAuthority('product.read')")
