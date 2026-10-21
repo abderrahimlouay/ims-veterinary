@@ -1,11 +1,11 @@
 # IMS Vétérinaire
 
-**Phase 0 (Foundation) implemented — awaiting review before Phase 1**
+**Phase 1 (Security & administration) complete — Phase 2 (Catalogue) not started**
 
 Inventory, purchasing, sales and finance management for a veterinary-medicine business: lot and expiry tracking (FEFO), withdrawal-period warnings, lot recall, credit sales and customer accounts, cash sessions, supplier management and reporting.
 
 ## Status
-Phase 0 delivers an empty but buildable, tested skeleton: Spring Boot backend with module packages, architecture tests, Flyway baseline, Problem Details error handling, trace id, JSON logs and Actuator health; React frontend shell with French/Arabic (RTL)/English, API client and design tokens; GitHub Actions CI. No business features exist yet. See `docs/roadmap.md`.
+Phase 0 delivered the tested skeleton (module packages, architecture tests, Flyway, Problem Details, trace id, JSON logs, health, React shell in French/Arabic (RTL)/English, CI). Phase 1 adds security and administration: session login with CSRF, throttling and password policy, first-administrator bootstrap, users, roles and permissions, application settings and the audit log, with their administration pages and end-to-end journeys J1 and J11. Catalogue, stock, purchasing, sales and finance come in the next phases. See `docs/roadmap.md`.
 
 ## Stack
 Java 21 · Spring Boot 4.1 · Maven · MySQL 8.4 LTS · Flyway · React 19 + Vite + TypeScript · Tailwind CSS 4 · Node.js 24 · GitHub Actions (ADR-032).
