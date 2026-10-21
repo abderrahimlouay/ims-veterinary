@@ -17,4 +17,9 @@ describe('format (ADR-033: DZD, fr-DZ, Africa/Algiers)', () => {
   it('shows instants in the business time zone, not UTC', () => {
     expect(formatDateTime('2026-12-31T23:30:00Z')).toContain('01/01/2027')
   })
+
+  it('uses a 24-hour clock (ADR-033)', () => {
+    expect(formatDateTime('2026-12-31T23:30:00Z')).toBe('01/01/2027 00:30')
+    expect(formatDateTime('2026-12-31T13:05:00Z')).toBe('31/12/2026 14:05')
+  })
 })

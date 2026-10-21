@@ -37,7 +37,7 @@ describe('AuditPage', () => {
 
     expect(await screen.findByText('admin (Amina Benali)')).toBeInTheDocument()
     expect(screen.getByText('Système')).toBeInTheDocument()
-    expect(screen.getAllByText(/^21\/10\/2026/)).toHaveLength(2)
+    expect(screen.getAllByText('21/10/2026 00:30')).toHaveLength(2)
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Détails' })[0])
     expect(screen.getByRole('complementary', { name: 'Détails' })).toHaveTextContent('"19.00"')

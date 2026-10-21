@@ -17,8 +17,13 @@ export function formatQuantity(value: DecimalString): string {
   )
 }
 
-/** A UTC instant from the API shown in the business time zone. */
+/**
+ * A UTC instant from the API shown in the business time zone, on a 24-hour clock whatever the locale's
+ * default (`fr-DZ` data uses AM/PM; user decision 2026-10-21, ADR-033).
+ */
 export function formatDateTime(instant: string): string {
   const { locale, timeZone } = business()
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short', timeZone }).format(new Date(instant))
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23', timeZone }).format(
+    new Date(instant),
+  )
 }
