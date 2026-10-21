@@ -249,7 +249,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:**
   - **UI languages:** French (default), Arabic, English. Arabic is **right-to-left**: the root element's `dir` and `lang` follow the active language, and layouts use logical CSS properties (`ms-`/`me-`, `start`/`end`) — never `left`/`right`.
   - **Currency:** Algerian dinar, ISO code **DZD**, 2 decimal places.
-  - **Formatting locale:** `fr-DZ` for numbers, dates and currency regardless of UI language `[REC]`, so amounts read the same for every user (Latin digits); can be revisited per document in Phase 10.
+  - **Formatting locale:** `fr-DZ` for numbers, dates and currency regardless of UI language `[REC]`, so amounts read the same for every user (Latin digits); can be revisited per document in Phase 10. Times use a **24-hour clock** even though the `fr-DZ` locale data defaults to AM/PM (user decision, 2026-10-21).
   - **Business time zone:** `Africa/Algiers` (used for "today", expiry and document year; storage stays UTC per ADR-010).
   - These values are **settings with defaults**, not literals scattered in code (CLAUDE.md §11): backend `ims.business.*` configuration in Phase 0, moved to/overridable by `app_settings` in Phase 1. *Done 2026-10-21 by ADR-044: rows in `app_settings`, only the locale editable.*
 - **Alternatives:** EUR/fr-FR (prototype); French only (no RTL).

@@ -195,7 +195,7 @@ All messages go through a code → localised-text map (the UI chooses wording; `
 
 ## 10. Internationalisation and formatting
 
-Per **ADR-033**: UI languages French (default), Arabic (RTL) and English via i18next/react-i18next; every string externalised in `src/lib/i18n/locales/{fr,ar,en}.json`; `<html lang dir>` follows the active language; layout uses logical properties only (Tailwind `ms-`/`me-`/`ps-`/`pe-`/`start-`/`end-`). Numbers, dates and currency (DZD) are formatted with `Intl` using the `fr-DZ` locale for every language; UTC instants are displayed in `Africa/Algiers`.
+Per **ADR-033**: UI languages French (default), Arabic (RTL) and English via i18next/react-i18next; every string externalised in `src/lib/i18n/locales/{fr,ar,en}.json`; `<html lang dir>` follows the active language; layout uses logical properties only (Tailwind `ms-`/`me-`/`ps-`/`pe-`/`start-`/`end-`). Numbers, dates and currency (DZD) are formatted with `Intl` using the `fr-DZ` locale for every language, times on a 24-hour clock (ADR-033); UTC instants are displayed in `Africa/Algiers`. Currency, locale and time zone come from `GET /api/settings/public` after login (ADR-044).
 
 ## 11. Responsive behaviour
 
