@@ -10,7 +10,8 @@
     "users": "المستخدمون",
     "roles": "الأدوار والصلاحيات",
     "settings": "الإعدادات",
-    "audit": "سجل التدقيق"
+    "audit": "سجل التدقيق",
+    "references": "البيانات المرجعية"
   },
   "language": {
     "label": "اللغة",
@@ -72,7 +73,9 @@
     "ACCESS_DENIED": "ليست لديك صلاحية هذا الإجراء.",
     "NETWORK_ERROR": "تعذّر الوصول إلى الخادم. تحقّق من الاتصال وأعد المحاولة.",
     "INTERNAL_ERROR": "حدث خطأ غير متوقع (المرجع {{traceId}}).",
-    "UNKNOWN": "فشل الطلب (المرجع {{traceId}})."
+    "UNKNOWN": "فشل الطلب (المرجع {{traceId}}).",
+    "RESOURCE_IN_USE": "هذا الإدخال مستخدم ولا يمكن حذفه.",
+    "DUPLICATE_RESOURCE": "هذه القيمة موجودة مسبقًا."
   },
   "pager": {
     "label": "ترقيم الصفحات",
@@ -162,6 +165,52 @@
       "oldValues": "قبل",
       "newValues": "بعد",
       "empty": "لا يوجد إدخال مطابق."
+    }
+  },
+  "reference": {
+    "species": {
+      "BOVINE": "أبقار",
+      "OVINE": "أغنام",
+      "CAPRINE": "ماعز",
+      "POULTRY": "دواجن",
+      "EQUINE": "خيول",
+      "CANINE": "كلاب",
+      "FELINE": "قطط"
+    },
+    "categories": {
+      "ANTIBIOTIC": "مضاد حيوي",
+      "ANTIPARASITIC": "مضاد للطفيليات",
+      "VACCINE": "لقاح",
+      "ANTI_INFLAMMATORY": "مضاد للالتهاب",
+      "VITAMIN_SUPPLEMENT": "فيتامين / مكمّل غذائي"
+    },
+    "dosageForms": {
+      "INJECTABLE": "قابل للحقن",
+      "POWDER": "مسحوق",
+      "TABLET": "أقراص",
+      "SOLUTION": "محلول",
+      "POUR_ON": "سكب على الظهر"
+    }
+  },
+  "catalog": {
+    "references": {
+      "title": "البيانات المرجعية",
+      "empty": "لا توجد إدخالات بعد.",
+      "seeded": "قيمة أساسية",
+      "rename": "إعادة التسمية",
+      "delete": "حذف",
+      "add": "إضافة",
+      "addLabel": "إدخال جديد",
+      "newName": "الاسم الجديد",
+      "country": "البلد",
+      "cancel": "إلغاء",
+      "lists": {
+        "species": "الأنواع الحيوانية",
+        "categories": "الفئات العلاجية",
+        "dosageForms": "الأشكال الصيدلانية",
+        "ingredients": "المواد الفعالة",
+        "manufacturers": "المختبرات"
+      }
     }
   }
 }

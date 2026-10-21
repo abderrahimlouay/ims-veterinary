@@ -150,9 +150,9 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | PUT | `/api/products/{id}/ingredients` | replace ingredient set | `product.update` | `[{ingredientId, strength}]` |
 | PUT | `/api/products/{id}/withdrawal-periods` | replace set | `product.update` | `[{speciesId, meatDays?, milkDays?, eggsDays?}]` |
 | PUT | `/api/products/{id}/target-species` | replace target species (ADR-047) | `product.update` | `{speciesIds[]}` |
-| GET/POST/PUT/DELETE | `/api/categories` | therapeutic categories | `product.read` / `reference.manage` | `{name}`; `DELETE` only when unused, else `RESOURCE_IN_USE` (ADR-053); `DUPLICATE_RESOURCE` (case/accent-insensitive names) |
+| GET/POST/PUT/DELETE | `/api/categories` | therapeutic categories | `product.read` (GET) / `reference.manage` | GET → `[{id, name, code, country}]` sorted by name (`code` only for seeded entries, `country` only for manufacturers); POST `{name}` → 201; PUT `/{id}` `{name}`; DELETE `/{id}` → 204 only when unused, else `RESOURCE_IN_USE` (ADR-053); seeded entries: rename/delete → `INVALID_STATE_TRANSITION` (ADR-054); `DUPLICATE_RESOURCE` (case/accent-insensitive names) |
 | GET/POST/PUT/DELETE | `/api/manufacturers` | manufacturers | same | `{name, country?}` |
-| GET/POST/PUT/DELETE | `/api/dosage-forms`, `/api/active-ingredients`, `/api/animal-species` | reference lists | same | `{name}`; seeded entries: OD-032 |
+| GET/POST/PUT/DELETE | `/api/dosage-forms`, `/api/active-ingredients`, `/api/animal-species` | reference lists | same | `{name}`; same rules |
 
 ### 4.4 `/api/lots`
 
@@ -401,4 +401,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-012 (count scope), OD-013 (generate proposals), OD-015 (close PO), OD-019 (unit barcode), OD-032 (labels of seeded reference values), OD-020 (pdf formats), OD-021 (backup run).
+OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-012 (count scope), OD-013 (generate proposals), OD-015 (close PO), OD-019 (unit barcode), OD-020 (pdf formats), OD-021 (backup run).

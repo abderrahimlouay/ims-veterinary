@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router'
 import { AuditPage, NewUserPage, RolesPage, SettingsPage, UserDetailPage, UsersPage } from '../features/admin'
+import { ReferencesPage } from '../features/catalog'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { AccountPage, LoginPage } from '../features/auth'
 import { RequireAuth, RequirePermission } from './guards'
@@ -23,6 +24,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'account', element: <AccountPage /> },
+      { path: 'catalog/references', element: <RequirePermission code="product.read"><ReferencesPage /></RequirePermission> },
       { path: 'admin/users', element: <RequirePermission code="user.read"><UsersPage /></RequirePermission> },
       { path: 'admin/users/new', element: <RequirePermission code="user.manage"><NewUserPage /></RequirePermission> },
       { path: 'admin/users/:id', element: <RequirePermission code="user.read"><UserDetailPage /></RequirePermission> },

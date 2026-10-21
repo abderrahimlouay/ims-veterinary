@@ -99,10 +99,12 @@ Format: **Column | MySQL type | Null / default | Notes**. `PK`, `FK→`, `UQ`, `
 ### 3.2 Product catalogue (module 1)
 
 **manufacturers** — `id INT AI PK`, `name VARCHAR(150) NOT NULL UQ`, `country VARCHAR(80) NULL`.
-**therapeutic_categories** — `id INT AI PK`, `name VARCHAR(100) NOT NULL UQ`.
-**dosage_forms** — `id INT AI PK`, `name VARCHAR(60) NOT NULL UQ`.
+**therapeutic_categories** — `id INT AI PK`, `name VARCHAR(100) NOT NULL UQ`, `code VARCHAR(40) NULL UQ` (seeded rows, ADR-054).
+**dosage_forms** — `id INT AI PK`, `name VARCHAR(60) NOT NULL UQ`, `code VARCHAR(40) NULL UQ` (seeded rows, ADR-054).
 **active_ingredients** — `id INT AI PK`, `name VARCHAR(150) NOT NULL UQ` (DCI / INN).
-**animal_species** — `id INT AI PK`, `name VARCHAR(60) NOT NULL UQ`.
+**animal_species** — `id INT AI PK`, `name VARCHAR(60) NOT NULL UQ`, `code VARCHAR(40) NULL UQ` (seeded rows, ADR-054).
+
+Reference names are unique case- and accent-insensitively and never blank (CHECK); seeded rows (with a code) are protected (ADR-054); an unused row can be deleted (ADR-053).
 
 **products**
 
@@ -297,7 +299,7 @@ All rows below are **one database transaction** (`@Transactional`, READ COMMITTE
 
 ## 8. Seed data
 
-Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), settings as in the Source Schema; the reference values are listed in ADR-052 (English; display labels OD-032), in their own data migration; manufacturers and active ingredients start empty. **Additional seed:** permission catalogue and role-permission mapping (`security.md` §4, ADR-037); login-throttle settings (ADR-038). The first administrator is created at startup from environment variables (ADR-040), never by a hard-coded password in a migration.
+Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), settings as in the Source Schema; the reference values are listed in ADR-052 (English, with the codes of ADR-054), in their own data migration; manufacturers and active ingredients start empty. **Additional seed:** permission catalogue and role-permission mapping (`security.md` §4, ADR-037); login-throttle settings (ADR-038). The first administrator is created at startup from environment variables (ADR-040), never by a hard-coded password in a migration.
 
 ## 9. Data lifecycle
 

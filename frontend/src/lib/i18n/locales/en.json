@@ -10,7 +10,8 @@
     "users": "Users",
     "roles": "Roles and permissions",
     "settings": "Settings",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "references": "Reference data"
   },
   "language": {
     "label": "Language",
@@ -72,7 +73,9 @@
     "ACCESS_DENIED": "You do not have permission for this action.",
     "NETWORK_ERROR": "The server cannot be reached. Check the connection and try again.",
     "INTERNAL_ERROR": "An unexpected error occurred (reference {{traceId}}).",
-    "UNKNOWN": "The request failed (reference {{traceId}})."
+    "UNKNOWN": "The request failed (reference {{traceId}}).",
+    "RESOURCE_IN_USE": "This entry is used and cannot be deleted.",
+    "DUPLICATE_RESOURCE": "This value already exists."
   },
   "pager": {
     "label": "Pagination",
@@ -162,6 +165,52 @@
       "oldValues": "Before",
       "newValues": "After",
       "empty": "No entry matches."
+    }
+  },
+  "reference": {
+    "species": {
+      "BOVINE": "Bovine",
+      "OVINE": "Ovine",
+      "CAPRINE": "Caprine",
+      "POULTRY": "Poultry",
+      "EQUINE": "Equine",
+      "CANINE": "Canine",
+      "FELINE": "Feline"
+    },
+    "categories": {
+      "ANTIBIOTIC": "Antibiotic",
+      "ANTIPARASITIC": "Antiparasitic",
+      "VACCINE": "Vaccine",
+      "ANTI_INFLAMMATORY": "Anti-inflammatory",
+      "VITAMIN_SUPPLEMENT": "Vitamin / Supplement"
+    },
+    "dosageForms": {
+      "INJECTABLE": "Injectable",
+      "POWDER": "Powder",
+      "TABLET": "Tablet",
+      "SOLUTION": "Solution",
+      "POUR_ON": "Pour-on"
+    }
+  },
+  "catalog": {
+    "references": {
+      "title": "Reference data",
+      "empty": "No entries yet.",
+      "seeded": "Base value",
+      "rename": "Rename",
+      "delete": "Delete",
+      "add": "Add",
+      "addLabel": "New entry",
+      "newName": "New name",
+      "country": "Country",
+      "cancel": "Cancel",
+      "lists": {
+        "species": "Animal species",
+        "categories": "Therapeutic categories",
+        "dosageForms": "Dosage forms",
+        "ingredients": "Active ingredients (INN)",
+        "manufacturers": "Manufacturers"
+      }
     }
   }
 }

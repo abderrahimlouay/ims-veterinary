@@ -20,7 +20,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 |---|---|---|---|
 | 0 | Foundation | repo, build, CI, MySQL baseline, error handling, test harness | OD-024, OD-008, ADR confirmation |
 | 1 | Security & administration | login, users, roles/permissions, audit, settings | ~~OD-001~~ ADR-036, ~~OD-023~~ ADR-037, ADR-027 (decided 2026-10-20) |
-| 2 | Catalogue | products, reference data, search | ~~OD-018~~ ADR-047/048, ~~OD-022~~ ADR-049/050, ADR-051–053 (2026-10-21); OD-032 |
+| 2 | Catalogue | products, reference data, search | ~~OD-018~~ ADR-047/048, ~~OD-022~~ ADR-049/050, ADR-051–054 (2026-10-21) |
 | 3 | Lots & units | packaging units, barcodes, lots, status, expiry rules, FEFO allocator | OD-009, OD-019, OD-025, OD-027 |
 | 4 | Inventory & stock | ledger, stock levels, adjustments, opening stock, counts, reorder proposals | OD-012, OD-013 |
 | 5 | Purchasing | suppliers, purchase orders, goods receipts, supplier returns, numbering | OD-007, OD-014, OD-015, OD-017, OD-029 |
@@ -60,7 +60,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 2 — Catalogue
 - **Objective:** maintain the product master data and find products quickly.
-- **Prerequisites:** Phase 1; decided 2026-10-21: ADR-047 (target species), ADR-048 (search), ADR-049 (price precision), ADR-050 (divisible), ADR-051 (SKU collation), ADR-052 (seed), ADR-053 (reference delete); open: OD-032 (display labels of seeded values).
+- **Prerequisites:** Phase 1; decided 2026-10-21: ADR-047 (target species), ADR-048 (search), ADR-049 (price precision), ADR-050 (divisible), ADR-051 (SKU collation), ADR-052 (seed), ADR-053 (reference delete), ADR-054 (labels of seeded values).
 - **Features:** products CRUD/archive; categories, manufacturers, dosage forms, active ingredients, species; withdrawal periods; thresholds; prices/VAT; product search; substitutes by ingredient.
 - **Database work:** product and reference tables, target species, indexes and search per ADR-048; unique SKU. Units and barcodes are Phase 3; stock columns and filters Phase 4 (scope confirmed by the user, 2026-10-21).
 - **Backend work:** `catalog` module endpoints (`api.md` §4.3), price-change auditing.

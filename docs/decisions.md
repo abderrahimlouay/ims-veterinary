@@ -376,13 +376,19 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 
 ## ADR-052 — Reference data seed
 - **Status:** Accepted (user decision, 2026-10-21, Phase 2 preflight); values given by the user from the legacy schema file.
-- **Decision:** Seeded in **English**, in a data migration separate from the table migrations, exactly: animal species (7) Bovine, Ovine, Caprine, Poultry, Equine, Canine, Feline; therapeutic categories (5) Antibiotic, Antiparasitic, Vaccine, Anti-inflammatory, Vitamin / Supplement; dosage forms (5) Injectable, Powder, Tablet, Solution, Pour-on; manufacturers and active ingredients start empty. How the screen shows the seeded values in French and Arabic is **OD-032**.
+- **Decision:** Seeded in **English**, in a data migration separate from the table migrations, exactly: animal species (7) Bovine, Ovine, Caprine, Poultry, Equine, Canine, Feline; therapeutic categories (5) Antibiotic, Antiparasitic, Vaccine, Anti-inflammatory, Vitamin / Supplement; dosage forms (5) Injectable, Powder, Tablet, Solution, Pour-on; manufacturers and active ingredients start empty. How the screen shows the seeded values in French and Arabic: **ADR-054** (was OD-032).
 - **Consequences:** `database.md` §8.
 
 ## ADR-053 — Deleting reference data
 - **Status:** Accepted (user decision, 2026-10-21, Phase 2 preflight)
 - **Decision:** `DELETE` on a reference entry (category, manufacturer, dosage form, active ingredient, species) is allowed with `reference.manage` when nothing references it; otherwise `RESOURCE_IN_USE` (409). Entries are physical rows of lookup lists, not master data, so the no-hard-delete rule (`database.md` §1) does not apply to unused ones.
 - **Consequences:** `api.md` §4.3 (it listed only GET/POST/PUT while describing a refused delete).
+
+## ADR-054 — Seeded reference values have codes translated by the UI (resolves OD-032)
+- **Status:** Accepted (user decision, 2026-10-21, Phase 2 catalog-reference slice); French and Arabic labels confirmed by the user.
+- **Decision:** Seeded species, therapeutic categories and dosage forms carry a stable `code` (`BOVINE`, `ANTIBIOTIC`, `POUR_ON`, …); administrator entries have none. The UI shows a seeded entry through its code in the current language — labels live in the frontend language files (`reference.<list>.<CODE>`), not in the database — and shows an administrator entry exactly as typed. Seeded entries can be neither renamed nor deleted (`INVALID_STATE_TRANSITION`, 409). A backend test fails the build if a seeded code lacks a French, Arabic or English label.
+- **Labels:** species Bovin/أبقار, Ovin/أغنام, Caprin/ماعز, Volaille/دواجن, Équin/خيول, Canin/كلاب, Félin/قطط; categories Antibiotique/مضاد حيوي, Antiparasitaire/مضاد للطفيليات, Vaccin/لقاح, Anti-inflammatoire/مضاد للالتهاب, Vitamine / Complément/فيتامين / مكمّل غذائي; dosage forms Injectable/قابل للحقن, Poudre/مسحوق, Comprimé/أقراص, Solution/محلول, Pour-on/سكب على الظهر (English labels = stored names).
+- **Consequences:** `database.md` §3.2 (`code` columns), `api.md` §4.3, `frontend.md` §3.1.
 
 ---
 
@@ -541,6 +547,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 1 (user and role administration slice). **Related:** ADR-037, ADR-040, BR-SEC-002.
 
 ## OD-032 — Display language of seeded reference values
+- **Status:** Resolved 2026-10-21 → **ADR-054** (option A, labels confirmed).
 - **Question:** ADR-052 stores the seeded species, categories and dosage forms in English, while the UI languages are French (default), Arabic and English (ADR-033). How are they shown, and in which words?
 - **Options:** (A) a stable `code` column for the seeded rows only (e.g. `BOVINE`); the UI translates codes through its i18n catalogues and shows administrator-created entries exactly as typed; seeded rows can be neither renamed nor deleted; (B) translated name columns (`name_fr`, `name_ar`) on every reference table, filled by administrators; (C) show the English values as stored.
 - **Leaning:** `[REC]` (A), with the French and Arabic labels proposed to the user on 2026-10-21 (awaiting confirmation).
@@ -554,7 +561,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 |---|---|
 | 0 Foundation | ~~OD-024~~ → ADR-032, ~~OD-008~~ → ADR-033, ADR-034; ADR-009/010/013/018/019/023/024/025/026/030/031 confirmed Accepted 2026-10-20 |
 | 1 Auth | ~~OD-001~~ → ADR-036, ~~OD-023~~ → ADR-037; ADR-017/020/021/027 confirmed Accepted; ADR-038–041, ~~OD-031~~ → ADR-042 (all 2026-10-20) |
-| 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053 (all 2026-10-21); **OD-032** |
+| 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053, ~~OD-032~~ → ADR-054 (all 2026-10-21) |
 | 3 Lots & Units | OD-009, OD-019, OD-025 (`lot_number`, other codes), OD-027 |
 | 4 Inventory & Stock | OD-012, OD-013, ~~OD-030~~ → ADR-035, ADR-012, ADR-028 |
 | 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
