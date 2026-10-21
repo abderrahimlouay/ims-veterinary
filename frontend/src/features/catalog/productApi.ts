@@ -69,13 +69,32 @@ export const productKeys = {
   detail: (id: number) => ['catalog', 'products', id] as const,
 }
 
-export function useProducts(filter: { includeArchived: boolean; page: number }) {
+/** The search criteria of `GET /api/products` (ADR-047, ADR-048); empty strings are "any". */
+export interface ProductSearch {
+  q: string
+  categoryId: string
+  manufacturerId: string
+  ingredientId: string
+  speciesId: string
+  includeArchived: boolean
+  page: number
+}
+
+export function useProducts(search: ProductSearch, pageSize = 20) {
   return useQuery({
-    queryKey: productKeys.list(filter),
-    queryFn: () =>
-      apiFetch<{ content: ProductSummary[]; page: PageMetadata }>(
-        `/api/products?includeArchived=${filter.includeArchived}&page=${filter.page}&size=20`,
-      ),
+    queryKey: productKeys.list(search),
+    queryFn: ({ signal }) => {
+      const params = new URLSearchParams({ page: String(search.page), size: String(pageSize) })
+      for (const key of ['q', 'categoryId', 'manufacturerId', 'ingredientId', 'speciesId'] as const) {
+        if (search[key].trim() !== '') {
+          params.set(key, search[key].trim())
+        }
+      }
+      if (search.includeArchived) {
+        params.set('includeArchived', 'true')
+      }
+      return apiFetch<{ content: ProductSummary[]; page: PageMetadata }>(`/api/products?${params}`, { signal })
+    },
     placeholderData: keepPreviousData,
   })
 }

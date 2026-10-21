@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
@@ -47,6 +47,7 @@ function serveReferences() {
 describe('product pages', () => {
   it('lists products with translated categories and four-decimal prices', async () => {
     serveMe(PHARMACIST)
+    serveReferences()
     const queries: string[] = []
     server.use(
       http.get('/api/products', ({ request }) => {
@@ -54,14 +55,45 @@ describe('product pages', () => {
         return HttpResponse.json({ content: [aProduct()], page: { number: 0, size: 20, totalElements: 1, totalPages: 1 } })
       }),
     )
-    renderApp('/products')
+    const router = renderApp('/products')
 
     const row = (await screen.findByRole('link', { name: 'Amoxival 500' })).closest('tr')!
     expect(within(row).getByText('Antibiotique')).toBeInTheDocument()
     expect(within(row).getByText(/0,0125/)).toBeInTheDocument()
     await userEvent.click(screen.getByLabelText('Afficher les produits archivés'))
+    expect(screen.getByLabelText('Afficher les produits archivés')).toBeChecked()
     await screen.findByRole('link', { name: 'Amoxival 500' })
     expect(queries.at(-1)).toContain('includeArchived=true')
+    expect(router.state.location.search).toBe('?includeArchived=true')
+  })
+
+  it('searches after a pause in typing and filters by species, keeping the criteria in the URL', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    server.use(http.get('/api/animal-species', () => HttpResponse.json([{ id: 1, name: 'Bovine', code: 'BOVINE', country: null }])))
+    const queries: URLSearchParams[] = []
+    server.use(
+      http.get('/api/products', ({ request }) => {
+        const params = new URL(request.url).searchParams
+        queries.push(params)
+        return HttpResponse.json({
+          content: params.get('q') === 'nothing' ? [] : [aProduct()],
+          page: { number: 0, size: 20, totalElements: 1, totalPages: 1 },
+        })
+      }),
+    )
+    const router = renderApp('/products')
+
+    await userEvent.type(await screen.findByLabelText('Rechercher'), 'amox')
+    await waitFor(() => expect(queries.at(-1)?.get('q')).toBe('amox'))
+    expect(queries.filter((q) => q.get('q') === 'a')).toHaveLength(0)
+    await userEvent.selectOptions(screen.getByLabelText('Espèce'), '1')
+    await waitFor(() => expect(queries.at(-1)?.get('speciesId')).toBe('1'))
+    expect(router.state.location.search).toBe('?q=amox&speciesId=1')
+
+    await userEvent.clear(screen.getByLabelText('Rechercher'))
+    await userEvent.type(screen.getByLabelText('Rechercher'), 'nothing')
+    expect(await screen.findByText('Aucun produit ne correspond à la recherche.')).toBeInTheDocument()
   })
 
   it('creates a product with the default VAT and shows server field errors', async () => {

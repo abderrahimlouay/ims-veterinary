@@ -102,7 +102,7 @@ Each runs repeatedly (≥ 20 iterations) in CI to expose flakiness.
 
 ### 8.1 Search performance dataset (NFR-002, ADR-048)
 
-A performance test generates, inside its own transaction, **50,000 products** (`architecture.md` §14) with realistic names, 2,000 active ingredients (each product linked to 1–3), the seeded categories, dosage forms and species, target species and withdrawal periods; then runs representative searches (a word inside names, an SKU, an ingredient name, a species filter, an archived-included search, a term matching nothing) through the API. Every search must answer in **under 1 s**; the slowest time is reported. If it fails, `FULLTEXT` is considered through a new ADR.
+A performance test generates, inside its own transaction, **50,000 products** (`architecture.md` §14) with realistic names, 2,000 active ingredients (each product linked to 1–3), the seeded categories, dosage forms and species, target species and withdrawal periods; then runs representative searches (a word inside names, an SKU, an ingredient name, a species filter, an archived-included search, a term matching nothing) through the API. Every search must answer in **under 1 s**; the slowest time is reported. If it fails, `FULLTEXT` is considered through a new ADR. Implemented by `ProductSearchPerformanceTest`; first measurement (2026-10-21, local Testcontainers MySQL 8.4): 61–125 ms per search, the species filter being the slowest.
 
 ## 9. Business-rule → test matrix (complete)
 
