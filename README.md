@@ -36,7 +36,7 @@ On an empty database, set `IMS_BOOTSTRAP_ADMIN_USERNAME` and `IMS_BOOTSTRAP_ADMI
 | Dev server (proxies `/api` to `localhost:8080`) | `npm run dev` |
 | Lint · typecheck · unit tests | `npm run lint` · `npm run typecheck` · `npm test` |
 | Production build | `npm run build` |
-| End-to-end smoke (first time: `npx playwright install chromium`) | `npm run test:e2e` |
+| End-to-end journeys against the real backend (needs Docker and JDK 21; starts the backend on a MySQL container itself; first time: `npx playwright install chromium`) | `npm run test:e2e` |
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a secret scan and `npm audit` on every push to `main` and every pull request.
 

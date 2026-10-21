@@ -1,8 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
+import { ADMIN } from './e2e/fixtures'
 
 /**
- * End-to-end tests (testing.md §8). Phase 0 runs a smoke test against the production build;
- * user journeys J1-J11 run against the real backend from Phase 1 on.
+ * End-to-end tests (testing.md §8) against the real backend: `spring-boot:test-run` starts it on a fresh
+ * MySQL container (Docker and JDK 21 required) and bootstraps an administrator (ADR-040); the production
+ * build is served by `vite preview`, which proxies `/api` to it.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -14,9 +16,23 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: 'npm run build && npm run preview -- --port 4173 --strictPort',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: './mvnw -q spring-boot:test-run',
+      cwd: '../backend',
+      url: 'http://localhost:8080/actuator/health',
+      timeout: 300_000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        IMS_BOOTSTRAP_ADMIN_USERNAME: ADMIN.username,
+        IMS_BOOTSTRAP_ADMIN_PASSWORD: ADMIN.bootstrapPassword,
+        IMS_BOOTSTRAP_ADMIN_FULL_NAME: 'E2E Administrator',
+      },
+    },
+    {
+      command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+      url: 'http://localhost:4173',
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 })
