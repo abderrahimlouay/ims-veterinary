@@ -16,7 +16,7 @@ No final DDL is given here; column lists are the contract the first migrations m
 | Identifiers | lower-case snake_case; tables plural; FK columns `<entity>_id`; constraints named explicitly (`pk_`, `fk_<table>_<col>`, `uq_`, `ck_`, `idx_`) |
 | Primary keys | `BIGINT AUTO_INCREMENT` for business tables, `INT` for reference tables, `SMALLINT` for `roles`; **signed**; FK type = PK type (SD-002) |
 | Time | `DATETIME(6)` = UTC instant (SD-003); `DATE` for business dates |
-| Money / quantity | `DECIMAL`; money `DECIMAL(14,2)`, quantities `DECIMAL(14,3)`, unit cost `DECIMAL(14,4)`, percent `DECIMAL(5,2)` (precision review: OD-022) |
+| Money / quantity | `DECIMAL`; money `DECIMAL(14,2)`, quantities `DECIMAL(14,3)` (whole numbers for non-divisible products, ADR-050), **prices per base unit and unit cost `DECIMAL(14,4)`** (ADR-049), percent `DECIMAL(5,2)` |
 | Enums | `VARCHAR(30)` + `CHECK` (SD-001); values in `database-migration.md` §4 |
 | Booleans | `BOOLEAN` |
 | Deletion | **No hard delete** of master or transactional data. `is_active` / `is_archived` / status columns instead. `ON DELETE CASCADE` only on pure child-detail rows |
@@ -109,15 +109,16 @@ Format: **Column | MySQL type | Null / default | Notes**. `PK`, `FK→`, `UQ`, `
 | Column | Type | Null / default | Notes |
 |---|---|---|---|
 | id | BIGINT AI | PK | |
-| sku | VARCHAR(40) | NOT NULL UQ | FR-PROD-003 |
+| sku | VARCHAR(40) | NOT NULL UQ | FR-PROD-003; case/accent-insensitive (ADR-051) |
 | commercial_name | VARCHAR(200) | NOT NULL | indexed (SD-010) |
 | dosage_form_id | INT | FK→dosage_forms | |
 | category_id | INT | FK→therapeutic_categories | indexed |
 | manufacturer_id | INT | FK→manufacturers | |
 | base_unit | VARCHAR(20) | NOT NULL | smallest stock unit |
+| is_divisible | BOOLEAN | NOT NULL | ADR-050, SD-115: whole quantities only when false |
 | vat_rate | DECIMAL(5,2) | NOT NULL DEFAULT 9.00, CK ≥ 0 | default also in `app_settings` |
-| purchase_price | DECIMAL(14,2) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (last/average — definition unspecified) ; precision OD-022 |
-| sale_price | DECIMAL(14,2) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit ; precision OD-022 |
+| purchase_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049); last/average definition: OD-029 (Phase 5) |
+| sale_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049) |
 | min_stock | DECIMAL(14,3) | NOT NULL DEFAULT 0, CK ≥ 0 | alert level |
 | max_stock | DECIMAL(14,3) | NULL, CK ≥ min_stock | |
 | reorder_point | DECIMAL(14,3) | NOT NULL DEFAULT 0, CK ≥ 0 | proposal trigger (OD-013) |
@@ -125,7 +126,7 @@ Format: **Column | MySQL type | Null / default | Notes**. `PK`, `FK→`, `UQ`, `
 | created_at / updated_at | DATETIME(6) | NOT NULL | |
 | version | BIGINT | NOT NULL DEFAULT 0 | SD-101 |
 
-Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `idx_products_category`; optional FULLTEXT (OD-018).
+Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `idx_products_category`; no FULLTEXT (ADR-048).
 
 **product_barcodes** — `id BIGINT AI PK`, `product_id FK→products ON DELETE CASCADE`, `code VARCHAR(64) NOT NULL UQ`, `code_type VARCHAR(10) NOT NULL DEFAULT 'EAN13'` (EAN13, CODE128, QR). **[OPEN] `unit_id`** (SD-105, OD-019).
 
@@ -135,19 +136,19 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 
 **product_units** — `id BIGINT AI PK`, `product_id FK CASCADE`, `name VARCHAR(40) NOT NULL`, `factor_to_base DECIMAL(14,4) NOT NULL CK > 0`, `sale_price DECIMAL(14,2) NULL CK ≥ 0`, `is_sellable BOOLEAN NOT NULL DEFAULT TRUE`, `UQ(product_id, name)`.
 
-**[OPEN] product_species** — target species of a product (SD-106, OD-018).
+**product_target_species** — `product_id FK→products ON DELETE CASCADE`, `species_id FK→animal_species`, `PK(product_id, species_id)`, index on `species_id` (SD-106, ADR-047).
 
 ### 3.3 Suppliers & customers
 
 **suppliers** — `id BIGINT AI PK`, `name VARCHAR(150) NOT NULL`, `supplier_kind VARCHAR(20) NOT NULL DEFAULT 'wholesaler' CK IN ('laboratory','wholesaler')`, `tax_id VARCHAR(40) NULL`, `phone`, `email`, `address TEXT`, `payment_terms_days SMALLINT NOT NULL DEFAULT 0 CK ≥ 0`, `is_active BOOLEAN NOT NULL DEFAULT TRUE`, `version` (SD-101).
 
-**supplier_price_history** — `id BIGINT AI PK`, `supplier_id FK→suppliers`, `product_id FK→products`, `unit_price DECIMAL(14,2) NOT NULL CK ≥ 0` (per base unit), `discount_pct DECIMAL(5,2) NOT NULL DEFAULT 0 CK 0–100`, `valid_from DATE NOT NULL`. Index `(supplier_id, product_id, valid_from DESC)`.
+**supplier_price_history** — `id BIGINT AI PK`, `supplier_id FK→suppliers`, `product_id FK→products`, `unit_price DECIMAL(14,4) NOT NULL CK ≥ 0` (per base unit, ADR-049), `discount_pct DECIMAL(5,2) NOT NULL DEFAULT 0 CK 0–100`, `valid_from DATE NOT NULL`. Index `(supplier_id, product_id, valid_from DESC)`.
 
 **customer_categories** — `id INT AI PK`, `name VARCHAR(80) NOT NULL UQ`, `discount_pct DECIMAL(5,2) NOT NULL DEFAULT 0 CK 0–100`.
 
 **customers** — `id BIGINT AI PK`, `name VARCHAR(150) NOT NULL`, `customer_type VARCHAR(30) NOT NULL DEFAULT 'breeder'` (breeder | veterinarian | other), `category_id INT NULL FK→customer_categories`, `farming_type VARCHAR(100) NULL`, `wilaya VARCHAR(60)`, `commune VARCHAR(80)`, `address TEXT`, `phone VARCHAR(40)`, `veterinarian_id BIGINT NULL FK→customers` (self; must reference a customer of type `veterinarian` — application rule BR-CUST-001), `credit_limit DECIMAL(14,2) NOT NULL DEFAULT 0 CK ≥ 0` (semantics of 0: OD-011), `is_active`, `created_at`, `version`. Indexes: `idx_customers_name`, `idx_customers_zone(wilaya, commune)`.
 
-**customer_product_prices** — `customer_id FK CASCADE`, `product_id FK CASCADE`, `unit_price DECIMAL(14,2) NOT NULL CK ≥ 0` (per base unit, OD-006), `PK(customer_id, product_id)`.
+**customer_product_prices** — `customer_id FK CASCADE`, `product_id FK CASCADE`, `unit_price DECIMAL(14,4) NOT NULL CK ≥ 0` (per base unit, ADR-049; precedence OD-006), `PK(customer_id, product_id)`.
 
 ### 3.4 Lots & stock (modules 2 and 3)
 
@@ -230,11 +231,11 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id)`, `(reference_type, referenc
 
 | Need | Structure |
 |---|---|
-| Product search by name (NFR-002 < 1 s) | `idx_products_commercial_name` (prefix `LIKE 'term%'`); contains-search via FULLTEXT/ngram **[OPEN OD-018]** |
+| Product search (NFR-002 < 1 s) | contains `LIKE` on name, SKU and ingredient names with `_ai_ci` collation; exact SKU and name-prefix matches first (ADR-048); verified on the 50,000-product reference dataset |
 | SKU / barcode scan | `uq_products_sku`, `uq_product_barcodes_code` (point lookup) |
 | DCI search & substitution | `active_ingredients.name` UQ + `idx_pai_ingredient` |
 | Category filter | `idx_products_category` |
-| Species filter | via `product_withdrawal_periods` today; **[OPEN OD-018]** |
+| Species filter | `product_target_species` ∪ `product_withdrawal_periods` (ADR-047) |
 | FEFO | `idx_lots_fefo (product_id, status, expiry_date)` + locking read |
 | Expiry alerts | `idx_lots_expiry (expiry_date)` |
 | Recall (who bought lot L) | `idx_sdl_lot (lot_id)` → `sales_documents` |
@@ -296,7 +297,7 @@ All rows below are **one database transaction** (`@Transactional`, READ COMMITTE
 
 ## 8. Seed data
 
-Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), settings (2) as in the Source Schema. **Additional seed:** permission catalogue and role-permission mapping (`security.md` §4, ADR-037); login-throttle settings (ADR-038). The first administrator is created at startup from environment variables (ADR-040), never by a hard-coded password in a migration.
+Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), settings as in the Source Schema; the reference values are listed in ADR-052 (English; display labels OD-032), in their own data migration; manufacturers and active ingredients start empty. **Additional seed:** permission catalogue and role-permission mapping (`security.md` §4, ADR-037); login-throttle settings (ADR-038). The first administrator is created at startup from environment variables (ADR-040), never by a hard-coded password in a migration.
 
 ## 9. Data lifecycle
 

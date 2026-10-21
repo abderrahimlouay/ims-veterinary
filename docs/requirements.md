@@ -262,7 +262,7 @@ Module numbering follows the Spec (§2.1 … §2.7). Module codes: `PROD`, `LOT`
 | ID | Requirement | Basis | Notes |
 |---|---|---|---|
 | NFR-001 | **Data integrity:** stock can never be negative; invoice/order numbering is strictly unique. | `[SRC §3.1]` | BR-STOCK-001, BR-DOC-001 |
-| NFR-002 | **Ergonomics:** instant search (**< 1 second**) so counter service is not slowed. | `[SRC §3.2]` | **OD-018** (search implementation) |
+| NFR-002 | **Ergonomics:** instant search (**< 1 second**) so counter service is not slowed. | `[SRC §3.2]` | **ADR-048** (search technique, 50,000-product dataset) |
 | NFR-003 | **Printing:** compatible with **thermal printers** (tickets) and standard printers (**A4 PDF**). | `[SRC §3.3]` | **OD-020** (printing approach) |
 | NFR-004 | Heading "Disponibilité et Impression" implies availability matters, but **no availability figure is given**. | `[SRC §3.3]` gap | **OD-021** |
 | NFR-005 | Passwords hashed (bcrypt/argon2); never stored in clear. | `[SCH]` | BR-SEC-003 |

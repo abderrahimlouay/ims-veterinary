@@ -53,7 +53,7 @@ Legend for *Where*: **DB** = enforced in MySQL; **APP** = enforced in Spring Boo
 | 3 | `TIMESTAMPTZ` | 25 columns, `DEFAULT now()` | `DATETIME(6)` storing UTC (`TIMESTAMP` rejected: 2038 limit, implicit zone conversion) | B | No | **ADR-010**: `DATETIME(6)`, UTC, `Instant`; default `CURRENT_TIMESTAMP(6)` plus application-set values from an injected `Clock`. | DB (type) + APP (UTC discipline) | JDBC URL/session time zone must be UTC; "today" for expiry uses the business time zone `Africa/Algiers` (ADR-033). |
 | 4 | `JSONB` | `audit_log.old_values/new_values` (+ `jsonb_build_object` inside `recall_lot`) | `JSON` | B | No | `JSON` column; JPA mapping with `@JdbcTypeCode(SqlTypes.JSON)` or a `String`/converter. | DB | No GIN index; audit queries filter by `entity`, `entity_id`, `user_id`, date only (indexed). JSON key order is not preserved (same as JSONB). |
 | 5 | `INET` | `audit_log.ip_address` | none | C (minor) | Minor | `VARCHAR(45)` (fits IPv6 textual form). Validation in app. | APP | IP validated in Java before write. |
-| 6 | `NUMERIC(p,s)` | money, quantities, percentages | `DECIMAL(p,s)` | A/B | No | Same precision/scale; Java `BigDecimal`. See OD-022 on precision. | DB | Never use `double/float`. |
+| 6 | `NUMERIC(p,s)` | money, quantities, percentages | `DECIMAL(p,s)` | A/B | No | Same precision/scale, except prices per base unit at 4 decimals (ADR-049); Java `BigDecimal`. | DB | Never use `double/float`. |
 | 7 | `BOOLEAN` | flags, `DEFAULT TRUE/FALSE`, used in `CHECK` | `BOOLEAN` = `TINYINT(1)` | A | No | Keep. | DB | JPA `boolean`. |
 | 8 | `TEXT`, `VARCHAR(n)` | descriptions, notes | `TEXT`, `VARCHAR(n)` | A | No | Keep; charset `utf8mb4`. | DB | Row-size limit not a concern here. |
 | 9 | `DEFAULT CURRENT_DATE` | `supplier_price_history.valid_from`, `purchase_orders.order_date` | `DEFAULT (CURRENT_DATE)` (expression default, 8.0.13+) | B | No | Prefer application-supplied value (business time zone); keep expression default as fallback. | APP | Value uses business date, not server date. |
@@ -64,7 +64,7 @@ Legend for *Where*: **DB** = enforced in MySQL; **APP** = enforced in Spring Boo
 | 14 | `recall_lot(...)` — PL/pgSQL (update + audit insert + `RETURN QUERY`) | lot recall | stored procedure possible but not wanted | No | **Yes (D)** | `LotRecallService` (`@Transactional`): block lot, write audit, return recall report via query. | APP | Recall report must also cover anonymous sales and (per OD-002) delivery notes. |
 | 15 | Partial indexes (`… WHERE …`) | `idx_lots_fefo`, `idx_lots_expiry`, `uq_one_open_session` | none | No | **Yes (C)** | **ADR-015**: ordinary composite indexes for the two lot indexes; generated column `open_cashier_id` + `UNIQUE` for one-open-session. | DB (+APP check) | Slightly larger indexes; planner may scan non-active lots; negligible volume. |
 | 16 | Functional indexes `lower(col)` | `idx_products_name_trgm`, `idx_customers_name` | functional key parts (8.0.13+) — but unnecessary | B | No | Default collation `utf8mb4_0900_ai_ci` is already case/accent-insensitive; plain index on the column. **ADR-024, ADR-025** | DB | Search semantics differ from PostgreSQL (accent-insensitive). |
-| 17 | `pg_trgm` GIN (mentioned in comment) | fuzzy name search idea | `FULLTEXT` (ngram) or prefix `LIKE` | No | Decision needed | **OD-018** | DB / APP | NFR-002 (< 1 s) must be verified with realistic data volume. |
+| 17 | `pg_trgm` GIN (mentioned in comment) | fuzzy name search idea | contains `LIKE` with `_ai_ci` collation | No | Decided | **ADR-048** | DB / APP | NFR-002 (< 1 s) must be verified with realistic data volume. |
 | 18 | `GENERATED ALWAYS AS (…) STORED` | 5 columns | Same syntax, STORED/VIRTUAL | A/B | No | **ADR-016**: keep; read-only JPA mapping; parity test with Java formula. | DB | Hibernate must not insert/update them; entity reloaded/refreshed to see values. |
 | 19 | `CHECK` constraints | ≈ 45 | Enforced from **8.0.16**; violation = error **3819** (SQLSTATE `HY000`) | A (mostly) | No | Keep; services pre-validate and translate error 3819 to a business error. MySQL forbids `CHECK` on columns used in FK referential actions (`CASCADE/SET NULL`) — verify no column is affected (none identified). | DB + APP | Without service pre-checks, users would see a generic integrity error. |
 | 20 | `movement_type::text NOT LIKE 'adjustment_%'` | `chk_adjustment_reason` | `movement_type NOT LIKE 'adjustment\_%'` and `CHAR_LENGTH(TRIM(reason)) > 0` | B | No | Rewrite; escape `_` (it is a one-character wildcard in both databases — the Source expression matches more than intended). | DB | `reason` must be non-blank for all `adjustment_*` movements. |
@@ -210,9 +210,9 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-101 | `version` columns for optimistic locking | ADR-027 | Accepted 2026-10-20 |
 | SD-102 | Append-only triggers on `audit_log` (and possibly payment/cash ledgers) | ADR-017, OD-003 | Accepted 2026-10-20 for `audit_log`; ledgers open (OD-003) |
 | SD-103 | Composite uniqueness `lots (id, product_id)` and composite FKs so that `stock_movements`, `goods_receipt_lines`, `sales_document_lines` cannot reference a lot of another product | DR-008 | Proposed |
-| SD-104 | Higher precision for price-per-base-unit columns | OD-022 | Open |
+| SD-104 | Prices per base unit `DECIMAL(14,4)` | ADR-049 | Accepted 2026-10-21 |
 | SD-105 | `product_barcodes.unit_id` | OD-019 | Open |
-| SD-106 | `product_species` (target species) | OD-018 | Open |
+| SD-106 | `product_target_species` (target species) | ADR-047 | Accepted 2026-10-21 |
 | SD-107 | New `movement_type` values (cancellation/discard) | OD-004, OD-005 | Open |
 | SD-108 | Payment capture model for counter/anonymous sales | OD-003 | Open |
 | SD-109 | Link supplier return ↔ supplier credit note | OD-016 | Open |
@@ -221,6 +221,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-114 | `users.must_change_password` | ADR-039 | Accepted 2026-10-20 |
 | SD-112 | Uniqueness of one *pending* reorder proposal per product (generated-column technique) | OD-013 | Open |
 | SD-113 | Scope columns on `inventories` for cycle counts | OD-012 | Open |
+| SD-115 | `products.is_divisible` | ADR-050 | Accepted 2026-10-21 |
 
 ## 9. Operational requirements for MySQL
 

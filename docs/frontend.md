@@ -82,7 +82,7 @@ Guards: `RequireAuth` (redirect to `/login`, preserve target), `RequirePermissio
 For each: purpose → main elements → key behaviours → states.
 
 ### 4.1 Product catalogue and detail
-- **List:** search box (name/SKU/DCI/barcode), filters (category, manufacturer, active ingredient, species **[OPEN OD-018]**, in-stock only, show archived); table columns: SKU, name, category, base unit, sale price, sellable stock with status badge, nearest expiry.
+- **List:** search box (name/SKU/active ingredient, contains, ADR-048; barcode from Phase 3), filters (category, manufacturer, active ingredient, species — target or withdrawal species, ADR-047 —, show archived; in-stock only from Phase 4); table columns: SKU, name, category, base unit, sale price (sellable stock and nearest expiry from Phase 4). Seeded reference values are displayed per OD-032.
 - **Detail form:** tabs per `api.md` §4.3. Price fields read-only without `price.edit`. Archive instead of delete (BR-PROD-004). Substitute panel (FR-PROD) lists same-ingredient products with stock.
 - **Behaviours:** barcode field accepts scanner input (Enter-terminated); duplicate SKU/barcode shows field-level error from `PRODUCT_SKU_DUPLICATE` / `BARCODE_DUPLICATE`; `CONCURRENT_MODIFICATION` opens a "reload latest" dialog.
 
@@ -223,4 +223,4 @@ Component tests for primitives and forms (RTL), API-mocked page tests (MSW) incl
 
 ## 17. Open frontend items
 
-OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-012 (count UX), OD-018/019 (search by species, unit barcode), OD-020 (print formats); DR-014 (design-token gaps), DR-015 (hard-coded thresholds).
+OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-012 (count UX), OD-019 (unit barcode), OD-032 (labels of seeded reference values), OD-020 (print formats); DR-014 (design-token gaps), DR-015 (hard-coded thresholds).

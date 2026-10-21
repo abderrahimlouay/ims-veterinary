@@ -344,6 +344,46 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** `GET /api/audit-logs` returns `username` and `userFullName` with each entry (`null` for system actions). `audit` defines a `UserDirectory` port; `users` implements it (dependency inversion: `audit` must not depend on `users`). One batched query per page; no schema change. Usernames are immutable (ADR-045), so the name is the one that acted.
 - **Consequences:** `api.md` §4.14; audit viewer in the frontend.
 
+## ADR-047 — Products have explicit target species (resolves OD-018, species part)
+- **Status:** Accepted (user decision, 2026-10-21, Phase 2 preflight)
+- **Context:** DR-010: products relate to species only through withdrawal periods, so products for non-food animals (dogs, cats) could never be found by species; FR-SALE-002 requires search by species.
+- **Decision:** New table `product_target_species (product_id, species_id)` (SD-106). The species filter of `GET /api/products` matches a product whose **target species or withdrawal-period species** include it. Target species are maintained with `PUT /api/products/{id}/target-species` (`product.update`).
+- **Alternatives:** withdrawal periods only (A); drop the criterion (C, contradicts FR-SALE-002).
+- **Consequences:** `database.md` §3.2, `api.md` §4.3, `frontend.md` §4.1; DR-010 resolved.
+
+## ADR-048 — Product search technique (resolves OD-018, technique part)
+- **Status:** Accepted (user decision, 2026-10-21, Phase 2 preflight)
+- **Decision:** `q` matches **anywhere** (`LIKE '%term%'`, wildcards escaped) in the commercial name, the SKU and the names of the product's active ingredients, case- and accent-insensitively through the `utf8mb4_0900_ai_ci` collation. Results are ordered: exact SKU match, name starting with the term, other matches, then by name. A performance test on a **reference dataset of 50,000 products** (`architecture.md` §14) must keep every search under 1 s (NFR-002). `FULLTEXT` is adopted only by a new ADR if that test fails.
+- **Alternatives:** prefix-only `LIKE 'term%'` (misses words inside names); `FULLTEXT`/ngram (rows searchable only after commit, noisy ranking for short Latin words).
+- **Consequences:** `database.md` §5, `api.md` §4.3/§5.2, `testing.md`; the frontend debounces input (≈250 ms, `frontend.md` §15).
+
+## ADR-049 — Prices per base unit have 4 decimals (resolves OD-022, price part)
+- **Status:** Accepted (user decision, 2026-10-21, Phase 2 preflight)
+- **Decision:** Every price **per base unit** is `DECIMAL(14,4)` (SD-104): `products.purchase_price`, `products.sale_price`, `customer_product_prices.unit_price`, `supplier_price_history.unit_price` (`lots.unit_cost` already is). Prices of a packaging unit (`product_units.sale_price`) and every money amount and total stay `DECIMAL(14,2)`. JSON strings carry the stored scale. Rounding of line and document totals remains **OD-007** (Phase 5).
+- **Alternatives:** 2 decimals (cannot store e.g. 0.0125 DA per tablet).
+- **Consequences:** `database.md` §1/§3.2/§3.3, `api.md` §1.
+
+## ADR-050 — Divisible and whole-unit products (resolves OD-022, quantity part)
+- **Status:** Accepted (user decision, 2026-10-21, Phase 2 preflight)
+- **Decision:** `products.is_divisible BOOLEAN NOT NULL` (SD-115), required when a product is created. Divisible base units (ml, g) take quantities with up to 3 decimals; non-divisible base units (tablet, syringe, dose) take **whole numbers only** — for every stock quantity and threshold of that product, and (Phase 3) packaging-unit factors must then be whole numbers too. Columns stay `DECIMAL(…,3)`; the services enforce the whole-number rule.
+- **Alternatives:** 3 decimals for every product ("2.5 tablets" accepted).
+- **Consequences:** BR-UNIT-002, BR-PROD-005, `database.md` §3.2; DR-012 resolved apart from OD-007.
+
+## ADR-051 — SKUs are case- and accent-insensitive (resolves OD-025 for `sku` only)
+- **Status:** Accepted (user decision, 2026-10-21, Phase 2 preflight)
+- **Decision:** `products.sku` keeps the default `utf8mb4_0900_ai_ci` collation: `amx-10` and `AMX-10` are the same SKU, for uniqueness and for search. Reference-data names follow the same collation. OD-025 stays open for `lot_number` and other codes (Phase 3).
+- **Consequences:** BR-PROD-001 test covers case and accent variants.
+
+## ADR-052 — Reference data seed
+- **Status:** Accepted (user decision, 2026-10-21, Phase 2 preflight); values given by the user from the legacy schema file.
+- **Decision:** Seeded in **English**, in a data migration separate from the table migrations, exactly: animal species (7) Bovine, Ovine, Caprine, Poultry, Equine, Canine, Feline; therapeutic categories (5) Antibiotic, Antiparasitic, Vaccine, Anti-inflammatory, Vitamin / Supplement; dosage forms (5) Injectable, Powder, Tablet, Solution, Pour-on; manufacturers and active ingredients start empty. How the screen shows the seeded values in French and Arabic is **OD-032**.
+- **Consequences:** `database.md` §8.
+
+## ADR-053 — Deleting reference data
+- **Status:** Accepted (user decision, 2026-10-21, Phase 2 preflight)
+- **Decision:** `DELETE` on a reference entry (category, manufacturer, dosage form, active ingredient, species) is allowed with `reference.manage` when nothing references it; otherwise `RESOURCE_IN_USE` (409). Entries are physical rows of lookup lists, not master data, so the no-hard-delete rule (`database.md` §1) does not apply to unused ones.
+- **Consequences:** `api.md` §4.3 (it listed only GET/POST/PUT while describing a refused delete).
+
 ---
 
 # Part B — Open Decisions
@@ -431,6 +471,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 5 (first numbered document). **Related:** ADR-011, BR-DOC-001.
 
 ## OD-018 — Search implementation (< 1 s) and species search
+- **Status:** Resolved 2026-10-21 → **ADR-047** (species: explicit target species) and **ADR-048** (search technique).
 - **Question:** Index-backed prefix `LIKE` vs. `FULLTEXT` (ngram parser) vs. external engine; accent-insensitive French/Arabic matching; how to search by **animal species** given the schema only links species to products through *withdrawal periods* (no "target species" relation for products without withdrawal data).
 - **Options for species:** (A) use `product_withdrawal_periods` only; (B) add `product_species` table.
 - **Blocks:** Phase 2 (catalogue search) and 7. **Related:** NFR-002, DR-010.
@@ -448,6 +489,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 12 (deployment); backup design touches Phase 11. **Related:** FR-AUD-002, NFR-004.
 
 ## OD-022 — Quantity and price precision per unit
+- **Status:** Resolved 2026-10-21 → **ADR-049** (prices per base unit: 4 decimals) and **ADR-050** (divisible flag). Rounding stays OD-007.
 - **Question:** May base-unit quantities be fractional (e.g. 2.5 ml) or whole only for discrete units (tablets)? Are 2 decimals enough for **price per base unit** (cheap units such as a 0.0125 tablet)? (The design-system hint says "Whole units only" for received quantity while the schema allows 3 decimals.)
 - **Blocks:** Phase 2/3. **Related:** BR-UNIT-002, DR-012.
 
@@ -462,7 +504,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 0.
 
 ## OD-025 — Case/accent sensitivity of code columns
-- **Status:** Partly resolved 2026-10-20: `username` → **ADR-041** (insensitive). Still open for `sku`, `lot_number` and other codes.
+- **Status:** Partly resolved: `username` → **ADR-041** (2026-10-20), `sku` → **ADR-051** (2026-10-21), both insensitive. Still open for `lot_number` and other codes.
 - **Question:** Under `utf8mb4_0900_ai_ci`, are `LOT-a1` and `LOT-A1` the same lot? Should `sku`, `lot_number`, `username` use a case-sensitive collation?
 - **Blocks:** Phase 3. **Related:** ADR-024.
 
@@ -498,6 +540,12 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Leaning:** `[REC]` (A) — cheap, testable, no new error code.
 - **Blocks:** Phase 1 (user and role administration slice). **Related:** ADR-037, ADR-040, BR-SEC-002.
 
+## OD-032 — Display language of seeded reference values
+- **Question:** ADR-052 stores the seeded species, categories and dosage forms in English, while the UI languages are French (default), Arabic and English (ADR-033). How are they shown, and in which words?
+- **Options:** (A) a stable `code` column for the seeded rows only (e.g. `BOVINE`); the UI translates codes through its i18n catalogues and shows administrator-created entries exactly as typed; seeded rows can be neither renamed nor deleted; (B) translated name columns (`name_fr`, `name_ar`) on every reference table, filled by administrators; (C) show the English values as stored.
+- **Leaning:** `[REC]` (A), with the French and Arabic labels proposed to the user on 2026-10-21 (awaiting confirmation).
+- **Blocks:** Phase 2, reference-data slice (seed migration and screens). **Related:** ADR-033, ADR-052.
+
 ---
 
 # Part C — Decision backlog by phase
@@ -506,8 +554,8 @@ Each Open Decision lists the question, the options, an optional author's leaning
 |---|---|
 | 0 Foundation | ~~OD-024~~ → ADR-032, ~~OD-008~~ → ADR-033, ADR-034; ADR-009/010/013/018/019/023/024/025/026/030/031 confirmed Accepted 2026-10-20 |
 | 1 Auth | ~~OD-001~~ → ADR-036, ~~OD-023~~ → ADR-037; ADR-017/020/021/027 confirmed Accepted; ADR-038–041, ~~OD-031~~ → ADR-042 (all 2026-10-20) |
-| 2 Catalogue | OD-018, OD-022 |
-| 3 Lots & Units | OD-009, OD-019, OD-025, OD-027 |
+| 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053 (all 2026-10-21); **OD-032** |
+| 3 Lots & Units | OD-009, OD-019, OD-025 (`lot_number`, other codes), OD-027 |
 | 4 Inventory & Stock | OD-012, OD-013, ~~OD-030~~ → ADR-035, ADR-012, ADR-028 |
 | 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 Customers | OD-006, OD-011 |

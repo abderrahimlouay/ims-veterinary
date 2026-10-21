@@ -41,7 +41,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 
 **Unit.** FEFO allocator (ordering, ties, partial lots, non-sellable skipped); unit conversion (exact decimals); price resolution (OD-006) and discount bounds; totals with rounding (OD-007); state machines (lot, PO, sales document, count, cash session, reorder); return limit calculation; balance and expected-cash formulas.
 
-**Repository.** Unique constraints (SKU, barcode, lot per product, one open session per cashier), CHECK constraints (non-negative balances, positive quantities, signed movement rules), trigger behaviour for append-only tables, generated columns, view parity with domain computation, `FOR UPDATE` ordering, collation behaviour for codes (ADR-024, OD-025), FULLTEXT/prefix search (OD-018).
+**Repository.** Unique constraints (SKU, barcode, lot per product, one open session per cashier), CHECK constraints (non-negative balances, positive quantities, signed movement rules), trigger behaviour for append-only tables, generated columns, view parity with domain computation, `FOR UPDATE` ordering, collation behaviour for codes (ADR-024, ADR-041, ADR-051; lot numbers OD-025), contains search and its ordering (ADR-048).
 
 **Service integration.** One test class per workflow in `workflows.md` (W1–W12): happy path, each documented failure case, audit row, movement rows, numbering, and a rollback test.
 
@@ -100,13 +100,17 @@ Each runs repeatedly (≥ 20 iterations) in CI to expose flakiness.
 - **Accessibility:** automated axe checks on main pages; keyboard-only POS test; `role="alert"` assertion for dynamic errors.
 - **Playwright journeys (against real backend + MySQL):** J1 login/logout; J2 create product with units/barcode; J3 purchase order → receipt → lots visible; J4 POS sale with FEFO across two lots; J5 sale refused (expired/insufficient); J6 customer return with credit note; J7 customer payment with allocation; J8 inventory count and regularisation; J9 recall and buyers list; J10 cash session open/close; J11 permission-restricted user sees forbidden states.
 
+### 8.1 Search performance dataset (NFR-002, ADR-048)
+
+A performance test generates, inside its own transaction, **50,000 products** (`architecture.md` §14) with realistic names, 2,000 active ingredients (each product linked to 1–3), the seeded categories, dosage forms and species, target species and withdrawal periods; then runs representative searches (a word inside names, an SKU, an ingredient name, a species filter, an archived-included search, a term matching nothing) through the API. Every search must answer in **under 1 s**; the slowest time is reported. If it fails, `FULLTEXT` is considered through a new ADR.
+
 ## 9. Business-rule → test matrix (complete)
 
 Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules whose behaviour depends on an open decision are tested after that decision is recorded.
 
 | BR ID | Test levels | Key scenarios (minimum) |
 |---|---|---|
-| BR-PROD-001 | R,A | Create two products with same SKU (also differing only by case/accent, OD-025) → 409 PRODUCT_SKU_DUPLICATE |
+| BR-PROD-001 | R,A | Create two products with same SKU (also differing only by case/accent, ADR-051) → 409 PRODUCT_SKU_DUPLICATE |
 | BR-PROD-002 | R,A | Add an existing barcode to another product → 409 BARCODE_DUPLICATE |
 | BR-PROD-003 | U,A | Create product without base unit → 400 |
 | BR-PROD-004 | S,A | Archive product; try to add it to a PO / sale → PRODUCT_ARCHIVED; history still readable |
@@ -245,4 +249,4 @@ See `database-migration.md` §10 checklist. Automated: schema snapshot equals ex
 
 ## 13. Open testing items
 
-OD-009 (expiry boundary), OD-006/007 (price and rounding fixtures), OD-002/003/004/005 (sales/payment/cancellation/return expectations), OD-011/012/013/015/017, OD-018 (search performance dataset), OD-025 (collation behaviour).
+OD-009 (expiry boundary), OD-006/007 (price and rounding fixtures), OD-002/003/004/005 (sales/payment/cancellation/return expectations), OD-011/012/013/015/017, OD-025 (collation behaviour).

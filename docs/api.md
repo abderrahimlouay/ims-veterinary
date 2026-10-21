@@ -17,7 +17,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | Authorisation | one **permission** per endpoint (`security.md` §4), enforced on the service method (BR-SEC-002) |
 | Methods | `GET` read · `POST` create or **action** (`/confirm`, `/cancel`, `/recall`…) · `PUT` full replace of a mutable resource (with `version`) · `DELETE` only where physical removal is allowed (drafts, child rows). **No hard delete** of master/transactional data |
 | Success codes | `200` read/update/action · `201` create (+ `Location`) · `204` no body |
-| Decimals | **JSON strings** (`"12.500"`) for money, quantities, percentages (ADR-021); scale: money 2, quantity 3, cost 4, percent 2 |
+| Decimals | **JSON strings** (`"12.500"`) for money, quantities, percentages (ADR-021); scale: money 2, quantity 3 (whole numbers for non-divisible products, ADR-050), price per base unit and cost 4 (ADR-049), percent 2 |
 | Dates/times | Instants: ISO-8601 UTC `2026-10-18T14:20:00.123Z`; business dates: `YYYY-MM-DD`. Business-calendar logic uses the configured business time zone (ADR-010) |
 | Identifiers | numeric `id` (JSON number); human numbers (`INV-2026-000123`) in `number` |
 | Pagination | `?page=0&size=20` (size ≤ 100); response envelope `{ "content": [...], "page": { "number": 0, "size": 20, "totalElements": 134, "totalPages": 7 } }` |
@@ -136,7 +136,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET | `/api/products` ● | search/list: `q` (name/SKU/DCI), `barcode`, `categoryId`, `manufacturerId`, `ingredientId`, `speciesId` **[OPEN OD-018]**, `includeArchived`, `inStockOnly` | `product.read` | page of `ProductSummary` (with `sellableQtyBase`, `stockStatus`) |
+| GET | `/api/products` ● | search/list: `q` (name/SKU/active ingredient, contains, ADR-048), `categoryId`, `manufacturerId`, `ingredientId`, `speciesId` (target or withdrawal species, ADR-047), `includeArchived`; from Phase 3 `barcode`, from Phase 4 `inStockOnly` | `product.read` | page of `ProductSummary` (`sellableQtyBase`, `stockStatus` from Phase 4) |
 | GET | `/api/products/by-barcode/{code}` | scan lookup | `product.read` | `ProductSummary` + matched unit **[OPEN OD-019]**; `NOT_FOUND` |
 | POST | `/api/products` | create | `product.create` | `ProductWriteRequest` → 201 `ProductDetail`; `PRODUCT_SKU_DUPLICATE`, `VALIDATION_FAILED` |
 | GET | `/api/products/{id}` | detail (units, barcodes, ingredients, withdrawal periods) | `product.read` | `ProductDetail` |
@@ -149,9 +149,10 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | POST/DELETE | `/api/products/{id}/barcodes[/{barcodeId}]` | add / remove barcode | `product.update` | `{code, codeType, unitId?}`; `BARCODE_DUPLICATE` |
 | PUT | `/api/products/{id}/ingredients` | replace ingredient set | `product.update` | `[{ingredientId, strength}]` |
 | PUT | `/api/products/{id}/withdrawal-periods` | replace set | `product.update` | `[{speciesId, meatDays?, milkDays?, eggsDays?}]` |
-| GET/POST/PUT | `/api/categories` | therapeutic categories | `product.read` / `reference.manage` | `{name}` ; delete refused if used (`RESOURCE_IN_USE`) |
-| GET/POST/PUT | `/api/manufacturers` | manufacturers | same | `{name, country?}` |
-| GET/POST/PUT | `/api/dosage-forms`, `/api/active-ingredients`, `/api/animal-species` | reference lists | same | `{name}` |
+| PUT | `/api/products/{id}/target-species` | replace target species (ADR-047) | `product.update` | `{speciesIds[]}` |
+| GET/POST/PUT/DELETE | `/api/categories` | therapeutic categories | `product.read` / `reference.manage` | `{name}`; `DELETE` only when unused, else `RESOURCE_IN_USE` (ADR-053); `DUPLICATE_RESOURCE` (case/accent-insensitive names) |
+| GET/POST/PUT/DELETE | `/api/manufacturers` | manufacturers | same | `{name, country?}` |
+| GET/POST/PUT/DELETE | `/api/dosage-forms`, `/api/active-ingredients`, `/api/animal-species` | reference lists | same | `{name}`; seeded entries: OD-032 |
 
 ### 4.4 `/api/lots`
 
@@ -319,7 +320,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 ### 5.2 Product search
 - **GET `/api/products?q=amox&categoryId=1&page=0&size=20`** — fast search for POS/catalogue. **Permission:** `product.read`.
 - **Response:** page of `{ id, sku, commercialName, baseUnit, category, manufacturer, salePrice, sellableQtyBase, totalQtyBase, stockStatus: "in_stock|low|out", nearestExpiry, archived }`. `stockStatus`: out = sellable 0, low = ≤ `min_stock`.
-- **Validation:** `size ≤ 100`; sort whitelist. **Performance:** target < 1 s (NFR-002, OD-018). **Errors:** `VALIDATION_FAILED`.
+- **Validation:** `size ≤ 100`; sort whitelist. **Performance:** < 1 s on the 50,000-product reference dataset (NFR-002, ADR-048). **Errors:** `VALIDATION_FAILED`.
 
 ### 5.3 FEFO preview
 - **GET `/api/lots/fefo?productId=12&quantity=3&unitId=7`** — **Permission:** `lot.read`.
@@ -400,4 +401,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-012 (count scope), OD-013 (generate proposals), OD-015 (close PO), OD-018/019 (species filter, unit barcode), OD-020 (pdf formats), OD-021 (backup run).
+OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-012 (count scope), OD-013 (generate proposals), OD-015 (close PO), OD-019 (unit barcode), OD-032 (labels of seeded reference values), OD-020 (pdf formats), OD-021 (backup run).
