@@ -147,7 +147,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `RETURN_CREATE` | customer / supplier returns | REC |
 | `PAYMENT_REVERSE` | reversal of a payment/cash entry | REC |
 | `CREDIT_LIMIT_CHANGE` | customer credit-limit change | REC |
-| `USER_CREATE/UPDATE/DEACTIVATE`, `ROLE_PERMISSION_CHANGE`, `PASSWORD_RESET` | identity administration | REC |
+| `USER_CREATE`, `USER_UPDATE`, `USER_DEACTIVATE`, `ROLE_PERMISSION_CHANGE`, `PASSWORD_RESET` | identity administration (re-activation is a `USER_UPDATE`) | REC |
 | `SETTING_CHANGE` | alert thresholds, VAT default, company data | REC |
 | `BACKUP_RUN`, `BACKUP_DOWNLOAD` | backup operations | REC |
 | `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (OD-010, BR-SALE-007) |

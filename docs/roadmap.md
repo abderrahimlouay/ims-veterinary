@@ -51,7 +51,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Objective:** nobody can use the system without authenticating; permissions enforced server-side.
 - **Prerequisites:** Phase 0; decided 2026-10-20: ADR-036 (sessions, was OD-001), ADR-037 (matrix, was OD-023), ADR-027, ADR-017, ADR-038–041.
 - **Features:** login/logout/me/change password; users; roles and permissions; audit log write/read; application settings (alert thresholds, default VAT, locale).
-- **Database work:** users, roles, permissions, role_permissions, audit_logs, app_settings (renamed key columns, SD register); seed roles and permissions; append-only protection of audit rows.
+- **Database work:** users, roles, permissions, role_permissions, audit_log, app_settings (renamed key columns, SD register); seed roles and permissions; append-only protection of audit rows.
 - **Backend work:** `auth`, `users`, `audit`, `settings` modules; Spring Security chain; `@PreAuthorize` convention; brute-force limiter; password policy; `AuditRecorder`.
 - **Frontend work:** login page, guards, app layout with permission-filtered menu, account page, users/roles/settings/audit admin pages.
 - **Tests:** BR-SEC-*, BR-AUDIT-*; endpoint × role matrix framework; e2e J1, J11.

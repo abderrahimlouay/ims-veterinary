@@ -63,7 +63,7 @@ com.imsvet.ims        (ADR-034)
 | `sales` | customers, categories, customer_prices, sales documents(+lines), customer_returns, credit notes | `CustomerLookup` ; defines **`CreditLimitPort`** | catalog, inventory, numbering, finance (through port) |
 | `finance` | payments, allocations, cash_sessions, cash_movements | implements `CreditLimitPort`, `BalanceQuery`, `PaymentRecorder` | sales/purchasing read ports |
 | `reporting` | none (views/queries) | REST only | read access to others via views |
-| `audit` | audit_logs | `AuditRecorder` | — |
+| `audit` | audit_log | `AuditRecorder` (must run inside the caller's transaction, BR-AUDIT-003) | — |
 | `numbering` | document_sequences | `NumberingService.next(type)` | — |
 | `settings` | app_settings | `SettingsProvider` | — |
 | `users`/`auth` | users, roles, permissions, sessions (ADR-036) | `CurrentUser` | — |
@@ -79,7 +79,7 @@ JPA entities mirror the tables in `database.md`; they are **internal** and never
 - instants as UTC `Instant` (ADR-010);
 - relationships default `LAZY`; aggregate boundaries respected (see `domain-model.md` §2);
 - generated columns (`quantity_base`, line totals) are read-only for JPA (`insertable=false, updatable=false`) (ADR-016);
-- append-only tables (`stock_movements`, `audit_logs`, payments) expose no update path; entities immutable.
+- append-only tables (`stock_movements`, `audit_log`, payments) expose no update path; entities immutable.
 
 ## 5. DTOs and mapping
 

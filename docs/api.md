@@ -294,7 +294,7 @@ Scope of revenue/margin per OD-002 / OD-003 and BR-RPT-001 (net of credit notes)
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET | `/api/audit-logs` | filters `entity`, `entityId`, `userId`, `action`, `from`, `to` | `audit.read` | page of `AuditEntry` (read-only) |
+| GET | `/api/audit-logs` | filters `entity`, `entityId`, `userId`, `action`, `from`, `to` (business dates, both inclusive, business time zone); newest first | `audit.read` | page of `AuditEntry {id, userId, action, entity, entityId, oldValues, newValues, ipAddress, createdAt}` (read-only; values are JSON objects) |
 | GET | `/api/settings/public` | settings needed by the UI (alert thresholds, default VAT, locale) | authenticated | |
 | GET/PUT | `/api/settings`, `/api/settings/{key}` | read / change setting (audited) | `settings.manage` | `VALIDATION_FAILED` on bad format |
 | GET | `/api/backups` | backup log | `backup.manage` | page |
