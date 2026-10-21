@@ -122,4 +122,12 @@ class AuditRecorderTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM audit_log WHERE entity = ?", Integer.class, ENTITY))
                 .isZero();
     }
+
+    @Test
+    void acceptsBooleanFlagsWhoseNameMentionsAPassword() {
+        recorder.record(AuditAction.PASSWORD_RESET, ENTITY, 1L, null, Map.of("mustChangePassword", true));
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM audit_log WHERE entity = ?", Integer.class, ENTITY))
+                .isEqualTo(1);
+    }
 }

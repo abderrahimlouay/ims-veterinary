@@ -29,4 +29,8 @@ public class Permission {
     public String code() {
         return code;
     }
+
+    public String description() {
+        return description;
+    }
 }

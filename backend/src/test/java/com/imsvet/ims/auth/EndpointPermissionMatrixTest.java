@@ -49,7 +49,21 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/settings/public", AUTHENTICATED),
             new Endpoint(HttpMethod.GET, "/api/settings", "settings.manage"),
             new Endpoint(HttpMethod.GET, "/api/settings/default_vat_rate", "settings.manage"),
-            new Endpoint(HttpMethod.PUT, "/api/settings/default_vat_rate", "settings.manage", "{\"value\":\"9.00\"}"));
+            new Endpoint(HttpMethod.PUT, "/api/settings/default_vat_rate", "settings.manage", "{\"value\":\"9.00\"}"),
+            new Endpoint(HttpMethod.GET, "/api/users", "user.read"),
+            new Endpoint(HttpMethod.GET, "/api/users/999999", "user.read"),
+            new Endpoint(HttpMethod.POST, "/api/users", "user.manage",
+                    "{\"username\":\"matrix.user\",\"fullName\":\"Matrix\",\"roleId\":3,\"initialPassword\":\""
+                            + TestUsers.PASSWORD + "\"}"),
+            new Endpoint(HttpMethod.PUT, "/api/users/999999", "user.manage",
+                    "{\"fullName\":\"X\",\"roleId\":3,\"version\":0}"),
+            new Endpoint(HttpMethod.POST, "/api/users/999999/deactivate", "user.manage"),
+            new Endpoint(HttpMethod.POST, "/api/users/999999/activate", "user.manage"),
+            new Endpoint(HttpMethod.POST, "/api/users/999999/reset-password", "user.manage"),
+            new Endpoint(HttpMethod.GET, "/api/roles", "user.read"),
+            new Endpoint(HttpMethod.GET, "/api/roles/1", "user.read"),
+            new Endpoint(HttpMethod.GET, "/api/permissions", "user.read"),
+            new Endpoint(HttpMethod.PUT, "/api/roles/999/permissions", "role.manage", "{\"permissionCodes\":[]}"));
 
     static final List<String> ROLES = List.of("Administrator", "Pharmacist", "Seller", "Accountant");
 

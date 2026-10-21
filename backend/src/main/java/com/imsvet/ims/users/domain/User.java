@@ -71,6 +71,27 @@ public class User {
         this.createdAt = createdAt;
     }
 
+    /** Administrator edit (ADR-045): the username is immutable. */
+    public void update(String fullName, String email, Role role) {
+        this.fullName = fullName;
+        this.email = email;
+        this.role = role;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    /** A temporary password set by an Administrator must be changed at the next login (ADR-039). */
+    public void resetPassword(String temporaryPasswordHash) {
+        this.passwordHash = temporaryPasswordHash;
+        this.mustChangePassword = true;
+    }
+
     /** The user's own password change: the new hash is final, so the forced change is satisfied. */
     public void changeOwnPassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
@@ -107,5 +128,17 @@ public class User {
 
     public boolean mustChangePassword() {
         return mustChangePassword;
+    }
+
+    public Instant lastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public Instant createdAt() {
+        return createdAt;
+    }
+
+    public long version() {
+        return version;
     }
 }
