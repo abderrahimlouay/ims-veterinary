@@ -58,6 +58,10 @@
       "INVALID": "كلمة المرور الحالية غير صحيحة."
     }
   },
+  "passwordInput": {
+    "show": "إظهار كلمة المرور",
+    "hide": "إخفاء كلمة المرور"
+  },
   "validation": {
     "required": "هذا الحقل إلزامي.",
     "tooLong": "هذا النص طويل جدًا."
@@ -111,7 +115,7 @@
       "deactivate": "تعطيل",
       "activate": "إعادة التفعيل",
       "resetPassword": "إعادة تعيين كلمة المرور",
-      "temporaryPassword": "كلمة المرور المؤقتة:",
+      "temporaryPassword": "كلمة المرور المؤقتة",
       "temporaryPasswordOnce": "أبلغها للمستخدم: لن تظهر مرة أخرى."
     },
     "roles": {

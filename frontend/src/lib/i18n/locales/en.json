@@ -58,6 +58,10 @@
       "INVALID": "The current password is not correct."
     }
   },
+  "passwordInput": {
+    "show": "Show password",
+    "hide": "Hide password"
+  },
   "validation": {
     "required": "This field is required.",
     "tooLong": "This text is too long."
@@ -111,7 +115,7 @@
       "deactivate": "Deactivate",
       "activate": "Reactivate",
       "resetPassword": "Reset password",
-      "temporaryPassword": "Temporary password:",
+      "temporaryPassword": "Temporary password",
       "temporaryPasswordOnce": "Give it to the user: it will not be shown again."
     },
     "roles": {

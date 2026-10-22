@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
+import { PasswordInput } from '../../components/PasswordInput'
 import { SelectField } from '../../components/SelectField'
 import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
@@ -78,9 +79,8 @@ export function NewUserPage() {
         options={[{ value: '', label: '—' }, ...(roles.data ?? []).map((r) => ({ value: String(r.id), label: r.name }))]}
         {...register('roleId')}
       />
-      <TextField
+      <PasswordInput
         label={t('admin.users.initialPassword')}
-        type="password"
         autoComplete="new-password"
         error={fieldError(formState.errors.initialPassword?.message)}
         {...register('initialPassword')}
@@ -188,11 +188,16 @@ function UserDetailView({ user }: { user: UserDetail }) {
           {actionProblem && <Alert tone="danger">{problemMessage(actionProblem.problem, t)}</Alert>}
           {reset.data && (
             <Alert tone="ok">
-              {t('admin.users.temporaryPassword')}{' '}
-              <code className="font-mono text-base select-all" data-testid="temporary-password">
-                {reset.data.temporaryPassword}
-              </code>{' '}
-              {t('admin.users.temporaryPasswordOnce')}
+              <div className="flex flex-col gap-2 text-ink">
+                <PasswordInput
+                  label={t('admin.users.temporaryPassword')}
+                  readOnly
+                  autoComplete="off"
+                  value={reset.data.temporaryPassword}
+                  data-testid="temporary-password"
+                />
+                <p>{t('admin.users.temporaryPasswordOnce')}</p>
+              </div>
             </Alert>
           )}
           <div className="flex gap-3">
