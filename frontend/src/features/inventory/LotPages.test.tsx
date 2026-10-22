@@ -82,7 +82,7 @@ describe('lot list (frontend.md §4.2)', () => {
 
     await waitFor(() => expect(queries.at(-1)?.get('expiringWithinDays')).toBe('30'))
     expect(screen.getByLabelText('Périmés ou périment dans (jours)')).toHaveValue(30)
-    expect(screen.getByText(/lots déjà périmés inclus/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Périmés ou périment dans (jours)')).toHaveAccessibleDescription('Lots déjà périmés inclus.')
     expect(queries.at(-1)?.get('hasStock')).toBe('true')
     await userEvent.selectOptions(await screen.findByLabelText('Statut'), 'blocked')
     await waitFor(() => expect(queries.at(-1)?.get('status')).toBe('blocked'))
