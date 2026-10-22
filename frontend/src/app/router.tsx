@@ -2,6 +2,7 @@ import type { RouteObject } from 'react-router'
 import { AuditPage, NewUserPage, RolesPage, SettingsPage, UserDetailPage, UsersPage } from '../features/admin'
 import { NewProductPage, ProductDetailPage, ProductsPage, ReferencesPage } from '../features/catalog'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
+import { LotDetailPage, LotsPage } from '../features/inventory'
 import { AccountPage, LoginPage } from '../features/auth'
 import { RequireAuth, RequirePermission } from './guards'
 import { AppLayout } from './layouts/AppLayout'
@@ -27,6 +28,8 @@ export const routes: RouteObject[] = [
       { path: 'products', element: <RequirePermission code="product.read"><ProductsPage /></RequirePermission> },
       { path: 'products/new', element: <RequirePermission code="product.create"><NewProductPage /></RequirePermission> },
       { path: 'products/:id', element: <RequirePermission code="product.read"><ProductDetailPage /></RequirePermission> },
+      { path: 'lots', element: <RequirePermission code="lot.read"><LotsPage /></RequirePermission> },
+      { path: 'lots/:id', element: <RequirePermission code="lot.read"><LotDetailPage /></RequirePermission> },
       { path: 'catalog/references', element: <RequirePermission code="product.read"><ReferencesPage /></RequirePermission> },
       { path: 'admin/users', element: <RequirePermission code="user.read"><UsersPage /></RequirePermission> },
       { path: 'admin/users/new', element: <RequirePermission code="user.manage"><NewUserPage /></RequirePermission> },

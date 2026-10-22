@@ -12,7 +12,8 @@
     "settings": "الإعدادات",
     "audit": "سجل التدقيق",
     "references": "البيانات المرجعية",
-    "products": "المنتجات"
+    "products": "المنتجات",
+    "lots": "الحصص"
   },
   "language": {
     "label": "اللغة",
@@ -242,7 +243,8 @@
         "barcodes": "الرموز الشريطية",
         "ingredients": "المواد الفعالة",
         "substitutes": "البدائل",
-        "species": "الأنواع وفترات السحب"
+        "species": "الأنواع وفترات السحب",
+        "lots": "الحصص"
       },
       "search": "بحث",
       "searchHint": "الاسم أو الرمز أو المادة الفعالة",
@@ -349,5 +351,71 @@
     "POSITIVE": "يجب أن تكون القيمة أكبر من صفر.",
     "FORMAT": "هذا الرمز لا يطابق النوع المختار.",
     "CHECK_DIGIT": "رقم التحقق EAN-13 غير صحيح."
+  },
+  "lots": {
+    "title": "الحصص",
+    "detailTitle": "الحصة {{lotNumber}}",
+    "lotNumber": "رقم الحصة",
+    "product": "المنتج",
+    "expiry": "تاريخ الانتهاء",
+    "daysLeft": "الأيام المتبقية",
+    "daysLeftValue": "الأيام المتبقية: {{count}}",
+    "quantity": "الكمية في المخزون",
+    "statusFilter": "الحالة",
+    "expiringWithin": "ينتهي خلال (أيام)",
+    "hasStock": "مع مخزون فقط",
+    "productFilter": "القائمة محصورة في منتج واحد.",
+    "clearProduct": "عرض كل المنتجات",
+    "empty": "لا توجد حصص بعد: تظهر الحصص مع مخزون الافتتاح والاستلامات.",
+    "noMatch": "لا توجد حصة مطابقة للمرشحات.",
+    "unitCost": "تكلفة الوحدة",
+    "receivedAt": "تاريخ الاستلام",
+    "sale": "البيع",
+    "sellable": "قابلة للبيع",
+    "notSellable": "غير قابلة للبيع",
+    "blockReason": "سبب الحجز",
+    "recallReason": "سبب السحب",
+    "blockedAt": "منذ",
+    "status": {
+      "active": "نشطة",
+      "blocked": "محجوزة",
+      "recalled": "مسحوبة",
+      "expired": "منتهية الصلاحية",
+      "depleted": "نافدة"
+    },
+    "level": {
+      "expired": "منتهية الصلاحية",
+      "critical": "حرج",
+      "warning": "تنبيه",
+      "notice": "للمتابعة"
+    },
+    "actions": {
+      "block": "حجز",
+      "unblock": "رفع الحجز",
+      "recall": "سحب",
+      "report": "تقرير السحب"
+    },
+    "dialog": {
+      "block": "حجز الحصة {{lotNumber}}",
+      "unblock": "رفع الحجز عن الحصة {{lotNumber}}",
+      "recall": "سحب الحصة {{lotNumber}}",
+      "recallHint": "السحب نهائي: لا يمكن بيع الحصة ولا رفع الحجز عنها بعد ذلك.",
+      "reason": "السبب",
+      "confirm": "تأكيد",
+      "cancel": "إلغاء",
+      "invalidTransition": "هذه العملية غير ممكنة في الحالة الحالية للحصة."
+    },
+    "report": {
+      "title": "تقرير السحب",
+      "remaining": "المخزون المتبقي: {{quantity}}",
+      "noSales": "لا توجد مبيعات بعد: سيُدرج المشترون عند تسجيل المبيعات.",
+      "customer": "الزبون",
+      "document": "الوثيقة",
+      "anonymous": "بيع في الشباك"
+    },
+    "widget": {
+      "title": "انتهاء صلاحية الحصص",
+      "none": "لا توجد حصة قريبة من انتهاء الصلاحية."
+    }
   }
 }

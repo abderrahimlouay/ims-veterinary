@@ -12,7 +12,8 @@
     "settings": "Paramètres",
     "audit": "Journal d'audit",
     "references": "Données de référence",
-    "products": "Produits"
+    "products": "Produits",
+    "lots": "Lots"
   },
   "language": {
     "label": "Langue",
@@ -242,7 +243,8 @@
         "barcodes": "Codes-barres",
         "ingredients": "Principes actifs",
         "substitutes": "Substituts",
-        "species": "Espèces et délais d'attente"
+        "species": "Espèces et délais d'attente",
+        "lots": "Lots"
       },
       "search": "Rechercher",
       "searchHint": "Nom, SKU ou principe actif",
@@ -349,5 +351,71 @@
     "POSITIVE": "La valeur doit être supérieure à zéro.",
     "FORMAT": "Ce code ne correspond pas au type choisi.",
     "CHECK_DIGIT": "Le chiffre de contrôle EAN-13 est incorrect."
+  },
+  "lots": {
+    "title": "Lots",
+    "detailTitle": "Lot {{lotNumber}}",
+    "lotNumber": "N° de lot",
+    "product": "Produit",
+    "expiry": "Péremption",
+    "daysLeft": "Jours restants",
+    "daysLeftValue": "Jours restants : {{count}}",
+    "quantity": "Quantité en stock",
+    "statusFilter": "Statut",
+    "expiringWithin": "Périme dans (jours)",
+    "hasStock": "Avec stock seulement",
+    "productFilter": "Liste limitée à un produit.",
+    "clearProduct": "Afficher tous les produits",
+    "empty": "Aucun lot pour le moment : les lots apparaissent avec le stock d'ouverture et les réceptions.",
+    "noMatch": "Aucun lot ne correspond aux filtres.",
+    "unitCost": "Coût unitaire",
+    "receivedAt": "Reçu le",
+    "sale": "Vente",
+    "sellable": "Vendable",
+    "notSellable": "Non vendable",
+    "blockReason": "Motif du blocage",
+    "recallReason": "Motif du rappel",
+    "blockedAt": "Depuis le",
+    "status": {
+      "active": "Actif",
+      "blocked": "Bloqué",
+      "recalled": "Rappelé",
+      "expired": "Périmé",
+      "depleted": "Épuisé"
+    },
+    "level": {
+      "expired": "Périmé",
+      "critical": "Critique",
+      "warning": "Attention",
+      "notice": "À surveiller"
+    },
+    "actions": {
+      "block": "Bloquer",
+      "unblock": "Débloquer",
+      "recall": "Rappeler",
+      "report": "Rapport de rappel"
+    },
+    "dialog": {
+      "block": "Bloquer le lot {{lotNumber}}",
+      "unblock": "Débloquer le lot {{lotNumber}}",
+      "recall": "Rappeler le lot {{lotNumber}}",
+      "recallHint": "Le rappel est définitif : le lot ne pourra plus être vendu ni débloqué.",
+      "reason": "Motif",
+      "confirm": "Confirmer",
+      "cancel": "Annuler",
+      "invalidTransition": "Cette opération n'est pas possible dans l'état actuel du lot."
+    },
+    "report": {
+      "title": "Rapport de rappel",
+      "remaining": "Stock restant : {{quantity}}",
+      "noSales": "Aucune vente n'existe encore : les acheteurs seront listés dès que les ventes seront enregistrées.",
+      "customer": "Client",
+      "document": "Document",
+      "anonymous": "Vente au comptoir"
+    },
+    "widget": {
+      "title": "Péremption des lots",
+      "none": "Aucun lot proche de la péremption."
+    }
   }
 }

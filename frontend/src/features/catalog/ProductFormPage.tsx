@@ -19,6 +19,7 @@ import { SpeciesPanel } from './SpeciesPanel'
 import { SubstitutesPanel } from './SubstitutesPanel'
 import { UnitsPanel } from './UnitsPanel'
 import { hasPermission, useCurrentUser } from '../auth'
+import { ProductLotsPanel } from '../inventory'
 import { usePublicSettings } from '../settings'
 import {
   useCreateProduct,
@@ -208,7 +209,7 @@ export function NewProductPage() {
   )
 }
 
-const TABS = ['general', 'units', 'barcodes', 'ingredients', 'species', 'substitutes'] as const
+const TABS = ['general', 'units', 'barcodes', 'ingredients', 'species', 'substitutes', 'lots'] as const
 
 /** The detail tabs of frontend.md §4.1; each slice adds its own. */
 function ProductTabs({ product }: { product: ProductDetail }) {
@@ -218,7 +219,7 @@ function ProductTabs({ product }: { product: ProductDetail }) {
   return (
     <>
       <div role="tablist" aria-label={product.commercialName} className="flex gap-1 border-b border-line">
-        {TABS.map((name) => (
+        {TABS.filter((name) => name !== 'lots' || hasPermission(current, 'lot.read')).map((name) => (
           <button
             key={name}
             type="button"
@@ -248,6 +249,7 @@ function ProductTabs({ product }: { product: ProductDetail }) {
           <SpeciesPanel key={product.version} product={product} editable={hasPermission(current, 'product.update')} />
         )}
         {tab === 'substitutes' && <SubstitutesPanel productId={product.id} />}
+        {tab === 'lots' && <ProductLotsPanel productId={product.id} />}
       </div>
     </>
   )

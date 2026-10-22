@@ -12,7 +12,8 @@
     "settings": "Settings",
     "audit": "Audit log",
     "references": "Reference data",
-    "products": "Products"
+    "products": "Products",
+    "lots": "Lots"
   },
   "language": {
     "label": "Language",
@@ -242,7 +243,8 @@
         "barcodes": "Barcodes",
         "ingredients": "Active ingredients",
         "substitutes": "Substitutes",
-        "species": "Species and withdrawal periods"
+        "species": "Species and withdrawal periods",
+        "lots": "Lots"
       },
       "search": "Search",
       "searchHint": "Name, SKU or active ingredient",
@@ -349,5 +351,71 @@
     "POSITIVE": "The value must be greater than zero.",
     "FORMAT": "This code does not match the chosen type.",
     "CHECK_DIGIT": "The EAN-13 check digit is wrong."
+  },
+  "lots": {
+    "title": "Lots",
+    "detailTitle": "Lot {{lotNumber}}",
+    "lotNumber": "Lot number",
+    "product": "Product",
+    "expiry": "Expiry",
+    "daysLeft": "Days left",
+    "daysLeftValue": "Days left: {{count}}",
+    "quantity": "Stock on hand",
+    "statusFilter": "Status",
+    "expiringWithin": "Expires within (days)",
+    "hasStock": "With stock only",
+    "productFilter": "List limited to one product.",
+    "clearProduct": "Show all products",
+    "empty": "No lots yet: lots appear with opening stock and receipts.",
+    "noMatch": "No lot matches the filters.",
+    "unitCost": "Unit cost",
+    "receivedAt": "Received on",
+    "sale": "Sale",
+    "sellable": "Sellable",
+    "notSellable": "Not sellable",
+    "blockReason": "Block reason",
+    "recallReason": "Recall reason",
+    "blockedAt": "Since",
+    "status": {
+      "active": "Active",
+      "blocked": "Blocked",
+      "recalled": "Recalled",
+      "expired": "Expired",
+      "depleted": "Depleted"
+    },
+    "level": {
+      "expired": "Expired",
+      "critical": "Critical",
+      "warning": "Warning",
+      "notice": "Notice"
+    },
+    "actions": {
+      "block": "Block",
+      "unblock": "Unblock",
+      "recall": "Recall",
+      "report": "Recall report"
+    },
+    "dialog": {
+      "block": "Block lot {{lotNumber}}",
+      "unblock": "Unblock lot {{lotNumber}}",
+      "recall": "Recall lot {{lotNumber}}",
+      "recallHint": "A recall is final: the lot can no longer be sold or unblocked.",
+      "reason": "Reason",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "invalidTransition": "This operation is not possible in the lot's current state."
+    },
+    "report": {
+      "title": "Recall report",
+      "remaining": "Remaining stock: {{quantity}}",
+      "noSales": "No sales exist yet: buyers will be listed once sales are recorded.",
+      "customer": "Customer",
+      "document": "Document",
+      "anonymous": "Counter sale"
+    },
+    "widget": {
+      "title": "Lot expiry",
+      "none": "No lot is close to expiry."
+    }
   }
 }

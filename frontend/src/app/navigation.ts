@@ -9,6 +9,7 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   { to: '/', labelKey: 'nav.home' },
   { to: '/products', labelKey: 'nav.products', permission: 'product.read' },
+  { to: '/lots', labelKey: 'nav.lots', permission: 'lot.read' },
   { to: '/catalog/references', labelKey: 'nav.references', permission: 'product.read' },
   { to: '/admin/users', labelKey: 'nav.users', permission: 'user.read' },
   { to: '/admin/roles', labelKey: 'nav.roles', permission: 'role.manage' },
