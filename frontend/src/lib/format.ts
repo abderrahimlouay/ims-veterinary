@@ -47,3 +47,10 @@ export function formatFactor(factor: DecimalString): string {
     factor as Intl.StringNumericLiteral,
   )
 }
+
+/** A calendar date from the API (`"2026-10-30"`, ADR-055) shown as is, without time-zone shift. */
+export function formatDate(isoDate: string): string {
+  return new Intl.DateTimeFormat(business().locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(
+    new Date(`${isoDate}T00:00:00Z`),
+  )
+}
