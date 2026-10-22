@@ -91,7 +91,7 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.POST, "/api/products/999999/barcodes", "product.update",
                     "{\"code\":\"X1\",\"codeType\":\"QR\"}"),
             new Endpoint(HttpMethod.DELETE, "/api/products/999999/barcodes/999999", "product.update"),
-            new Endpoint(HttpMethod.GET, "/api/products/by-barcode/X1", "product.read"),
+            new Endpoint(HttpMethod.GET, "/api/products/by-barcode?code=X1", "product.read"),
             new Endpoint(HttpMethod.GET, "/api/lots", "lot.read"),
             new Endpoint(HttpMethod.GET, "/api/lots/999999", "lot.read"),
             new Endpoint(HttpMethod.GET, "/api/products/999999/lots", "lot.read"),

@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiFetch } from '../../api/client'
+import { ApiError, apiFetch } from '../../api/client'
 import type { PageMetadata } from '../../components/Pager'
 import type { ReferenceItem } from './referenceApi'
 
@@ -247,12 +247,24 @@ export function useRemoveBarcode(productId: number) {
   })
 }
 
+/** `GET /api/products/by-barcode` (BR-UNIT-005): the product, the scanned unit (`null` = base unit), quantity 1. */
+export interface ScanResult {
+  product: ProductSummary
+  unit: ProductUnit | null
+  quantity: string
+}
+
 /**
- * The product carrying exactly this barcode, or `null` (frontend.md §4.1, scanner input). Uses the `barcode`
- * search filter, which accepts every valid code (OD-033).
+ * The scan lookup (frontend.md §4.1, ADR-071): the code goes as a query parameter, exactly as scanned (codes may
+ * contain "/" or "%"); `null` when no product carries it.
  */
-export async function findByBarcode(code: string): Promise<ProductSummary | null> {
-  const params = new URLSearchParams({ barcode: code, includeArchived: 'true', size: '2' })
-  const found = await apiFetch<{ content: ProductSummary[] }>(`/api/products?${params}`)
-  return found.content.length === 1 ? found.content[0] : null
+export async function findByBarcode(code: string): Promise<ScanResult | null> {
+  try {
+    return await apiFetch<ScanResult>(`/api/products/by-barcode?${new URLSearchParams({ code })}`)
+  } catch (error) {
+    if (error instanceof ApiError && error.problem.code === 'NOT_FOUND') {
+      return null
+    }
+    throw error
+  }
 }

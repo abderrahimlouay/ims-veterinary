@@ -154,47 +154,44 @@ describe('barcodes tab (FR-PROD-003)', () => {
   })
 })
 
-describe('scanning in the product search', () => {
-  it('opens the product whose barcode is scanned (Enter-terminated)', async () => {
-    serveMe(EDITOR)
-    serveProduct([])
+describe('scanning in the product search (ADR-071)', () => {
+  function serveList(scans: string[], found: Record<string, unknown> | null) {
     server.use(
       http.get('/api/animal-species', () => HttpResponse.json([])),
       http.get('/api/active-ingredients', () => HttpResponse.json([])),
-      http.get('/api/products', ({ request }) => {
-        const barcode = new URL(request.url).searchParams.get('barcode')
-        const content = barcode === 'AMX/10' || barcode === null ? [PRODUCT] : []
-        return HttpResponse.json({ content, page: { number: 0, size: 20, totalElements: content.length, totalPages: 1 } })
+      http.get('/api/products', () =>
+        HttpResponse.json({ content: [PRODUCT], page: { number: 0, size: 20, totalElements: 1, totalPages: 1 } }),
+      ),
+      http.get('/api/products/by-barcode', ({ request }) => {
+        scans.push(new URL(request.url).searchParams.get('code') ?? '')
+        return found ? HttpResponse.json(found) : problem(404, 'NOT_FOUND')
       }),
     )
+  }
+
+  it('opens the product whose barcode is scanned, the code sent exactly (Enter-terminated)', async () => {
+    serveMe(EDITOR)
+    serveProduct([])
+    const scans: string[] = []
+    serveList(scans, { product: PRODUCT, unit: BOX, quantity: '1' })
     const router = renderApp('/products')
 
-    await userEvent.type(await screen.findByLabelText('Rechercher'), 'AMX/10{Enter}')
+    await userEvent.type(await screen.findByLabelText('Rechercher'), 'AMX/10%A{Enter}')
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/products/5'))
+    expect(scans).toEqual(['AMX/10%A'])
   })
 
   it('keeps the text search when the typed value is no barcode', async () => {
     serveMe(EDITOR)
     serveProduct([])
-    const barcodes: string[] = []
-    server.use(
-      http.get('/api/animal-species', () => HttpResponse.json([])),
-      http.get('/api/active-ingredients', () => HttpResponse.json([])),
-      http.get('/api/products', ({ request }) => {
-        const barcode = new URL(request.url).searchParams.get('barcode')
-        if (barcode !== null) {
-          barcodes.push(barcode)
-        }
-        const content = barcode === null ? [PRODUCT] : []
-        return HttpResponse.json({ content, page: { number: 0, size: 20, totalElements: content.length, totalPages: 1 } })
-      }),
-    )
+    const scans: string[] = []
+    serveList(scans, null)
     const router = renderApp('/products')
 
     await userEvent.type(await screen.findByLabelText('Rechercher'), 'amox{Enter}')
 
-    await waitFor(() => expect(barcodes).toEqual(['amox']))
+    await waitFor(() => expect(scans).toEqual(['amox']))
     await waitFor(() => expect(router.state.location.search).toBe('?q=amox'))
     expect(router.state.location.pathname).toBe('/products')
   })
