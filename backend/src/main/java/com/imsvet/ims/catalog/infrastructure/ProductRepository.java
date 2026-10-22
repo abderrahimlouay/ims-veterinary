@@ -21,6 +21,8 @@ public interface ProductRepository extends Repository<Product, Long> {
     @EntityGraph(attributePaths = {"category", "dosageForm", "manufacturer"})
     Optional<Product> findById(Long id);
 
+    List<Product> findAllByIdIn(Collection<Long> ids);
+
     /** Case- and accent-insensitive through the column collation (ADR-051). */
     Optional<Product> findBySku(String sku);
 
