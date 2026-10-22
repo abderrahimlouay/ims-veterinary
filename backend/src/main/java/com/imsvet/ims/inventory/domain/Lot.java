@@ -16,7 +16,7 @@ import java.time.LocalDate;
 /**
  * A received batch of one product (database.md §2.2/§3.4). Identity (product, lot number, expiry) is immutable
  * (BR-LOT-011); the balance changes only through stock movements (Phase 4, ADR-028); lots are never created in
- * Phase 3 (ADR-064). The product is referenced by id: catalog tables are read through {@code ProductLookup}.
+ * Phase 3 (ADR-064); the stored status changes only through {@link #apply}. The product is referenced by id: catalog tables are read through {@code ProductLookup}.
  */
 @Entity
 @Table(name = "lots")
@@ -73,6 +73,23 @@ public class Lot {
     private Instant receivedAt;
 
     protected Lot() {
+    }
+
+    /**
+     * Applies a stored-status transition (BR-LOT-009, ADR-060); the caller locks the row, checks the permission and
+     * audits first. Block and recall record reason, user and time; unblock clears them (the reason is audited).
+     */
+    public void apply(LotStatus.Action action, String reason, Long userId, Instant now) {
+        this.status = status.after(action);
+        if (action == LotStatus.Action.UNBLOCK) {
+            this.blockedReason = null;
+            this.blockedBy = null;
+            this.blockedAt = null;
+        } else {
+            this.blockedReason = reason;
+            this.blockedBy = userId;
+            this.blockedAt = now;
+        }
     }
 
     public Long id() {
