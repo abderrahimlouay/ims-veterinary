@@ -1,6 +1,6 @@
 # IMS Vétérinaire
 
-**Phase 3 (Lots & units) implemented — awaiting approval; Phase 4 (Inventory & stock) not started**
+**Phase 3 (Lots & units) complete — Phase 4 (Inventory & stock) decided, not started**
 
 Inventory, purchasing, sales and finance management for a veterinary-medicine business: lot and expiry tracking (FEFO), withdrawal-period warnings, lot recall, credit sales and customer accounts, cash sessions, supplier management and reporting.
 
@@ -26,7 +26,7 @@ On an empty database, set `IMS_BOOTSTRAP_ADMIN_USERNAME` and `IMS_BOOTSTRAP_ADMI
 | Full build with all tests (unit, architecture, API, migration on MySQL container) | `./mvnw verify` |
 | Tests without Docker (architecture, unit, MockMvc) | `./mvnw test -Dtest='ArchitectureTest,ErrorCatalogueTest,BusinessCalendarTest,DecimalJsonTest,ProblemDetailsHandlerTest'` |
 | Run locally against a throw-away MySQL container | `./mvnw spring-boot:test-run` |
-| Run locally against your own MySQL (profile `dev`) | `IMS_DB_PASSWORD=… ./mvnw spring-boot:run` |
+| Run locally against your own MySQL (profile `dev`) | `IMS_DB_PASSWORD=… IMS_DB_MIGRATION_PASSWORD=… ./mvnw spring-boot:run` (two accounts from Phase 4, ADR-087: Flyway uses the migration account, the application the restricted one) |
 | Health check | `curl localhost:8080/actuator/health` |
 
 ### Frontend (`frontend/`)

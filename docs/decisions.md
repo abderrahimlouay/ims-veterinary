@@ -106,8 +106,8 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** Numbering is serialised per `(key, year)` — acceptable for a single-pharmacy load. The Source Schema's key list is inconsistent (comment lists `PO, INV, RCT, QUO, DN, CN`, code uses `PO, GR, SR, CR`): see **OD-017**.
 
 ## ADR-012 — Stock updates use pessimistic row locks and one transaction
-- **Status:** Proposed
-- **Decision:** Every stock-changing use case runs in one `@Transactional` boundary and: (1) locks the affected `lots` rows with `SELECT … FOR UPDATE` **ordered by `lots.id`** (avoids deadlocks); (2) validates status/expiry/quantity; (3) inserts `stock_movements` rows; (4) applies the same signed delta to `lots.quantity_on_hand`; (5) updates `lots.status` (`depleted`/`active`); (6) persists the business document and the audit entry. `CHECK (quantity_on_hand >= 0)` is the final safety net.
+- **Status:** ~~Proposed~~ → Accepted (user decision, 2026-10-22, Phase 4 preflight; #15 A), amended
+- **Decision:** Every stock-changing use case runs in one `@Transactional` boundary (READ COMMITTED) and: (1) locks the affected `lots` rows with `SELECT … FOR UPDATE` **ordered by `lots.id`** (avoids deadlocks); (2) validates status/expiry/quantity; (3) inserts `stock_movements` rows; (4) applies the same signed delta to `lots.quantity_on_hand`; (5) persists the business document and the audit entry. The stored status is **not** touched by stock changes: depleted and expired are computed (ADR-059; the former step "update `lots.status` depleted/active" is removed). `CHECK (quantity_on_hand >= 0)` is the final safety net. Application connections set `innodb_lock_wait_timeout = 5` seconds (connection setting `ims.db.lock-wait-timeout-seconds`, applied when the pool opens a connection); a lock timeout (MySQL 1205) is answered `CONCURRENT_MODIFICATION` and never retried silently (BR-STOCK-012).
 - **Alternatives:** Optimistic locking with retry (more retries at a busy counter, harder to reason about); atomic `UPDATE … WHERE quantity_on_hand + :delta >= 0` without prior read (OK for single-lot ops, awkward for multi-lot FEFO allocation).
 - **Consequences:** Two sellers selling the last units of the same lot are serialised; one gets `STOCK_INSUFFICIENT`. Tested with concurrency tests (`testing.md`).
 
@@ -326,7 +326,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
   - The public view holds the thresholds, default VAT, currency, locale and time zone — never the security settings.
   - The application refuses to start when stored settings and definitions disagree (missing, unknown or malformed key).
 - **Alternatives:** batch update in one transaction; editable currency and time zone; keeping the business values in configuration.
-- **Consequences:** `api.md` §4.14, BR-LOT-010, `database.md` §3.1; `BusinessSettings` (common port) is implemented by the `settings` module.
+- **Consequences:** `api.md` §4.14, BR-LOT-010, `database.md` §3.1; `BusinessSettings` (common port) is implemented by the `settings` module. Phase 4 adds the formats `boolean` (`opening_stock_open`, ADR-082) and `HH:mm` (`reorder_job_time`, `integrity_check_time`, ADR-078, ADR-086), all editable by `settings.manage`.
 
 ## ADR-045 — User administration rules
 - **Status:** Accepted (user decision, 2026-10-21, Phase 1 user-administration slice)
@@ -492,6 +492,114 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** forbid `/` in codes (B); keep the path form and use the `barcode` search filter for such codes (C).
 - **Consequences:** `api.md` §4.3, `frontend.md` §4.1; tests with codes containing `/` and `%`.
 
+## ADR-072 — Count lines are reconciled at the moment they are counted (resolves OD-012, concurrency)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #1 A, refined by the user)
+- **Context:** Sales and receipts continue while a count is open; a quantity frozen at count opening produces false variances (DR-026).
+- **Decision:** Nothing is frozen. Opening a count records, per line, the lot balance at that moment (`theoretical_qty`, informational). When a user saves a counted quantity, the server locks the lot row and stores, with the counted quantity, the lot's balance at that moment (`balance_at_count`) and the id of the lot's last stock movement (`watermark_movement_id`, `NULL` when none), with user and time. **Variance = counted − balance at the watermark.** Saving the line again takes a new watermark. The line shows the variance and the movements on the lot since its watermark. Regularisation posts the variance as one `adjustment_inventory` movement on the **current** balance, so the sales and receipts after the watermark stay valid. If that would make the balance negative, regularisation is refused with `STOCK_INSUFFICIENT`, nothing is posted and the count stays open.
+- **Alternatives:** freeze movements on counted lots (B); compare with the quantity at count opening (C).
+- **Consequences:** `inventory_lines` gains `balance_at_count`, `watermark_movement_id`, `counted_at`, `counted_by` (SD-120); `variance_qty = counted_qty − balance_at_count`; BR-INV-001/005, new BR-INV-008, W5, `api.md` `CountDetail`, `frontend.md` §4.4; tests: a sale after the lot was counted (no false variance), a sale before it was counted, two edits of one line, a receipt during the count, concurrent regularisation and sale (CT-04), a regularisation that would go negative. DR-026 resolved.
+
+## ADR-073 — Cycle-count scope: a category or a product list (resolves OD-012, scope)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #2 A)
+- **Decision:** A `full` count covers every lot with stock. A `cycle` count is scoped by **one** therapeutic category **or** an explicit list of products, stored on the count (`inventories.scope_category_id`, table `inventory_scope_products`, SD-113). Lines are created for the lots with stock of the products in scope. There is no location model, so no location scope.
+- **Alternatives:** an explicit lot list (B); locations (C, not possible).
+- **Consequences:** BR-INV-003, `database.md` §3.4, `api.md` `POST /api/inventory/counts` body.
+
+## ADR-074 — Lots found during a count (resolves OD-012, found lots)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #3 A)
+- **Decision:** Lots without stock are not listed when a count opens. During an open count a user may add (a) an **existing lot** of a product in scope that has no line (its line starts like any other), or (b) a **lot unknown to the system**: product in scope, lot number, expiry date (BR-LOT-001; `MM/YYYY` allowed, ADR-055), unit cost ≥ 0 and counted quantity. The unknown lot is created only at regularisation, with an `adjustment_inventory` (+) movement of the counted quantity. If the lot number already exists for the product, the same expiry makes it case (a) and another expiry is `LOT_EXPIRY_MISMATCH` (ADR-070).
+- **Alternatives:** existing lots only; unknown lots through opening stock (B).
+- **Consequences:** `inventory_lines.lot_id` becomes `NULL` for a found lot until regularisation, with `product_id`, `found_lot_number`, `found_expiry_date`, `found_unit_cost` (SD-120); `api.md` `POST /api/inventory/counts/{id}/lines`.
+
+## ADR-075 — Regularising closes the count (resolves OD-012, closing)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #4 A)
+- **Decision:** `POST …/regularize` (`inventory.validate`) posts, in one transaction, the accepted lines (all counted lines, or the `lineIds` given) with a non-zero variance, marks them regularised, and closes the count. Lines not accepted stay unregularised on the closed count. Lots are locked in ascending id order (ADR-012). Any failure (e.g. `STOCK_INSUFFICIENT`) rolls everything back and the count stays open. A count can be cancelled while open (no movement).
+- **Alternatives:** partial regularisation with a separate close (B).
+- **Consequences:** BR-INV-002/004, W5, domain-model §5.4.
+
+## ADR-076 — Reorder trigger (resolves OD-013, trigger)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #5 A)
+- **Decision:** A product needs a proposal when it is not archived, its `reorder_point` is > 0 and its **sellable** quantity (BR-STOCK-011) is ≤ `reorder_point`. `min_stock` is not the trigger; it defines the *low* status (ADR-080).
+- **Alternatives:** sellable ≤ `min_stock` (B).
+- **Consequences:** BR-STOCK-010, W10.
+
+## ADR-077 — Proposed reorder quantity (resolves OD-013, quantity)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #6 A)
+- **Decision:** Suggested quantity = `max_stock − sellable`, in base units, rounded **up** to a whole number for a non-divisible product (ADR-050). A product that needs a proposal but has no `max_stock` gets none and is reported as *thresholds incomplete* in the generation result. No formula is invented for it.
+- **Alternatives:** reorder point + a configured target (B); up to max, else twice the reorder point (C).
+- **Consequences:** BR-STOCK-010, `api.md` (generation result).
+
+## ADR-078 — When proposals are generated (resolves OD-013, schedule)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #7 A)
+- **Decision:** A daily job runs at the time of the new setting `reorder_job_time` (`HH:mm`, business time zone, default `06:00`), and `POST /api/inventory/reorder-proposals/generate` (`reorder.manage`) runs the same generation on demand. Sales never generate proposals.
+- **Alternatives:** after every stock-reducing transaction (B); both (C).
+- **Consequences:** `backend.md` §12, settings catalogue (ADR-044 formats gain `HH:mm`).
+
+## ADR-079 — One pending proposal per product; supplier and open orders in Phase 5 (resolves OD-013, duplicates)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #8 A)
+- **Decision:** At most one `pending` proposal per product, enforced by a unique key on a generated column (SD-112). A new generation **updates** the pending proposal's quantities. Dismissing (`reorder.manage`) suppresses new proposals for that product until a generation sees its sellable quantity above the reorder point again; a rise and fall between two generations is not seen. `supplier_id` and the subtraction of open purchase-order quantities arrive in Phase 5 with suppliers and purchase orders, as does *convert to purchase order*.
+- **Alternatives:** keep the first pending proposal unchanged (B); dismiss automatically when stock recovers (C).
+- **Consequences:** `reorder_proposals` gains `updated_at`, `dismissed_at`, `dismissed_by`, `suppressed` (until recovery) and the generated `pending_product_id` with its unique key; no `supplier_id` before Phase 5 (SD-121); domain-model §5.6; DR-027 resolved.
+
+## ADR-080 — Stock levels and status (BR-STOCK-011, new BR-STOCK-013)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #9 A)
+- **Decision:** Per product: **total** = Σ balance of all lots; **sellable** = Σ balance of lots stored active, not expired and with stock (BR-STOCK-011). Status: **out** when sellable = 0; **low** when 0 < sellable ≤ `min_stock`; otherwise **in stock**. Flag **below reorder** when sellable ≤ `reorder_point` (and the reorder point is > 0). Computed on every read with the current expiry policy.
+- **Alternatives:** the same statuses on total stock (B).
+- **Consequences:** `api.md` `StockLevel`, product list stock columns (ADR-089).
+
+## ADR-081 — Movement types allowed by the database
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #10 A)
+- **Decision:** The `stock_movements.movement_type` CHECK lists the ten decided types now: `purchase_receipt`, `sale`, `customer_return`, `supplier_return`, `adjustment_breakage`, `adjustment_expiry`, `adjustment_theft`, `adjustment_internal_use`, `adjustment_inventory`, `opening_stock`. Phase 4 produces only `opening_stock`, the four manual `adjustment_*` and `adjustment_inventory`. Cancellation and discard types are **not** added; they wait for OD-004 / OD-005 (SD-107, DR-002).
+- **Alternatives:** each phase adds its own types (B).
+- **Consequences:** `database.md` §3.4, BR-STOCK-005.
+
+## ADR-082 — Opening stock only while the opening period is open
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #11 B)
+- **Decision:** New boolean setting `opening_stock_open`, `true` by default until go-live, changed only by an Administrator (`settings.manage`) and audited `SETTING_CHANGE`. While it is `true`, `stock.adjust` holders may enter opening stock. While it is `false`, `POST /api/inventory/opening-stock` answers the business error `OPENING_STOCK_CLOSED` and the screen says to use an inventory count (ADR-074). Every opening-stock entry is audited `OPENING_STOCK`.
+- **Alternatives:** any time (A); a separate Administrator-only permission (C).
+- **Consequences:** settings catalogue (ADR-044 formats gain `boolean`), `api.md` §3 and §4.5, `security.md` §7, new BR-STOCK-014.
+
+## ADR-083 — Content of an opening-stock entry
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #12 A)
+- **Decision:** Product, lot number and expiry date are required (BR-LOT-001; a month `MM/YYYY` is the last day of that month, ADR-055); the quantity is given in a unit of the product (base unit by default) and converted exactly (ADR-065); the **unit cost** per base unit is required, ≥ 0 with at most 4 decimals, and the screen prefills it from the product's purchase price. An already expired lot is accepted (it exists physically) and the screen warns. One `opening_stock` (+) movement is posted.
+- **Alternatives:** the unit cost taken from the product automatically (B).
+- **Consequences:** `api.md` `POST /api/inventory/opening-stock`, BR-STOCK-014, `frontend.md` §4.3.
+
+## ADR-084 — Opening stock on an existing lot
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #13 A)
+- **Decision:** Find-or-create by (product, lot number) under lock (BR-LOT-002, ADR-070). Another expiry date → `LOT_EXPIRY_MISMATCH`. Same expiry: the quantity is added to the lot; a unit cost different from the lot's is refused (`VALIDATION_FAILED`, field `unitCost`, code `COST_MISMATCH`) until OD-029 decides cost on repeated entries (Phase 5); a recalled lot is refused (`LOT_RECALLED`); a blocked lot is accepted and stays blocked.
+- **Alternatives:** add and keep the existing cost silently (B); weighted average (C).
+- **Consequences:** BR-STOCK-014, `api.md` §4.5.
+
+## ADR-085 — Manual adjustments
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #14 A)
+- **Decision:** `POST /api/inventory/adjustments` (`stock.adjust`) takes a lot, a type among `adjustment_breakage`, `adjustment_expiry`, `adjustment_theft`, `adjustment_internal_use` (BR-STOCK-008), a quantity > 0 **in base units** (at most 3 decimals, whole for a non-divisible product) and a mandatory reason (≤ 500, BR-STOCK-006). It posts the negative movement, refuses more than the balance (`STOCK_INSUFFICIENT`), is allowed on blocked, recalled and expired lots (ADR-060), and is audited `STOCK_CORRECTION` with old and new quantity.
+- **Alternatives:** quantity in any unit, converted (B).
+- **Consequences:** W7, `api.md` §4.5, `frontend.md` §4.3.
+
+## ADR-086 — Integrity check runs, storage and banner (BR-STOCK-007)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #16 A)
+- **Decision:** The balance is maintained by `StockService` in the movement's transaction, CHECK ≥ 0 being the safety net (ADR-028). The integrity check compares every lot balance with the sum of its movements. It runs nightly at the new setting `integrity_check_time` (`HH:mm`, business time zone, default `02:00`) and on demand (`POST /api/inventory/integrity-check`, `audit.read`). Every run is stored in `integrity_check_runs` (start, end, lots checked, mismatches with lot, balance and ledger sum, who triggered it or the system). A mismatch logs a CRITICAL `LEDGER_MISMATCH` security event. Users holding `audit.read` see a banner while the latest run has mismatches; it disappears after a clean run. The check reports only; it never corrects.
+- **Alternatives:** log only, no stored result or banner (B).
+- **Consequences:** new table `integrity_check_runs` (SD-122), `api.md` §4.5, `backend.md` §12, `security.md` §8, `frontend.md` (banner).
+
+## ADR-087 — Separate migration and application database accounts (BR-SEC-006, now)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #17 A)
+- **Decision:** Flyway runs with a **migration account** (`IMS_DB_MIGRATION_USERNAME` / `IMS_DB_MIGRATION_PASSWORD`, DDL rights); the application connects with an **application account** (`IMS_DB_USERNAME` / `IMS_DB_PASSWORD`) that has `SELECT, INSERT, UPDATE, DELETE` on the application tables except `stock_movements` and `audit_log`, where it has only `SELECT, INSERT`, and no DDL. The grants are applied after every migration by a Flyway callback for each table, so a new table is covered automatically. The append-only triggers (ADR-017) stay and also stop privileged accounts. Testcontainers (tests, `spring-boot:test-run`, end-to-end) and CI create both accounts and run Flyway with the migration account and the application with the restricted one. Tests prove that the trigger refuses `UPDATE`/`DELETE` by the migration account (SQLSTATE 45000) and that the application account gets error 1142.
+- **Alternatives:** triggers now, privileges in Phase 12 (B).
+- **Consequences:** `.env.example`, `README.md`, `database-migration.md` §9, `security.md`, BR-STOCK-003, BR-SEC-006, roadmap Phase 12 (privileges already done).
+
+## ADR-088 — `StockService` is the only writer of stock
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #18 A)
+- **Decision:** The single gateway that inserts movements and changes lot balances is named `StockService` (module `inventory`), as in CLAUDE.md and `backend.md`; BR-STOCK-002 is corrected (it said `StockLedgerService`).
+- **Consequences:** BR-STOCK-002.
+
+## ADR-089 — Phase 4 also delivers the deferred stock-aware features
+- **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #19 A)
+- **Decision:** Phase 4 includes the items deferred to it by the Phase 2/3 scope splits: stock columns (sellable quantity, status, nearest expiry) and the `inStockOnly` filter on the product list, stock-aware substitutes, a low-stock dashboard widget, and the name of the user who blocked or recalled a lot (a read port of the `users` module for user names).
+- **Alternatives:** stock pages only (B).
+- **Consequences:** `roadmap.md` Phase 4, `api.md` §4.3, `frontend.md` §3.1/§4.1/§4.2, `architecture.md` §3 (module rule `inventory → users` for the name port only).
+
 ---
 
 # Part B — Open Decisions
@@ -556,10 +664,12 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 9. **Related:** BR-PAY-005, BR-CUST-002.
 
 ## OD-012 — Inventory Count concurrency and scope
+- **Status:** Resolved 2026-10-22 → **ADR-072** (concurrency, refined by the user), **ADR-073** (scope), **ADR-074** (found lots), **ADR-075** (closing).
 - **Question:** While a count is open, are sales/receipts frozen, or is the variance computed against the theoretical quantity **at count time** (delta of movements since snapshot)? How is a *cycle* count scoped (category, shelf, ABC)? How are lots found physically but unknown to the system handled?
 - **Blocks:** Phase 4. **Related:** BR-INV-005.
 
 ## OD-013 — Reorder proposal algorithm
+- **Status:** Resolved 2026-10-22 → **ADR-076** (trigger), **ADR-077** (quantity), **ADR-078** (schedule), **ADR-079** (duplicates; supplier and open orders in Phase 5).
 - **Question:** Which threshold triggers (`reorder_point` per Source view vs. `min_stock`)? Suggested quantity (e.g. `max_stock − current`)? Which supplier is proposed (cheapest in `supplier_price_history`)? Generated on every movement or by a scheduled job?
 - **Blocks:** Phase 4/5. **Related:** BR-STOCK-010.
 
@@ -675,7 +785,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 1 Auth | ~~OD-001~~ → ADR-036, ~~OD-023~~ → ADR-037; ADR-017/020/021/027 confirmed Accepted; ADR-038–041, ~~OD-031~~ → ADR-042 (all 2026-10-20) |
 | 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053, ~~OD-032~~ → ADR-054 (all 2026-10-21) |
 | 3 Lots & Units | ~~OD-009~~ → ADR-055/056, ~~OD-019~~ → ADR-057, ~~OD-025~~ → ADR-058, ~~OD-027~~ → ADR-059/060; ADR-061…068 (all 2026-10-22) |
-| 4 Inventory & Stock | OD-012, OD-013, ~~OD-030~~ → ADR-035, ADR-012, ADR-028 |
+| 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22) |
 | 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 Customers | OD-006, OD-011 |
 | 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006, ~~OD-033~~ → ADR-071 |

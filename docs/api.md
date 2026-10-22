@@ -74,6 +74,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | `RESOURCE_IN_USE` | 409 | cannot delete: referenced | BR-CUST-003 |
 | `IDEMPOTENCY_CONFLICT` | 409 | key reused with different request | BR-SALE-016 |
 | `INVENTORY_NOT_OPEN` | 409 | count is closed/cancelled | BR-INV-004 |
+| `OPENING_STOCK_CLOSED` | 409 | the opening-stock period is closed (setting `opening_stock_open`); use an inventory count | BR-STOCK-014, ADR-082 |
 | `INVENTORY_ALREADY_OPEN` | 409 | another full count is open | BR-INV-007 |
 | `INVENTORY_LINE_ALREADY_REGULARIZED` | 409 | line regularised | BR-INV-004 |
 | `CASH_SESSION_ALREADY_OPEN` | 409 | cashier has an open session | BR-CASH-001 |
@@ -159,7 +160,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 > There is **no** `POST /api/lots`: lots are created only by goods receipts, opening stock, or inventory-found entries (BR-LOT-001); Phase 3 has no way to create one (ADR-064).
 >
-> `LotSummary {id, product: {id, sku, commercialName, baseUnit}, lotNumber, expiryDate, quantityOnHand, status, alertLevel, daysLeft}`; `LotDetail` adds `unitCost`, `blockedReason`, `blockedBy`, `blockedAt`, `receivedAt`, `sellable`. `status` is the **effective** status (`active`, `blocked`, `recalled`, `expired`, `depleted`; ADR-059); `alertLevel` ∈ `expired`, `critical`, `warning`, `notice` or `null` (ADR-056).
+> `LotSummary {id, product: {id, sku, commercialName, baseUnit}, lotNumber, expiryDate, quantityOnHand, status, alertLevel, daysLeft}`; `LotDetail` adds `unitCost`, `blockedReason`, `blockedBy`, `blockedByName` (from Phase 4, ADR-089), `blockedAt`, `receivedAt`, `sellable`. `status` is the **effective** status (`active`, `blocked`, `recalled`, `expired`, `depleted`; ADR-059); `alertLevel` ∈ `expired`, `critical`, `warning`, `notice` or `null` (ADR-056).
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
@@ -172,25 +173,39 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | POST | `/api/lots/{id}/recall` ● | recall + buyers list (lists empty until Phase 7, ADR-068) | `lot.recall` | `{reason}` → `RecallReport`; audited `LOT_RECALL` |
 | GET | `/api/lots/{id}/recall-report` | re-read buyers list | `lot.recall` | `RecallReport`; `INVALID_STATE_TRANSITION` when the lot is not recalled; `?format=pdf` arrives with printing (Phase 10) |
 
-### 4.5 `/api/inventory` (stock, adjustments, counts, reorder)
+### 4.5 `/api/inventory` (stock, ledger, adjustments, opening stock, counts, reorder, integrity)
+
+> Every write goes through `StockService` (ADR-088): lots locked `FOR UPDATE` in ascending id order, one transaction, READ COMMITTED, lock wait 5 s → `CONCURRENT_MODIFICATION` (ADR-012). Quantities are base-unit decimal strings with 3 decimals; signed where stated.
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET | `/api/inventory/stock` | product stock levels: `belowMin`, `belowReorder`, `categoryId`, `q` | `stock.read` | page of `StockLevel` (sellable vs total, thresholds) |
-| GET | `/api/inventory/movements` | ledger: `productId`, `lotId`, `type`, `userId`, `from`, `to` | `stock.read` | page of `MovementEntry` |
-| POST | `/api/inventory/adjustments` ● | manual adjustment | `stock.adjust` | `{lotId, type, quantity, reason}` → `MovementEntry`; `ADJUSTMENT_REASON_REQUIRED`, `STOCK_INSUFFICIENT` |
-| POST | `/api/inventory/opening-stock` | initial stock entry | `stock.adjust` | `{productId, lotNumber, expiryDate, quantity, unitId?, unitCost}` → `LotDetail` |
+| GET | `/api/inventory/stock` | product stock levels: `status` (`in_stock`, `low`, `out`), `belowReorder`, `categoryId`, `q`, `includeArchived` | `stock.read` | page of `StockLevel` (ADR-080) |
+| GET | `/api/inventory/movements` | ledger: `productId`, `lotId`, `type`, `userId`, `from`, `to` (dates in the business time zone), newest first | `stock.read` | page of `MovementEntry` |
+| POST | `/api/inventory/adjustments` ● | manual adjustment (ADR-085) | `stock.adjust` | `{lotId, type (adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use), quantity (> 0, base unit), reason (≤ 500)}` → 201 `MovementEntry` (negative); audited `STOCK_CORRECTION`; `ADJUSTMENT_REASON_REQUIRED`, `STOCK_INSUFFICIENT`, `NOT_FOUND`, `VALIDATION_FAILED` (`type` `UNKNOWN`, `quantity` `POSITIVE`/`SCALE`/`WHOLE_NUMBER`) |
+| POST | `/api/inventory/opening-stock` | initial stock entry (ADR-082…084) | `stock.adjust` | `{productId, lotNumber, expiryDate, quantity, unitId?, unitCost}` → 201 `{lot: LotDetail, movement: MovementEntry}`; audited `OPENING_STOCK`; `OPENING_STOCK_CLOSED`, `LOT_EXPIRY_MISMATCH`, `LOT_RECALLED`, `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` (`unitCost` `COST_MISMATCH` against an existing lot, `REQUIRED`, `SCALE`; `quantity` `POSITIVE`/`SCALE`/`WHOLE_NUMBER`; `unitId` `UNKNOWN`) |
+| GET | `/api/inventory/counts` | list counts: `status` | `inventory.count` | page of `CountSummary` |
+| POST | `/api/inventory/counts` | open a count | `inventory.count` | `{type (full, cycle), categoryId?, productIds?, notes?}` (cycle: exactly one of `categoryId` / `productIds`, ADR-073) → 201 `CountDetail`; `INVENTORY_ALREADY_OPEN` (full), `VALIDATION_FAILED` |
+| GET | `/api/inventory/counts/{id}` | detail with lines and variances | `inventory.count` | `CountDetail` |
+| PUT | `/api/inventory/counts/{id}/lines/{lineId}` | enter or correct the counted quantity; takes a new watermark (ADR-072) | `inventory.count` | `{countedQty}` (≥ 0, base unit) → `CountLine`; `INVENTORY_NOT_OPEN`, `INVENTORY_LINE_ALREADY_REGULARIZED` |
+| POST | `/api/inventory/counts/{id}/lines` | add a line: an existing lot of the scope `{lotId, countedQty}` or a lot unknown to the system `{productId, lotNumber, expiryDate, unitCost, countedQty}` (ADR-074) | `inventory.count` | → 201 `CountLine`; `INVENTORY_NOT_OPEN`, `LOT_EXPIRY_MISMATCH`, `LOT_PRODUCT_MISMATCH`, `VALIDATION_FAILED` (`productId` `OUT_OF_SCOPE`, duplicate line `DUPLICATE`) |
+| POST | `/api/inventory/counts/{id}/regularize` ● | post the accepted lines and close (ADR-075) | `inventory.validate` | `{lineIds?}` (default: every counted line) → `CountDetail`; one `adjustment_inventory` per line with variance ≠ 0, reason `Inventory #<id>`, audited `STOCK_CORRECTION`; all-or-nothing: `INVENTORY_NOT_OPEN`, `INVENTORY_LINE_ALREADY_REGULARIZED`, `STOCK_INSUFFICIENT` (count stays open) |
+| POST | `/api/inventory/counts/{id}/cancel` | cancel an open count (no movement) | `inventory.validate` | → `CountDetail`; `INVENTORY_NOT_OPEN` |
 | GET | `/api/inventory/reorder-proposals` | list: `status` | `reorder.read` | page of `ProposalEntry` |
-| POST | `/api/inventory/reorder-proposals/generate` | run planner now **[OPEN OD-013]** | `reorder.manage` | → list created |
-| POST | `/api/inventory/reorder-proposals/{id}/convert` · `/dismiss` | convert to draft PO / dismiss | `reorder.manage` | convert → `PurchaseOrderDetail` (draft); `INVALID_STATE_TRANSITION` |
-| GET | `/api/inventory/counts` | list counts | `inventory.count` | page of `CountSummary` |
-| POST | `/api/inventory/counts` | open a count | `inventory.count` | `{type, scope? [OPEN OD-012], notes}` → 201 `CountDetail`; `INVENTORY_ALREADY_OPEN` |
-| GET | `/api/inventory/counts/{id}` | detail with lines/variances | `inventory.count` | `CountDetail` |
-| PUT | `/api/inventory/counts/{id}/lines/{lineId}` | enter counted quantity | `inventory.count` | `{countedQty}`; `INVENTORY_NOT_OPEN` |
-| POST | `/api/inventory/counts/{id}/lines` | add a lot found but not listed **[OPEN OD-012]** | `inventory.count` | lot identity + counted quantity |
-| POST | `/api/inventory/counts/{id}/regularize` ● | validate & post adjustments, close | `inventory.validate` | `{lineIds?}` → `CountDetail`; `INVENTORY_NOT_OPEN`, `STOCK_INSUFFICIENT` |
-| POST | `/api/inventory/counts/{id}/cancel` | cancel | `inventory.validate` | → 200 |
-| GET | `/api/inventory/integrity-check` | ledger reconciliation (BR-STOCK-007) | `audit.read` | `{checked, mismatches[]}` `[REC]` |
+| POST | `/api/inventory/reorder-proposals/generate` | run the generation now (ADR-078) | `reorder.manage` | → `{created, updated, thresholdsIncomplete: [{id, sku, commercialName}]}` |
+| POST | `/api/inventory/reorder-proposals/{id}/dismiss` | dismiss a pending proposal (ADR-079) | `reorder.manage` | → `ProposalEntry`; `INVALID_STATE_TRANSITION` |
+| POST | `/api/inventory/reorder-proposals/{id}/convert` | convert to a draft purchase order — **Phase 5** | `reorder.manage` | → `PurchaseOrderDetail` (draft); `INVALID_STATE_TRANSITION` |
+| GET | `/api/inventory/integrity-check` | latest stored run (ADR-086) | `audit.read` | `IntegrityRun` or `null` when none |
+| POST | `/api/inventory/integrity-check` | run the check now | `audit.read` | → `IntegrityRun` |
+
+**Contracts**
+
+- `StockLevel {product: {id, sku, commercialName, baseUnit, archived}, totalQty, sellableQty, minStock, maxStock, reorderPoint, status (in_stock, low, out), belowReorder, nearestSellableExpiry (date or null)}` — computed on read with the current expiry policy (BR-STOCK-011/013).
+- `MovementEntry {id, lot: {id, lotNumber, expiryDate}, product: {id, sku, commercialName, baseUnit}, type, quantity (signed), referenceType, referenceId, reason, user: {id, fullName}, createdAt}` — immutable (BR-STOCK-003/004).
+- `CountSummary {id, type, status, startedAt, startedBy: {id, fullName}, closedAt, lineCount, countedCount}`.
+- `CountDetail {id, type, status (open, closed, cancelled), scope: {categoryId, productIds}, notes, startedAt, startedBy, closedAt, closedBy, version, lines: [CountLine]}`.
+- `CountLine {id, product: {id, sku, commercialName, baseUnit}, lot: {id, lotNumber, expiryDate} or null, foundLot: {lotNumber, expiryDate, unitCost} or null, theoreticalQty (balance at opening), countedQty, countedAt, countedBy, balanceAtCount, varianceQty (counted − balanceAtCount), movementsSinceCount (signed sum of the lot's movements after the watermark), currentBalance, regularized, adjustmentMovementId}` (ADR-072, ADR-074).
+- `ProposalEntry {id, product: {id, sku, commercialName, baseUnit, divisible}, currentQty (sellable at the last generation), suggestedQty, reorderPoint, maxStock, status (pending, converted, dismissed), createdAt, updatedAt, dismissedAt, dismissedBy}` — `supplier` from Phase 5 (ADR-079).
+- `IntegrityRun {id, startedAt, finishedAt, lotsChecked, mismatchCount, mismatches: [{lotId, lotNumber, productId, balance, ledgerSum}], triggeredBy: {id, fullName} or null (nightly job)}`.
 
 ### 4.6 `/api/suppliers`, `/api/supplier-invoices`
 
@@ -406,4 +421,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-012 (count scope), OD-013 (generate proposals), OD-015 (close PO), OD-020 (pdf formats), OD-021 (backup run).
+OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-015 (close PO), OD-020 (pdf formats), OD-021 (backup run).

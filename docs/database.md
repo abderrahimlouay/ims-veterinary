@@ -90,7 +90,7 @@ Format: **Column | MySQL type | Null / default | Notes**. `PK`, `FK→`, `UQ`, `
 
 **users** — `id BIGINT AI PK`, `username VARCHAR(60) NOT NULL UQ`, `password_hash TEXT NOT NULL`, `full_name VARCHAR(150) NOT NULL`, `email VARCHAR(150) NULL UQ`, `role_id SMALLINT NOT NULL FK→roles`, `is_active BOOLEAN NOT NULL DEFAULT TRUE`, `last_login_at DATETIME(6) NULL`, `must_change_password BOOLEAN NOT NULL DEFAULT FALSE` (SD-114, ADR-039), `created_at`, `version` (SD-101). Hash = bcrypt cost 12 (ADR-039), never plaintext. `username` uses the default `utf8mb4_0900_ai_ci`: case- and accent-insensitive (ADR-041).
 
-**app_settings** — `setting_key VARCHAR(80) PK` (SD-006), `setting_value TEXT NOT NULL`, `description TEXT`, `updated_at DATETIME(6) NOT NULL`. Seed: `expiry_alert_days = '60,30,15'`, `default_vat_rate = '9.00'` (Source values; VAT computation is OD-007), `login_max_failures = '5'`, `login_window_minutes = '15'`, `login_lockout_minutes = '15'` (ADR-038), `currency = 'DZD'`, `locale = 'fr-DZ'`, `business_time_zone = 'Africa/Algiers'` (ADR-033, ADR-044; only `locale` editable). Every key has a format (ADR-044); keys are created only by migrations.
+**app_settings** — `setting_key VARCHAR(80) PK` (SD-006), `setting_value TEXT NOT NULL`, `description TEXT`, `updated_at DATETIME(6) NOT NULL`. Seed: `expiry_alert_days = '60,30,15'`, `default_vat_rate = '9.00'` (Source values; VAT computation is OD-007), `login_max_failures = '5'`, `login_window_minutes = '15'`, `login_lockout_minutes = '15'` (ADR-038), `currency = 'DZD'`, `locale = 'fr-DZ'`, `business_time_zone = 'Africa/Algiers'` (ADR-033, ADR-044; only `locale` editable among these); Phase 4: `opening_stock_open = 'true'` (ADR-082), `reorder_job_time = '06:00'` (ADR-078), `integrity_check_time = '02:00'` (ADR-086), all editable. Every key has a format (ADR-044); keys are created only by migrations.
 
 **audit_log** — `id BIGINT AI PK`, `user_id BIGINT NULL FK→users`, `action VARCHAR(60) NOT NULL` (PRICE_CHANGE, INVOICE_CANCEL, STOCK_CORRECTION, LOT_RECALL…), `entity VARCHAR(60) NOT NULL`, `entity_id BIGINT NULL`, `old_values JSON NULL`, `new_values JSON NULL` (SD-004), `ip_address VARCHAR(45) NULL` (SD-005), `created_at`. Indexes: `(entity, entity_id)`, `(user_id, created_at DESC)`. Append-only (SD-102, BR-AUDIT-002): `BEFORE UPDATE` and `BEFORE DELETE` triggers raise `SQLSTATE '45000'` (ADR-017).
 
@@ -125,7 +125,7 @@ Reference names are unique case- and accent-insensitively and never blank (CHECK
 | sale_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049) |
 | min_stock | DECIMAL(14,3) | NOT NULL DEFAULT 0, CK ≥ 0 | alert level |
 | max_stock | DECIMAL(14,3) | NULL, CK ≥ min_stock | |
-| reorder_point | DECIMAL(14,3) | NOT NULL DEFAULT 0, CK ≥ 0 | proposal trigger (OD-013) |
+| reorder_point | DECIMAL(14,3) | NOT NULL DEFAULT 0, CK ≥ 0 | proposal trigger (ADR-076) |
 | is_archived | BOOLEAN | NOT NULL DEFAULT FALSE | FR-PROD-001 |
 | created_at / updated_at | DATETIME(6) | NOT NULL | |
 | version | BIGINT | NOT NULL DEFAULT 0 | SD-101 |
@@ -182,7 +182,7 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 | id | BIGINT AI | PK | |
 | lot_id | BIGINT | NOT NULL FK→lots | |
 | product_id | BIGINT | NOT NULL FK→products | composite `FK (lot_id, product_id) → lots(id, product_id)` (SD-103, ADR-062) |
-| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock) — no `unit_conversion` (ADR-061, SD-118); additions: SD-107 |
+| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock) — all ten from Phase 4 (ADR-081); no `unit_conversion` (ADR-061, SD-118); cancellation/discard only after OD-004/005 (SD-107) |
 | quantity | DECIMAL(14,3) | NOT NULL, **CK ≠ 0** | signed, base unit |
 | reference_type | VARCHAR(40) | NULL | e.g. `sales_document`, `goods_receipt`, `inventory` |
 | reference_id | BIGINT | NULL | |
@@ -190,13 +190,15 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 | user_id | BIGINT | NOT NULL FK→users | operator |
 | created_at | DATETIME(6) | NOT NULL | |
 
-Indexes: `(product_id, created_at DESC)`, `(lot_id)`, `(reference_type, reference_id)`. Triggers: `BEFORE UPDATE`, `BEFORE DELETE` → `SIGNAL` (SD-008).
+Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-072), `(reference_type, reference_id)`. Triggers: `BEFORE UPDATE`, `BEFORE DELETE` → `SIGNAL` (SD-008, ADR-017); the application account has only `SELECT, INSERT` (ADR-087).
 
-**inventories** (inventory count session) — `id BIGINT AI PK`, `inv_type VARCHAR(30) NOT NULL DEFAULT 'full'` (full | cycle), `status VARCHAR(30) NOT NULL DEFAULT 'open'` (open | closed | cancelled), `started_by FK→users`, `started_at`, `closed_at NULL`, `notes TEXT`, `version`. **[OPEN]** scope columns (SD-113, OD-012).
+**inventories** (inventory count session) — `id BIGINT AI PK`, `inv_type VARCHAR(30) NOT NULL DEFAULT 'full'` (full | cycle), `status VARCHAR(30) NOT NULL DEFAULT 'open'` (open | closed | cancelled), `started_by FK→users`, `started_at`, `closed_at NULL`, `closed_by NULL FK→users`, `notes TEXT`, `version`; cycle scope (ADR-073, SD-113): `scope_category_id INT NULL FK→therapeutic_categories` or rows of **inventory_scope_products** (`inventory_id FK CASCADE`, `product_id FK`, `PK(inventory_id, product_id)`), never both, none for `full`.
 
-**inventory_lines** — `id BIGINT AI PK`, `inventory_id FK→inventories ON DELETE CASCADE`, `lot_id FK→lots`, `theoretical_qty DECIMAL(14,3) NOT NULL CK ≥ 0`, `counted_qty DECIMAL(14,3) NULL CK ≥ 0`, `variance_qty DECIMAL(14,3) GENERATED ALWAYS AS (counted_qty − theoretical_qty) STORED`, `regularized BOOLEAN NOT NULL DEFAULT FALSE`, `UQ(inventory_id, lot_id)`.
+**inventory_lines** — `id BIGINT AI PK`, `inventory_id FK→inventories ON DELETE CASCADE`, `product_id BIGINT NOT NULL FK→products`, `lot_id BIGINT NULL` with composite `FK (lot_id, product_id) → lots(id, product_id)` (NULL only for a lot found during the count until regularisation, ADR-074), `found_lot_number VARCHAR(60) NULL`, `found_expiry_date DATE NULL`, `found_unit_cost DECIMAL(14,4) NULL CK ≥ 0` (all three required when `lot_id` is NULL — CHECK), `theoretical_qty DECIMAL(14,3) NOT NULL CK ≥ 0` (balance at count opening, informational), `counted_qty DECIMAL(14,3) NULL CK ≥ 0`, `counted_at DATETIME(6) NULL`, `counted_by NULL FK→users`, `balance_at_count DECIMAL(14,3) NULL CK ≥ 0` and `watermark_movement_id BIGINT NULL` (the lot's balance and last movement when `counted_qty` was saved, ADR-072, SD-120), `variance_qty DECIMAL(14,3) GENERATED ALWAYS AS (counted_qty − balance_at_count) STORED`, `regularized BOOLEAN NOT NULL DEFAULT FALSE`, `adjustment_movement_id BIGINT NULL`, `UQ(inventory_id, lot_id)`.
 
-**reorder_proposals** — `id BIGINT AI PK`, `product_id FK`, `supplier_id NULL FK`, `current_qty DECIMAL(14,3) NOT NULL`, `suggested_qty DECIMAL(14,3) NOT NULL CK > 0`, `status VARCHAR(15) NOT NULL DEFAULT 'pending' CK IN (pending, converted, dismissed)`, `created_at`. **[OPEN]** one-pending-per-product uniqueness (SD-112, OD-013).
+**reorder_proposals** — `id BIGINT AI PK`, `product_id FK`, `current_qty DECIMAL(14,3) NOT NULL` (sellable at the last generation), `suggested_qty DECIMAL(14,3) NOT NULL CK > 0`, `status VARCHAR(15) NOT NULL DEFAULT 'pending' CK IN (pending, converted, dismissed)`, `suppressed BOOLEAN NOT NULL DEFAULT FALSE` (a dismissed proposal blocks new ones until stock recovers, ADR-079), `created_at`, `updated_at`, `dismissed_at NULL`, `dismissed_by NULL FK→users`; generated `pending_product_id = IF(status = 'pending', product_id, NULL)` with `UQ(pending_product_id)` — one pending proposal per product (SD-112). `supplier_id` arrives in Phase 5 with `suppliers` (SD-121).
+
+**integrity_check_runs** (ADR-086, SD-122) — `id BIGINT AI PK`, `started_at DATETIME(6) NOT NULL`, `finished_at DATETIME(6) NULL`, `lots_checked INT NOT NULL DEFAULT 0`, `mismatch_count INT NOT NULL DEFAULT 0`, `mismatches JSON NULL` (lot, balance, ledger sum), `triggered_by BIGINT NULL FK→users` (NULL = nightly job). Index `(started_at DESC)`.
 
 ### 3.5 Purchasing (module 4)
 
@@ -251,8 +253,8 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id)`, `(reference_type, referenc
 
 | View | Purpose | Status |
 |---|---|---|
-| `v_product_stock` | sellable vs total quantity per product, thresholds | Keep (rewrite `FILTER`) |
-| `v_reorder_needed` | products at/below reorder point | Keep; trigger column per OD-013 |
+| `v_product_stock` | sellable vs total quantity per product, thresholds | Not created: computed by the service with the business date (ADR-080) |
+| `v_reorder_needed` | products at/below reorder point | Not created: computed by the service (ADR-076, ADR-080) |
 | `v_expiring_lots` | expiry alert list | Not created: the list and its levels are computed by the service from settings (ADR-056, DR-019) |
 | `v_sale_withdrawal_warnings` | printable withdrawal warnings | Keep; applicability OD-028 |
 | `v_customer_balance` | customer running balance | **Do not use as written** (DR-006); redefine after OD-003 |
@@ -271,7 +273,7 @@ Rule (ADR-014): views are read models for listings/reports; decisions inside tra
 | **Expiry alerts** | lots, products | `quantity_on_hand>0 AND expiry_date ≤ today + max(threshold)`; level computed in the service from `app_settings.expiry_alert_days`, inclusive limits (ADR-056) |
 | **Recall report for lot L** | sales_document_lines, sales_documents, customers | confirmed stock-moving documents containing `lot_id = L`; **left join** customers (anonymous receipts must still appear); document types per OD-002 |
 | **Ledger reconciliation** | lots, stock_movements | `lots.quantity_on_hand = SUM(stock_movements.quantity)` per lot; any difference is a Critical defect (BR-STOCK-007) |
-| **Reorder candidates** | v_product_stock | `sellable_qty ≤ reorder_point` (OD-013) |
+| **Reorder candidates** | lots, products | `reorder_point > 0 AND sellable_qty ≤ reorder_point`, not archived (ADR-076), computed by the service |
 | **Withdrawal warnings for document D** | sales_document_lines, product_withdrawal_periods, animal_species | match species when specified |
 | **Customer account statement** | sales_documents, payment_allocations, customer_payments | chronological, running balance (definition OD-003) |
 | **Supplier payables** | supplier_invoices, supplier_payments | open amount per invoice, ordered by `due_date` |

@@ -143,6 +143,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `PRICE_CHANGE` | product/unit/customer price changes, price override at sale | SRC |
 | `INVOICE_CANCEL` | cancellation of a confirmed sales document | SRC (OD-004) |
 | `STOCK_CORRECTION` | manual adjustment; inventory regularisation | SRC |
+| `OPENING_STOCK` | opening-stock entry (allowed only while `opening_stock_open`, ADR-082) | REC |
 | `LOT_BLOCK`, `LOT_UNBLOCK`, `LOT_RECALL` | lot status actions | SCH (`recall_lot`) + REC |
 | `RETURN_CREATE` | customer / supplier returns | REC |
 | `PAYMENT_REVERSE` | reversal of a payment/cash entry | REC |
@@ -207,7 +208,7 @@ Security logger (separate category, structured JSON, no secrets) records:
 - authorization denials (user, endpoint, permission)
 - audited sensitive actions (§7) — duplicated as log lines for the SIEM/ops view
 - backup runs and downloads
-- detected integrity failures (`LEDGER_MISMATCH`, trigger violations)
+- detected integrity failures (`LEDGER_MISMATCH` at CRITICAL level, ADR-086; trigger violations)
 
 Never logged: passwords, tokens, hashes, full card/cheque details, full request bodies of auth endpoints. Retention follows OD-021.
 
@@ -223,7 +224,7 @@ Never logged: passwords, tokens, hashes, full card/cheque details, full request 
 | Session/token theft | HttpOnly cookies / in-memory token, short lifetimes, TLS, CSP |
 | Injection (SQL/XSS) | §8 |
 | Data exfiltration via backups | Restricted, encrypted, audited backups |
-| Insider DB tampering | Least-privilege DB account, triggers, separate migrator account |
+| Insider DB tampering | Least-privilege application account without `UPDATE/DELETE` on `stock_movements` and `audit_log`, triggers, separate migration account (ADR-087, from Phase 4) |
 | Dependency vulnerabilities | Pinned versions, automated vulnerability scanning in CI `[REC]` |
 
 ## 14. Security test obligations

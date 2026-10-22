@@ -46,7 +46,7 @@ catalog -> common, settings, audit  (price changes are audited, BR-PROD-006)
 numbering -> common
 settings -> common, audit            (setting changes are audited, BR-AUDIT-001)
 audit -> common
-inventory -> catalog, numbering?, settings, audit
+inventory -> catalog, numbering?, settings, audit, users (user-name read port only, ADR-089)
 purchasing -> catalog, inventory, numbering, settings, audit
 sales -> catalog, inventory, numbering, settings, audit, [CreditLimitPort]
 finance -> sales(read ports), purchasing(read ports), numbering, audit, settings   (implements CreditLimitPort)
@@ -58,7 +58,7 @@ backup -> settings, audit
 Rules:
 1. No cycles. `sales → finance` is expressed only through `CreditLimitPort` (defined in sales, implemented in finance) and finance → sales through read ports.
 2. A module accesses another module's data **only** through its public application ports or a `reporting` view — never its repositories or tables.
-3. Only `inventory` writes `stock_movements` and `lots.quantity_on_hand` (BR-STOCK-003); `purchasing`, `sales`, `returns` call `StockService`.
+3. Only `inventory` writes `stock_movements` and `lots.quantity_on_hand` (BR-STOCK-003), through `StockService` (ADR-088); `purchasing`, `sales`, `returns` call `StockService`.
 4. Only `finance` writes payments, allocations and cash movements.
 5. Only `numbering` allocates document numbers.
 6. Dependencies are enforced by an architecture test (ArchUnit-style) from Phase 0 (`testing.md` §10).
