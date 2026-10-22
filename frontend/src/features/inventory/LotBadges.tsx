@@ -26,10 +26,10 @@ export function LotStatusBadge({ status }: { status: LotStatus }) {
 }
 
 /** The expiry level returned by the API, never computed in the browser (ADR-056); nothing when `null`. */
-export function AlertBadge({ level }: { level: AlertLevel | null }) {
+export function AlertBadge({ level, label }: { level: AlertLevel | null; label?: string }) {
   const { t } = useTranslation()
   if (level === null) {
     return null
   }
-  return <span className={`${BADGE} ${LEVEL_TONES[level]}`}>{t(`lots.level.${level}`)}</span>
+  return <span className={`${BADGE} ${LEVEL_TONES[level]}`}>{label ?? t(`lots.level.${level}`)}</span>
 }

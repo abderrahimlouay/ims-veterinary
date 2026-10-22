@@ -11,6 +11,10 @@ import java.time.temporal.ChronoUnit;
  */
 public record ExpiryPolicy(LocalDate businessDate, int notice, int warning, int critical) {
 
+    /** Expiry dates of one level, inclusive; {@code from} {@code null} means no lower bound. */
+    public record Window(LocalDate from, LocalDate to) {
+    }
+
     public ExpiryPolicy {
         if (critical <= 0 || warning <= critical || notice <= warning) {
             throw new IllegalArgumentException("Thresholds must be strictly decreasing positive days");
@@ -39,6 +43,16 @@ public record ExpiryPolicy(LocalDate businessDate, int notice, int warning, int 
             return AlertLevel.WARNING;
         }
         return days <= notice ? AlertLevel.NOTICE : null;
+    }
+
+    /** The expiry dates whose {@link #level} is {@code level}, so a list filtered by level matches the alert counts. */
+    public Window window(AlertLevel level) {
+        return switch (level) {
+            case EXPIRED -> new Window(null, businessDate.minusDays(1));
+            case CRITICAL -> new Window(businessDate, businessDate.plusDays(critical));
+            case WARNING -> new Window(businessDate.plusDays(critical + 1L), businessDate.plusDays(warning));
+            case NOTICE -> new Window(businessDate.plusDays(warning + 1L), businessDate.plusDays(notice));
+        };
     }
 
     public boolean sellable(LotStatus stored, LocalDate expiryDate, BigDecimal quantityOnHand) {

@@ -79,10 +79,12 @@ class LotController {
 
     @GetMapping("/lots")
     PageResponse<LotSummary> search(@RequestParam(required = false) Long productId,
-            @RequestParam(required = false) String status, @RequestParam(required = false) Integer expiringWithinDays,
+            @RequestParam(required = false) String status, @RequestParam(required = false) String alertLevel,
+            @RequestParam(required = false) Integer expiringWithinDays,
             @RequestParam(defaultValue = "false") boolean hasStock, @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return lots.search(new LotQueries.LotFilter(productId, status, expiringWithinDays, hasStock, q), page, size);
+        return lots.search(new LotQueries.LotFilter(productId, status, alertLevel, expiringWithinDays, hasStock, q),
+                page, size);
     }
 
     @GetMapping("/lots/{id}")
