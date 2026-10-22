@@ -192,6 +192,7 @@ function UserDetailView({ user }: { user: UserDetail }) {
                 <PasswordInput
                   label={t('admin.users.temporaryPassword')}
                   readOnly
+                  copyable
                   autoComplete="off"
                   value={reset.data.temporaryPassword}
                   data-testid="temporary-password"

@@ -156,3 +156,65 @@ describe('PasswordInput', () => {
     expect((await axe.run(container)).violations).toEqual([])
   })
 })
+
+describe('PasswordInput with a copy button', () => {
+  function Copyable() {
+    return (
+      <I18nextProvider i18n={i18n}>
+        <PasswordInput label="Mot de passe temporaire" readOnly value={SECRET} copyable />
+      </I18nextProvider>
+    )
+  }
+
+  it('copies the value without revealing it and announces the confirmation', async () => {
+    const user = userEvent.setup()
+    const write = vi.spyOn(navigator.clipboard, 'writeText')
+    render(<Copyable />)
+
+    const copy = screen.getByRole('button', { name: 'Copier le mot de passe' })
+    expect(copy).toHaveAttribute('type', 'button')
+    await user.click(copy)
+
+    expect(write).toHaveBeenCalledWith(SECRET)
+    expect(field('Mot de passe temporaire')).toHaveAttribute('type', 'password')
+    expect(await screen.findByRole('status')).toHaveTextContent('Mot de passe copié.')
+  })
+
+  it('reports a clipboard failure without showing the value', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
+    render(<Copyable />)
+
+    await user.click(screen.getByRole('button', { name: 'Copier le mot de passe' }))
+
+    const status = await screen.findByRole('status')
+    expect(status).toHaveTextContent('Copie impossible')
+    expect(status).not.toHaveTextContent(SECRET)
+    expect(field('Mot de passe temporaire')).toHaveAttribute('type', 'password')
+  })
+
+  it('names the copy button in Arabic and English', async () => {
+    await act(() => i18n.changeLanguage('ar'))
+    const { unmount } = render(<Copyable />)
+    expect(screen.getByRole('button', { name: 'نسخ كلمة المرور' })).toBeInTheDocument()
+    unmount()
+    await act(() => i18n.changeLanguage('en'))
+    render(<Copyable />)
+    expect(screen.getByRole('button', { name: 'Copy password' })).toBeInTheDocument()
+  })
+
+  it('has no accessibility violations after a copy', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
+    const { container } = render(<Copyable />)
+    await user.click(screen.getByRole('button', { name: 'Copier le mot de passe' }))
+    await screen.findByRole('status')
+
+    expect((await axe.run(container)).violations).toEqual([])
+  })
+
+  it('has no copy button unless asked', () => {
+    render(<Form />)
+    expect(screen.queryByRole('button', { name: 'Copier le mot de passe' })).not.toBeInTheDocument()
+  })
+})

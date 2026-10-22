@@ -60,7 +60,10 @@
   },
   "passwordInput": {
     "show": "Afficher le mot de passe",
-    "hide": "Masquer le mot de passe"
+    "hide": "Masquer le mot de passe",
+    "copy": "Copier le mot de passe",
+    "copied": "Mot de passe copié.",
+    "copyFailed": "Copie impossible. Affichez le mot de passe pour le recopier."
   },
   "validation": {
     "required": "Ce champ est obligatoire.",
