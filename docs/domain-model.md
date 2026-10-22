@@ -188,7 +188,7 @@ Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → 
 | **Quantity (base)** | Value object | `BigDecimal` in base units; conversion via ProductUnit factor; whole numbers for non-divisible products (ADR-050) |
 | **Money** | Value object | `BigDecimal` + scale/rounding policy (OD-007); currency DZD (ADR-033) |
 | **Percentage** | Value object | 0–100 |
-| **LotIdentity** | Value object | (product, lot number, expiry date) |
+| **LotIdentity** | Value object | (product, lot number); the expiry date must match the existing lot (ADR-070) |
 | **DocumentNumber** | Value object | `KEY-YYYY-NNNNNN` (format OD-017) |
 | **ExpiryAlertLevel** | Value object | expired / critical / warning / notice derived from thresholds (BR-LOT-010) |
 | **StockLedgerService** | Domain service | The only component that changes `quantity_on_hand` and writes movements (BR-STOCK-002) |

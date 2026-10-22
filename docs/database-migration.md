@@ -163,7 +163,7 @@ MySQL     : generated column open_cashier_id = IF(status = 'open', cashier_id, N
 |---|---|
 | Referential integrity | 76 foreign keys (explicitly named) |
 | SKU, barcode, username, role name, permission code uniqueness | `UNIQUE` |
-| Lot identity `(product_id, lot_number, expiry_date)` | `UNIQUE` |
+| Lot identity `(product_id, lot_number)` (ADR-070; the Source added `expiry_date`) | `UNIQUE` |
 | Document number uniqueness (`purchase_orders.number`, `goods_receipts.number`, `supplier_returns.number`, `customer_returns.number`, `(doc_type, number)` on `sales_documents`, `(supplier_id, invoice_number)`) | `UNIQUE` |
 | No negative lot stock | `CHECK (quantity_on_hand >= 0)` |
 | Positive quantities, non-negative prices, discount 0–100, `max_stock ≥ min_stock` | `CHECK` |
@@ -225,6 +225,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-116 | `lots.status` stores only `active`, `blocked`, `recalled` (expired/depleted computed) | ADR-059 | Accepted 2026-10-22 |
 | SD-117 | `lots.supplier_id` and its FK added in Phase 5 with `suppliers` | ADR-066 | Accepted 2026-10-22 |
 | SD-118 | `unit_conversion` removed from `movement_type` | ADR-061 | Accepted 2026-10-22 |
+| SD-119 | Lot identity `UQ(product_id, lot_number)` instead of the Source `(product_id, lot_number, expiry_date)` | ADR-070, DR-036 | Accepted 2026-10-22 |
 
 ## 9. Operational requirements for MySQL
 

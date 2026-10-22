@@ -410,7 +410,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 
 ## ADR-058 — Collation of lot numbers and barcodes (resolves OD-025)
 - **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #5 A, #6 A)
-- **Decision:** `lots.lot_number` keeps the default `utf8mb4_0900_ai_ci`: `L2407a` and `L2407A` (and accent variants) are the same lot number, for the lot identity `UQ(product_id, lot_number, expiry_date)` and for search. `product_barcodes.code` uses **`utf8mb4_bin`**: exact, case-sensitive match for uniqueness and scan lookup. With `username` (ADR-041) and `sku` (ADR-051) every code column existing through Phase 3 is decided; any later code column states its collation in its migration and gets a collation test (ADR-024).
+- **Decision:** `lots.lot_number` keeps the default `utf8mb4_0900_ai_ci`: `L2407a` and `L2407A` (and accent variants) are the same lot number, for the lot identity `UQ(product_id, lot_number)` (ADR-070) and for search. `product_barcodes.code` uses **`utf8mb4_bin`**: exact, case-sensitive match for uniqueness and scan lookup. With `username` (ADR-041) and `sku` (ADR-051) every code column existing through Phase 3 is decided; any later code column states its collation in its migration and gets a collation test (ADR-024).
 - **Consequences:** `database.md` §3.2/§3.4, `database-migration.md` row 28, `testing.md` §2; DR-024 resolved.
 
 ## ADR-059 — Lot status: decisions stored, expired and depleted computed (resolves OD-027, status part)
@@ -476,6 +476,13 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Context:** DR-014 wrongly said the prototype has no dark theme. It defines a complete dark token set (system setting or `data-theme`), reproduced in `tokens.css`; there is no user switch and dark-theme contrast was never verified (`frontend.md` §6 holds the measured figures).
 - **Decision:** (1) **Phase 13** delivers a theme switch (system / light / dark), following the operating system by default, remembered **per browser** in `localStorage` (every access in `try/catch`; blocked storage falls back to the system setting), applied before first paint so the wrong theme never flashes. No database or backend change unless the user later decides the choice must follow the user across devices. (2) From now on, through Phases 1–12, components use **design tokens only**, never hard-coded colours, so Phase 13 needs no screen rewrite.
 - **Consequences:** `roadmap.md` Phase 13, `frontend.md` §6, CLAUDE.md §6, DR-014.
+
+## ADR-070 — Lot identity is (product, lot number)
+- **Status:** Accepted (user decision, 2026-10-22, before migration V03_003); departs from the Source Schema (DR-036).
+- **Context:** BR-LOT-002, `database.md` and `database-migration.md` carried the Source Schema key `UQ(product_id, lot_number, expiry_date)`, under which the same lot number with another expiry date silently becomes a second lot. `testing.md` already expected one lot per (product, lot number) with a consistent expiry.
+- **Decision:** A lot is identified by **(product, lot number)**: `UQ(product_id, lot_number)` (lot number in the case- and accent-insensitive collation of ADR-058). Receiving or entering an existing lot number adds to that lot (find-or-create under lock, BR-LOT-002). An entry whose expiry date differs from the existing lot's is refused with `LOT_EXPIRY_MISMATCH` (422) and changes nothing; it is not a second lot. The check applies wherever lots are created (opening stock, receipts, returns), from the phase that creates them; Phase 3 has only the key and its constraint test (ADR-067).
+- **Alternatives:** keep the Source key (product, lot number, expiry) (B).
+- **Consequences:** BR-LOT-002, `requirements.md` (lot validations), `domain-model.md` (LotIdentity), `database.md` §2.2/§3.4, `database-migration.md` §7 and SD-119, `api.md` §3, `workflows.md` W2, OD-029 wording, ADR-058 wording; correcting a wrongly entered expiry date is a separate, audited action, to be specified with the first phase that creates lots.
 
 ---
 
@@ -618,7 +625,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 
 
 ## OD-029 — Lot cost on repeated receipt of the same lot
-- **Question:** A lot is unique per (product, lot number, expiry date). If the same lot is received again at a **different unit cost**, what happens to `lots.unit_cost`? Valuation (FR-RPT-002) and margin (FR-RPT-001) depend on it.
+- **Question:** A lot is unique per (product, lot number) (ADR-070). If the same lot is received again at a **different unit cost**, what happens to `lots.unit_cost`? Valuation (FR-RPT-002) and margin (FR-RPT-001) depend on it.
 - **Options:** (A) weighted-average cost recomputed on each receipt; (B) keep the first cost and ignore the new one; (C) forbid a second receipt of the same lot at a different cost (force a distinct lot identity); (D) track cost per receipt line and value by FIFO layers (needs schema change).
 - **Blocks:** Phase 5. **Related:** BR-LOT-002, BR-SALE-009, `products.purchase_price` ("last/avg cost" is ambiguous in the Source).
 

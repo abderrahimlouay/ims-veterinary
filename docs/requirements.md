@@ -116,7 +116,7 @@ Module numbering follows the Spec (§2.1 … §2.7). Module codes: `PROD`, `LOT`
 
 **Inputs.** Lot number, expiry date, supplier, unit cost (from goods receipt); recall reason; alert thresholds (setting).
 **Outputs.** FEFO-ordered lot list per product, expiry alert list by level (expired / ≤15 / ≤30 / ≤60 days), recall report (customer, phone, invoice number, date, quantity).
-**Validations.** Lot number non-empty; expiry date present; `(product, lot number, expiry date)` unique; sale refused for expired/blocked/recalled lots.
+**Validations.** Lot number non-empty; expiry date present; `(product, lot number)` unique, a different expiry for an existing lot number refused (ADR-070); sale refused for expired/blocked/recalled lots.
 **Business rules.** BR-LOT-001…012.
 **Dependencies.** PROD; produced by PURCH (goods receipt) and STOCK (opening stock); consumed by SALE.
 

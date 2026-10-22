@@ -53,7 +53,7 @@ Supplier → Purchase Order → Goods Receipt → Lot Creation → Stock Update 
 1. User opens the receipt for a PO (or without PO **⚠ OD-015**) and, per line, enters: quantity received, **lot number**, **expiry date**, unit cost, conformity (BR-PURCH-005, BR-LOT-001, BR-LOT-012).
 2. Server (inside the transaction):
    1. Assigns the receipt number (`NumberingService`).
-   2. For each line: converts to base unit; **finds or creates the lot** by (product, lot number, expiry) under lock (BR-LOT-002; cost policy **⚠ OD-029**).
+   2. For each line: converts to base unit; **finds or creates the lot** by (product, lot number) under lock, refusing a different expiry date (BR-LOT-002, ADR-070; cost policy **⚠ OD-029**).
    3. Inserts `stock_movements` (`purchase_receipt`, +quantity) and applies the delta to `lots.quantity_on_hand` (BR-STOCK-002); sets lot `active` (or `depleted → active`).
    4. Updates `purchase_order_lines.received_base`; sets PO to `partially_received` or `closed` (BR-PURCH-004; over-receipt **⚠ OD-015**).
    5. Non-conforming lines: **⚠ OD-014** (stock treatment).
