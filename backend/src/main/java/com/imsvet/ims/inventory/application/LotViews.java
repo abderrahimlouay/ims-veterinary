@@ -7,6 +7,7 @@ import com.imsvet.ims.inventory.domain.Lot;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Read models of lots (api.md §4.4). {@code status} is the effective status and {@code alertLevel} the level of the
@@ -27,6 +28,22 @@ public final class LotViews {
     public record LotDetail(long id, LotProduct product, String lotNumber, LocalDate expiryDate,
             BigDecimal quantityOnHand, String status, String alertLevel, long daysLeft, BigDecimal unitCost,
             String blockedReason, Long blockedBy, Instant blockedAt, Instant receivedAt, boolean sellable) {
+    }
+
+    /** api.md §5.3: one proposed lot; {@code available} is its whole stock on hand. */
+    public record FefoLine(long lotId, String lotNumber, LocalDate expiryDate, BigDecimal quantityBase,
+            BigDecimal available, String alertLevel) {
+    }
+
+    public record FefoPreviewView(BigDecimal requestedBase, List<FefoLine> allocations, BigDecimal shortfallBase) {
+    }
+
+    public record Thresholds(int notice, int warning, int critical) {
+    }
+
+    /** api.md §4.4: lots with stock by alert level, with the thresholds and business date used (W12). */
+    public record ExpiryAlerts(List<LotSummary> expired, List<LotSummary> critical, List<LotSummary> warning,
+            List<LotSummary> notice, Thresholds thresholds, LocalDate businessDate) {
     }
 
     static LotSummary summary(Lot l, ProductRef product, ExpiryPolicy policy) {

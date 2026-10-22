@@ -8,14 +8,19 @@ import com.imsvet.ims.common.error.ValidationException;
 import com.imsvet.ims.common.error.ValidationException.Violation;
 import com.imsvet.ims.common.paging.PageRequests;
 import com.imsvet.ims.common.paging.PageResponse;
+import com.imsvet.ims.inventory.application.LotViews.ExpiryAlerts;
 import com.imsvet.ims.inventory.application.LotViews.LotDetail;
 import com.imsvet.ims.inventory.application.LotViews.LotSummary;
+import com.imsvet.ims.inventory.application.LotViews.Thresholds;
+import com.imsvet.ims.inventory.domain.AlertLevel;
 import com.imsvet.ims.inventory.domain.EffectiveLotStatus;
 import com.imsvet.ims.inventory.domain.ExpiryPolicy;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.data.domain.Page;
@@ -82,6 +87,25 @@ public class LotQueries {
         ExpiryPolicy policy = policies.current();
         return lots.findByProductIdInFefoOrder(productId).stream().map(l -> LotViews.summary(l, product, policy))
                 .toList();
+    }
+
+    /** W12: lots with stock up to the notice threshold, grouped by level, each in FEFO order (ADR-056). */
+    @PreAuthorize("hasAuthority('lot.read')")
+    @Transactional(readOnly = true)
+    public ExpiryAlerts expiryAlerts() {
+        ExpiryPolicy policy = policies.current();
+        List<Lot> alerting = lots.findWithStockExpiringBy(policy.businessDate().plusDays(policy.notice()));
+        Map<Long, ProductRef> refs = products.findAll(alerting.stream().map(Lot::productId).distinct().toList());
+        Map<AlertLevel, List<LotSummary>> byLevel = new EnumMap<>(AlertLevel.class);
+        for (AlertLevel level : AlertLevel.values()) {
+            byLevel.put(level, new ArrayList<>());
+        }
+        for (Lot lot : alerting) {
+            byLevel.get(policy.level(lot.expiryDate())).add(LotViews.summary(lot, refs.get(lot.productId()), policy));
+        }
+        return new ExpiryAlerts(byLevel.get(AlertLevel.EXPIRED), byLevel.get(AlertLevel.CRITICAL),
+                byLevel.get(AlertLevel.WARNING), byLevel.get(AlertLevel.NOTICE),
+                new Thresholds(policy.notice(), policy.warning(), policy.critical()), policy.businessDate());
     }
 
     private static EffectiveLotStatus status(String code) {

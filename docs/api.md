@@ -166,7 +166,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/lots` | list: `productId`, `status` (effective status code), `expiringWithinDays` (expiry ≤ business date + N, expired lots included), `hasStock` (`true`: quantity > 0), `q` (contained in the lot number, ignoring case and accents); ordered by expiry date then id | `lot.read` | page of `LotSummary`; `VALIDATION_FAILED` field `status` (`UNKNOWN`) or `expiringWithinDays` (`RANGE`) |
 | GET | `/api/lots/{id}` | detail | `lot.read` | `LotDetail` (`blockedBy` is the user id); `NOT_FOUND` |
 | GET | `/api/lots/fefo` ● | FEFO allocation preview (does **not** reserve) | `lot.read` | `?productId&quantity&unitId?` → allocation list |
-| GET | `/api/lots/expiry-alerts` | lots with stock grouped by alert level (thresholds from settings, inclusive, ADR-056) | `lot.read` | `{expired[], critical[], warning[], notice[], thresholds: {notice, warning, critical}, businessDate}` |
+| GET | `/api/lots/expiry-alerts` | lots with stock grouped by alert level (thresholds from settings, inclusive, ADR-056); every stored status is listed (a blocked lot still needs handling), each group in FEFO order | `lot.read` | `{expired[], critical[], warning[], notice[]` (each `LotSummary`)`, thresholds: {notice, warning, critical}, businessDate}` |
 | GET | `/api/lots/{id}/movements` | movement history of the lot (Phase 4) | `stock.read` | page of `MovementEntry` |
 | POST | `/api/lots/{id}/block` · `/unblock` | block / unblock (ADR-060) | `lot.block` / `lot.unblock` | `{reason}` (non-blank) → `LotDetail`; audited `LOT_BLOCK` / `LOT_UNBLOCK`; `INVALID_STATE_TRANSITION` (block when not active, unblock when not blocked, anything on a recalled lot) |
 | POST | `/api/lots/{id}/recall` ● | recall + buyers list (lists empty until Phase 7, ADR-068) | `lot.recall` | `{reason}` → `RecallReport`; audited `LOT_RECALL` |
@@ -330,7 +330,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 ### 5.3 FEFO preview
 - **GET `/api/lots/fefo?productId=12&quantity=3&unitId=7`** — **Permission:** `lot.read`.
 - **Response:** `{ "requestedBase": "15.000", "allocations": [ {"lotId": 88, "lotNumber": "L2407A", "expiryDate": "2027-03-31", "quantityBase": "10.000", "available": "10.000", "alertLevel": "notice"}, {"lotId": 91, …, "quantityBase": "5.000"} ], "shortfallBase": "0.000" }`
-- **Rules:** only sellable lots (BR-STOCK-011, ADR-055); order `expiry_date, id`; `requestedBase = quantity × factor`, exact (ADR-065); **informational** — stock is re-validated at confirmation. **Errors:** `NOT_FOUND`, `UNIT_NOT_SELLABLE`, `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` (`quantity` `SCALE` / `WHOLE_NUMBER`, `unitId` `UNKNOWN` when the unit belongs to another product).
+- **Rules:** only sellable lots (BR-STOCK-011, ADR-055); order `expiry_date, id`; `requestedBase = quantity × factor`, exact (ADR-065); **informational** — stock is re-validated at confirmation. **Errors:** `NOT_FOUND`, `UNIT_NOT_SELLABLE`, `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` (`productId`/`quantity` missing; `quantity` `POSITIVE` / `SCALE` (more than 3 decimals, or a base quantity needing more) / `WHOLE_NUMBER`, `unitId` `UNKNOWN` when the unit belongs to another product). `available` is the lot's whole stock on hand; `alertLevel` may be `null`.
 
 ### 5.4 Confirm goods receipt
 - **POST `/api/goods-receipts`** — **Permission:** `receipt.create`. **Header:** `Idempotency-Key`.
