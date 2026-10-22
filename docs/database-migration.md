@@ -75,7 +75,7 @@ Legend for *Where*: **DB** = enforced in MySQL; **APP** = enforced in Spring Boo
 | 25 | Default isolation READ COMMITTED | implicit | InnoDB default **REPEATABLE READ** | No | Config | **ADR-013**: READ COMMITTED + explicit locking reads. | Config + APP | FEFO/credit checks use `FOR UPDATE`; reports are statement-consistent. |
 | 26 | Row locking | none (logic lived in triggers originally) | `SELECT … FOR UPDATE [NOWAIT | SKIP LOCKED]` (8.0.1+) | A | No | **ADR-012**. | APP | Deterministic lock order (by `lots.id`). Set a short `innodb_lock_wait_timeout` `[REC]`. |
 | 27 | `UNIQUE` with `NULL` | `users.email` | Multiple `NULL`s allowed in `UNIQUE` (same as PG) | A | No | Keep. | DB | — |
-| 28 | Case sensitivity of `UNIQUE` / comparisons | `username`, `sku`, `lot_number` | Depends on collation; default is case-insensitive | Behaviour change | Decision | **ADR-024**, **OD-025** | DB | `Admin` = `admin`; `LOT-a1` = `LOT-A1` unless a case-sensitive collation is chosen. |
+| 28 | Case sensitivity of `UNIQUE` / comparisons | `username`, `sku`, `lot_number` | Depends on collation; default is case-insensitive | Behaviour change | Decision | **ADR-024**; decided by ADR-041 (`username`), ADR-051 (`sku`), ADR-058 (`lot_number` insensitive, barcodes `utf8mb4_bin`) | DB | `Admin` = `admin`; `LOT-a1` = `LOT-A1`; barcodes match exactly. |
 | 29 | Reserved words | `app_settings.key` | `KEY` is reserved | No | Rename | `setting_key`, `setting_value` (**ADR-025**) | DB | Entity field names follow. |
 | 30 | `GROUP BY p.id` selecting other `p.*` columns | views | Allowed under `ONLY_FULL_GROUP_BY` via functional dependence on PK | A | No | Keep; verify `v_product_stock` (LEFT JOIN on the non-preserved side) at implementation. | DB | — |
 | 31 | `FOREIGN KEY` semantics | 76 `REFERENCES`, 15 `ON DELETE CASCADE`, self-references | Same; `ON UPDATE/DELETE` default `RESTRICT/NO ACTION` | A | No | Keep; name constraints explicitly. | DB | `CASCADE` only on child detail rows (never on ledger/documents). |
@@ -92,7 +92,7 @@ All become `VARCHAR(30)` + `CHECK` (ADR-009).
 |---|---|---|
 | customer_type | breeder, veterinarian, other | customers |
 | lot_status | active, blocked, recalled, expired, depleted | lots |
-| movement_type | purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock, unit_conversion | stock_movements |
+| movement_type | purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock (`unit_conversion` removed, ADR-061) | stock_movements |
 | po_status | draft, validated, sent, partially_received, closed, cancelled | purchase_orders |
 | sales_doc_type | quote, delivery_note, invoice, receipt, credit_note | sales_documents |
 | sales_doc_status | draft, confirmed, cancelled | sales_documents |
@@ -103,7 +103,7 @@ All become `VARCHAR(30)` + `CHECK` (ADR-009).
 | cash_session_status | open, closed | cash_sessions |
 | cash_move_direction | in, out | cash_movements |
 
-Open points on values: additional `movement_type` values for cancellations/discards (**OD-004**, **OD-005**); `unit_conversion` has no defined use because stock is kept in base units only (Low, DR-018 note in `documentation-review.md`).
+Open points on values: additional `movement_type` values for cancellations/discards (**OD-004**, **OD-005**); `unit_conversion` is removed because stock is kept in base units only (ADR-061, SD-118).
 
 ## 5. Type mapping reference
 
@@ -127,7 +127,7 @@ Open points on values: additional `movement_type` values for cancellations/disca
 |---|---|---|
 | `v_product_stock` | B | Rewrite `FILTER` → `CASE`. Read model for stock lists. Sellable predicate also exists in Java (single definition documented in BR-STOCK-011). |
 | `v_reorder_needed` | B | Keep; but threshold (`reorder_point` vs `min_stock`) is **OD-013**. |
-| `v_expiring_lots` | B + D | Keep for listing; the alert level (`critical_15`…) must come from configured thresholds (DR-019). |
+| `v_expiring_lots` | D | Not created: the service lists expiring lots and computes the level from configured thresholds (ADR-056, DR-019). |
 | `v_sale_withdrawal_warnings` | A | Direct. Applicability rules **OD-028**. |
 | `v_customer_balance` | B + **defect** | Do not reuse as-is; definition **OD-003** (DR-006). |
 | `v_supplier_payables` | A/B | Direct; ignores advances (OD-016). |
@@ -209,9 +209,9 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 |---|---|---|---|
 | SD-101 | `version` columns for optimistic locking | ADR-027 | Accepted 2026-10-20 |
 | SD-102 | Append-only triggers on `audit_log` (and possibly payment/cash ledgers) | ADR-017, OD-003 | Accepted 2026-10-20 for `audit_log`; ledgers open (OD-003) |
-| SD-103 | Composite uniqueness `lots (id, product_id)` and composite FKs so that `stock_movements`, `goods_receipt_lines`, `sales_document_lines` cannot reference a lot of another product | DR-008 | Proposed |
+| SD-103 | Composite uniqueness `lots (id, product_id)` and composite FKs so that `stock_movements`, `goods_receipt_lines`, `sales_document_lines` cannot reference a lot of another product | DR-008, ADR-062 | Accepted 2026-10-22 (`lots` in Phase 3; each FK with its table) |
 | SD-104 | Prices per base unit `DECIMAL(14,4)` | ADR-049 | Accepted 2026-10-21 |
-| SD-105 | `product_barcodes.unit_id` | OD-019 | Open |
+| SD-105 | `product_barcodes.unit_id` (composite FK to `product_units(id, product_id)`) and `code` in `utf8mb4_bin` | ADR-057, ADR-058 | Accepted 2026-10-22 |
 | SD-106 | `product_target_species` (target species) | ADR-047 | Accepted 2026-10-21 |
 | SD-107 | New `movement_type` values (cancellation/discard) | OD-004, OD-005 | Open |
 | SD-108 | Payment capture model for counter/anonymous sales | OD-003 | Open |
@@ -222,6 +222,9 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-112 | Uniqueness of one *pending* reorder proposal per product (generated-column technique) | OD-013 | Open |
 | SD-113 | Scope columns on `inventories` for cycle counts | OD-012 | Open |
 | SD-115 | `products.is_divisible` | ADR-050 | Accepted 2026-10-21 |
+| SD-116 | `lots.status` stores only `active`, `blocked`, `recalled` (expired/depleted computed) | ADR-059 | Accepted 2026-10-22 |
+| SD-117 | `lots.supplier_id` and its FK added in Phase 5 with `suppliers` | ADR-066 | Accepted 2026-10-22 |
+| SD-118 | `unit_conversion` removed from `movement_type` | ADR-061 | Accepted 2026-10-22 |
 
 ## 9. Operational requirements for MySQL
 

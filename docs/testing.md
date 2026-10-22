@@ -41,7 +41,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 
 **Unit.** FEFO allocator (ordering, ties, partial lots, non-sellable skipped); unit conversion (exact decimals); price resolution (OD-006) and discount bounds; totals with rounding (OD-007); state machines (lot, PO, sales document, count, cash session, reorder); return limit calculation; balance and expected-cash formulas.
 
-**Repository.** Unique constraints (SKU, barcode, lot per product, one open session per cashier), CHECK constraints (non-negative balances, positive quantities, signed movement rules), trigger behaviour for append-only tables, generated columns, view parity with domain computation, `FOR UPDATE` ordering, collation behaviour for codes (ADR-024, ADR-041, ADR-051; lot numbers OD-025), contains search and its ordering (ADR-048).
+**Repository.** Unique constraints (SKU, barcode, lot per product, one open session per cashier), CHECK constraints (non-negative balances, positive quantities, signed movement rules), trigger behaviour for append-only tables, generated columns, view parity with domain computation, `FOR UPDATE` ordering, collation behaviour for codes (ADR-024, ADR-041, ADR-051, ADR-058: lot numbers insensitive, barcodes exact), contains search and its ordering (ADR-048).
 
 **Service integration.** One test class per workflow in `workflows.md` (W1–W12): happy path, each documented failure case, audit row, movement rows, numbering, and a rollback test.
 
@@ -111,27 +111,29 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR ID | Test levels | Key scenarios (minimum) |
 |---|---|---|
 | BR-PROD-001 | R,A | Create two products with same SKU (also differing only by case/accent, ADR-051) → 409 PRODUCT_SKU_DUPLICATE |
-| BR-PROD-002 | R,A | Add an existing barcode to another product → 409 BARCODE_DUPLICATE |
+| BR-PROD-002 | R,A | Add an existing barcode to another product → 409 BARCODE_DUPLICATE; `abc` and `ABC` are distinct QR/CODE128 codes (ADR-058) |
+| BR-PROD-008 | U,A | EAN13 with wrong length / letters / wrong check digit → VALIDATION_FAILED; CODE128 with a non-ASCII character refused; QR accepts any text; 65 characters refused |
 | BR-PROD-003 | U,A | Create product without base unit → 400 |
 | BR-PROD-004 | S,A | Archive product; try to add it to a PO / sale → PRODUCT_ARCHIVED; history still readable |
 | BR-PROD-005 | U,R | Negative price, max<min threshold → rejected by validation and CHECK |
 | BR-PROD-006 | S | Change price → audit row PRICE_CHANGE with old/new |
 | BR-PROD-007 | U,R | Negative or duplicate species withdrawal row → rejected |
-| BR-UNIT-001 | R | Duplicate unit name for same product → DUPLICATE_RESOURCE; factor <= 0 rejected |
-| BR-UNIT-002 | U | 3 boxes × factor 10 → 30 base; non-integer factors; scale/rounding |
+| BR-UNIT-001 | R,A | Duplicate unit name for same product → DUPLICATE_RESOURCE; factor ≤ 0, > 4 decimals, or not whole for a non-divisible product rejected |
+| BR-UNIT-002 | U | 3 boxes × factor 10 → 30 base; 1.5 × 2.5 = 3.75; 1.25 × 1.25 = 1.5625 refused (SCALE, never rounded, ADR-065); non-whole result for a non-divisible product refused |
 | BR-UNIT-003 | S,A | Sell a non-sellable unit → UNIT_NOT_SELLABLE |
-| BR-UNIT-004 | S,A | Change factor of unit already used in movements → UNIT_FACTOR_LOCKED |
+| BR-UNIT-004 | S,A | Change factor of unit already used in document lines → UNIT_FACTOR_LOCKED (exercised from Phase 5; Phase 3 tests that an unused unit's factor can change) |
+| BR-UNIT-005 | S,R,A | Scan a box barcode → product, box unit, factor, price, quantity 1; scan a base-unit barcode → unit null; barcode with a unit of another product → refused by service and composite FK |
 | BR-LOT-001 | S,A | Receipt line without lot number / expiry → VALIDATION_FAILED, nothing posted |
 | BR-LOT-002 | S,R | Receive same (product, lot number) twice → one lot, balance summed, expiry consistency; OD-029 cost |
-| BR-LOT-003 | U,S | Confirm sale with lot expiring yesterday / today / tomorrow (OD-009 boundary) → LOT_EXPIRED where applicable |
+| BR-LOT-003 | U,S | Lot expiring yesterday → expired; today and tomorrow → sellable (ADR-055); business date in Africa/Algiers differs from the UTC date around midnight; Phase 3 covers the rule (FEFO preview, alerts), sale confirmation from Phase 7 |
 | BR-LOT-004 | S | Blocked and recalled lots excluded from FEFO and rejected at confirm |
 | BR-LOT-005 | U | Allocation order by expiry then id; skips non-sellable; override without permission → FEFO_VIOLATION |
 | BR-LOT-006 | S | Quantity spanning two lots yields two lines, each with one lot |
-| BR-LOT-007 | S | Confirm line without lot / lot of other product → LOT_REQUIRED / LOT_PRODUCT_MISMATCH |
-| BR-LOT-008 | S,A | Recall lot → status recalled, buyers incl. delivery notes and anonymous sales, audited |
-| BR-LOT-009 | U | Every allowed/forbidden status transition (state-machine table test) |
-| BR-LOT-010 | S | Change threshold setting → alert levels follow; invalid values rejected |
-| BR-LOT-011 | A,R | Attempt to change lot number/product/expiry → DOCUMENT_IMMUTABLE |
+| BR-LOT-007 | S,R | Lot of another product → LOT_PRODUCT_MISMATCH (Phase 3: service check); composite FK refuses a movement whose product differs from its lot's (Phase 4, ADR-062); line without lot → LOT_REQUIRED (Phase 7) |
+| BR-LOT-008 | S,A | Recall lot → status recalled, reason/user/time stored, `LOT_RECALL` audited in the same transaction, repeat returns same report; buyers lists empty until Phase 7 (ADR-068), then incl. delivery notes and anonymous sales |
+| BR-LOT-009 | U,S,R | Every allowed/forbidden stored transition (table test, ADR-060); effective status priority recalled > blocked > expired > depleted > active (ADR-059); DB CHECK refuses `expired`/`depleted` as stored values; recalled lot cannot be unblocked |
+| BR-LOT-010 | U,S | Days left −1 / 0 / 15 / 16 / 30 / 60 / 61 → expired / critical / critical / warning / warning / notice / none (inclusive, ADR-056); change threshold setting → levels follow; invalid values rejected |
+| BR-LOT-011 | A | No endpoint changes lot number/product/expiry (no write route exists in Phase 3) |
 | BR-LOT-012 | S | Receive already expired lot → rejected or flagged per rule |
 | BR-STOCK-001 | R,C | Direct CHECK violation (3819) mapped to STOCK_INSUFFICIENT; two concurrent sales of last unit → exactly one succeeds |
 | BR-STOCK-002 | S | Every stock-changing use case produces exactly the expected movement rows |
@@ -249,4 +251,4 @@ See `database-migration.md` §10 checklist. Automated: schema snapshot equals ex
 
 ## 13. Open testing items
 
-OD-009 (expiry boundary), OD-006/007 (price and rounding fixtures), OD-002/003/004/005 (sales/payment/cancellation/return expectations), OD-011/012/013/015/017, OD-025 (collation behaviour).
+OD-006/007 (price and rounding fixtures), OD-002/003/004/005 (sales/payment/cancellation/return expectations), OD-011/012/013/015/017.

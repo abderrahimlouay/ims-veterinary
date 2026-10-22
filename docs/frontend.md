@@ -85,12 +85,14 @@ For each: purpose → main elements → key behaviours → states.
 ### 4.1 Product catalogue and detail
 - **List:** search box (name/SKU/active ingredient, contains, ADR-048; barcode from Phase 3), filters (category, manufacturer, active ingredient, species — target or withdrawal species, ADR-047 —, show archived; in-stock only from Phase 4); table columns: SKU, name, category, base unit, sale price (sellable stock and nearest expiry from Phase 4). Seeded reference values are displayed through their code in the UI language (ADR-054).
 - **Detail form:** tabs per `api.md` §4.3. Price fields read-only without `price.edit`. Archive instead of delete (BR-PROD-004). Substitute panel (FR-PROD) lists same-ingredient products with stock.
+- **Units and barcodes tabs (Phase 3):** units table (name, factor, stored or derived price, sellable) with add/edit; the price field is read-only without `price.edit` (ADR-063); barcodes table (code, type, unit or "base unit") with add/remove and per-type format hints (ADR-067).
 - **Behaviours:** barcode field accepts scanner input (Enter-terminated); duplicate SKU/barcode shows field-level error from `PRODUCT_SKU_DUPLICATE` / `BARCODE_DUPLICATE`; `CONCURRENT_MODIFICATION` opens a "reload latest" dialog.
 
 ### 4.2 Lots and expiry
-- **Lot list:** filters (product, status, expiring within N days, with stock); expiry shown with level badge (expired / critical / warning / notice) using thresholds from `/api/settings/public` (never hard-coded; DR-015 for the prototype's fixed values).
-- **Lot detail:** header, balance, movement history, actions Block / Unblock / Recall (modal with mandatory reason). Recall result shows the buyers table with export/print.
-- **Dashboard widget:** counts per alert level linking to filtered list.
+- **Lot list:** filters (product, status, expiring within N days, with stock); expiry shown with the level badge returned by the API (expired / critical / warning / notice, ADR-056; thresholds come from settings, never hard-coded, DR-015). Until opening stock exists (Phase 4) the list shows an empty state explaining that lots appear with opening stock and receipts (ADR-064).
+- **Lot detail:** header, effective status (ADR-059), balance, actions Block / Unblock / Recall (modal with mandatory reason; Unblock never offered on a recalled lot, ADR-060); movement history from Phase 4. Recall result shows the buyers table with export/print; until Phase 7 it shows that no sales exist yet (ADR-068).
+- **Expiry input** (opening stock Phase 4, receipts Phase 5): full date or `MM/YYYY`, sent as the last day of the month (ADR-055).
+- **Dashboard widget:** counts per alert level linking to the filtered list; empty state when no lot is near expiry.
 
 ### 4.3 Stock and adjustments
 - **Stock levels:** sellable vs total, thresholds, below-min / below-reorder filters.
@@ -224,4 +226,4 @@ Component tests for primitives and forms (RTL), API-mocked page tests (MSW) incl
 
 ## 17. Open frontend items
 
-OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-012 (count UX), OD-019 (unit barcode), OD-020 (print formats); DR-014 (design-token gaps), DR-015 (hard-coded thresholds).
+OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-012 (count UX), OD-020 (print formats); DR-014 (design-token gaps), DR-015 (hard-coded thresholds).

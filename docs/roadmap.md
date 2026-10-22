@@ -21,7 +21,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 0 | Foundation | repo, build, CI, MySQL baseline, error handling, test harness | OD-024, OD-008, ADR confirmation |
 | 1 | Security & administration | login, users, roles/permissions, audit, settings | ~~OD-001~~ ADR-036, ~~OD-023~~ ADR-037, ADR-027 (decided 2026-10-20) |
 | 2 | Catalogue | products, reference data, search | ~~OD-018~~ ADR-047/048, ~~OD-022~~ ADR-049/050, ADR-051–054 (2026-10-21) |
-| 3 | Lots & units | packaging units, barcodes, lots, status, expiry rules, FEFO allocator | OD-009, OD-019, OD-025, OD-027 |
+| 3 | Lots & units | packaging units, barcodes, lots, status, expiry rules, FEFO allocator | ~~OD-009, OD-019, OD-025, OD-027~~ → ADR-055…068 |
 | 4 | Inventory & stock | ledger, stock levels, adjustments, opening stock, counts, reorder proposals | OD-012, OD-013 |
 | 5 | Purchasing | suppliers, purchase orders, goods receipts, supplier returns, numbering | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 | Customers | customers, categories, prices, credit-limit data | OD-006, OD-011 |
@@ -71,9 +71,10 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 3 — Lots & units
 - **Objective:** sell/store in multiple units and trace by lot.
-- **Prerequisites:** Phase 2; OD-009 (expiry boundary), OD-019 (barcode per unit), OD-025 (code collation), OD-027 (lot status semantics).
-- **Features:** packaging units and conversion; barcodes by unit; lot entity, statuses, block/unblock/recall (without buyers list until sales exist), expiry alert levels, FEFO allocator (domain service), lot list/detail.
-- **Database work:** product_units, barcodes, lots, status constraints, generated expiry-related columns where retained, triggers per ADR-017.
+- **Prerequisites:** Phase 2; decided 2026-10-22: ADR-055/056 (expiry boundary and alert levels, was OD-009), ADR-057 (barcode per unit, was OD-019), ADR-058 (collation, was OD-025), ADR-059/060 (lot status, was OD-027), ADR-061…068.
+- **Features:** packaging units and conversion; barcodes by unit; lot entity, statuses, block/unblock/recall (without buyers list until sales exist), expiry alert levels, FEFO allocator (domain service), lot list/detail. No lot creation (ADR-064): lots appear with opening stock (Phase 4) and receipts (Phase 5).
+- **Not in this phase:** stock movements and ledger, lot movement history (Phase 4); receipts and `lots.supplier_id` (Phase 5); recall buyers list and FEFO override (Phase 7); BR-UNIT-004 can only be exercised from Phase 5.
+- **Database work:** product_units, barcodes (`unit_id`, `utf8mb4_bin`), lots (stored status `active`/`blocked`/`recalled`, `UQ(id, product_id)`, no `supplier_id` until Phase 5); no generated expiry columns and no triggers (expired/depleted computed, ADR-059).
 - **Backend work:** `inventory` lot sub-package; `FefoAllocator`; unit conversion service; expiry threshold provider.
 - **Frontend work:** units/barcodes tabs, lot list/detail, expiry badges, dashboard alert widget.
 - **Tests:** BR-UNIT-*, BR-LOT-*; FEFO unit tests; state-machine tests.

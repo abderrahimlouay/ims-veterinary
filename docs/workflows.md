@@ -208,8 +208,8 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 | **Preconditions** | `lot.recall`; lot identified (manufacturer/authority notice) |
 
 1. Pharmacist selects lot and enters the reason.
-2. **One transaction:** lot → `recalled` (`blocked_reason/by/at`), audit `LOT_RECALL` (BR-LOT-008).
-3. System returns the **buyers list**: customer, phone, document number/date, quantity — including anonymous sales (customer unknown) and, per **⚠ OD-002**, un-invoiced delivery notes.
+2. **One transaction:** lot → `recalled` (`blocked_reason/by/at`), audit `LOT_RECALL` (BR-LOT-008). `recalled` is final: nobody can unblock or un-recall the lot (ADR-060).
+3. System returns the **buyers list**: customer, phone, document number/date, quantity — including anonymous sales (customer unknown) and, per **⚠ OD-002**, un-invoiced delivery notes. Until sales exist (Phase 7) the lists are empty and the screen says so (ADR-068).
 4. List is printable/exportable; remaining stock of the lot is no longer sellable and can be returned to the supplier (W4) or discarded by adjustment (W7).
 - **Failure:** unknown lot → `NOT_FOUND`; already recalled → idempotent success; no permission → `ACCESS_DENIED`.
 
@@ -247,6 +247,6 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 ## 12. W12 — Expiry alerting
 
-1. **Scheduled evaluation (daily) and on-demand query** compute for each lot with stock the level: *expired* (< today), then the configured thresholds (default 15 / 30 / 60 days) (BR-LOT-010).
+1. **On-demand computation** (every lot list, alert list and dashboard query): for each lot with stock, `daysLeft = expiry_date − business date` (Africa/Algiers, injected `Clock`); level *expired* when `daysLeft < 0` (sellable on the expiry date itself, ADR-055), else *critical* / *warning* / *notice* when `daysLeft ≤` the configured threshold (default 15 / 30 / 60, inclusive; BR-LOT-010, ADR-056). No scheduled job is needed.
 2. UI shows visual alerts (badges/banner on dashboard, lot list, POS). No email/SMS (Spec: visual notifications).
-3. Optional daily materialisation of `expired` status **⚠ OD-027**; expired lots remain unsellable regardless (BR-LOT-003).
+3. `expired` is never stored (ADR-059); expired lots are unsellable because the rule is evaluated whenever a lot is used (BR-LOT-003).

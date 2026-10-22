@@ -35,15 +35,17 @@ No final DDL is given here; column lists are the contract the first migrations m
 ### 2.2 Lots
 - A lot is identified by `(product_id, lot_number, expiry_date)` (unique). Receiving the same identity again increases the **existing** lot (find-or-create under lock) — BR-LOT-002.
 - `unit_cost` is the cost per base unit of that lot (valuation, margin).
-- `status` ∈ active, blocked, recalled, expired, depleted. Sellability is the conjunction *status = active ∧ expiry_date ≥ business date (boundary OD-009) ∧ quantity_on_hand > 0*. The `expired` and `depleted` values are maintained by the application (OD-027).
-- `blocked_reason/blocked_by/blocked_at` document blocks and recalls.
+- `status` ∈ active, blocked, recalled, expired, depleted. Only `active`, `blocked` and `recalled` are stored (ADR-059); `expired` (`expiry_date` < business date, ADR-055) and `depleted` (`quantity_on_hand = 0`) are computed when the lot is read or used. Sellability is the conjunction *stored status = active ∧ expiry_date ≥ business date ∧ quantity_on_hand > 0*.
+- `blocked_reason/blocked_by/blocked_at` document the current block or the recall; the history of every block, unblock and recall is in `audit_log` (`LOT_BLOCK`, `LOT_UNBLOCK`, `LOT_RECALL`). `recalled` is terminal (ADR-060).
+- `lot_number` uses the default `utf8mb4_0900_ai_ci`: `L2407a` = `L2407A` (ADR-058).
 
 ### 2.3 Product units (packaging)
 - `product_units(name, factor_to_base)`: "how many base units in one of this unit". Example: product *Solution X*, base unit `ml`; unit `bottle` factor 100; unit `dose` factor 5.
 - The **base unit itself has no row**; a document line with `unit_id IS NULL` means "base unit" (factor 1).
 - Document lines store both `quantity` (in the ordered/sold unit) and `quantity_base` (= `quantity × factor`), computed by the server (BR-UNIT-002).
-- **Worked example:** receive 10 bottles → `goods_receipt_lines.quantity_base = 1000`, movement `+1000`. Sell 3 doses → `sales_document_lines.quantity = 3`, `unit_id = dose`, `quantity_base = 15`, movement `−15`, lot balance 985 ml. "Opening" a bottle is not an event: the stock is simply in millilitres (the `unit_conversion` movement type has no defined use — DR-018).
-- Prices: `products.sale_price` and `purchase_price` are **per base unit**; `product_units.sale_price` optionally overrides per unit; precedence is **OD-006**.
+- **Worked example:** receive 10 bottles → `goods_receipt_lines.quantity_base = 1000`, movement `+1000`. Sell 3 doses → `sales_document_lines.quantity = 3`, `unit_id = dose`, `quantity_base = 15`, movement `−15`, lot balance 985 ml. "Opening" a bottle is not an event: the stock is simply in millilitres (there is no `unit_conversion` movement type — ADR-061).
+- Conversions are exact: a `quantity × factor` needing more than 3 decimals is refused, never rounded (ADR-065).
+- Prices: `products.sale_price` and `purchase_price` are **per base unit**; `product_units.sale_price` optionally sets a price per unit; when empty the unit price is derived as `factor_to_base × sale_price` (ADR-063); precedence with customer prices is **OD-006**.
 
 ### 2.4 Purchases
 `purchase_orders` (header, status, totals) → `purchase_order_lines` (ordered quantity, `quantity_base`, `received_base`, price, discount, VAT, generated `line_ht`).
@@ -130,13 +132,13 @@ Reference names are unique case- and accent-insensitively and never blank (CHECK
 
 Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `idx_products_category`; no FULLTEXT (ADR-048).
 
-**product_barcodes** — `id BIGINT AI PK`, `product_id FK→products ON DELETE CASCADE`, `code VARCHAR(64) NOT NULL UQ`, `code_type VARCHAR(10) NOT NULL DEFAULT 'EAN13'` (EAN13, CODE128, QR). **[OPEN] `unit_id`** (SD-105, OD-019).
+**product_barcodes** — `id BIGINT AI PK`, `product_id FK→products ON DELETE CASCADE`, `code VARCHAR(64) COLLATE utf8mb4_bin NOT NULL UQ` (exact match, ADR-058), `code_type VARCHAR(10) NOT NULL DEFAULT 'EAN13' CK IN ('EAN13','CODE128','QR')` (format checks in the service, ADR-067), `unit_id BIGINT NULL` (NULL = base unit; SD-105, ADR-057) with composite `FK (unit_id, product_id) → product_units(id, product_id)`.
 
 **product_active_ingredients** — `product_id FK→products CASCADE`, `ingredient_id FK→active_ingredients`, `strength VARCHAR(60) NULL`, `PK(product_id, ingredient_id)`, index on `ingredient_id` (substitution search).
 
 **product_withdrawal_periods** — `product_id FK CASCADE`, `species_id FK→animal_species`, `meat_days SMALLINT NULL CK ≥0`, `milk_days`, `eggs_days`, `PK(product_id, species_id)`.
 
-**product_units** — `id BIGINT AI PK`, `product_id FK CASCADE`, `name VARCHAR(40) NOT NULL`, `factor_to_base DECIMAL(14,4) NOT NULL CK > 0`, `sale_price DECIMAL(14,2) NULL CK ≥ 0`, `is_sellable BOOLEAN NOT NULL DEFAULT TRUE`, `UQ(product_id, name)`.
+**product_units** — `id BIGINT AI PK`, `product_id FK CASCADE`, `name VARCHAR(40) NOT NULL`, `factor_to_base DECIMAL(14,4) NOT NULL CK > 0`, `sale_price DECIMAL(14,2) NULL CK ≥ 0` (NULL = derived, ADR-063), `is_sellable BOOLEAN NOT NULL DEFAULT TRUE`, `UQ(product_id, name)`, `UQ(id, product_id)` (target of the barcode composite FK, ADR-057).
 
 **product_target_species** — `product_id FK→products ON DELETE CASCADE`, `species_id FK→animal_species`, `PK(product_id, species_id)`, index on `species_id` (SD-106, ADR-047).
 
@@ -160,18 +162,18 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 |---|---|---|---|
 | id | BIGINT AI | PK | |
 | product_id | BIGINT | NOT NULL FK→products | |
-| lot_number | VARCHAR(60) | NOT NULL | manufacturer lot (BR-LOT-001); collation OD-025 |
+| lot_number | VARCHAR(60) | NOT NULL | manufacturer lot (BR-LOT-001); default collation, case- and accent-insensitive (ADR-058) |
 | expiry_date | DATE | NOT NULL | |
-| supplier_id | BIGINT | NULL FK→suppliers | |
+| supplier_id | BIGINT | NULL FK→suppliers | added in Phase 5 with `suppliers` (ADR-066, SD-117) |
 | unit_cost | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit |
 | quantity_on_hand | DECIMAL(14,3) | NOT NULL DEFAULT 0, **CK ≥ 0** | maintained balance (ADR-028) |
-| status | VARCHAR(30) | NOT NULL DEFAULT 'active' | CK IN (active, blocked, recalled, expired, depleted) |
+| status | VARCHAR(30) | NOT NULL DEFAULT 'active' | CK IN (active, blocked, recalled) — expired/depleted computed (ADR-059, SD-116) |
 | blocked_reason | TEXT | NULL | |
 | blocked_by | BIGINT | NULL FK→users | |
 | blocked_at | DATETIME(6) | NULL | |
 | received_at | DATETIME(6) | NOT NULL DEFAULT now | |
 
-`UQ(product_id, lot_number, expiry_date)`. Indexes: `idx_lots_fefo(product_id, status, expiry_date)` and `idx_lots_expiry(expiry_date)` (SD-009). **[PROPOSED]** `UQ(id, product_id)` for composite FKs (SD-103).
+`UQ(product_id, lot_number, expiry_date)`. Indexes: `idx_lots_fefo(product_id, status, expiry_date)` and `idx_lots_expiry(expiry_date)` (SD-009). `UQ(id, product_id)` for composite FKs (SD-103, ADR-062).
 
 **stock_movements** (append-only, ADR-008)
 
@@ -179,8 +181,8 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 |---|---|---|---|
 | id | BIGINT AI | PK | |
 | lot_id | BIGINT | NOT NULL FK→lots | |
-| product_id | BIGINT | NOT NULL FK→products | must equal `lots.product_id` (SD-103) |
-| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock, unit_conversion) — additions: SD-107 |
+| product_id | BIGINT | NOT NULL FK→products | composite `FK (lot_id, product_id) → lots(id, product_id)` (SD-103, ADR-062) |
+| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock) — no `unit_conversion` (ADR-061, SD-118); additions: SD-107 |
 | quantity | DECIMAL(14,3) | NOT NULL, **CK ≠ 0** | signed, base unit |
 | reference_type | VARCHAR(40) | NULL | e.g. `sales_document`, `goods_receipt`, `inventory` |
 | reference_id | BIGINT | NULL | |
@@ -251,7 +253,7 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id)`, `(reference_type, referenc
 |---|---|---|
 | `v_product_stock` | sellable vs total quantity per product, thresholds | Keep (rewrite `FILTER`) |
 | `v_reorder_needed` | products at/below reorder point | Keep; trigger column per OD-013 |
-| `v_expiring_lots` | expiry alert list | Keep for listing; thresholds from settings (DR-019) |
+| `v_expiring_lots` | expiry alert list | Not created: the list and its levels are computed by the service from settings (ADR-056, DR-019) |
 | `v_sale_withdrawal_warnings` | printable withdrawal warnings | Keep; applicability OD-028 |
 | `v_customer_balance` | customer running balance | **Do not use as written** (DR-006); redefine after OD-003 |
 | `v_supplier_payables` | outstanding per supplier invoice | Keep; advances OD-016 |
@@ -264,9 +266,9 @@ Rule (ADR-014): views are read models for listings/reports; decisions inside tra
 
 | Query | Tables | Key points |
 |---|---|---|
-| **FEFO lots for product P** | lots | `status='active' AND quantity_on_hand>0 AND expiry_date ≥ today` order by `expiry_date, id`; inside the sale transaction use `FOR UPDATE` in that order |
+| **FEFO lots for product P** | lots | `status='active' AND quantity_on_hand>0 AND expiry_date ≥ business date` (ADR-055) order by `expiry_date, id`; inside the sale transaction use `FOR UPDATE` in that order |
 | **Sellable stock of P** | lots | sum over the same predicate (BR-STOCK-011) |
-| **Expiry alerts** | lots, products | `quantity_on_hand>0 AND expiry_date ≤ today + max(threshold)`; level computed from `app_settings.expiry_alert_days` |
+| **Expiry alerts** | lots, products | `quantity_on_hand>0 AND expiry_date ≤ today + max(threshold)`; level computed in the service from `app_settings.expiry_alert_days`, inclusive limits (ADR-056) |
 | **Recall report for lot L** | sales_document_lines, sales_documents, customers | confirmed stock-moving documents containing `lot_id = L`; **left join** customers (anonymous receipts must still appear); document types per OD-002 |
 | **Ledger reconciliation** | lots, stock_movements | `lots.quantity_on_hand = SUM(stock_movements.quantity)` per lot; any difference is a Critical defect (BR-STOCK-007) |
 | **Reorder candidates** | v_product_stock | `sellable_qty ≤ reorder_point` (OD-013) |

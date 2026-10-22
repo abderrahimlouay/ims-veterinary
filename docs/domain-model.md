@@ -100,8 +100,8 @@ For each entity: **purpose · key attributes · relationships (cardinality) · l
 | Entity | Purpose / key attributes | Relationships | Lifecycle | Invariants |
 |---|---|---|---|---|
 | **Product** | A medicine: SKU, commercial name, base unit, VAT, purchase price, sale price, min/max/reorder thresholds, archived flag | *→0..1 DosageForm, TherapeuticCategory, Manufacturer; 1—* ProductUnit, Barcode, WithdrawalPeriod; *—* ActiveIngredient; 1—* Lot | active ⇄ archived | SKU unique; base unit set; `min ≤ max`; prices ≥ 0 (BR-PROD-001…005) |
-| **ProductUnit** | Packaging/sub-unit: name, factor to base unit, optional price, sellable flag | *→1 Product | created; factor locked once used | factor > 0; name unique per product (BR-UNIT-001, -004) |
-| **Barcode** | Code + type (EAN13, CODE128, QR) | *→1 Product (unit link: OD-019) | active | code unique across catalogue (BR-PROD-002) |
+| **ProductUnit** | Packaging/sub-unit: name, factor to base unit, optional price (else derived, ADR-063), sellable flag | *→1 Product; 0..* Barcode | created; factor locked once used | factor > 0, whole for non-divisible products; name unique per product (BR-UNIT-001, -004) |
+| **Barcode** | Code + type (EAN13, CODE128, QR) | *→1 Product, *→0..1 ProductUnit of that product (none = base unit, ADR-057) | added / removed | code unique across catalogue, exact match (BR-PROD-002, ADR-058); format by type (BR-PROD-008) |
 | **ActiveIngredient (DCI)** | Active substance; strength per product via link | *—* Product | reference data | name unique |
 | **WithdrawalPeriod** | Meat/milk/egg waiting days per (product, species) | *→1 Product, *→1 AnimalSpecies | maintained with product | one per pair; days ≥ 0 (BR-PROD-007) |
 | **Manufacturer, TherapeuticCategory, DosageForm, AnimalSpecies** | Reference lists | 1—* Product (species via periods) | reference data | name unique |
@@ -110,7 +110,7 @@ For each entity: **purpose · key attributes · relationships (cardinality) · l
 
 | Entity | Purpose / key attributes | Relationships | Lifecycle | Invariants |
 |---|---|---|---|---|
-| **Lot** | A received batch of one product: lot number, expiry date, unit cost, quantity on hand (base unit), status, block info | *→1 Product, *→0..1 Supplier; 1—* StockMovement | **active ↔ blocked → recalled; active ↔ depleted; → expired** (§5.1) | identity (product, lot number, expiry) unique; `quantity_on_hand ≥ 0`; equals Σ movements (BR-STOCK-001, -007) |
+| **Lot** | A received batch of one product: lot number, expiry date, unit cost, quantity on hand (base unit), status, block info | *→1 Product, *→0..1 Supplier (from Phase 5); 1—* StockMovement | stored **active ↔ blocked → recalled**; expired and depleted computed (§5.1) | identity (product, lot number, expiry) unique; `quantity_on_hand ≥ 0`; equals Σ movements (BR-STOCK-001, -007) |
 | **StockMovement** | One signed change of one lot: type, quantity (base), reference, reason, operator, time | *→1 Lot, *→1 Product, *→1 User | append-only | immutable; sign by type; reason for adjustments (BR-STOCK-003, -005, -006) |
 | **InventoryCount** | A counting session: type (full/cycle), status, notes | 1—* CountLine; *→1 User (started by) | **open → closed \| cancelled** | one open full count; closed immutable (BR-INV-004, -007) |
 | **CountLine** | Lot, theoretical quantity, counted quantity, variance, regularised flag | *→1 InventoryCount, *→1 Lot | counted → regularised | variance = counted − theoretical; regularised once |
@@ -153,20 +153,17 @@ For each entity: **purpose · key attributes · relationships (cardinality) · l
 ## 5. State machines
 
 ### 5.1 Lot
+Stored status (ADR-059, ADR-060):
 ```mermaid
 stateDiagram-v2
-    [*] --> active : first receipt / opening stock
-    active --> blocked : block (lot.block)
+    [*] --> active : opening stock / receipt (Phase 4/5)
+    active --> blocked : block (lot.block, reason)
     blocked --> active : unblock (lot.unblock, reason)
-    active --> recalled : recall (lot.recall)
+    active --> recalled : recall (lot.recall, reason)
     blocked --> recalled : recall
-    active --> depleted : quantity reaches 0
-    depleted --> active : stock returns (> 0, not expired/blocked)
-    active --> expired : expiry date passed
-    blocked --> expired : expiry date passed
     recalled --> [*]
 ```
-Status maintenance and reversibility of `recalled`: OD-027. Sellable ⇔ `active` ∧ not expired ∧ quantity > 0 (BR-STOCK-011).
+`recalled` is terminal. **Expired** (`expiry_date` < business date, ADR-055) and **depleted** (quantity 0) are computed, never stored. Effective status = first that applies of recalled, blocked, expired, depleted, active; a depleted lot receiving stock is active again without any transition. Sellable ⇔ stored `active` ∧ not expired ∧ quantity > 0 (BR-STOCK-011). Implemented by a pure domain object (`LotStatus` transition table) and an `ExpiryPolicy` (business date + thresholds) so both are unit-tested without a database.
 
 ### 5.2 Purchase order
 `draft → validated → sent → partially_received → closed`; `draft | validated | sent → cancelled`. Receipts advance it automatically; the first receipt moves a `sent` order to `partially_received`; full reception closes it (BR-PURCH-001, -004).
