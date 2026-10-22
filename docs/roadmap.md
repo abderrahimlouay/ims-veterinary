@@ -80,6 +80,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** units/barcodes tabs, lot list/detail, expiry badges, dashboard alert widget.
 - **Tests:** BR-UNIT-*, BR-LOT-*; FEFO unit tests; state-machine tests.
 - **Completion criteria:** FR-PROD-006, 007; FR-LOT-004, 005, 006 (rule), 007 (status part), 008 done; lots cannot be created outside controlled flows.
+- **Delivered (2026-10-22, awaiting the user's approval and tag `phase-3-done`):** PRs #27 (ADR-070 lot identity) and #28–#33 plus the close PR (slices catalog-units, catalog-barcodes, inventory-lots, inventory-fefo-alerts, inventory-lot-actions, frontend-lots, close); migrations V03_001…003; ADR-070; OD-033 opened (scan of a code containing `/`, blocks Phase 7). J2 extended with units, barcodes, scanning and the empty lot screens. Within the agreed scope split, the conversion and expiry rules are applied to documents from Phases 5/7, the recall buyers list and FEFO override come in Phase 7, and the factor lock (BR-UNIT-004) can be exercised from Phase 5. Expiry and status badges reuse the contrast-checked `ok` / `warn` / `danger` / `brand` tones, so no separate semantic tokens were needed (Phase 0 deferral closed).
 
 ## Phase 4 — Inventory & stock
 - **Objective:** a trustworthy, immutable stock ledger.
