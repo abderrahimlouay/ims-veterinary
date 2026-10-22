@@ -471,6 +471,12 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** postpone recall to Phase 7 (B).
 - **Consequences:** BR-LOT-008, W6, `api.md` §5.7, `frontend.md` §4.2.
 
+## ADR-069 — User-selectable dark theme (Phase 13) and token-only colours `[REC]`
+- **Status:** Accepted (user decision, 2026-10-22); a recommendation, not a Spec requirement.
+- **Context:** DR-014 wrongly said the prototype has no dark theme. It defines a complete dark token set (system setting or `data-theme`), reproduced in `tokens.css`; there is no user switch and dark-theme contrast was never verified (`frontend.md` §6 holds the measured figures).
+- **Decision:** (1) **Phase 13** delivers a theme switch (system / light / dark), following the operating system by default, remembered **per browser** in `localStorage` (every access in `try/catch`; blocked storage falls back to the system setting), applied before first paint so the wrong theme never flashes. No database or backend change unless the user later decides the choice must follow the user across devices. (2) From now on, through Phases 1–12, components use **design tokens only**, never hard-coded colours, so Phase 13 needs no screen rewrite.
+- **Consequences:** `roadmap.md` Phase 13, `frontend.md` §6, CLAUDE.md §6, DR-014.
+
 ---
 
 # Part B — Open Decisions
@@ -656,3 +662,4 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 10 Documents & Printing | OD-020, OD-026, OD-028, OD-008 |
 | 11 Reports & Audit | OD-021 (backup), OD-002 (margin scope), OD-003 |
 | 12 Testing, Security, Deployment | OD-021, ADR-036 hardening review |
+| 13 Dark theme | ADR-069 (decided 2026-10-22) |

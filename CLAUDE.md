@@ -33,7 +33,7 @@ React + Vite + TypeScript (Node 24) · Java 21 + Spring Boot 4.1 + Maven · MySQ
 11. Authorisation is permission-based and enforced in the backend; frontend hiding is cosmetic (BR-SEC-002).
 
 ## 6. Coding rules
-Constructor injection; small use-case services; names follow `docs/glossary.md`; no business logic in controllers, mappers, SQL (other than documented triggers); no commented-out code; no TODO without a reference; no PostgreSQL-specific syntax; `ddl-auto=validate`; schema changes **only** via small Flyway migrations (`docs/development-workflow.md` §6).
+Constructor injection; small use-case services; names follow `docs/glossary.md`; no business logic in controllers, mappers, SQL (other than documented triggers); no commented-out code; no TODO without a reference; no PostgreSQL-specific syntax; frontend components use design tokens only, never hard-coded colours (ADR-069, `docs/frontend.md` §6); `ddl-auto=validate`; schema changes **only** via small Flyway migrations (`docs/development-workflow.md` §6).
 
 ## 7. Testing rules
 Every business-rule ID has a test (`docs/testing.md` §9); stock/locking/constraint tests run on Testcontainers MySQL (no H2); test failure paths and atomicity; concurrency tests for stock and numbering; fixed `Clock`; never disable or delete tests to get green.

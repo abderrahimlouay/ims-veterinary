@@ -1,8 +1,8 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–2 complete (tags `phase-0-done`, `phase-1-done`, `phase-2-done`); Phases 3–12 not started
+> **Status:** Phases 0–2 complete (tags `phase-0-done`, `phase-1-done`, `phase-2-done`); Phases 3–13 not started
 > **Scope:** ordered plan for Claude Code to implement.
-> **Last updated:** 2026-10-21
+> **Last updated:** 2026-10-22
 
 Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` review item.
 
@@ -31,6 +31,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | OD-020, OD-026, OD-028 |
 | 11 | Reports & audit | reports, exports, backup | OD-021 |
 | 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | OD-021, ADR-036 hardening |
+| 13 | Dark theme `[REC]` | user-selectable theme (system / light / dark), contrast verified | ADR-069 (decided 2026-10-22) |
 
 **Dependency adjustment (DR-003).** The POS in Phase 7 needs cash/anonymous-sale payment capture (OD-003) and a cash session (BR-SALE-013, BR-PAY-006), which belong to Phase 9. Two options, to be chosen when OD-003 is decided: **(a)** deliver a minimal counter-payment and cash-session slice inside Phase 7 (recommended `[REC]`), or **(b)** reorder so Phase 9's payment/cash core precedes Phase 7. The plan below assumes (a).
 
@@ -169,6 +170,17 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** accessibility fixes, bundle size, browser matrix.
 - **Tests:** full regression, e2e suite, load test, dependency/secret scans, backup restore test.
 - **Completion criteria:** all NFRs verified; no open Critical/High items in `documentation-review.md`; user acceptance signed off.
+
+## Phase 13 — Dark theme `[REC]`
+> Recommendation accepted by the user (ADR-069, 2026-10-22); not a Spec requirement.
+- **Objective:** a dark theme the user can choose.
+- **Prerequisites:** Phase 12 (or any earlier point the user chooses, since it touches no business rule); ADR-069; the token-only rule followed since Phase 1 (`frontend.md` §6).
+- **Features:** follows the operating-system setting by default; a theme switch with three choices (system / light / dark) in the application header; the choice is remembered per browser; no flash of the wrong theme while the page loads.
+- **Database work:** none. The choice is not stored in the database unless the user later decides it must follow the user across devices (new ADR).
+- **Backend work:** none (same condition).
+- **Frontend work:** theme switch component (accessible radio group or menu, translated fr/ar/en, RTL-ready); the choice stored in `localStorage` with every access wrapped in `try/catch` so the app works when storage is blocked (it then simply follows the system); `data-theme` set on `<html>` for light/dark and removed for system; a small blocking script in `index.html` applies the stored choice before first paint (allowed by the Content-Security-Policy via its hash, `frontend.md` §14); `color-scheme` set so native controls and scrollbars follow; token values adjusted where the contrast check fails (measured failures in `frontend.md` §6, both themes); charts read their colours from tokens.
+- **Tests:** component test of the switch (choices, keyboard, accessible names, persistence across a remount, storage that throws); automated contrast check of every token pair used for text (4.5:1, 3:1 large) and for UI borders/focus (3:1) in both themes; axe run of the main pages in dark (login, products, lots, POS, admin); visual check of POS, tables, badges, alerts and charts in both themes; e2e check that the choice survives a reload with no flash.
+- **Completion criteria:** all token pairs meet WCAG 2.1 AA in both themes; the choice survives reload; no hard-coded colours in components (automated search in CI).
 
 ---
 
