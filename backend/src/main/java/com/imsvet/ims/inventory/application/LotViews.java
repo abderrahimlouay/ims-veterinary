@@ -46,6 +46,29 @@ public final class LotViews {
             List<LotSummary> notice, Thresholds thresholds, LocalDate businessDate) {
     }
 
+    /** api.md §5.7: the recalled lot with who recalled it and when. */
+    public record RecalledLot(long id, String status, Instant blockedAt, Long blockedBy) {
+    }
+
+    /** A sale of the lot to a known customer; listed from Phase 7 (ADR-068). */
+    public record RecallBuyer(long customerId, String customerName, String phone, String documentNumber,
+            String documentType, Instant issuedAt, BigDecimal quantityBase, String unit) {
+    }
+
+    /** A counter sale without customer; listed from Phase 7 (ADR-068). */
+    public record AnonymousSale(String documentNumber, Instant issuedAt, BigDecimal quantityBase) {
+    }
+
+    public record RecallReport(RecalledLot lot, List<RecallBuyer> buyers, List<AnonymousSale> anonymousSales,
+            BigDecimal remainingStockBase) {
+    }
+
+    /** Until sales exist (Phase 7) both buyer lists are empty (ADR-068). */
+    static RecallReport recallReport(Lot l) {
+        return new RecallReport(new RecalledLot(l.id(), l.status().code(), l.blockedAt(), l.blockedBy()), List.of(),
+                List.of(), l.quantityOnHand());
+    }
+
     static LotSummary summary(Lot l, ProductRef product, ExpiryPolicy policy) {
         return new LotSummary(l.id(), product(product), l.lotNumber(), l.expiryDate(), l.quantityOnHand(),
                 status(l, policy), level(l, policy), policy.daysLeft(l.expiryDate()));

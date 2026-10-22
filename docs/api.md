@@ -168,9 +168,9 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/lots/fefo` ● | FEFO allocation preview (does **not** reserve) | `lot.read` | `?productId&quantity&unitId?` → allocation list |
 | GET | `/api/lots/expiry-alerts` | lots with stock grouped by alert level (thresholds from settings, inclusive, ADR-056); every stored status is listed (a blocked lot still needs handling), each group in FEFO order | `lot.read` | `{expired[], critical[], warning[], notice[]` (each `LotSummary`)`, thresholds: {notice, warning, critical}, businessDate}` |
 | GET | `/api/lots/{id}/movements` | movement history of the lot (Phase 4) | `stock.read` | page of `MovementEntry` |
-| POST | `/api/lots/{id}/block` · `/unblock` | block / unblock (ADR-060) | `lot.block` / `lot.unblock` | `{reason}` (non-blank) → `LotDetail`; audited `LOT_BLOCK` / `LOT_UNBLOCK`; `INVALID_STATE_TRANSITION` (block when not active, unblock when not blocked, anything on a recalled lot) |
+| POST | `/api/lots/{id}/block` · `/unblock` | block / unblock (ADR-060) | `lot.block` / `lot.unblock` | `{reason}` (non-blank, ≤ 500) → `LotDetail`; block stores reason, user and time, unblock clears them; audited `LOT_BLOCK` / `LOT_UNBLOCK` with old/new `status` and the `reason`, in the same transaction; `INVALID_STATE_TRANSITION` (block when not active, unblock when not blocked, anything on a recalled lot); `NOT_FOUND`; allowed on an expired or empty lot |
 | POST | `/api/lots/{id}/recall` ● | recall + buyers list (lists empty until Phase 7, ADR-068) | `lot.recall` | `{reason}` → `RecallReport`; audited `LOT_RECALL` |
-| GET | `/api/lots/{id}/recall-report` | re-read buyers list | `lot.recall` | `RecallReport` (+ `?format=pdf`) |
+| GET | `/api/lots/{id}/recall-report` | re-read buyers list | `lot.recall` | `RecallReport`; `INVALID_STATE_TRANSITION` when the lot is not recalled; `?format=pdf` arrives with printing (Phase 10) |
 
 ### 4.5 `/api/inventory` (stock, adjustments, counts, reorder)
 
@@ -363,9 +363,9 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ### 5.7 Recall a lot
 - **POST `/api/lots/{id}/recall`** — **Permission:** `lot.recall`.
-- **Request:** `{ "reason": "Manufacturer notice 2026-10-17" }` (non-blank).
+- **Request:** `{ "reason": "Manufacturer notice 2026-10-17" }` (non-blank, ≤ 500).
 - **Response 200:** `{ lot: {id, status: "recalled", blockedAt, blockedBy}, buyers: [ { customerId, customerName, phone, documentNumber, documentType, issuedAt, quantityBase, unit } ], anonymousSales: [ {documentNumber, issuedAt, quantityBase} ], remainingStockBase }`
-- **Errors:** `NOT_FOUND`, `ACCESS_DENIED`, `VALIDATION_FAILED`. Repeating on a recalled lot returns the same report. Until sales exist (Phase 7) `buyers` and `anonymousSales` are empty (ADR-068).
+- **Errors:** `NOT_FOUND`, `ACCESS_DENIED`, `VALIDATION_FAILED`. Repeating on a recalled lot returns the same report: nothing changes (the first reason, user and time stay) and no second `LOT_RECALL` is written. Until sales exist (Phase 7) `buyers` and `anonymousSales` are empty (ADR-068).
 
 ### 5.8 Customer return
 - **POST `/api/returns/customer`** — **Permission:** `return.customer.create`. **Header:** `Idempotency-Key`.
