@@ -23,7 +23,7 @@ export const SelectField = forwardRef<HTMLSelectElement, Props>(function SelectF
         aria-invalid={error !== undefined}
         aria-describedby={error !== undefined ? errorId : undefined}
         {...select}
-        className="h-10 px-2 rounded-ctl bg-surface border border-line text-sm focus:outline-2 focus:outline-brand"
+        className="h-10 px-2 rounded-ctl bg-surface border border-control text-sm focus:outline-2 focus:outline-brand"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

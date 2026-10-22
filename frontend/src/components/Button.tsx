@@ -4,7 +4,7 @@ type Variant = 'primary' | 'secondary'
 
 const VARIANTS: Record<Variant, string> = {
   primary: 'bg-brand text-brand-ink hover:bg-brand/90',
-  secondary: 'bg-surface text-ink border border-line hover:bg-bg',
+  secondary: 'bg-surface text-ink border border-control hover:bg-bg',
 }
 
 export function Button({

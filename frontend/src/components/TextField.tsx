@@ -17,7 +17,7 @@ export const TextField = forwardRef<HTMLInputElement, Props>(function TextField(
         aria-invalid={error !== undefined}
         aria-describedby={error !== undefined ? errorId : undefined}
         {...input}
-        className="h-10 px-3 rounded-ctl bg-surface border border-line text-sm focus:outline-2 focus:outline-brand aria-invalid:border-danger"
+        className="h-10 px-3 rounded-ctl bg-surface border border-control text-sm focus:outline-2 focus:outline-brand aria-invalid:border-danger"
       />
       {error !== undefined && (
         <p id={errorId} className="text-sm text-danger">
