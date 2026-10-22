@@ -81,6 +81,8 @@ describe('lot list (frontend.md §4.2)', () => {
     const router = renderApp('/lots?expiringWithinDays=30&hasStock=true')
 
     await waitFor(() => expect(queries.at(-1)?.get('expiringWithinDays')).toBe('30'))
+    expect(screen.getByLabelText('Périmés ou périment dans (jours)')).toHaveValue(30)
+    expect(screen.getByLabelText('Périmés ou périment dans (jours)')).toHaveAccessibleDescription('Lots déjà périmés inclus.')
     expect(queries.at(-1)?.get('hasStock')).toBe('true')
     await userEvent.selectOptions(await screen.findByLabelText('Statut'), 'blocked')
     await waitFor(() => expect(queries.at(-1)?.get('status')).toBe('blocked'))

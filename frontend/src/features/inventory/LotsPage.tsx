@@ -67,6 +67,7 @@ export function LotsPage() {
         />
         <TextField
           label={t('lots.expiringWithin')}
+          hint={t('lots.expiringWithinHint')}
           type="number"
           min={0}
           value={search.expiringWithinDays}
