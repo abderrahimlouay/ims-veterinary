@@ -48,6 +48,24 @@ class ExpiryPolicyTest {
     }
 
     @Test
+    void eachLevelCoversTheExpiryDatesItIsGivenFor() {
+        assertThat(POLICY.window(AlertLevel.EXPIRED)).isEqualTo(new ExpiryPolicy.Window(null, TODAY.minusDays(1)));
+        assertThat(POLICY.window(AlertLevel.CRITICAL)).isEqualTo(new ExpiryPolicy.Window(TODAY, TODAY.plusDays(15)));
+        assertThat(POLICY.window(AlertLevel.WARNING))
+                .isEqualTo(new ExpiryPolicy.Window(TODAY.plusDays(16), TODAY.plusDays(30)));
+        assertThat(POLICY.window(AlertLevel.NOTICE))
+                .isEqualTo(new ExpiryPolicy.Window(TODAY.plusDays(31), TODAY.plusDays(60)));
+        for (int days = -3; days <= 62; days++) {
+            LocalDate expiry = TODAY.plusDays(days);
+            for (AlertLevel level : AlertLevel.values()) {
+                ExpiryPolicy.Window w = POLICY.window(level);
+                boolean inside = (w.from() == null || !expiry.isBefore(w.from())) && !expiry.isAfter(w.to());
+                assertThat(inside).as("%s at %d days", level, days).isEqualTo(POLICY.level(expiry) == level);
+            }
+        }
+    }
+
+    @Test
     void thresholdsAreStrictlyDecreasingPositiveDays() {
         assertThatThrownBy(() -> new ExpiryPolicy(TODAY, 30, 30, 15)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new ExpiryPolicy(TODAY, 60, 30, 0)).isInstanceOf(IllegalArgumentException.class);

@@ -1,5 +1,7 @@
 package com.imsvet.ims.inventory;
 
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -155,6 +157,29 @@ class FefoAndAlertsTest {
                 .andExpect(jsonPath("$.notice.length()").value(1))
                 .andExpect(jsonPath("$.notice[0].lotNumber").value("A-61"))
                 .andExpect(jsonPath("$.warning[0].lotNumber").value("L1"));
+    }
+
+    /** The dashboard links each level to {@code /lots?alertLevel=<level>&hasStock=true}: same lots, same count. */
+    @Test
+    void eachAlertCountEqualsTheSizeOfItsLotList() throws Exception {
+        long other = lots.product("ALERT-D", "Other");
+        lots.lot(other, "D-WARN", TODAY.plusDays(20), "1");
+        lots.lot(other, "D-NOTICE", TODAY.plusDays(45), "1", "blocked");
+        lots.lot(other, "D-LIMIT", TODAY.plusDays(60), "1");
+        lots.lot(other, "D-NONE", TODAY.plusDays(61), "1");
+        lots.lot(other, "D-EMPTY", TODAY.plusDays(15), "0");
+        String alerts = pharmacist.get("/api/lots/expiry-alerts").andReturn().getResponse().getContentAsString();
+
+        for (String level : new String[] { "expired", "critical", "warning", "notice" }) {
+            int count = JSON.readTree(alerts).get(level).size();
+            pharmacist.get("/api/lots?alertLevel=" + level + "&hasStock=true&size=100")
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.page.totalElements").value(count))
+                    .andExpect(jsonPath("$.content[*].alertLevel").value(everyItem(is(level))));
+        }
+        pharmacist.get("/api/lots?alertLevel=notice&hasStock=true").andExpect(jsonPath("$.page.totalElements").value(2));
+        pharmacist.get("/api/lots?alertLevel=soon").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("alertLevel"));
     }
 
     private ResultActions fefo(String query) throws Exception {

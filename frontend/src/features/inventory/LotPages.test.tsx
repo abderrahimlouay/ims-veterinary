@@ -255,15 +255,40 @@ describe('dashboard expiry widget', () => {
     businessDate: '2026-10-20',
   }
 
-  it('counts lots per level and links to the matching list', async () => {
+  it('labels each level with its threshold from the settings and links to exactly that level', async () => {
     serveMe(SELLER)
     server.use(http.get('/api/lots/expiry-alerts', () => HttpResponse.json(ALERTS)))
     renderApp('/')
 
-    const critical = await screen.findByRole('link', { name: /Critique.*2/ })
-    expect(critical).toHaveAttribute('href', '/lots?expiringWithinDays=15&hasStock=true')
-    expect(screen.getByRole('link', { name: /Périmé.*1/ })).toHaveAttribute('href', '/lots?status=expired&hasStock=true')
-    expect(screen.getByRole('link', { name: /Attention.*0/ })).toHaveAttribute('href', '/lots?expiringWithinDays=30&hasStock=true')
+    expect(await screen.findByRole('link', { name: 'Critique (≤ 15 jours) 2' })).toHaveAttribute(
+      'href',
+      '/lots?alertLevel=critical&hasStock=true',
+    )
+    expect(screen.getByRole('link', { name: 'Périmés 1' })).toHaveAttribute('href', '/lots?alertLevel=expired&hasStock=true')
+    expect(screen.getByRole('link', { name: 'Attention (≤ 30 jours) 0' })).toHaveAttribute('href', '/lots?alertLevel=warning&hasStock=true')
+    expect(screen.getByRole('link', { name: 'À surveiller (≤ 60 jours) 1' })).toBeInTheDocument()
+  })
+
+  it('opens a list whose size is the count shown', async () => {
+    serveMe(SELLER)
+    const sent: URLSearchParams[] = []
+    server.use(
+      http.get('/api/lots/expiry-alerts', () => HttpResponse.json(ALERTS)),
+      http.get('/api/lots', ({ request }) => {
+        const params = new URL(request.url).searchParams
+        sent.push(params)
+        const level = params.get('alertLevel') as keyof typeof ALERTS
+        return HttpResponse.json(page(ALERTS[level] as unknown[]))
+      }),
+    )
+    renderApp('/')
+
+    await userEvent.click(await screen.findByRole('link', { name: 'Critique (≤ 15 jours) 2' }))
+
+    await waitFor(() => expect(screen.getAllByRole('link', { name: 'L2407A' })).toHaveLength(2))
+    expect(sent.at(-1)?.get('alertLevel')).toBe('critical')
+    expect(sent.at(-1)?.get('hasStock')).toBe('true')
+    expect(screen.getByLabelText("Niveau d'alerte")).toHaveValue('critical')
   })
 
   it('has an empty state when no lot is near expiry', async () => {

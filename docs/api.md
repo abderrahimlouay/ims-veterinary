@@ -163,7 +163,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET | `/api/lots` | list: `productId`, `status` (effective status code), `expiringWithinDays` (expiry ≤ business date + N, expired lots included), `hasStock` (`true`: quantity > 0), `q` (contained in the lot number, ignoring case and accents); ordered by expiry date then id | `lot.read` | page of `LotSummary`; `VALIDATION_FAILED` field `status` (`UNKNOWN`) or `expiringWithinDays` (`RANGE`) |
+| GET | `/api/lots` | list: `productId`, `status` (effective status code), `alertLevel` (exactly that level of the current policy, so `alertLevel=X&hasStock=true` returns the lots counted under X by `/expiry-alerts`), `expiringWithinDays` (expiry ≤ business date + N, expired lots included), `hasStock` (`true`: quantity > 0), `q` (contained in the lot number, ignoring case and accents); ordered by expiry date then id | `lot.read` | page of `LotSummary`; `VALIDATION_FAILED` field `status` or `alertLevel` (`UNKNOWN`), or `expiringWithinDays` (`RANGE`) |
 | GET | `/api/lots/{id}` | detail | `lot.read` | `LotDetail` (`blockedBy` is the user id); `NOT_FOUND` |
 | GET | `/api/lots/fefo` ● | FEFO allocation preview (does **not** reserve) | `lot.read` | `?productId&quantity&unitId?` → allocation list |
 | GET | `/api/lots/expiry-alerts` | lots with stock grouped by alert level (thresholds from settings, inclusive, ADR-056); every stored status is listed (a blocked lot still needs handling), each group in FEFO order | `lot.read` | `{expired[], critical[], warning[], notice[]` (each `LotSummary`)`, thresholds: {notice, warning, critical}, businessDate}` |

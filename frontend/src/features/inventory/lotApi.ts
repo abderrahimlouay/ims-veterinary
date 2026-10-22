@@ -56,6 +56,7 @@ export interface RecallReport {
 export interface LotSearch {
   productId: string
   status: string
+  alertLevel: string
   expiringWithinDays: string
   hasStock: boolean
   q: string
@@ -77,7 +78,7 @@ export function useLots(search: LotSearch) {
     queryKey: lotKeys.list(search),
     queryFn: () => {
       const params = new URLSearchParams({ page: String(search.page), size: '20' })
-      for (const key of ['productId', 'status', 'expiringWithinDays', 'q'] as const) {
+      for (const key of ['productId', 'status', 'alertLevel', 'expiringWithinDays', 'q'] as const) {
         if (search[key].trim() !== '') {
           params.set(key, search[key].trim())
         }

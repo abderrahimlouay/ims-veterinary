@@ -8,12 +8,12 @@ import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { formatDate, formatQuantity } from '../../lib/format'
 import { AlertBadge, LotStatusBadge } from './LotBadges'
-import { LOT_STATUSES, useLots, type LotSearch, type LotSummary } from './lotApi'
+import { ALERT_LEVELS, LOT_STATUSES, useLots, type LotSearch, type LotSummary } from './lotApi'
 
-const FILTERS = ['productId', 'status', 'expiringWithinDays', 'q'] as const
+const FILTERS = ['productId', 'status', 'alertLevel', 'expiringWithinDays', 'q'] as const
 
 /**
- * `/lots` (frontend.md §4.2): filters by product, status, expiry window and stock, kept in the URL; badges show
+ * `/lots` (frontend.md §4.2): filters by product, status, alert level, expiry window and stock, kept in the URL; badges show
  * the status and level returned by the API. Lots appear with opening stock and receipts (ADR-064).
  */
 export function LotsPage() {
@@ -22,6 +22,7 @@ export function LotsPage() {
   const search: LotSearch = {
     productId: params.get('productId') ?? '',
     status: params.get('status') ?? '',
+    alertLevel: params.get('alertLevel') ?? '',
     expiringWithinDays: params.get('expiringWithinDays') ?? '',
     hasStock: params.get('hasStock') === 'true',
     q: params.get('q') ?? '',
@@ -50,13 +51,19 @@ export function LotsPage() {
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold">{t('lots.title')}</h1>
-      <div className="grid grid-cols-4 gap-3 items-end">
+      <div className="grid grid-cols-5 gap-3 items-end">
         <TextField label={t('lots.lotNumber')} type="search" value={search.q} onChange={(e) => update('q', e.target.value)} />
         <SelectField
           label={t('lots.statusFilter')}
           value={search.status}
           onChange={(e) => update('status', e.target.value)}
           options={[{ value: '', label: t('admin.all') }, ...LOT_STATUSES.map((s) => ({ value: s, label: t(`lots.status.${s}`) }))]}
+        />
+        <SelectField
+          label={t('lots.levelFilter')}
+          value={search.alertLevel}
+          onChange={(e) => update('alertLevel', e.target.value)}
+          options={[{ value: '', label: t('admin.all') }, ...ALERT_LEVELS.map((l) => ({ value: l, label: t(`lots.level.${l}`) }))]}
         />
         <TextField
           label={t('lots.expiringWithin')}

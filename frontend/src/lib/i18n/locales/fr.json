@@ -362,6 +362,7 @@
     "daysLeftValue": "Jours restants : {{count}}",
     "quantity": "Quantité en stock",
     "statusFilter": "Statut",
+    "levelFilter": "Niveau d'alerte",
     "expiringWithin": "Périme dans (jours)",
     "hasStock": "Avec stock seulement",
     "productFilter": "Liste limitée à un produit.",
@@ -415,7 +416,13 @@
     },
     "widget": {
       "title": "Péremption des lots",
-      "none": "Aucun lot proche de la péremption."
+      "none": "Aucun lot proche de la péremption.",
+      "tiles": {
+        "expired": "Périmés",
+        "critical": "Critique (≤ {{days}} jours)",
+        "warning": "Attention (≤ {{days}} jours)",
+        "notice": "À surveiller (≤ {{days}} jours)"
+      }
     }
   }
 }

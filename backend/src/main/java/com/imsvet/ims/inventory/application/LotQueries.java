@@ -37,7 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class LotQueries {
 
     /** The filters of {@code GET /api/lots}; all optional. {@code status} is an effective status code. */
-    public record LotFilter(Long productId, String status, Integer expiringWithinDays, boolean hasStock, String q) {
+    public record LotFilter(Long productId, String status, String alertLevel, Integer expiringWithinDays,
+            boolean hasStock, String q) {
     }
 
     private final LotRepository lots;
@@ -58,11 +59,14 @@ public class LotQueries {
         if (filter.expiringWithinDays() != null && filter.expiringWithinDays() < 0) {
             throw invalid("expiringWithinDays", "RANGE", "The number of days cannot be negative.");
         }
+        AlertLevel level = level(filter.alertLevel());
+        ExpiryPolicy.Window window = level == null ? new ExpiryPolicy.Window(null, null) : policy.window(level);
         String term = filter.q() == null || filter.q().isBlank() ? null : filter.q().trim();
         Page<Lot> found = lots.search(filter.productId(), stored(status), expired(status), withStock(status),
                 filter.hasStock(),
                 filter.expiringWithinDays() == null ? null
                         : policy.businessDate().plusDays(filter.expiringWithinDays()),
+                window.from(), window.to(),
                 term == null ? null : "%" + term.replaceAll("([!%_])", "!$1") + "%", policy.businessDate(),
                 PageRequests.of(page, size, Sort.unsorted()));
         Map<Long, ProductRef> refs = products.findAll(found.stream().map(Lot::productId).distinct().toList());
@@ -114,6 +118,14 @@ public class LotQueries {
         }
         return Arrays.stream(EffectiveLotStatus.values()).filter(s -> s.code().equals(code)).findFirst()
                 .orElseThrow(() -> invalid("status", "UNKNOWN", "Unknown lot status."));
+    }
+
+    private static AlertLevel level(String code) {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        return Arrays.stream(AlertLevel.values()).filter(l -> l.code().equals(code)).findFirst()
+                .orElseThrow(() -> invalid("alertLevel", "UNKNOWN", "Unknown alert level."));
     }
 
     private static LotStatus stored(EffectiveLotStatus status) {

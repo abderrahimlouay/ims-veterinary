@@ -27,7 +27,8 @@ public interface LotRepository extends Repository<Lot, Long> {
     /**
      * Every filter optional. {@code stored}, {@code expired} and {@code withStock} together express an effective
      * status (ADR-059) against {@code today}; {@code hasStock} keeps lots with stock; {@code expiringBy} keeps lots
-     * expiring on or before that date (expired ones included); {@code pattern} is {@code %term%} escaped with
+     * expiring on or before that date (expired ones included); {@code expiryFrom}/{@code expiryTo} bound the expiry
+     * date of an alert level ({@code ExpiryPolicy.window}); {@code pattern} is {@code %term%} escaped with
      * {@code !} on the lot number. Order: expiry date, then id (FEFO).
      */
     @Query("""
@@ -40,10 +41,13 @@ public interface LotRepository extends Repository<Lot, Long> {
                    OR (:withStock = false AND l.quantityOnHand = 0))
               AND (:hasStock = false OR l.quantityOnHand > 0)
               AND (:expiringBy IS NULL OR l.expiryDate <= :expiringBy)
+              AND (:expiryFrom IS NULL OR l.expiryDate >= :expiryFrom)
+              AND (:expiryTo IS NULL OR l.expiryDate <= :expiryTo)
               AND (:pattern IS NULL OR l.lotNumber LIKE :pattern ESCAPE '!')
             ORDER BY l.expiryDate, l.id""")
     Page<Lot> search(Long productId, LotStatus stored, Boolean expired, Boolean withStock, boolean hasStock,
-            LocalDate expiringBy, String pattern, LocalDate today, Pageable pageable);
+            LocalDate expiringBy, LocalDate expiryFrom, LocalDate expiryTo, String pattern, LocalDate today,
+            Pageable pageable);
 
     /** Lots with stock expiring on or before {@code limit}, expired ones included (W12). */
     @Query("SELECT l FROM Lot l WHERE l.quantityOnHand > 0 AND l.expiryDate <= :limit ORDER BY l.expiryDate, l.id")
