@@ -207,3 +207,52 @@ export function useSaveUnit(productId: number) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: unitsKey(productId) }),
   })
 }
+
+export type BarcodeType = 'EAN13' | 'CODE128' | 'QR'
+export const BARCODE_TYPES: readonly BarcodeType[] = ['EAN13', 'CODE128', 'QR']
+
+/** `unit` `null` = the base unit (ADR-057). */
+export interface ProductBarcode {
+  id: number
+  code: string
+  codeType: BarcodeType
+  unit: ProductUnit | null
+}
+
+const barcodesKey = (productId: number) => [...productKeys.all, 'barcodes', productId] as const
+
+export function useBarcodes(productId: number) {
+  return useQuery({
+    queryKey: barcodesKey(productId),
+    queryFn: () => apiFetch<ProductBarcode[]>(`/api/products/${productId}/barcodes`),
+  })
+}
+
+/** The code is sent exactly as typed or scanned: barcodes are compared exactly (ADR-058). */
+export function useAddBarcode(productId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (barcode: { code: string; codeType: BarcodeType; unitId: number | null }) =>
+      apiFetch<ProductBarcode>(`/api/products/${productId}/barcodes`, { method: 'POST', json: barcode }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: barcodesKey(productId) }),
+  })
+}
+
+export function useRemoveBarcode(productId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (barcodeId: number) =>
+      apiFetch<void>(`/api/products/${productId}/barcodes/${barcodeId}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: barcodesKey(productId) }),
+  })
+}
+
+/**
+ * The product carrying exactly this barcode, or `null` (frontend.md §4.1, scanner input). Uses the `barcode`
+ * search filter, which accepts every valid code (OD-033).
+ */
+export async function findByBarcode(code: string): Promise<ProductSummary | null> {
+  const params = new URLSearchParams({ barcode: code, includeArchived: 'true', size: '2' })
+  const found = await apiFetch<{ content: ProductSummary[] }>(`/api/products?${params}`)
+  return found.content.length === 1 ? found.content[0] : null
+}

@@ -77,9 +77,9 @@ public class ProductCatalog {
         this.clock = clock;
     }
 
-    /** The search criteria of {@code GET /api/products} (ADR-047, ADR-048); all optional. */
+    /** The search criteria of {@code GET /api/products} (ADR-047, ADR-048, barcode exact); all optional. */
     public record SearchCriteria(String q, Integer categoryId, Integer manufacturerId, Integer ingredientId,
-            Integer speciesId, boolean includeArchived) {
+            Integer speciesId, String barcode, boolean includeArchived) {
     }
 
     /**
@@ -94,10 +94,11 @@ public class ProductCatalog {
         String escaped = term == null ? null : term.replaceAll("([!%_])", "!$1");
         String pattern = escaped == null ? null : "%" + escaped + "%";
         String prefix = escaped == null ? null : escaped + "%";
+        String barcode = c.barcode() == null || c.barcode().isEmpty() ? null : c.barcode();
         List<Product> found = products.search(term, pattern, prefix, c.categoryId(), c.manufacturerId(),
-                c.ingredientId(), c.speciesId(), c.includeArchived(), request);
+                c.ingredientId(), c.speciesId(), barcode, c.includeArchived(), request);
         long total = products.countSearch(pattern, c.categoryId(), c.manufacturerId(), c.ingredientId(),
-                c.speciesId(), c.includeArchived());
+                c.speciesId(), barcode, c.includeArchived());
         return PageResponse.of(new PageImpl<>(found, request, total), ProductViews::summary);
     }
 

@@ -112,8 +112,8 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR ID | Test levels | Key scenarios (minimum) |
 |---|---|---|
 | BR-PROD-001 | R,A | Create two products with same SKU (also differing only by case/accent, ADR-051) → 409 PRODUCT_SKU_DUPLICATE |
-| BR-PROD-002 | R,A | Add an existing barcode to another product → 409 BARCODE_DUPLICATE; `abc` and `ABC` are distinct QR/CODE128 codes (ADR-058) |
-| BR-PROD-008 | U,A | EAN13 with wrong length / letters / wrong check digit → VALIDATION_FAILED; CODE128 with a non-ASCII character refused; QR accepts any text; 65 characters refused |
+| BR-PROD-002 | R,A | Add an existing barcode to another product → 409 BARCODE_DUPLICATE; `abc` and `ABC` are distinct QR/CODE128 codes (ADR-058) (`ProductBarcodeSchemaTest`, `ProductBarcodesTest`) |
+| BR-PROD-008 | U,A | EAN13 with wrong length / letters / wrong check digit → VALIDATION_FAILED; CODE128 with a non-ASCII character refused; QR accepts any text; 65 characters refused (`BarcodeFormatTest`, `ProductBarcodesTest`) |
 | BR-PROD-003 | U,A | Create product without base unit → 400 |
 | BR-PROD-004 | S,A | Archive product; try to add it to a PO / sale → PRODUCT_ARCHIVED; history still readable |
 | BR-PROD-005 | U,R | Negative price, max<min threshold → rejected by validation and CHECK |
@@ -123,7 +123,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-UNIT-002 | U | 3 boxes × factor 10 → 30 base; 1.5 × 2.5 = 3.75; 1.25 × 1.25 = 1.5625 refused (SCALE, never rounded, ADR-065); non-whole result for a non-divisible product refused (`UnitConversionTest`) |
 | BR-UNIT-003 | S,A | Sell a non-sellable unit → UNIT_NOT_SELLABLE |
 | BR-UNIT-004 | S,A | Change factor of unit already used in document lines → UNIT_FACTOR_LOCKED (exercised from Phase 5; Phase 3 tests that an unused unit's factor can change, and with a stubbed `UnitReferences` that a used unit's factor is locked while its other fields stay editable: `ProductUnitsTest`, `ProductUnitRulesTest`) |
-| BR-UNIT-005 | S,R,A | Scan a box barcode → product, box unit, factor, price, quantity 1; scan a base-unit barcode → unit null; barcode with a unit of another product → refused by service and composite FK |
+| BR-UNIT-005 | S,R,A | Scan a box barcode → product, box unit, factor, price, quantity 1; scan a base-unit barcode → unit null; barcode with a unit of another product → refused by service and composite FK (`ProductBarcodesTest`, `ProductBarcodeSchemaTest`) |
 | BR-LOT-001 | S,A | Receipt line without lot number / expiry → VALIDATION_FAILED, nothing posted |
 | BR-LOT-002 | S,R | Receive same (product, lot number) twice → one lot, balance summed; another expiry → `LOT_EXPIRY_MISMATCH`, nothing written; DB rejects a duplicate (product, lot number) even with another expiry (ADR-070); OD-029 cost |
 | BR-LOT-003 | U,S | Lot expiring yesterday → expired; today and tomorrow → sellable (ADR-055); business date in Africa/Algiers differs from the UTC date around midnight; Phase 3 covers the rule (FEFO preview, alerts), sale confirmation from Phase 7 |

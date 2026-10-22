@@ -13,6 +13,7 @@ import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { formatDateTime } from '../../lib/format'
 import { placeServerErrors } from '../../lib/formErrors'
+import { BarcodesPanel } from './BarcodesPanel'
 import { IngredientsPanel } from './IngredientsPanel'
 import { SpeciesPanel } from './SpeciesPanel'
 import { SubstitutesPanel } from './SubstitutesPanel'
@@ -207,7 +208,7 @@ export function NewProductPage() {
   )
 }
 
-const TABS = ['general', 'units', 'ingredients', 'species', 'substitutes'] as const
+const TABS = ['general', 'units', 'barcodes', 'ingredients', 'species', 'substitutes'] as const
 
 /** The detail tabs of frontend.md §4.1; each slice adds its own. */
 function ProductTabs({ product }: { product: ProductDetail }) {
@@ -239,6 +240,7 @@ function ProductTabs({ product }: { product: ProductDetail }) {
             canEditPrices={hasPermission(current, 'product.update') && hasPermission(current, 'price.edit')}
           />
         )}
+        {tab === 'barcodes' && <BarcodesPanel product={product} editable={hasPermission(current, 'product.update')} />}
         {tab === 'ingredients' && (
           <IngredientsPanel key={product.version} product={product} editable={hasPermission(current, 'product.update')} />
         )}
