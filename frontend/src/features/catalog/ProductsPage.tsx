@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { Pager } from '../../components/Pager'
@@ -9,7 +9,7 @@ import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { formatUnitPrice } from '../../lib/format'
 import { hasPermission, useCurrentUser } from '../auth'
-import { useProducts, type ProductSearch } from './productApi'
+import { findByBarcode, useProducts, type ProductSearch } from './productApi'
 import { referenceLabel, useReferenceList, type ReferenceListPath } from './referenceApi'
 
 /** frontend.md §15: the query follows the typing after a short pause. */
@@ -36,13 +36,15 @@ function FilterSelect({ path, i18nKey, label, value, onChange }: {
 }
 
 /**
- * `/products` (frontend.md §4.1): search anywhere in name, SKU or active ingredient (ADR-048), filters by
+ * `/products` (frontend.md §4.1): search anywhere in name, SKU or active ingredient (ADR-048); a scanner's
+ * Enter-terminated barcode opens its product (FR-PROD-003); filters by
  * category, manufacturer, ingredient and species (ADR-047), archived on request. Criteria live in the URL.
  */
 export function ProductsPage() {
   const { t } = useTranslation()
   const { data: current } = useCurrentUser()
   const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
   const search: ProductSearch = {
     q: params.get('q') ?? '',
     categoryId: params.get('categoryId') ?? '',
@@ -136,6 +138,11 @@ export function ProductsPage() {
             value={typed}
             placeholder={t('catalog.products.searchHint')}
             onChange={(e) => setTyped(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && typed !== '') {
+                void findByBarcode(typed).then((found) => found && navigate(`/products/${found.id}`), () => undefined)
+              }
+            }}
           />
         </div>
         <FilterSelect path="categories" i18nKey="categories" label={t('catalog.products.category')} value={controls.categoryId} onChange={(v) => update({ categoryId: v })} />

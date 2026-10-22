@@ -1,6 +1,8 @@
 package com.imsvet.ims.catalog.application;
 
+import com.imsvet.ims.catalog.domain.BarcodeType;
 import com.imsvet.ims.catalog.domain.Product;
+import com.imsvet.ims.catalog.domain.ProductBarcode;
 import com.imsvet.ims.catalog.domain.ProductUnit;
 import com.imsvet.ims.catalog.domain.ReferenceEntry;
 import java.math.BigDecimal;
@@ -40,6 +42,22 @@ public final class ProductViews {
     /** ADR-063: {@code salePrice} is the stored price or {@code null}; {@code effectiveSalePrice} is never null. */
     public record UnitView(long id, String name, BigDecimal factorToBase, BigDecimal salePrice,
             BigDecimal effectiveSalePrice, boolean sellable, long version) {
+    }
+
+    /** {@code unit} {@code null} is the base unit (ADR-057). */
+    public record BarcodeView(long id, String code, BarcodeType codeType, UnitView unit) {
+    }
+
+    /** A scan (BR-UNIT-005): the product, the matched unit or {@code null} for the base unit, quantity 1. */
+    public record ScanResult(ProductSummary product, UnitView unit, BigDecimal quantity) {
+    }
+
+    static BarcodeView barcode(ProductBarcode b, ProductUnit unit) {
+        return new BarcodeView(b.id(), b.code(), b.codeType(), unit == null ? null : unit(unit));
+    }
+
+    static ScanResult scan(Product product, UnitView unit) {
+        return new ScanResult(summary(product), unit, BigDecimal.ONE);
     }
 
     static UnitView unit(ProductUnit u) {

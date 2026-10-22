@@ -26,7 +26,7 @@ public interface ProductRepository extends Repository<Product, Long> {
 
 
     /**
-     * ADR-048 / ADR-047: every filter optional; {@code pattern} is {@code %term%} escaped with {@code !} and
+     * ADR-048 / ADR-047: every filter optional; {@code barcode} is an exact, case-sensitive code (ADR-058); {@code pattern} is {@code %term%} escaped with {@code !} and
      * {@code prefix} is {@code term%}. Order: exact SKU, name starting with the term, other matches, then name.
      */
     @Query("""
@@ -42,10 +42,11 @@ public interface ProductRepository extends Repository<Product, Long> {
               AND (:pattern IS NULL OR p.commercialName LIKE :pattern ESCAPE '!' OR p.sku LIKE :pattern ESCAPE '!'
                    OR p.id IN (SELECT pq.id FROM Product pq JOIN pq.ingredients iq JOIN iq.ingredient aq
                                WHERE aq.name LIKE :pattern ESCAPE '!'))
+              AND (:barcode IS NULL OR p.id IN (SELECT b.product.id FROM ProductBarcode b WHERE b.code = :barcode))
             ORDER BY CASE WHEN p.sku = :term THEN 0 WHEN p.commercialName LIKE :prefix ESCAPE '!' THEN 1 ELSE 2 END,
                      p.commercialName, p.id""")
     List<Product> search(String term, String pattern, String prefix, Integer categoryId, Integer manufacturerId,
-            Integer ingredientId, Integer speciesId, boolean includeArchived, Pageable pageable);
+            Integer ingredientId, Integer speciesId, String barcode, boolean includeArchived, Pageable pageable);
 
     @Query("""
             SELECT COUNT(p) FROM Product p
@@ -59,9 +60,10 @@ public interface ProductRepository extends Repository<Product, Long> {
                    OR p.id IN (SELECT pw.id FROM Product pw JOIN pw.withdrawalPeriods ww WHERE ww.species.id = :speciesId))
               AND (:pattern IS NULL OR p.commercialName LIKE :pattern ESCAPE '!' OR p.sku LIKE :pattern ESCAPE '!'
                    OR p.id IN (SELECT pq.id FROM Product pq JOIN pq.ingredients iq JOIN iq.ingredient aq
-                               WHERE aq.name LIKE :pattern ESCAPE '!'))""")
+                               WHERE aq.name LIKE :pattern ESCAPE '!'))
+              AND (:barcode IS NULL OR p.id IN (SELECT b.product.id FROM ProductBarcode b WHERE b.code = :barcode))""")
     long countSearch(String pattern, Integer categoryId, Integer manufacturerId, Integer ingredientId,
-            Integer speciesId, boolean includeArchived);
+            Integer speciesId, String barcode, boolean includeArchived);
 
     /** Other active products sharing at least one ingredient, most shared first (FR-PROD-004). */
     @Query("""

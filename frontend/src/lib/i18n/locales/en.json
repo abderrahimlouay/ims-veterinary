@@ -84,7 +84,8 @@
     "UNKNOWN": "The request failed (reference {{traceId}}).",
     "RESOURCE_IN_USE": "This entry is used and cannot be deleted.",
     "DUPLICATE_RESOURCE": "This value already exists.",
-    "UNIT_FACTOR_LOCKED": "This unit is already used in documents: its content can no longer change. Create a new unit."
+    "UNIT_FACTOR_LOCKED": "This unit is already used in documents: its content can no longer change. Create a new unit.",
+    "BARCODE_DUPLICATE": "This barcode already belongs to a product."
   },
   "pager": {
     "label": "Pagination",
@@ -238,6 +239,7 @@
       "tabs": {
         "general": "General",
         "units": "Units",
+        "barcodes": "Barcodes",
         "ingredients": "Active ingredients",
         "substitutes": "Substitutes",
         "species": "Species and withdrawal periods"
@@ -307,6 +309,26 @@
       "add": "Add",
       "cancel": "Cancel",
       "stale": "Someone else changed this unit. Cancel and edit again."
+    },
+    "barcodes": {
+      "empty": "No barcodes for this product.",
+      "code": "Code",
+      "type": "Type",
+      "unit": "Unit",
+      "baseUnit": "Base unit ({{baseUnit}})",
+      "remove": "Remove {{code}}",
+      "addTitle": "Add a barcode",
+      "add": "Add code",
+      "types": {
+        "EAN13": "EAN-13",
+        "CODE128": "Code 128",
+        "QR": "QR"
+      },
+      "hints": {
+        "EAN13": "13 digits, the last one being the check digit.",
+        "CODE128": "Printable ASCII characters, 64 at most.",
+        "QR": "Free text without control characters, 64 characters at most."
+      }
     }
   },
   "fieldErrors": {
@@ -324,6 +346,8 @@
     "BELOW_MIN": "The maximum stock is below the minimum.",
     "RANGE": "Value out of range.",
     "SIZE": "This text is too long.",
-    "POSITIVE": "The value must be greater than zero."
+    "POSITIVE": "The value must be greater than zero.",
+    "FORMAT": "This code does not match the chosen type.",
+    "CHECK_DIGIT": "The EAN-13 check digit is wrong."
   }
 }
