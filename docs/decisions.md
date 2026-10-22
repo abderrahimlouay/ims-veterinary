@@ -485,6 +485,13 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** keep the Source key (product, lot number, expiry) (B).
 - **Consequences:** BR-LOT-002, `requirements.md` (lot validations), `domain-model.md` (LotIdentity), `database.md` §2.2/§3.4, `database-migration.md` §7 and SD-119, `api.md` §3, `workflows.md` W2, OD-029 wording, ADR-058 wording; correcting a wrongly entered expiry date is a separate, audited action, to be specified with the first phase that creates lots.
 
+## ADR-071 — Scan lookup takes the code as a query parameter (resolves OD-033)
+- **Status:** Accepted (user decision, 2026-10-22, option A)
+- **Context:** CODE128 and QR codes may contain `/` (ADR-067); in a path an encoded slash is rejected by the security firewall, so `GET /api/products/by-barcode/{code}` could not find such codes.
+- **Decision:** The scan lookup is `GET /api/products/by-barcode?code=…`, same permission (`product.read`) and same response (`{product, unit, quantity: "1"}`, ADR-057). The code is compared exactly (ADR-058); a missing `code` is `VALIDATION_FAILED`. The frontend's scanner input in the product search uses this endpoint.
+- **Alternatives:** forbid `/` in codes (B); keep the path form and use the `barcode` search filter for such codes (C).
+- **Consequences:** `api.md` §4.3, `frontend.md` §4.1; tests with codes containing `/` and `%`.
+
 ---
 
 # Part B — Open Decisions
@@ -652,6 +659,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 2, reference-data slice (seed migration and screens). **Related:** ADR-033, ADR-052.
 
 ## OD-033 — Scan lookup of a code containing "/"
+- **Status:** Resolved 2026-10-22 → **ADR-071** (option A).
 - **Question:** `GET /api/products/by-barcode/{code}` takes the code in the path. CODE128 and QR codes may contain `/` (ADR-067), and an encoded slash (`%2F`) in a path is rejected by the security firewall, so such a code cannot be looked up this way. `GET /api/products?barcode=` finds it (query string). How should a scan reach every valid code?
 - **Options:** (A) move the lookup to a query parameter, `GET /api/products/by-barcode?code=…`, same response; (B) keep the path form and forbid `/` in codes (changes ADR-067); (C) keep the path form and let clients with such codes use the `barcode` search filter.
 - **Leaning:** `[REC]` (A): every valid code works and the response is unchanged.
@@ -670,7 +678,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 4 Inventory & Stock | OD-012, OD-013, ~~OD-030~~ → ADR-035, ADR-012, ADR-028 |
 | 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 Customers | OD-006, OD-011 |
-| 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006, OD-033 |
+| 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006, ~~OD-033~~ → ADR-071 |
 | 8 Returns | OD-005 |
 | 9 Payments / Finance | OD-003, OD-011, OD-016 |
 | 10 Documents & Printing | OD-020, OD-026, OD-028, OD-008 |

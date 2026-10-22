@@ -82,18 +82,35 @@ class ProductBarcodesTest {
         add(tablets, "{\"code\":\"BOX-AMX\",\"codeType\":\"CODE128\",\"unitId\":" + box + "}");
         add(tablets, "{\"code\":\"4006381333931\",\"codeType\":\"EAN13\"}");
 
-        pharmacist.get("/api/products/by-barcode/BOX-AMX").andExpect(status().isOk())
+        scan("BOX-AMX").andExpect(status().isOk())
                 .andExpect(jsonPath("$.product.id").value(tablets))
                 .andExpect(jsonPath("$.product.sku").value("BC-TAB"))
                 .andExpect(jsonPath("$.unit.name").value("Box"))
                 .andExpect(jsonPath("$.unit.factorToBase").value("30.0000"))
                 .andExpect(jsonPath("$.unit.effectiveSalePrice").value("0.3750"))
                 .andExpect(jsonPath("$.quantity").value("1"));
-        pharmacist.get("/api/products/by-barcode/4006381333931").andExpect(status().isOk())
+        scan("4006381333931").andExpect(status().isOk())
                 .andExpect(jsonPath("$.unit").doesNotExist())
                 .andExpect(jsonPath("$.quantity").value("1"));
-        pharmacist.get("/api/products/by-barcode/box-amx").andExpect(status().isNotFound())
+        scan("box-amx").andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    /** ADR-071 (was OD-033): the code travels as a query parameter, so "/" and "%" reach the lookup intact. */
+    @Test
+    void aScanFindsCodesContainingSlashAndPercent() throws Exception {
+        add(tablets, "{\"code\":\"AMX/10%A\",\"codeType\":\"CODE128\",\"unitId\":" + box + "}")
+                .andExpect(status().isCreated());
+        add(tablets, "{\"code\":\"https://ex.org/p?id=5&l=%2F\",\"codeType\":\"QR\"}").andExpect(status().isCreated());
+
+        scan("AMX/10%A").andExpect(status().isOk())
+                .andExpect(jsonPath("$.product.id").value(tablets))
+                .andExpect(jsonPath("$.unit.name").value("Box"));
+        scan("https://ex.org/p?id=5&l=%2F").andExpect(status().isOk())
+                .andExpect(jsonPath("$.unit").doesNotExist());
+        scan("AMX/10%a").andExpect(status().isNotFound());
+        pharmacist.get("/api/products/by-barcode").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
     }
 
     @Test
@@ -133,7 +150,7 @@ class ProductBarcodesTest {
         delete(tablets, barcode).andExpect(status().isNoContent());
 
         pharmacist.get("/api/products/" + tablets + "/barcodes").andExpect(jsonPath("$.length()").value(0));
-        pharmacist.get("/api/products/by-barcode/BOX-AMX").andExpect(status().isNotFound());
+        scan("BOX-AMX").andExpect(status().isNotFound());
         delete(tablets, barcode).andExpect(status().isNotFound());
     }
 
@@ -162,6 +179,11 @@ class ProductBarcodesTest {
 
     private ResultActions add(long productId, String body) throws Exception {
         return pharmacist.post("/api/products/" + productId + "/barcodes", body);
+    }
+
+    /** {@code param} encodes the value as a browser does, so the code arrives exactly as scanned. */
+    private ResultActions scan(String code) throws Exception {
+        return pharmacist.perform(MockMvcRequestBuilders.get("/api/products/by-barcode").param("code", code), true);
     }
 
     private ResultActions delete(long productId, long barcodeId) throws Exception {

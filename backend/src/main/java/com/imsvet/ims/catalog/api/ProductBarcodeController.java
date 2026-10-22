@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** api.md §4.3 barcodes and scan lookup; permissions on the service. */
@@ -48,8 +49,9 @@ class ProductBarcodeController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/by-barcode/{code}")
-    ScanResult scan(@PathVariable String code) {
+    /** ADR-071: the code is a query parameter, so codes containing "/" or "%" are found too. */
+    @GetMapping("/by-barcode")
+    ScanResult scan(@RequestParam String code) {
         return barcodes.scan(code);
     }
 }

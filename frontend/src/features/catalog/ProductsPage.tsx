@@ -140,7 +140,7 @@ export function ProductsPage() {
             onChange={(e) => setTyped(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && typed !== '') {
-                void findByBarcode(typed).then((found) => found && navigate(`/products/${found.id}`), () => undefined)
+                void findByBarcode(typed).then((found) => found && navigate(`/products/${found.product.id}`), () => undefined)
               }
             }}
           />
