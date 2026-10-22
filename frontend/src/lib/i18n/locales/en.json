@@ -60,7 +60,10 @@
   },
   "passwordInput": {
     "show": "Show password",
-    "hide": "Hide password"
+    "hide": "Hide password",
+    "copy": "Copy password",
+    "copied": "Password copied.",
+    "copyFailed": "Copy failed. Show the password to copy it by hand."
   },
   "validation": {
     "required": "This field is required.",

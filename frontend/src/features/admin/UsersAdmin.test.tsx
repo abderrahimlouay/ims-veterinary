@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { aUser, anAdmin, problem, serveMe } from '../../test/auth'
 import { renderApp } from '../../test/render'
 import { server } from '../../test/server'
@@ -129,6 +129,12 @@ describe('users administration', () => {
     expect(temporary).toHaveValue('k7mq-3xht-9pwd-r2va')
     expect(temporary).toHaveAttribute('type', 'password')
     expect(temporary).toHaveAttribute('readonly')
+    const user = userEvent.setup()
+    const write = vi.spyOn(navigator.clipboard, 'writeText')
+    await user.click(screen.getByRole('button', { name: 'Copier le mot de passe' }))
+    expect(write).toHaveBeenCalledWith('k7mq-3xht-9pwd-r2va') // gitleaks:allow
+    expect(await screen.findByText('Mot de passe copié.')).toBeInTheDocument()
+    expect(temporary).toHaveAttribute('type', 'password')
     await userEvent.click(screen.getByRole('button', { name: 'Afficher le mot de passe' }))
     expect(temporary).toHaveAttribute('type', 'text')
     expect(screen.queryByRole('button', { name: 'Désactiver' })).not.toBeInTheDocument()
