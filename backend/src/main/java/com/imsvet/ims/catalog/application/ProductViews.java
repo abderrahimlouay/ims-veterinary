@@ -1,6 +1,7 @@
 package com.imsvet.ims.catalog.application;
 
 import com.imsvet.ims.catalog.domain.Product;
+import com.imsvet.ims.catalog.domain.ProductUnit;
 import com.imsvet.ims.catalog.domain.ReferenceEntry;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -34,6 +35,16 @@ public final class ProductViews {
     }
 
     public record ProductIngredientView(ReferenceItemView ingredient, String strength) {
+    }
+
+    /** ADR-063: {@code salePrice} is the stored price or {@code null}; {@code effectiveSalePrice} is never null. */
+    public record UnitView(long id, String name, BigDecimal factorToBase, BigDecimal salePrice,
+            BigDecimal effectiveSalePrice, boolean sellable, long version) {
+    }
+
+    static UnitView unit(ProductUnit u) {
+        return new UnitView(u.id(), u.name(), u.factorToBase(), u.salePrice(), u.effectiveSalePrice(), u.sellable(),
+                u.version());
     }
 
     static ProductSummary summary(Product p) {

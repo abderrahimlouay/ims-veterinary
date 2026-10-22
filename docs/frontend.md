@@ -85,7 +85,7 @@ For each: purpose → main elements → key behaviours → states.
 ### 4.1 Product catalogue and detail
 - **List:** search box (name/SKU/active ingredient, contains, ADR-048; barcode from Phase 3), filters (category, manufacturer, active ingredient, species — target or withdrawal species, ADR-047 —, show archived; in-stock only from Phase 4); table columns: SKU, name, category, base unit, sale price (sellable stock and nearest expiry from Phase 4). Seeded reference values are displayed through their code in the UI language (ADR-054).
 - **Detail form:** tabs per `api.md` §4.3. Price fields read-only without `price.edit`. Archive instead of delete (BR-PROD-004). Substitute panel (FR-PROD) lists same-ingredient products with stock.
-- **Units and barcodes tabs (Phase 3):** units table (name, factor, stored or derived price, sellable) with add/edit; the price field is read-only without `price.edit` (ADR-063); barcodes table (code, type, unit or "base unit") with add/remove and per-type format hints (ADR-067).
+- **Units and barcodes tabs (Phase 3):** units table (name, factor, stored or derived price, sellable) with add/edit (Units tab delivered in slice `phase-3/catalog-units`; empty, loading and error states; a locked factor shows `UNIT_FACTOR_LOCKED`); the price field is read-only without `price.edit` and the stored price is sent back unchanged (ADR-063); barcodes table (code, type, unit or "base unit") with add/remove and per-type format hints (ADR-067).
 - **Behaviours:** barcode field accepts scanner input (Enter-terminated); duplicate SKU/barcode shows field-level error from `PRODUCT_SKU_DUPLICATE` / `BARCODE_DUPLICATE`; `CONCURRENT_MODIFICATION` opens a "reload latest" dialog.
 
 ### 4.2 Lots and expiry

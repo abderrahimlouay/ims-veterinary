@@ -83,7 +83,8 @@
     "INTERNAL_ERROR": "An unexpected error occurred (reference {{traceId}}).",
     "UNKNOWN": "The request failed (reference {{traceId}}).",
     "RESOURCE_IN_USE": "This entry is used and cannot be deleted.",
-    "DUPLICATE_RESOURCE": "This value already exists."
+    "DUPLICATE_RESOURCE": "This value already exists.",
+    "UNIT_FACTOR_LOCKED": "This unit is already used in documents: its content can no longer change. Create a new unit."
   },
   "pager": {
     "label": "Pagination",
@@ -236,6 +237,7 @@
       "pricesReadOnly": "Prices can be changed only with the “edit prices” permission.",
       "tabs": {
         "general": "General",
+        "units": "Units",
         "ingredients": "Active ingredients",
         "substitutes": "Substitutes",
         "species": "Species and withdrawal periods"
@@ -284,6 +286,27 @@
         "RANGE": "Too many days.",
         "UNKNOWN": "Unknown species."
       }
+    },
+    "units": {
+      "empty": "No packaging units. Quantities are in the base unit ({{baseUnit}}).",
+      "name": "Unit",
+      "content": "Content",
+      "price": "Sale price",
+      "sellable": "Sellable",
+      "yes": "Yes",
+      "no": "No",
+      "derived": "{{price}} (calculated)",
+      "edit": "Edit {{name}}",
+      "addTitle": "Add a unit",
+      "editTitle": "Edit unit {{name}}",
+      "nameField": "Unit name",
+      "factorField": "Base units per unit ({{baseUnit}})",
+      "priceField": "Unit sale price",
+      "priceHint": "Empty: calculated price (content × base-unit price).",
+      "sellableField": "Sellable at the counter and on invoices",
+      "add": "Add",
+      "cancel": "Cancel",
+      "stale": "Someone else changed this unit. Cancel and edit again."
     }
   },
   "fieldErrors": {
@@ -300,6 +323,7 @@
     "WHOLE_NUMBER": "This product is counted in whole units.",
     "BELOW_MIN": "The maximum stock is below the minimum.",
     "RANGE": "Value out of range.",
-    "SIZE": "This text is too long."
+    "SIZE": "This text is too long.",
+    "POSITIVE": "The value must be greater than zero."
   }
 }

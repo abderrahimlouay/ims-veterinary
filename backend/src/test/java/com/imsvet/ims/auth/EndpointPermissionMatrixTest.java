@@ -81,7 +81,12 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.PUT, "/api/products/999999/ingredients", "product.update", "[]"),
             new Endpoint(HttpMethod.GET, "/api/products/999999/substitutes", "product.read"),
             new Endpoint(HttpMethod.PUT, "/api/products/999999/target-species", "product.update", "{\"speciesIds\":[]}"),
-            new Endpoint(HttpMethod.PUT, "/api/products/999999/withdrawal-periods", "product.update", "[]"));
+            new Endpoint(HttpMethod.PUT, "/api/products/999999/withdrawal-periods", "product.update", "[]"),
+            new Endpoint(HttpMethod.GET, "/api/products/999999/units", "product.read"),
+            new Endpoint(HttpMethod.POST, "/api/products/999999/units", "product.update",
+                    "{\"name\":\"Box\",\"factorToBase\":\"10\",\"sellable\":true}"),
+            new Endpoint(HttpMethod.PUT, "/api/products/999999/units/999999", "product.update",
+                    "{\"name\":\"Box\",\"factorToBase\":\"10\",\"sellable\":true,\"version\":0}"));
 
     static final List<String> ROLES = List.of("Administrator", "Pharmacist", "Seller", "Accountant");
 

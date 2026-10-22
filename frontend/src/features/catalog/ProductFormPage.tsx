@@ -16,6 +16,7 @@ import { placeServerErrors } from '../../lib/formErrors'
 import { IngredientsPanel } from './IngredientsPanel'
 import { SpeciesPanel } from './SpeciesPanel'
 import { SubstitutesPanel } from './SubstitutesPanel'
+import { UnitsPanel } from './UnitsPanel'
 import { hasPermission, useCurrentUser } from '../auth'
 import { usePublicSettings } from '../settings'
 import {
@@ -206,7 +207,7 @@ export function NewProductPage() {
   )
 }
 
-const TABS = ['general', 'ingredients', 'species', 'substitutes'] as const
+const TABS = ['general', 'units', 'ingredients', 'species', 'substitutes'] as const
 
 /** The detail tabs of frontend.md §4.1; each slice adds its own. */
 function ProductTabs({ product }: { product: ProductDetail }) {
@@ -231,6 +232,13 @@ function ProductTabs({ product }: { product: ProductDetail }) {
       </div>
       <div role="tabpanel">
         {tab === 'general' && <ProductForm key={product.id} product={product} onSaved={() => undefined} />}
+        {tab === 'units' && (
+          <UnitsPanel
+            product={product}
+            editable={hasPermission(current, 'product.update')}
+            canEditPrices={hasPermission(current, 'product.update') && hasPermission(current, 'price.edit')}
+          />
+        )}
         {tab === 'ingredients' && (
           <IngredientsPanel key={product.version} product={product} editable={hasPermission(current, 'product.update')} />
         )}

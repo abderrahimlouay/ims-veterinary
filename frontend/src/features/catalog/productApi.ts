@@ -168,3 +168,42 @@ export function useSetArchived(id: number) {
     apiFetch<ProductDetail>(`/api/products/${id}/${archived ? 'archive' : 'restore'}`, { method: 'POST' }),
   )
 }
+
+/** `UnitView` (api.md §4.3, ADR-063): `salePrice` stored (2 decimals) or `null`; `effectiveSalePrice` never null. */
+export interface ProductUnit {
+  id: number
+  name: string
+  factorToBase: string
+  salePrice: string | null
+  effectiveSalePrice: string
+  sellable: boolean
+  version: number
+}
+
+/** `salePrice` `null` = derived price; sent on every write, so a PUT without it would clear the stored price. */
+export interface UnitWrite {
+  name: string
+  factorToBase: string
+  salePrice: string | null
+  sellable: boolean
+  version?: number
+}
+
+const unitsKey = (productId: number) => [...productKeys.all, 'units', productId] as const
+
+export function useUnits(productId: number) {
+  return useQuery({ queryKey: unitsKey(productId), queryFn: () => apiFetch<ProductUnit[]>(`/api/products/${productId}/units`) })
+}
+
+/** Adds (`unitId` undefined) or edits a packaging unit; the list is refreshed afterwards. */
+export function useSaveUnit(productId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ unitId, unit }: { unitId?: number; unit: UnitWrite }) =>
+      apiFetch<ProductUnit>(`/api/products/${productId}/units${unitId === undefined ? '' : `/${unitId}`}`, {
+        method: unitId === undefined ? 'POST' : 'PUT',
+        json: unit,
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: unitsKey(productId) }),
+  })
+}
