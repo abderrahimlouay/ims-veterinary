@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
+import { PasswordInput } from '../../components/PasswordInput'
 import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { useCurrentUser, useLogin } from './api'
@@ -49,9 +50,8 @@ export function LoginPage() {
         error={formState.errors.username && t(formState.errors.username.message ?? 'validation.required')}
         {...register('username')}
       />
-      <TextField
+      <PasswordInput
         label={t('auth.login.password')}
-        type="password"
         autoComplete="current-password"
         error={formState.errors.password && t(formState.errors.password.message ?? 'validation.required')}
         {...register('password')}

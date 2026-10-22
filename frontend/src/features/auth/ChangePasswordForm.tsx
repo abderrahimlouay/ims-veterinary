@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
-import { TextField } from '../../components/TextField'
+import { PasswordInput } from '../../components/PasswordInput'
 import { problemMessage } from '../../lib/errors'
 import { useChangePassword } from './api'
 
@@ -72,23 +72,20 @@ export function ChangePasswordForm({ onChanged }: { onChanged?: () => void }) {
       <h2 className="text-lg font-semibold">{t('auth.password.title')}</h2>
       {done && <Alert tone="ok">{t('auth.password.changed')}</Alert>}
       {serverProblem && <Alert tone="danger">{problemMessage(serverProblem, t)}</Alert>}
-      <TextField
+      <PasswordInput
         label={t('auth.password.current')}
-        type="password"
         autoComplete="current-password"
         error={fieldError('currentPassword')}
         {...register('currentPassword')}
       />
-      <TextField
+      <PasswordInput
         label={t('auth.password.new')}
-        type="password"
         autoComplete="new-password"
         error={fieldError('newPassword')}
         {...register('newPassword')}
       />
-      <TextField
+      <PasswordInput
         label={t('auth.password.confirm')}
-        type="password"
         autoComplete="new-password"
         error={fieldError('confirmPassword')}
         {...register('confirmPassword')}

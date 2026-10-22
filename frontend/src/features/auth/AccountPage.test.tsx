@@ -40,6 +40,23 @@ describe('AccountPage', () => {
     expect(body).toEqual({ currentPassword: 'Tall-cedar-river-2026', newPassword: 'Quiet-harbour-lantern-7' })
   })
 
+  it('gives each password field its own eye', async () => {
+    serveMe(aUser())
+    renderApp('/account')
+    const current = await screen.findByLabelText('Mot de passe actuel')
+    const eyes = screen.getAllByRole('button', { name: 'Afficher le mot de passe' })
+    expect(eyes).toHaveLength(3)
+    expect(current).toHaveAttribute('autocomplete', 'current-password')
+    expect(screen.getByLabelText('Nouveau mot de passe')).toHaveAttribute('autocomplete', 'new-password')
+    expect(screen.getByLabelText('Confirmer le nouveau mot de passe')).toHaveAttribute('autocomplete', 'new-password')
+
+    await userEvent.click(eyes[1])
+
+    expect(screen.getByLabelText('Nouveau mot de passe')).toHaveAttribute('type', 'text')
+    expect(current).toHaveAttribute('type', 'password')
+    expect(screen.getByLabelText('Confirmer le nouveau mot de passe')).toHaveAttribute('type', 'password')
+  })
+
   it('checks length and confirmation before calling the server', async () => {
     serveMe(aUser())
     renderApp('/account')

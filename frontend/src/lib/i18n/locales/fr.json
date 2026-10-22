@@ -58,6 +58,10 @@
       "INVALID": "Le mot de passe actuel n'est pas correct."
     }
   },
+  "passwordInput": {
+    "show": "Afficher le mot de passe",
+    "hide": "Masquer le mot de passe"
+  },
   "validation": {
     "required": "Ce champ est obligatoire.",
     "tooLong": "Ce texte est trop long."
@@ -111,7 +115,7 @@
       "deactivate": "Désactiver",
       "activate": "Réactiver",
       "resetPassword": "Réinitialiser le mot de passe",
-      "temporaryPassword": "Mot de passe temporaire :",
+      "temporaryPassword": "Mot de passe temporaire",
       "temporaryPasswordOnce": "Communiquez-le à l'utilisateur : il ne sera plus affiché."
     },
     "roles": {

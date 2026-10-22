@@ -148,6 +148,7 @@ Derived from the prototype; implement as typed, accessible components in `compon
 |---|---|
 | Button (primary/secondary/danger/ghost, sizes, loading) | prevents double submit |
 | Input / Select / Combobox / DatePicker / DecimalInput | `DecimalInput` keeps string value, locale-aware display |
+| PasswordInput | every password field (login, change password, initial password, temporary password after a reset). Hidden by default; an eye `<button type="button">` per field, never submitting, keyboard-reachable, `aria-pressed`, translated name "Show / Hide password", visible focus ring, placed on the end side (RTL-aware). Hidden again on submit (successful or not), when focus leaves the field and when the page is left. Keeps the label and `autocomplete` (`current-password` / `new-password`); the value lives only in the input: never logged, stored, put in the URL or in `localStorage`. Tokens only. |
 | Table | sortable headers, sticky header, row actions, empty/loading skeleton, keyboard navigation |
 | Badge / StatusChip | status → colour **plus** text/icon |
 | Modal / ConfirmDialog | focus trap, `Esc`, returns focus |

@@ -67,6 +67,26 @@ describe('LoginPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
   })
 
+  it('hides the password by default and again after a refused login', async () => {
+    serveMe(null)
+    server.use(http.post('/api/auth/login', () => problem(401, 'AUTH_INVALID_CREDENTIALS')))
+    renderApp('/login')
+    const password = await screen.findByLabelText('Mot de passe')
+    expect(password).toHaveAttribute('type', 'password')
+    expect(password).toHaveAttribute('autocomplete', 'current-password')
+
+    await userEvent.type(screen.getByLabelText("Nom d'utilisateur"), 'amina')
+    await userEvent.type(password, 'wrong-password-1')
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher le mot de passe' }))
+    expect(password).toHaveAttribute('type', 'text')
+    await userEvent.click(password)
+    await userEvent.keyboard('{Enter}')
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(password).toHaveAttribute('type', 'password')
+    expect(screen.getByRole('button', { name: 'Afficher le mot de passe' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('validates required fields before calling the server', async () => {
     serveMe(null)
     renderApp('/login')
