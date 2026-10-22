@@ -71,7 +71,7 @@ export function IngredientsPanel({ product, editable }: { product: ProductDetail
             <select
               value={row.ingredientId}
               onChange={(e) => update(row.key, { ingredientId: e.target.value })}
-              className="h-10 px-2 rounded-ctl bg-surface border border-line text-sm font-normal"
+              className="h-10 px-2 rounded-ctl bg-surface border border-control text-sm font-normal"
             >
               <option value="">—</option>
               {(available.data ?? []).map((i) => (
@@ -87,7 +87,7 @@ export function IngredientsPanel({ product, editable }: { product: ProductDetail
               value={row.strength}
               maxLength={60}
               onChange={(e) => update(row.key, { strength: e.target.value })}
-              className="h-10 px-3 rounded-ctl bg-surface border border-line text-sm font-normal"
+              className="h-10 px-3 rounded-ctl bg-surface border border-control text-sm font-normal"
             />
           </label>
           <Button variant="secondary" onClick={() => setRows((rs) => rs.filter((r) => r.key !== row.key))}>

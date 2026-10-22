@@ -1,17 +1,21 @@
 /*
  * Design tokens from the design-system prototype (frontend.md §6), as RGB channels so Tailwind
  * opacity modifiers work. Light by default; dark follows the OS unless data-theme forces one.
+ * `line` is for decorative dividers; `control` borders inputs, selects and buttons (3:1, WCAG 1.4.11).
+ * Light `ok` and `warn` are darker than the prototype so text on their 10 % tints reaches 4.5:1.
+ * Every pair is checked by contrast.test.ts.
  */
 :root {
   --bg: 246 248 248;
   --surface: 255 255 255;
   --line: 219 226 227;
+  --control: 128 142 147;
   --ink: 20 33 38;
   --mute: 96 112 118;
   --brand: 13 107 100;
   --brand-ink: 255 255 255;
-  --ok: 22 128 74;
-  --warn: 178 92 8;
+  --ok: 21 120 70;
+  --warn: 162 84 7;
   --danger: 192 38 38;
 }
 
@@ -20,6 +24,7 @@
     --bg: 12 20 23;
     --surface: 20 31 35;
     --line: 44 60 66;
+    --control: 96 114 120;
     --ink: 232 240 241;
     --mute: 149 168 173;
     --brand: 62 190 176;
@@ -34,6 +39,7 @@
   --bg: 12 20 23;
   --surface: 20 31 35;
   --line: 44 60 66;
+  --control: 96 114 120;
   --ink: 232 240 241;
   --mute: 149 168 173;
   --brand: 62 190 176;

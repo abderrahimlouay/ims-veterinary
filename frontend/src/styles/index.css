@@ -6,6 +6,7 @@
   --color-bg: rgb(var(--bg));
   --color-surface: rgb(var(--surface));
   --color-line: rgb(var(--line));
+  --color-control: rgb(var(--control));
   --color-ink: rgb(var(--ink));
   --color-mute: rgb(var(--mute));
   --color-brand: rgb(var(--brand));

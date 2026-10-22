@@ -112,7 +112,7 @@ export function SpeciesPanel({ product, editable }: { product: ProductDetail; ed
               <select
                 value={row.speciesId}
                 onChange={(e) => setRows((rs) => rs.map((r) => (r.key === row.key ? { ...r, speciesId: e.target.value } : r)))}
-                className="h-10 px-2 rounded-ctl bg-surface border border-line text-sm font-normal"
+                className="h-10 px-2 rounded-ctl bg-surface border border-control text-sm font-normal"
               >
                 <option value="">—</option>
                 {(species.data ?? []).map((s) => (
@@ -130,7 +130,7 @@ export function SpeciesPanel({ product, editable }: { product: ProductDetail; ed
                   min={0}
                   value={row[field]}
                   onChange={(e) => setRows((rs) => rs.map((r) => (r.key === row.key ? { ...r, [field]: e.target.value } : r)))}
-                  className="h-10 px-2 rounded-ctl bg-surface border border-line text-sm font-normal"
+                  className="h-10 px-2 rounded-ctl bg-surface border border-control text-sm font-normal"
                 />
               </label>
             ))}

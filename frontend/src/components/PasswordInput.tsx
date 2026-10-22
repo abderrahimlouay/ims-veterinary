@@ -85,7 +85,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, Props>(function Passwo
           autoCapitalize="off"
           {...input}
           type={visible ? 'text' : 'password'}
-          className={`h-10 w-full ps-3 ${copyable ? 'pe-20' : 'pe-11'} rounded-ctl bg-surface border border-line text-sm focus:outline-2 focus:outline-brand aria-invalid:border-danger`}
+          className={`h-10 w-full ps-3 ${copyable ? 'pe-20' : 'pe-11'} rounded-ctl bg-surface border border-control text-sm focus:outline-2 focus:outline-brand aria-invalid:border-danger`}
         />
         {copyable && (
           <button

@@ -14,7 +14,7 @@ export function LanguageSelect() {
         id={id}
         value={i18n.language}
         onChange={(e) => void i18n.changeLanguage(e.target.value)}
-        className="h-9 px-2 rounded-ctl bg-surface border border-line text-sm focus:outline-2 focus:outline-brand"
+        className="h-9 px-2 rounded-ctl bg-surface border border-control text-sm focus:outline-2 focus:outline-brand"
       >
         {LANGUAGES.map((lng) => (
           <option key={lng} value={lng} lang={lng}>
