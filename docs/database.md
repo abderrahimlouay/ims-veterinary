@@ -33,7 +33,7 @@ No final DDL is given here; column lists are the contract the first migrations m
 - There is **no stock-by-location** and no separate product-level stock column (A-001).
 
 ### 2.2 Lots
-- A lot is identified by `(product_id, lot_number, expiry_date)` (unique). Receiving the same identity again increases the **existing** lot (find-or-create under lock) — BR-LOT-002.
+- A lot is identified by `(product_id, lot_number)` (unique, ADR-070). Receiving the same lot number again increases the **existing** lot (find-or-create under lock); a different expiry date is refused (`LOT_EXPIRY_MISMATCH`), never a second lot — BR-LOT-002.
 - `unit_cost` is the cost per base unit of that lot (valuation, margin).
 - `status` ∈ active, blocked, recalled, expired, depleted. Only `active`, `blocked` and `recalled` are stored (ADR-059); `expired` (`expiry_date` < business date, ADR-055) and `depleted` (`quantity_on_hand = 0`) are computed when the lot is read or used. Sellability is the conjunction *stored status = active ∧ expiry_date ≥ business date ∧ quantity_on_hand > 0*.
 - `blocked_reason/blocked_by/blocked_at` document the current block or the recall; the history of every block, unblock and recall is in `audit_log` (`LOT_BLOCK`, `LOT_UNBLOCK`, `LOT_RECALL`). `recalled` is terminal (ADR-060).
@@ -173,7 +173,7 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 | blocked_at | DATETIME(6) | NULL | |
 | received_at | DATETIME(6) | NOT NULL DEFAULT now | |
 
-`UQ(product_id, lot_number, expiry_date)`. Indexes: `idx_lots_fefo(product_id, status, expiry_date)` and `idx_lots_expiry(expiry_date)` (SD-009). `UQ(id, product_id)` for composite FKs (SD-103, ADR-062).
+`UQ(product_id, lot_number)` (ADR-070, SD-119). Indexes: `idx_lots_fefo(product_id, status, expiry_date)` and `idx_lots_expiry(expiry_date)` (SD-009). `UQ(id, product_id)` for composite FKs (SD-103, ADR-062).
 
 **stock_movements** (append-only, ADR-008)
 

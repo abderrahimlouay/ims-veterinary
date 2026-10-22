@@ -87,6 +87,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | `LOT_RECALLED` | 422 | lot recalled | BR-LOT-004 |
 | `LOT_REQUIRED` | 422 | line has no lot at confirmation | BR-LOT-007, BR-SALE-005 |
 | `LOT_PRODUCT_MISMATCH` | 422 | lot belongs to another product | BR-LOT-007 |
+| `LOT_EXPIRY_MISMATCH` | 422 | existing lot number entered with another expiry date | BR-LOT-002, ADR-070 |
 | `FEFO_VIOLATION` | 422 | FEFO order not respected without permission | BR-LOT-005 |
 | `STOCK_INSUFFICIENT` | 422 | not enough stock | BR-STOCK-001, BR-SALE-015, BR-PURCH-009 |
 | `ADJUSTMENT_REASON_REQUIRED` | 422 | reason missing | BR-STOCK-006, BR-INV-002 |

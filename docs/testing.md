@@ -124,7 +124,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-UNIT-004 | S,A | Change factor of unit already used in document lines → UNIT_FACTOR_LOCKED (exercised from Phase 5; Phase 3 tests that an unused unit's factor can change) |
 | BR-UNIT-005 | S,R,A | Scan a box barcode → product, box unit, factor, price, quantity 1; scan a base-unit barcode → unit null; barcode with a unit of another product → refused by service and composite FK |
 | BR-LOT-001 | S,A | Receipt line without lot number / expiry → VALIDATION_FAILED, nothing posted |
-| BR-LOT-002 | S,R | Receive same (product, lot number) twice → one lot, balance summed, expiry consistency; OD-029 cost |
+| BR-LOT-002 | S,R | Receive same (product, lot number) twice → one lot, balance summed; another expiry → `LOT_EXPIRY_MISMATCH`, nothing written; DB rejects a duplicate (product, lot number) even with another expiry (ADR-070); OD-029 cost |
 | BR-LOT-003 | U,S | Lot expiring yesterday → expired; today and tomorrow → sellable (ADR-055); business date in Africa/Algiers differs from the UTC date around midnight; Phase 3 covers the rule (FEFO preview, alerts), sale confirmation from Phase 7 |
 | BR-LOT-004 | S | Blocked and recalled lots excluded from FEFO and rejected at confirm |
 | BR-LOT-005 | U | Allocation order by expiry then id; skips non-sellable; override without permission → FEFO_VIOLATION |
