@@ -134,13 +134,12 @@ Externalised per profile (`dev`, `test`, `prod`): datasource, Flyway, security (
 
 | Job | Purpose | Notes |
 |---|---|---|
-| Expiry refresh | compute/mark alert levels, expired lots become unsellable by rule not by job (BR-LOT-003 is evaluated at read/consume time) | idempotent |
-| Reorder planner | generate proposals **[OPEN OD-013]** | idempotent per day |
+| Reorder planner | generate proposals at `reorder_job_time` (ADR-076…079) | idempotent; same code as *Generate now* |
 | Backup | per OD-021 | logged in `backup_log` |
-| Integrity check | reconcile balances vs ledger (BR-STOCK-007) | report only |
+| Integrity check | reconcile balances vs ledger at `integrity_check_time`, run stored, CRITICAL `LEDGER_MISMATCH` on mismatch (BR-STOCK-007, ADR-086) | report only; same code as the on-demand check |
 | Session cleanup | expired sessions (Spring Session JDBC cleanup job) | |
 
-Jobs run with a system identity recorded in audit; in multi-instance deployments a lock (e.g. DB-based) prevents duplicates (single instance assumed `[REC]`).
+No job computes expiry: expired lots are unsellable by rule, evaluated at read and use time (ADR-059). Jobs run with a system identity recorded in audit; in multi-instance deployments a lock (e.g. DB-based) prevents duplicates (single instance assumed `[REC]`).
 
 ## 13. Reporting
 

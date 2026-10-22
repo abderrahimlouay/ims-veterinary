@@ -173,13 +173,13 @@ stateDiagram-v2
 Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → credit_note` (BR-SALE-001).
 
 ### 5.4 Inventory count
-`open → closed` (after regularisation of lines) or `open → cancelled`.
+`open → closed` (regularisation of the accepted lines closes it, ADR-075) or `open → cancelled`. Line: `not counted → counted` (watermark taken, ADR-072) `→ counted` (edited: new watermark) `→ regularized` (once, BR-INV-004).
 
 ### 5.5 Cash session
 `open → closed`; closing fixes expected, counted and variance.
 
 ### 5.6 Reorder proposal
-`pending → converted` (to a PO line) or `pending → dismissed`.
+`pending → dismissed` (Phase 4) or `pending → converted` (to a PO line, Phase 5). A pending proposal is updated in place by each generation; a dismissed one stays *suppressed* until a generation sees the product's sellable stock above its reorder point (ADR-079).
 
 ## 6. Value objects and domain services
 
@@ -191,7 +191,7 @@ Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → 
 | **LotIdentity** | Value object | (product, lot number); the expiry date must match the existing lot (ADR-070) |
 | **DocumentNumber** | Value object | `KEY-YYYY-NNNNNN` (format OD-017) |
 | **ExpiryAlertLevel** | Value object | expired / critical / warning / notice derived from thresholds (BR-LOT-010) |
-| **StockLedgerService** | Domain service | The only component that changes `quantity_on_hand` and writes movements (BR-STOCK-002) |
+| **StockService** | Application service (inventory) | The only component that changes `quantity_on_hand` and writes movements (BR-STOCK-002, ADR-088) |
 | **FefoAllocator** | Domain service | Splits a requested quantity over sellable lots in FEFO order (BR-LOT-005) |
 | **NumberingService** | Domain service | Locks and increments sequences (ADR-011) |
 | **PriceResolver** | Domain service | Applies price precedence (OD-006) |
@@ -207,7 +207,7 @@ Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → 
 2. **Invariants inside an aggregate** are guaranteed by the aggregate/service before saving. **Invariants across aggregates** are guaranteed by a **use-case transaction** that locks the involved rows (ADR-012).
 3. One use case = one `@Transactional` application-service method. No use case spans two HTTP requests.
 
-**Stock consistency boundary.** `Lot` and its `StockMovement` rows form one boundary: no code outside `StockLedgerService` may modify `quantity_on_hand` or insert movements.
+**Stock consistency boundary.** `Lot` and its `StockMovement` rows form one boundary: no code outside `StockService` may modify `quantity_on_hand` or insert movements.
 
 **Use cases that modify several aggregates in one transaction** (all-or-nothing):
 

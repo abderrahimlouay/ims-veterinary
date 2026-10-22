@@ -125,8 +125,8 @@ Open points on values: additional `movement_type` values for cancellations/disca
 
 | Source object | Class | Decision |
 |---|---|---|
-| `v_product_stock` | B | Rewrite `FILTER` → `CASE`. Read model for stock lists. Sellable predicate also exists in Java (single definition documented in BR-STOCK-011). |
-| `v_reorder_needed` | B | Keep; but threshold (`reorder_point` vs `min_stock`) is **OD-013**. |
+| `v_product_stock` | D | Not created: sellable stock needs the business date in the business time zone (ADR-055) and the single Java predicate (BR-STOCK-011); stock levels are computed by the service (ADR-080). |
+| `v_reorder_needed` | D | Not created: sellable stock depends on the business date and expiry policy, so the service computes stock levels and reorder candidates (ADR-076, ADR-080). |
 | `v_expiring_lots` | D | Not created: the service lists expiring lots and computes the level from configured thresholds (ADR-056, DR-019). |
 | `v_sale_withdrawal_warnings` | A | Direct. Applicability rules **OD-028**. |
 | `v_customer_balance` | B + **defect** | Do not reuse as-is; definition **OD-003** (DR-006). |
@@ -169,7 +169,7 @@ MySQL     : generated column open_cashier_id = IF(status = 'open', cashier_id, N
 | Positive quantities, non-negative prices, discount 0–100, `max_stock ≥ min_stock` | `CHECK` |
 | Adjustment movements need a reason | `CHECK` (rewritten, §3 row 20) |
 | Credit sale needs a customer | `CHECK (is_credit_sale = FALSE OR customer_id IS NOT NULL)` |
-| Stock ledger immutability | two triggers (+ privileges) |
+| Stock ledger immutability | two triggers (+ privileges: application account `SELECT, INSERT` only, ADR-087) |
 | Line amounts, inventory/cash variances | generated columns |
 | One open cash session per cashier | generated column + `UNIQUE` |
 | Value domains of enumerations | `CHECK … IN (…)` |
@@ -219,15 +219,22 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-110 | Company profile / document header data | OD-026 | Open |
 | SD-111 | Spring Session JDBC tables (no refresh-token or login-attempt table) | ADR-036, ADR-038 | Accepted 2026-10-20 |
 | SD-114 | `users.must_change_password` | ADR-039 | Accepted 2026-10-20 |
-| SD-112 | Uniqueness of one *pending* reorder proposal per product (generated-column technique) | OD-013 | Open |
-| SD-113 | Scope columns on `inventories` for cycle counts | OD-012 | Open |
+| SD-112 | Uniqueness of one *pending* reorder proposal per product (generated-column technique) | ADR-079 | Accepted 2026-10-22 |
+| SD-113 | Scope of cycle counts: `inventories.scope_category_id` and `inventory_scope_products` | ADR-073 | Accepted 2026-10-22 |
 | SD-115 | `products.is_divisible` | ADR-050 | Accepted 2026-10-21 |
 | SD-116 | `lots.status` stores only `active`, `blocked`, `recalled` (expired/depleted computed) | ADR-059 | Accepted 2026-10-22 |
 | SD-117 | `lots.supplier_id` and its FK added in Phase 5 with `suppliers` | ADR-066 | Accepted 2026-10-22 |
 | SD-118 | `unit_conversion` removed from `movement_type` | ADR-061 | Accepted 2026-10-22 |
 | SD-119 | Lot identity `UQ(product_id, lot_number)` instead of the Source `(product_id, lot_number, expiry_date)` | ADR-070, DR-036 | Accepted 2026-10-22 |
+| SD-120 | `inventory_lines`: `product_id`, nullable `lot_id` with found-lot columns, `balance_at_count`, `watermark_movement_id`, `counted_at/by`, `adjustment_movement_id`; variance against the watermark | ADR-072, ADR-074 | Accepted 2026-10-22 |
+| SD-121 | `reorder_proposals.supplier_id` added in Phase 5; `suppressed`, `updated_at`, `dismissed_at/by` | ADR-079 | Accepted 2026-10-22 |
+| SD-122 | New table `integrity_check_runs` | ADR-086 | Accepted 2026-10-22 |
+| SD-123 | Separate migration and application accounts; per-table grants applied after each migration | ADR-087 | Accepted 2026-10-22 |
 
 ## 9. Operational requirements for MySQL
+
+- **Two accounts (ADR-087, from Phase 4):** Flyway connects with the migration account (`IMS_DB_MIGRATION_USERNAME`/`_PASSWORD`, DDL and `GRANT` rights, plus the trigger rights of ADR-017); the application connects with the application account (`IMS_DB_USERNAME`/`_PASSWORD`). After every migration a Flyway callback grants the application account `SELECT, INSERT, UPDATE, DELETE` on each application table and only `SELECT, INSERT` on `stock_movements` and `audit_log`; it never has DDL. Testcontainers and CI create both accounts the same way.
+- **Lock wait (ADR-012):** application connections set `innodb_lock_wait_timeout = 5`.
 
 | Setting | Value / recommendation | Reason |
 |---|---|---|

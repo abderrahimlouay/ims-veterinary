@@ -22,7 +22,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 1 | Security & administration | login, users, roles/permissions, audit, settings | ~~OD-001~~ ADR-036, ~~OD-023~~ ADR-037, ADR-027 (decided 2026-10-20) |
 | 2 | Catalogue | products, reference data, search | ~~OD-018~~ ADR-047/048, ~~OD-022~~ ADR-049/050, ADR-051–054 (2026-10-21) |
 | 3 | Lots & units | packaging units, barcodes, lots, status, expiry rules, FEFO allocator | ~~OD-009, OD-019, OD-025, OD-027~~ → ADR-055…068 |
-| 4 | Inventory & stock | ledger, stock levels, adjustments, opening stock, counts, reorder proposals | OD-012, OD-013 |
+| 4 | Inventory & stock | ledger, stock levels, adjustments, opening stock, counts, reorder proposals | ~~OD-012~~, ~~OD-013~~ → ADR-072…079 |
 | 5 | Purchasing | suppliers, purchase orders, goods receipts, supplier returns, numbering | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 | Customers | customers, categories, prices, credit-limit data | OD-006, OD-011 |
 | 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | OD-002, OD-003, OD-004, OD-010 |
@@ -80,12 +80,12 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** units/barcodes tabs, lot list/detail, expiry badges, dashboard alert widget.
 - **Tests:** BR-UNIT-*, BR-LOT-*; FEFO unit tests; state-machine tests.
 - **Completion criteria:** FR-PROD-006, 007; FR-LOT-004, 005, 006 (rule), 007 (status part), 008 done; lots cannot be created outside controlled flows.
-- **Delivered (2026-10-22, awaiting the user's approval and tag `phase-3-done`):** PRs #27 (ADR-070 lot identity) and #28–#33 plus the close PR (slices catalog-units, catalog-barcodes, inventory-lots, inventory-fefo-alerts, inventory-lot-actions, frontend-lots, close); migrations V03_001…003; ADR-070; OD-033 opened (scan of a code containing `/`, blocks Phase 7). J2 extended with units, barcodes, scanning and the empty lot screens. Within the agreed scope split, the conversion and expiry rules are applied to documents from Phases 5/7, the recall buyers list and FEFO override come in Phase 7, and the factor lock (BR-UNIT-004) can be exercised from Phase 5. Expiry and status badges reuse the contrast-checked `ok` / `warn` / `danger` / `brand` tones, so no separate semantic tokens were needed (Phase 0 deferral closed).
+- **Delivered (2026-10-22; approved and tagged `phase-3-done` on `626f614`):** PRs #27 (ADR-070 lot identity) and #28–#33 plus the close PR (slices catalog-units, catalog-barcodes, inventory-lots, inventory-fefo-alerts, inventory-lot-actions, frontend-lots, close); migrations V03_001…003; ADR-070; OD-033 opened (scan of a code containing `/`, blocks Phase 7). J2 extended with units, barcodes, scanning and the empty lot screens. Within the agreed scope split, the conversion and expiry rules are applied to documents from Phases 5/7, the recall buyers list and FEFO override come in Phase 7, and the factor lock (BR-UNIT-004) can be exercised from Phase 5. Expiry and status badges reuse the contrast-checked `ok` / `warn` / `danger` / `brand` tones, so no separate semantic tokens were needed (Phase 0 deferral closed).
 
 ## Phase 4 — Inventory & stock
 - **Objective:** a trustworthy, immutable stock ledger.
-- **Prerequisites:** Phase 3; OD-012 (count concurrency/scope), OD-013 (reorder algorithm), ADR-012, ADR-028.
-- **Features:** ledger; stock levels (sellable vs total); manual adjustments; opening stock; physical inventory (full/cycle); reorder proposals; integrity check.
+- **Prerequisites:** Phase 3; decided 2026-10-22: ADR-072…075 (counts, was OD-012), ADR-076…079 (reorder, was OD-013), ADR-012 (accepted, amended), ADR-028, ADR-080…089.
+- **Features:** ledger; stock levels (sellable vs total, status, ADR-080); manual adjustments (ADR-085); opening stock while the opening period is open (ADR-082…084); physical inventory (full/cycle, watermark per counted line, found lots, ADR-072…075); reorder proposals (generate, dismiss; conversion in Phase 5, ADR-076…079); integrity check with stored runs and banner (ADR-086); separate database accounts (ADR-087); stock columns, in-stock filter, stock-aware substitutes, low-stock widget and the blocking user's name (ADR-089).
 - **Database work:** stock_movements (append-only), inventory_counts and lines, reorder proposals, CHECK constraints, triggers (two MySQL triggers, ADR-017), balance maintenance.
 - **Backend work:** `StockService` (the only writer), locking convention (ascending lot id), count workflow, reorder planner job, integrity check.
 - **Frontend work:** stock levels, ledger, adjustment form, count grid and regularisation, reorder list.
@@ -166,7 +166,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Objective:** release readiness.
 - **Prerequisites:** Phases 0–11; OD-021; session-security hardening review (ADR-036).
 - **Features:** performance tuning at target volume; security review (OWASP ASVS-oriented checklist); accessibility audit; data-migration rehearsal from the legacy source (if any); operations runbook; UAT.
-- **Database work:** index tuning; least-privilege DB accounts (BR-SEC-006); restore rehearsal.
+- **Database work:** index tuning; review of the least-privilege DB accounts introduced in Phase 4 (ADR-087, BR-SEC-006); restore rehearsal.
 - **Backend work:** rate limits, headers, config hardening, observability checks.
 - **Frontend work:** accessibility fixes, bundle size, browser matrix.
 - **Tests:** full regression, e2e suite, load test, dependency/secret scans, backup restore test.

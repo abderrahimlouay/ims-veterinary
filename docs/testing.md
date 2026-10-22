@@ -72,7 +72,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 | CT-01 | N parallel sales of the last unit of a lot | exactly stock/qty succeed; others `STOCK_INSUFFICIENT`; balance ≥ 0; ledger = balance |
 | CT-02 | two sales taking lots A,B vs B,A | no deadlock (ascending lock order) or bounded retry succeeds |
 | CT-03 | parallel document numbering (1 000 allocations) | unique, gap-free on commit (policy OD-017) |
-| CT-04 | sale vs count regularisation on same lot | consistent final balance, no lost update |
+| CT-04 | sale vs count regularisation on same lot | consistent final balance, no lost update; the sale after the watermark stays valid (ADR-072) |
 | CT-05 | double-submit same Idempotency-Key | one document |
 | CT-06 | two credit sales for same customer near limit | limit not exceeded (OD-011) |
 | CT-07 | simultaneous edit of same product (`@Version`) | second gets `CONCURRENT_MODIFICATION` |
@@ -137,25 +137,28 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-LOT-010 | U,S | Days left −1 / 0 / 15 / 16 / 30 / 60 / 61 → expired / critical / critical / warning / warning / notice / none (inclusive, ADR-056); change threshold setting → levels follow; invalid values rejected (`ExpiryPolicyTest`, `LotQueriesTest`, `FefoAndAlertsTest`); each dashboard count equals the size of the list it opens (`FefoAndAlertsTest.eachAlertCountEqualsTheSizeOfItsLotList`, `ExpiryPolicyTest` windows, `LotPages.test.tsx`) |
 | BR-LOT-011 | A | No endpoint changes lot number/product/expiry (no write route exists in Phase 3) (`LotQueriesTest`) |
 | BR-LOT-012 | S | Receive already expired lot → rejected or flagged per rule |
-| BR-STOCK-001 | R,C | Direct CHECK violation (3819) mapped to STOCK_INSUFFICIENT; two concurrent sales of last unit → exactly one succeeds |
-| BR-STOCK-002 | S | Every stock-changing use case produces exactly the expected movement rows |
-| BR-STOCK-003 | R,SEC | UPDATE/DELETE on stock_movements refused (trigger/privileges); failed tx leaves no movement |
+| BR-STOCK-001 | R,C | Direct CHECK violation (3819) mapped to STOCK_INSUFFICIENT; two concurrent sales of last unit → exactly one succeeds; adjustment and regularisation that would go negative refused, nothing posted |
+| BR-STOCK-002 | S | Every stock-changing use case produces exactly the expected movement rows; no class other than `StockService` writes `stock_movements` or lot balances (architecture test, ADR-088); fault injection after the movement insert rolls back movement, balance and document |
+| BR-STOCK-003 | R,SEC | UPDATE/DELETE on stock_movements refused (trigger/privileges); failed tx leaves no movement; trigger refuses UPDATE/DELETE by the migration account (SQLSTATE 45000); application account gets error 1142 (ADR-087) |
 | BR-STOCK-004 | S | Movement row carries user, type, reference, timestamp |
-| BR-STOCK-005 | U,R | Sign per movement type; wrong sign rejected |
-| BR-STOCK-006 | S,A | Adjustment without reason → ADJUSTMENT_REASON_REQUIRED |
-| BR-STOCK-007 | S,R | Integrity check detects deliberately corrupted balance (test DB only) |
-| BR-STOCK-008 | U | Adjustment categories map to correct movement types |
+| BR-STOCK-005 | U,R | Sign per movement type; wrong sign rejected; CHECK accepts exactly the ten types of ADR-081 |
+| BR-STOCK-006 | S,A | Adjustment without reason → ADJUSTMENT_REASON_REQUIRED; reason > 500 → `SIZE` |
+| BR-STOCK-007 | S,R | Integrity check detects deliberately corrupted balance (test DB only); nightly and on-demand runs stored; mismatch logs CRITICAL and sets the banner; clean run clears it (ADR-086) |
+| BR-STOCK-008 | U | Adjustment categories map to correct movement types; allowed on blocked, recalled and expired lots; audited `STOCK_CORRECTION` old/new (ADR-085) |
 | BR-STOCK-009 | U,A | Threshold validation per product |
-| BR-STOCK-010 | U,S | Reorder proposal contents and rounding (OD-013), no duplicates |
-| BR-STOCK-011 | U,R | Sellable stock excludes expired/blocked/recalled/quarantined lots (sellable predicate: `ExpiryPolicyTest`; quantities from Phase 4) |
-| BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock |
-| BR-INV-001 | U | variance = counted − theoretical, signs and zero |
+| BR-STOCK-010 | U,S | Reorder proposal contents and rounding (OD-013), no duplicates; trigger, quantity, thresholds incomplete, one pending updated in place, dismissed suppressed until recovery (ADR-076…079) |
+| BR-STOCK-011 | U,R | Sellable stock excludes expired/blocked/recalled/quarantined lots (sellable predicate: `ExpiryPolicyTest`; quantities from Phase 4); product sellable quantity sums only sellable lots |
+| BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock; lock wait timeout → `CONCURRENT_MODIFICATION` within 5 s (ADR-012) |
+| BR-STOCK-013 | U,A | Status in stock / low / out and below-reorder from sellable quantity and thresholds (ADR-080) |
+| BR-STOCK-014 | S,A | Opening stock: setting closed → `OPENING_STOCK_CLOSED`; new lot; existing lot same expiry adds; other expiry, other cost, recalled refused; expired accepted; audited `OPENING_STOCK` |
+| BR-INV-001 | U | variance = counted − theoretical, signs and zero; variance against the balance at the watermark |
 | BR-INV-002 | S | Regularise → one movement per variance line, reason set |
-| BR-INV-003 | S | Full vs partial counts (OD-012) produce correct lines |
+| BR-INV-003 | S | Full vs partial counts (OD-012) produce correct lines; full: lots with stock; cycle by category and by product list (ADR-073); found lots (ADR-074) |
 | BR-INV-004 | S,A | Edit closed count → INVENTORY_NOT_OPEN; regularise twice → INVENTORY_LINE_ALREADY_REGULARIZED |
-| BR-INV-005 | S | Sale during open count behaves per OD-012 |
+| BR-INV-005 | S | Sale during open count behaves per OD-012: a sale after the lot was counted (no false variance), a sale before it was counted, a receipt during the count (ADR-072) |
 | BR-INV-006 | SEC,S | Regularise without inventory.validate → ACCESS_DENIED; audited |
 | BR-INV-007 | S | Second open full count → INVENTORY_ALREADY_OPEN |
+| BR-INV-008 | S,C | Two edits of one line take two watermarks; regularisation posts the variance on the current balance; a variance that would go negative → `STOCK_INSUFFICIENT`, nothing posted, count open; CT-04 |
 | BR-PURCH-001 | U | PO state machine, all transitions |
 | BR-PURCH-002 | U | Line and PO totals (discount, VAT, rounding OD-007); client values ignored |
 | BR-PURCH-003 | A | Edit validated/sent PO → DOCUMENT_IMMUTABLE |

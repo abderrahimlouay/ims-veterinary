@@ -8,7 +8,7 @@ End-to-end workflows with actors, preconditions, steps, validations, database ch
 **Common conventions**
 
 - "Transaction" = one `@Transactional` service method, READ COMMITTED, locks per ADR-012 (document sequence → lots by ascending id → customer row → other rows).
-- Stock changes always go through `StockLedgerService` (BR-STOCK-002).
+- Stock changes always go through `StockService` (BR-STOCK-002, ADR-088).
 - Error codes are those of `api.md` §3. A failed transaction leaves **no** partial effect, including the numbering counter (ADR-011).
 - Permission codes are those of `security.md` §4.
 
@@ -188,14 +188,14 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 | **Actors** | Pharmacist (runs count, validates), Administrator |
 | **Preconditions** | Permission `inventory.count`; for `full` no other open full count (BR-INV-007) |
 
-1. **Open session** (`full` or `cycle`; scope **⚠ OD-012**). The server snapshots `theoretical_qty` per lot (lots with stock; empty lots optional) — `inventory_lines` created.
-2. **Count:** users enter `counted_qty` per lot (barcode scan + lot selection). Lots physically found but unknown to the system **⚠ OD-012** (create via an "inventory-found" entry that requires lot number + expiry, BR-LOT-001).
-3. **Difference detection:** `variance = counted − theoretical` (BR-INV-001). Report lists variances by value (cost) for review.
+1. **Open session:** `full` (every lot with stock) or `cycle` (lots with stock of one category or an explicit product list, ADR-073). One line per lot with its balance at opening (`theoretical_qty`, informational).
+2. **Count:** users enter `counted_qty` per line (barcode scan + lot selection). Saving a line locks the lot and records its balance and last movement id (**watermark**) with user and time; saving again takes a new watermark (ADR-072, BR-INV-008). Users may add a lot of the scope without a line, or a lot unknown to the system (product, lot number, expiry, unit cost, counted quantity; BR-LOT-001), created at regularisation (ADR-074).
+3. **Difference detection:** `variance = counted − balance at the watermark` (BR-INV-001); each line also shows the movements on the lot since its watermark. Report lists variances by value (cost) for review.
 4. **Validation** (permission `inventory.validate`): reviewer accepts lines to regularise (BR-INV-006).
-5. **Regularise (one transaction):** for each accepted line with variance ≠ 0 → `adjustment_inventory` movement with reason "Inventory #id" (BR-INV-002), balance update (CHECK ≥ 0), line flagged `regularized`; session `closed`.
-6. **Concurrency:** sales during an open count — **⚠ OD-012** (freeze vs. delta).
+5. **Regularise (one transaction, lots locked in ascending id):** for each accepted line with variance ≠ 0 → `adjustment_inventory` movement of the variance on the **current** balance with reason "Inventory #id" (BR-INV-002), found lots created first; line flagged `regularized`; session `closed` (ADR-075). Any failure rolls everything back and the count stays open.
+6. **Concurrency:** nothing is frozen; sales and receipts continue, and those after a line's watermark do not change its variance (BR-INV-005, ADR-072).
 - **DB changes:** `inventories`, `inventory_lines`, `stock_movements`, `lots`, `audit_log`.
-- **Failure:** closing a closed/cancelled count → `INVENTORY_NOT_OPEN`; line already regularised → `INVENTORY_LINE_ALREADY_REGULARIZED`; negative resulting stock (counted vs. concurrent sales) → `STOCK_INSUFFICIENT`.
+- **Failure:** closing a closed/cancelled count → `INVENTORY_NOT_OPEN`; line already regularised → `INVENTORY_LINE_ALREADY_REGULARIZED`; a variance that would make the current balance negative (sales after the watermark) → `STOCK_INSUFFICIENT`, nothing posted, count stays open.
 - **Audit:** `STOCK_CORRECTION` per regularised line with old/new quantity (BR-AUDIT-001).
 
 ---
@@ -215,7 +215,7 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 ## 7. W7 — Manual stock adjustment
 
-1. Pharmacist chooses lot, type (breakage / expiry / theft / internal use), quantity (outgoing), and **mandatory reason** (BR-STOCK-006, BR-STOCK-008).
+1. Pharmacist chooses lot (blocked, recalled and expired lots included, ADR-060), type (breakage / expiry / theft / internal use), quantity (outgoing, base unit) and **mandatory reason** (BR-STOCK-006, BR-STOCK-008, ADR-085).
 2. **One transaction:** movement `adjustment_*` (−), balance update, audit `STOCK_CORRECTION` with old/new quantity.
 3. **Failure:** blank reason → `ADJUSTMENT_REASON_REQUIRED`; quantity > balance → `STOCK_INSUFFICIENT`.
 
@@ -238,8 +238,14 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 ## 10. W10 — Reorder proposal
 
-1. **Trigger (⚠ OD-013):** after a stock-reducing commit or by a scheduled job, sellable stock ≤ reorder point and no pending proposal → create proposal (BR-STOCK-010).
-2. Pharmacist reviews proposals (supplier, quantity), then **converts** to a draft purchase order (→ W1a) or **dismisses**. Proposal status `converted`/`dismissed`.
+1. **Generation** (daily at `reorder_job_time`, or *Generate now*, ADR-078): for every product not archived with `reorder_point` > 0 and sellable ≤ `reorder_point` (ADR-076), create or update its one pending proposal with `max_stock − sellable` (ADR-077, ADR-079); products without `max_stock` are reported *thresholds incomplete*; a dismissed product is skipped until a generation sees it above the reorder point.
+2. Pharmacist reviews proposals and **dismisses** them, or (from Phase 5, with suppliers and purchase orders) **converts** one to a draft purchase order (→ W1a). Proposal status `converted`/`dismissed`.
+
+## 10a. W10a — Opening stock (Phase 4)
+
+1. While `opening_stock_open` is true (ADR-082), a `stock.adjust` holder enters product, lot number, expiry (date or `MM/YYYY`), quantity in a unit and unit cost (prefilled from the purchase price).
+2. **One transaction:** find-or-create the lot under lock (other expiry → `LOT_EXPIRY_MISMATCH`, other cost → `COST_MISMATCH`, recalled → `LOT_RECALLED`), `opening_stock` (+) movement, balance update, audit `OPENING_STOCK` (ADR-083, ADR-084).
+3. **Failure:** period closed → `OPENING_STOCK_CLOSED`, the screen points to an inventory count.
 
 ## 11. W11 — Document conversion
 

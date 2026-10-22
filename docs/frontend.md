@@ -96,12 +96,16 @@ For each: purpose → main elements → key behaviours → states.
 - **Delivered in Phase 3 (slice `phase-3/frontend-lots`):** `/lots` with the four filters in the URL and the empty state of ADR-064; `/lots/:id` with Block / Unblock / Recall dialogs (reason required, ≤ 500) shown only when the transition exists and the user holds its permission, and the recall report (remaining stock, "no sales yet" until Phase 7); the product Lots tab (FEFO order, shown with `lot.read`); status and level badges from the API using the tone tints checked by `contrast.test.ts`; the dashboard widget, whose tiles read Expired / Critical (≤ n days) / Warning (≤ n days) / Notice (≤ n days) with the thresholds from the settings, and each open `/lots?alertLevel=<level>&hasStock=true`: exactly the lots counted (user decision 2026-10-22). The lot list also filters by alert level. `blockedBy` (a user id) is not shown until a user name is available to the inventory screens. axe runs on the list and on the detail with a dialog open.
 
 ### 4.3 Stock and adjustments
-- **Stock levels:** sellable vs total, thresholds, below-min / below-reorder filters.
+- **Stock levels:** sellable vs total, thresholds, status (in stock / low / out, ADR-080), below-reorder filter.
 - **Ledger:** read-only, filter by product/lot/type/user/date; signed quantities coloured by direction **and** with +/− sign (not colour alone).
-- **Adjustment form:** lot picker (shows balance), type, quantity, mandatory reason; inline preview "balance after".
+- **Adjustment form:** lot picker (shows balance; blocked, recalled and expired lots included), type, quantity in base units, mandatory reason; inline preview "balance after" (ADR-085).
+- **Opening stock form:** product, lot number, expiry (date or `MM/YYYY`), quantity with unit, unit cost prefilled from the purchase price; warning when the lot is already expired; while `opening_stock_open` is false the page explains that stock found after go-live goes through an inventory count (ADR-082…084).
+- **Integrity banner:** users with `audit.read` see a banner while the latest integrity run has mismatches, with a link to its report; it disappears after a clean run (ADR-086).
+- **Product list and dashboard (ADR-089):** sellable quantity, status and nearest expiry columns and an "in stock only" filter; stock-aware substitutes; a low-stock dashboard widget; the lot page shows who blocked or recalled the lot.
+- **Reorder proposals:** list by status, *Generate now* (shows the products with thresholds incomplete), *Dismiss*; *Convert to purchase order* arrives in Phase 5.
 
 ### 4.4 Inventory count
-- Open count → entry grid (lot, theoretical, counted, variance, line status). Keyboard: Enter moves to the next counted cell. Variance highlighted. "Regularise" disabled without `inventory.validate`; confirmation modal summarises net quantity per product. Behaviour of theoretical quantities during a live count follows **OD-012**.
+- Open count (full, or cycle by category or product list, ADR-073) → entry grid (lot, balance at opening, counted, balance when counted, variance, movements since counted, line status). Keyboard: Enter moves to the next counted cell. Variance highlighted. Saving a cell takes a new watermark (ADR-072). "Add a lot" for a lot of the scope without a line or a lot unknown to the system (ADR-074). "Regularise" disabled without `inventory.validate`; confirmation modal summarises net quantity per product; a refusal (`STOCK_INSUFFICIENT`) names the line and keeps the count open (ADR-075).
 
 ### 4.5 Purchasing
 - **PO editor:** supplier picker (active only), line grid (product search, unit, quantity, price, discount, VAT), server-computed totals, status timeline and action buttons that appear per status (validate/send/cancel).
@@ -233,4 +237,4 @@ Component tests for primitives and forms (RTL), API-mocked page tests (MSW) incl
 
 ## 17. Open frontend items
 
-OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-012 (count UX), OD-020 (print formats); DR-014 (theme switch, Phase 13), DR-015 (hard-coded thresholds).
+OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-020 (print formats); DR-014 (theme switch, Phase 13), DR-015 (hard-coded thresholds).

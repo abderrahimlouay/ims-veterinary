@@ -7,6 +7,7 @@ public enum AuditAction {
     PRICE_CHANGE,
     INVOICE_CANCEL,
     STOCK_CORRECTION,
+    OPENING_STOCK,
     LOT_BLOCK,
     LOT_UNBLOCK,
     LOT_RECALL,
