@@ -137,16 +137,16 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
 | GET | `/api/products` ● | search/list: `q` (name/SKU/active ingredient, contains, ADR-048), `categoryId`, `manufacturerId`, `ingredientId`, `speciesId` (target or withdrawal species, ADR-047), `includeArchived`; from Phase 3 `barcode`, from Phase 4 `inStockOnly` | `product.read` | page of `ProductSummary` (`sellableQtyBase`, `stockStatus` from Phase 4) |
-| GET | `/api/products/by-barcode/{code}` | scan lookup | `product.read` | `ProductSummary` + matched unit **[OPEN OD-019]**; `NOT_FOUND` |
+| GET | `/api/products/by-barcode/{code}` | scan lookup (exact, case-sensitive, ADR-058) | `product.read` | `{product: ProductSummary, unit: {id, name, factorToBase, salePrice, effectiveSalePrice} or null (= base unit), quantity: "1"}` (ADR-057); `NOT_FOUND` |
 | POST | `/api/products` | create | `product.create` | `ProductWriteRequest {sku, commercialName, categoryId?, dosageFormId?, manufacturerId?, baseUnit, divisible, vatRate? (default: `default_vat_rate` setting), minStock?, maxStock?, reorderPoint?, purchasePrice?, salePrice?}` (prices per base unit, ≤ 4 decimals, ADR-049; a price other than 0 needs `price.edit`, else `ACCESS_DENIED`) → 201 `ProductDetail` + `Location`; `PRODUCT_SKU_DUPLICATE` (`context.field = sku`), `VALIDATION_FAILED` (field codes `REQUIRED`, `UNKNOWN`, `RANGE`, `NOT_NEGATIVE`, `SCALE`, `WHOLE_NUMBER` for a non-divisible product, `BELOW_MIN`) |
 | GET | `/api/products/{id}` | detail | `product.read` | `ProductDetail {id, sku, commercialName, category, dosageForm, manufacturer (each `{id, name, code, country}` or null), baseUnit, divisible, vatRate, purchasePrice, salePrice, minStock, maxStock, reorderPoint, archived, ingredients: [{ingredient, strength}], targetSpecies: [species], withdrawalPeriods: [{species, meatDays, milkDays, eggsDays}], createdAt, updatedAt, version}` (ingredients, species and periods are not part of `version`); units and barcodes Phase 3; readable when archived (BR-PROD-004) |
 | PUT | `/api/products/{id}` | update, also when archived (price fields need `price.edit` and are audited) | `product.update` (+ `price.edit`) | `ProductWriteRequest` + `version`, `vatRate` required; an omitted price is unchanged; changing a price needs `price.edit` (`ACCESS_DENIED`, nothing saved) and is audited `PRICE_CHANGE` with old/new values of the changed prices (BR-PROD-006); `CONCURRENT_MODIFICATION` |
 | POST | `/api/products/{id}/archive` · `/restore` | archive / restore (idempotent) | `product.archive` | → 200 `ProductDetail` |
 | GET | `/api/products/{id}/substitutes` | other non-archived products sharing at least one active ingredient, most shared first, then by name (max 50); the sellable-stock filter comes in Phase 4 | `product.read` | list of `ProductSummary` |
 | GET | `/api/products/{id}/lots` | lots in FEFO order | `lot.read` | list of `LotSummary` |
-| GET/POST | `/api/products/{id}/units` | list / add packaging unit | `product.read` / `product.update` | `{name, factorToBase, salePrice?, sellable}`; `DUPLICATE_RESOURCE` |
-| PUT | `/api/products/{id}/units/{unitId}` | edit unit | `product.update` | `UNIT_FACTOR_LOCKED` when used |
-| POST/DELETE | `/api/products/{id}/barcodes[/{barcodeId}]` | add / remove barcode | `product.update` | `{code, codeType, unitId?}`; `BARCODE_DUPLICATE` |
+| GET/POST | `/api/products/{id}/units` | list / add packaging unit | `product.read` / `product.update` (+ `price.edit` for `salePrice`) | `{name, factorToBase, salePrice?, sellable}` → `UnitView {id, name, factorToBase, salePrice (stored or null), effectiveSalePrice (stored, else factor × base price, 4 decimals), sellable, version}`; `factorToBase` > 0, ≤ 4 decimals, whole for a non-divisible product (`WHOLE_NUMBER`, ADR-065); `DUPLICATE_RESOURCE` (`context.field = name`) |
+| PUT | `/api/products/{id}/units/{unitId}` | edit unit | `product.update` (+ `price.edit` to set, change or clear `salePrice`) | same body + `version`; `UNIT_FACTOR_LOCKED` when used (BR-UNIT-004); a price change is audited `PRICE_CHANGE` (ADR-063, BR-PROD-006); `CONCURRENT_MODIFICATION` |
+| GET/POST/DELETE | `/api/products/{id}/barcodes[/{barcodeId}]` | list / add / remove barcode | `product.read` / `product.update` | `{code, codeType (EAN13, CODE128, QR), unitId?}` → `{id, code, codeType, unit}`; `BARCODE_DUPLICATE`; `VALIDATION_FAILED` field `code` (`FORMAT`, `CHECK_DIGIT` for EAN13, `SIZE`, ADR-067) or `unitId` (`UNKNOWN`: not a unit of this product) |
 | PUT | `/api/products/{id}/ingredients` | replace ingredient set | `product.update` | `[{ingredientId, strength?}]` (strength ≤ 60) → `[{ingredient, strength}]` sorted by name; `VALIDATION_FAILED` field `ingredients` (`UNKNOWN`, `DUPLICATE`, `SIZE`); not part of the product `version` |
 | PUT | `/api/products/{id}/withdrawal-periods` | replace set (BR-PROD-007) | `product.update` | `[{speciesId, meatDays?, milkDays?, eggsDays?}]` → `[{species, meatDays, milkDays, eggsDays}]` sorted by species; missing days = not specified (`null`, never 0); `VALIDATION_FAILED` field `withdrawalPeriods` (`UNKNOWN`, `DUPLICATE`, `NOT_NEGATIVE`, `RANGE`) |
 | PUT | `/api/products/{id}/target-species` | replace target species (ADR-047) | `product.update` | `{speciesIds[]}` → species sorted by name; `VALIDATION_FAILED` field `speciesIds` (`UNKNOWN`, `DUPLICATE`) |
@@ -156,17 +156,19 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 ### 4.4 `/api/lots`
 
-> There is **no** `POST /api/lots`: lots are created only by goods receipts, opening stock, or inventory-found entries (BR-LOT-001).
+> There is **no** `POST /api/lots`: lots are created only by goods receipts, opening stock, or inventory-found entries (BR-LOT-001); Phase 3 has no way to create one (ADR-064).
+>
+> `LotSummary {id, product: {id, sku, commercialName, baseUnit}, lotNumber, expiryDate, quantityOnHand, status, alertLevel, daysLeft}`; `LotDetail` adds `unitCost`, `blockedReason`, `blockedBy`, `blockedAt`, `receivedAt`, `sellable`. `status` is the **effective** status (`active`, `blocked`, `recalled`, `expired`, `depleted`; ADR-059); `alertLevel` ∈ `expired`, `critical`, `warning`, `notice` or `null` (ADR-056).
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
 | GET | `/api/lots` | list: `productId`, `status`, `expiringWithinDays`, `hasStock`, `q` | `lot.read` | page of `LotSummary` |
 | GET | `/api/lots/{id}` | detail | `lot.read` | `LotDetail` |
 | GET | `/api/lots/fefo` ● | FEFO allocation preview (does **not** reserve) | `lot.read` | `?productId&quantity&unitId?` → allocation list |
-| GET | `/api/lots/expiry-alerts` | lots grouped by alert level (thresholds from settings) | `lot.read` | `{expired[], critical[], warning[], notice[], thresholds}` |
-| GET | `/api/lots/{id}/movements` | movement history of the lot | `stock.read` | page of `MovementEntry` |
-| POST | `/api/lots/{id}/block` · `/unblock` | block / unblock | `lot.block` / `lot.unblock` | `{reason}` → `LotDetail`; `INVALID_STATE_TRANSITION` |
-| POST | `/api/lots/{id}/recall` ● | recall + buyers list | `lot.recall` | `{reason}` → `RecallReport` |
+| GET | `/api/lots/expiry-alerts` | lots with stock grouped by alert level (thresholds from settings, inclusive, ADR-056) | `lot.read` | `{expired[], critical[], warning[], notice[], thresholds: {notice, warning, critical}, businessDate}` |
+| GET | `/api/lots/{id}/movements` | movement history of the lot (Phase 4) | `stock.read` | page of `MovementEntry` |
+| POST | `/api/lots/{id}/block` · `/unblock` | block / unblock (ADR-060) | `lot.block` / `lot.unblock` | `{reason}` (non-blank) → `LotDetail`; audited `LOT_BLOCK` / `LOT_UNBLOCK`; `INVALID_STATE_TRANSITION` (block when not active, unblock when not blocked, anything on a recalled lot) |
+| POST | `/api/lots/{id}/recall` ● | recall + buyers list (lists empty until Phase 7, ADR-068) | `lot.recall` | `{reason}` → `RecallReport`; audited `LOT_RECALL` |
 | GET | `/api/lots/{id}/recall-report` | re-read buyers list | `lot.recall` | `RecallReport` (+ `?format=pdf`) |
 
 ### 4.5 `/api/inventory` (stock, adjustments, counts, reorder)
@@ -327,7 +329,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 ### 5.3 FEFO preview
 - **GET `/api/lots/fefo?productId=12&quantity=3&unitId=7`** — **Permission:** `lot.read`.
 - **Response:** `{ "requestedBase": "15.000", "allocations": [ {"lotId": 88, "lotNumber": "L2407A", "expiryDate": "2027-03-31", "quantityBase": "10.000", "available": "10.000", "alertLevel": "notice"}, {"lotId": 91, …, "quantityBase": "5.000"} ], "shortfallBase": "0.000" }`
-- **Rules:** only sellable lots (BR-STOCK-011); order `expiry_date, id`; **informational** — stock is re-validated at confirmation. **Errors:** `NOT_FOUND`, `UNIT_NOT_SELLABLE`, `PRODUCT_ARCHIVED`.
+- **Rules:** only sellable lots (BR-STOCK-011, ADR-055); order `expiry_date, id`; `requestedBase = quantity × factor`, exact (ADR-065); **informational** — stock is re-validated at confirmation. **Errors:** `NOT_FOUND`, `UNIT_NOT_SELLABLE`, `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` (`quantity` `SCALE` / `WHOLE_NUMBER`, `unitId` `UNKNOWN` when the unit belongs to another product).
 
 ### 5.4 Confirm goods receipt
 - **POST `/api/goods-receipts`** — **Permission:** `receipt.create`. **Header:** `Idempotency-Key`.
@@ -362,7 +364,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 - **POST `/api/lots/{id}/recall`** — **Permission:** `lot.recall`.
 - **Request:** `{ "reason": "Manufacturer notice 2026-10-17" }` (non-blank).
 - **Response 200:** `{ lot: {id, status: "recalled", blockedAt, blockedBy}, buyers: [ { customerId, customerName, phone, documentNumber, documentType, issuedAt, quantityBase, unit } ], anonymousSales: [ {documentNumber, issuedAt, quantityBase} ], remainingStockBase }`
-- **Errors:** `NOT_FOUND`, `ACCESS_DENIED`, `VALIDATION_FAILED`. Repeating on a recalled lot returns the same report.
+- **Errors:** `NOT_FOUND`, `ACCESS_DENIED`, `VALIDATION_FAILED`. Repeating on a recalled lot returns the same report. Until sales exist (Phase 7) `buyers` and `anonymousSales` are empty (ADR-068).
 
 ### 5.8 Customer return
 - **POST `/api/returns/customer`** — **Permission:** `return.customer.create`. **Header:** `Idempotency-Key`.
@@ -403,4 +405,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-012 (count scope), OD-013 (generate proposals), OD-015 (close PO), OD-019 (unit barcode), OD-020 (pdf formats), OD-021 (backup run).
+OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-012 (count scope), OD-013 (generate proposals), OD-015 (close PO), OD-020 (pdf formats), OD-021 (backup run).

@@ -165,9 +165,9 @@ Backend = trust boundary; TLS everywhere; hashed passwords; permission-based RBA
 1. Hidden PostgreSQL assumptions in the source schema (see `database-migration.md`).
 2. Sales/payment semantics unresolved (OD-002, OD-003) — blocks the POS design if left open.
 3. Lock contention at the counter on popular lots — mitigated by short transactions and ordering.
-4. Collation making codes case-insensitive (ADR-024; usernames ADR-041, SKUs ADR-051; lot numbers OD-025).
+4. Collation making codes case-insensitive (ADR-024; usernames ADR-041, SKUs ADR-051; lot numbers ADR-058, barcodes `utf8mb4_bin`).
 5. Numbering gaps vs legal requirement (OD-017).
 
 ## 16. Decisions index
 
-ADR-001…054 and OD-001…032 are in `decisions.md`; those most structural here: ADR-006 (modular monolith), ADR-012/013 (isolation/locking), ADR-017 (triggers), ADR-018 (Flyway), ADR-020 (errors), ADR-028 (stock representation), ADR-029 (RBAC).
+ADR-001…068 and OD-001…032 are in `decisions.md`; those most structural here: ADR-006 (modular monolith), ADR-012/013 (isolation/locking), ADR-017 (triggers), ADR-018 (Flyway), ADR-020 (errors), ADR-028 (stock representation), ADR-029 (RBAC).

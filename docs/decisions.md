@@ -390,6 +390,87 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Labels:** species Bovin/أبقار, Ovin/أغنام, Caprin/ماعز, Volaille/دواجن, Équin/خيول, Canin/كلاب, Félin/قطط; categories Antibiotique/مضاد حيوي, Antiparasitaire/مضاد للطفيليات, Vaccin/لقاح, Anti-inflammatoire/مضاد للالتهاب, Vitamine / Complément/فيتامين / مكمّل غذائي; dosage forms Injectable/قابل للحقن, Poudre/مسحوق, Comprimé/أقراص, Solution/محلول, Pour-on/سكب على الظهر (English labels = stored names).
 - **Consequences:** `database.md` §3.2 (`code` columns), `api.md` §4.3, `frontend.md` §3.1.
 
+## ADR-055 — Expiry boundary and month-only expiry dates (resolves OD-009)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #1 A, #2 A)
+- **Decision:** A lot is **sellable through its expiry date** and expired from the next day: expired ⇔ `expiry_date < business date`, the business date being today in the `business_time_zone` setting (`Africa/Algiers`) read from the injected `Clock` (`BusinessCalendar`). Stock-entry screens accept a full date or a month `MM/YYYY`; a month is stored as the **last day of that month** (`10/2027` → `2027-10-31`). The API always takes and returns full ISO dates.
+- **Alternatives:** expired on the expiry date itself (B); full dates only.
+- **Consequences:** BR-LOT-003, BR-STOCK-011, `database.md` §2.2/§6, glossary; DR-017 resolved with ADR-059. Tests cover yesterday / today / tomorrow and a business date that differs from the UTC date.
+
+## ADR-056 — Expiry alert levels (BR-LOT-010)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #3 A)
+- **Decision:** `daysLeft = expiry_date − business date`. Level: **expired** when `daysLeft < 0` (ADR-055), else **critical** when `daysLeft ≤ critical`, **warning** when `≤ warning`, **notice** when `≤ notice`, otherwise none. The three thresholds are read from the `expiry_alert_days` setting (`notice,warning,critical`, default `60,30,15`, ADR-044) at each evaluation and are never hard-coded; limits are inclusive (a lot with exactly 15 days left is critical). The level is computed in the service on every query, not stored and not computed by a database view (DR-019).
+- **Alternatives:** exclusive limits (B).
+- **Consequences:** `api.md` §4.4/§5.3, W12, `frontend.md` §4.2 (badges and dashboard widget use the levels returned by the API).
+
+## ADR-057 — Barcodes per packaging unit (resolves OD-019)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #4 A)
+- **Decision:** `product_barcodes.unit_id BIGINT NULL` (SD-105); `NULL` means the base unit. The unit must belong to the barcode's product: composite foreign key `(unit_id, product_id) → product_units(id, product_id)` plus a service check. A scan (`GET /api/products/by-barcode/{code}`) returns the product, the matched unit (name, factor, sale price as defined by ADR-063, or the base unit) and a quantity of **1 of that unit**.
+- **Alternatives:** product-level barcodes only, unit chosen at every scan (B).
+- **Consequences:** `database.md` §3.2, `api.md` §4.3, BR-UNIT-005, `frontend.md` §4.1; DR-011 resolved.
+
+## ADR-058 — Collation of lot numbers and barcodes (resolves OD-025)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #5 A, #6 A)
+- **Decision:** `lots.lot_number` keeps the default `utf8mb4_0900_ai_ci`: `L2407a` and `L2407A` (and accent variants) are the same lot number, for the lot identity `UQ(product_id, lot_number, expiry_date)` and for search. `product_barcodes.code` uses **`utf8mb4_bin`**: exact, case-sensitive match for uniqueness and scan lookup. With `username` (ADR-041) and `sku` (ADR-051) every code column existing through Phase 3 is decided; any later code column states its collation in its migration and gets a collation test (ADR-024).
+- **Consequences:** `database.md` §3.2/§3.4, `database-migration.md` row 28, `testing.md` §2; DR-024 resolved.
+
+## ADR-059 — Lot status: decisions stored, expired and depleted computed (resolves OD-027, status part)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #7 A)
+- **Decision:** `lots.status` stores only what a person decides: `CHECK (status IN ('active','blocked','recalled'))`. **Expired** (ADR-055) and **depleted** (`quantity_on_hand = 0`) are computed whenever a lot is read or used, never stored, so no daily job is needed and they cannot drift from the calendar or the balance. The API returns the effective status with the priority **recalled > blocked > expired > depleted > active**. A depleted lot that receives stock again is active by itself (customer return, inventory); a blocked lot stays blocked. Sellable ⇔ stored `active` ∧ not expired ∧ quantity > 0 (BR-STOCK-011).
+- **Alternatives:** daily job writing `expired` and movements writing `depleted` (B); both (C).
+- **Consequences:** `database.md` §2.2/§3.4 (CHECK reduced, SD-116), BR-LOT-009, `domain-model.md` §5.1, W12 (no materialisation); DR-017 resolved.
+
+## ADR-060 — Recall is final; unblocking needs `lot.unblock` (resolves OD-027, transitions part)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #8 A, #9 A)
+- **Decision:** Stored transitions: `active → blocked` (`lot.block`, reason, audited `LOT_BLOCK`), `blocked → active` (`lot.unblock`, mandatory reason, audited `LOT_UNBLOCK`), `active | blocked → recalled` (`lot.recall`, reason, audited `LOT_RECALL`). **Recalled is terminal**: it can be neither unblocked nor un-recalled by anyone; the remaining stock is handled as unsellable goods (supplier return in Phase 5, adjustment in Phase 4). Any other request is `INVALID_STATE_TRANSITION`; repeating a recall returns the same report (W6). `lot.unblock` is held by Administrator and Pharmacist (ADR-037). Block and unblock are allowed on an expired or depleted lot (they change only the stored status).
+- **Alternatives:** an Administrator may lift a recall (B); unblock reserved to Administrators (B).
+- **Consequences:** BR-LOT-009, `domain-model.md` §5.1, `api.md` §4.4.
+
+## ADR-061 — No `unit_conversion` movement type (DR-018)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #10 A)
+- **Decision:** Stock is kept in base units only, so the legacy `unit_conversion` value is **removed** from the allowed `stock_movements.movement_type` values (SD-118). The table itself is created in Phase 4.
+- **Consequences:** `database.md` §3.4, `database-migration.md` §4, BR-STOCK-005; DR-018 resolved.
+
+## ADR-062 — Lot ↔ product consistency in the database (SD-103)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #11 A)
+- **Decision:** `lots` gets `UNIQUE (id, product_id)` when it is created (Phase 3). Every later table holding both a lot and a product references `(lot_id, product_id) → lots(id, product_id)`: `stock_movements` (Phase 4), `goods_receipt_lines` (Phase 5), `sales_document_lines` and return lines (Phases 7–8). Services also check and answer `LOT_PRODUCT_MISMATCH` (422) before the database would refuse. In Phase 3 the mismatch test exercises the service check (FEFO preview and lot queries by product); the database-level test arrives with the first referencing table in Phase 4.
+- **Alternatives:** service check only (B).
+- **Consequences:** BR-LOT-007, `database.md` §3.4; SD-103 Accepted; DR-008 resolved.
+
+## ADR-063 — Sale price of a packaging unit
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #12 A)
+- **Decision:** `product_units.sale_price DECIMAL(14,2) NULL` is optional. When empty, the unit's price is **derived** as `factor_to_base × products.sale_price`; the API returns it as `effectiveSalePrice` (4 decimals, half-up, informational) next to the stored `salePrice`. Setting, changing or clearing a stored unit price needs `price.edit` (`ACCESS_DENIED`, nothing saved) and is audited `PRICE_CHANGE` with old and new values (BR-PROD-006); a price given when the unit is created is not a change and is not audited (as for products). How unit prices combine with customer prices and categories, and the rounding of document lines, remain **OD-006** and **OD-007**.
+- **Alternatives:** always derived, no stored price (B).
+- **Consequences:** `api.md` §4.3, BR-PROD-006, `database.md` §2.3.
+
+## ADR-064 — No lot creation in Phase 3
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #13 A, without a sample-data loader)
+- **Decision:** Phase 3 offers **no way to create a lot**: no endpoint, no seed, no development loader. Lots will be created only by opening stock and inventory-found entries (Phase 4) and goods receipts (Phase 5), each supplying lot number and expiry (BR-LOT-001). Phase 3 tests insert lots directly in the test database; the lot screens and the dashboard widget show a proper empty state until Phase 4.
+- **Alternatives:** opening stock brought forward (B); development-only sample loader (C).
+- **Consequences:** `api.md` §4.4, `frontend.md` §4.2, `roadmap.md` Phase 3.
+
+## ADR-065 — Unit conversions are exact
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #14 A)
+- **Decision:** `quantity_base = quantity × factor_to_base` is computed with `BigDecimal` and **never rounded**: when the exact result needs more than 3 decimals (base-quantity scale) the request is refused with `VALIDATION_FAILED` (field code `SCALE`); for a non-divisible product (ADR-050) a non-whole result is refused (`WHOLE_NUMBER`), and its unit factors must be whole numbers. Factors keep `DECIMAL(14,4)`.
+- **Alternatives:** round half-up to 3 decimals (B); factors limited to 3 decimals (C).
+- **Consequences:** BR-UNIT-001/002, `api.md` §5.3.
+
+## ADR-066 — The lot supplier column arrives with suppliers (Phase 5)
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #15 A)
+- **Decision:** `lots` is created in Phase 3 without `supplier_id`; the column and its foreign key to `suppliers` are added by a Phase 5 migration together with the `suppliers` table (SD-117). No column exists without its constraint.
+- **Consequences:** `database.md` §3.4.
+
+## ADR-067 — Barcode format checks
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #16 A, check digit for EAN13 only)
+- **Decision:** `code_type` ∈ `EAN13`, `CODE128`, `QR` (CHECK). Every code is non-blank and at most 64 characters. **EAN13**: exactly 13 digits with a valid check digit. **CODE128**: printable ASCII characters (32–126) only. **QR**: any text without control characters. No other check. Errors are `VALIDATION_FAILED` on field `code` (`FORMAT`, `CHECK_DIGIT`, `SIZE`).
+- **Alternatives:** no format check (B).
+- **Consequences:** BR-PROD-008, `api.md` §4.3.
+
+## ADR-068 — Lot recall in Phase 3
+- **Status:** Accepted (user decision, 2026-10-22, Phase 3 preflight; #17 A)
+- **Decision:** From Phase 3, `POST /api/lots/{id}/recall` sets the status to `recalled`, stores reason, user and time (`blocked_reason/by/at`), writes `LOT_RECALL` in the same transaction, and returns the `RecallReport` with **empty** `buyers` and `anonymousSales` lists; the screen says that buyers are listed once sales exist (Phase 7). The report's lists are filled by Phase 7 without changing the contract.
+- **Alternatives:** postpone recall to Phase 7 (B).
+- **Consequences:** BR-LOT-008, W6, `api.md` §5.7, `frontend.md` §4.2.
+
 ---
 
 # Part B — Open Decisions
@@ -440,6 +521,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 0 (i18n structure) and Phase 10 (document templates).
 
 ## OD-009 — Expiry boundary and lot expiry convention
+- **Status:** Resolved 2026-10-22 → **ADR-055** (sellable through the expiry date; `MM/YYYY` = last day of month) and **ADR-056** (alert levels).
 - **Question:** Is a lot sellable **on** its expiry date (Source views use `expiry_date >= CURRENT_DATE`) or only before? Are expiry dates month-end ("EXP 10/2027" = last day of month)? Does the UI accept `MM/YYYY`?
 - **Blocks:** Phase 3. **Related:** BR-LOT-003.
 
@@ -483,6 +565,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 2 (catalogue search) and 7. **Related:** NFR-002, DR-010.
 
 ## OD-019 — Barcode per packaging unit
+- **Status:** Resolved 2026-10-22 → **ADR-057** (`unit_id`, scan = 1 of that unit).
 - **Question:** `product_barcodes` links to the product only. A box and a single blister of the same product normally have different barcodes: should `product_barcodes` get a `unit_id`? What quantity does one scan add?
 - **Blocks:** Phase 3. **Related:** FR-PROD-003, DR-011.
 
@@ -510,7 +593,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 0.
 
 ## OD-025 — Case/accent sensitivity of code columns
-- **Status:** Partly resolved: `username` → **ADR-041** (2026-10-20), `sku` → **ADR-051** (2026-10-21), both insensitive. Still open for `lot_number` and other codes.
+- **Status:** Resolved: `username` → **ADR-041** (2026-10-20), `sku` → **ADR-051** (2026-10-21), `lot_number` (insensitive) and barcodes (`utf8mb4_bin`) → **ADR-058** (2026-10-22).
 - **Question:** Under `utf8mb4_0900_ai_ci`, are `LOT-a1` and `LOT-A1` the same lot? Should `sku`, `lot_number`, `username` use a case-sensitive collation?
 - **Blocks:** Phase 3. **Related:** ADR-024.
 
@@ -519,6 +602,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 10.
 
 ## OD-027 — Lot status semantics
+- **Status:** Resolved 2026-10-22 → **ADR-059** (expired/depleted computed) and **ADR-060** (recall final, unblock with `lot.unblock`).
 - **Question:** May a `recalled` lot be un-recalled? Who can unblock a `blocked` lot? Is `expired` status materialised by a daily job or purely derived from `expiry_date`? What happens to `depleted` lots reached by a customer return (reactivation)?
 - **Blocks:** Phase 3. **Related:** BR-LOT-009.
 
@@ -562,7 +646,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 0 Foundation | ~~OD-024~~ → ADR-032, ~~OD-008~~ → ADR-033, ADR-034; ADR-009/010/013/018/019/023/024/025/026/030/031 confirmed Accepted 2026-10-20 |
 | 1 Auth | ~~OD-001~~ → ADR-036, ~~OD-023~~ → ADR-037; ADR-017/020/021/027 confirmed Accepted; ADR-038–041, ~~OD-031~~ → ADR-042 (all 2026-10-20) |
 | 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053, ~~OD-032~~ → ADR-054 (all 2026-10-21) |
-| 3 Lots & Units | OD-009, OD-019, OD-025 (`lot_number`, other codes), OD-027 |
+| 3 Lots & Units | ~~OD-009~~ → ADR-055/056, ~~OD-019~~ → ADR-057, ~~OD-025~~ → ADR-058, ~~OD-027~~ → ADR-059/060; ADR-061…068 (all 2026-10-22) |
 | 4 Inventory & Stock | OD-012, OD-013, ~~OD-030~~ → ADR-035, ADR-012, ADR-028 |
 | 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 Customers | OD-006, OD-011 |

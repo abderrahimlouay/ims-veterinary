@@ -29,7 +29,7 @@
 | Disposition (return) | Devenir du retour | Outcome of returned goods: restock or discard (OD-005). |
 | Document number | Numéro de document | Unique human-readable number of an order, invoice, etc. (BR-DOC-001). |
 | Dosage form | Forme galénique | Form of the medicine (injectable, powder, tablet…). |
-| Expiry date | Date de péremption (DLC) | Last date the lot may be used/sold; boundary OD-009. |
+| Expiry date | Date de péremption (DLC) | Last date the lot may be used/sold: sellable on this date, expired from the next day (ADR-055); `MM/YYYY` = last day of the month. |
 | FEFO | Premier expiré, premier sorti | First-Expired-First-Out lot selection rule. |
 | Goods receipt | Réception / bon de réception | Recording of goods received from a supplier, creating stock with lots. |
 | Idempotency key | Clé d'idempotence | Client token ensuring a repeated request creates only one result. |
