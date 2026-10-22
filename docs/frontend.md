@@ -159,8 +159,11 @@ Derived from the prototype; implement as typed, accessible components in `compon
 
 ## 6. Design tokens
 
-- Tokens from the prototype are exported once as CSS variables (`--color-*`, `--space-*`, `--radius-*`, `--font-*`) and wired into the Tailwind theme; components use only token-based classes.
-- **Gaps / conflicts to resolve (DR-014):** the prototype shows currency in EUR and generic address fields, while the Spec targets Algeria (wilaya/commune, NIF, DZD) — currency/locale resolved by **ADR-033** (DZD, fr-DZ); no dark theme defined; focus ring contrast and small-text sizes need verification; statuses rely on colour in places.
+- Tokens from the prototype live in `src/styles/tokens.css` as RGB channels (`--bg`, `--surface`, `--line`, `--ink`, `--mute`, `--brand`, `--brand-ink`, `--ok`, `--warn`, `--danger`) and are wired into the Tailwind theme in `src/styles/index.css` (`bg-surface`, `text-ink`, `border-line`, … with opacity modifiers), together with `--radius-ctl`, `--radius-card` and `--font-sans`.
+- **Dark theme tokens exist.** The prototype defines a complete dark set and `tokens.css` reproduces it value for value (checked 2026-10-22): light on `:root`; dark applied by `@media (prefers-color-scheme: dark)` on `:root:not([data-theme='light'])`, or forced by `data-theme="dark"` on `<html>` (`data-theme="light"` forces light). Today the app follows the operating-system setting only: nothing sets `data-theme` and there is no theme switch (the prototype's "Theme" button is a demo control). The user switch, its persistence and the verification are **Phase 13** (ADR-069).
+- **Rule for Phases 1–12 (ADR-069):** components use design tokens only — Tailwind token classes or `rgb(var(--token))` — never hard-coded colours (hex, `rgb(…)` literals, Tailwind palette classes such as `text-red-600`, inline colour styles). New semantic colours are added as tokens with a light **and** a dark value. This keeps Phase 13 free of screen rewrites.
+- **Contrast measured 2026-10-22 (WCAG 2.1 AA; not yet fixed, colours unchanged until Phase 13):** all text pairs pass in dark (ink, mute, brand, ok, warn, danger on bg and surface; brand-ink on brand; coloured text on its 10 % tint). Failing pairs: `line` used as the border of inputs and selects against `surface`/`bg` — 1.31 / 1.23 light, 1.47 / 1.62 dark (needs 3:1, WCAG 1.4.11); `ok/40` and `danger/40` alert borders against `surface` — 1.77 / 1.99 light, 2.38 / 1.99 dark (decorative while the alert text and tint carry the meaning); light only: `warn` text on `bg` 4.45, `warn` on its 10 % tint 4.17 / 3.91, `ok` on its 10 % tint 4.35 / 4.10 (need 4.5:1 for normal text).
+- **Other gaps (DR-014):** the prototype shows currency in EUR and generic address fields, while the Spec targets Algeria — resolved by **ADR-033** (DZD, fr-DZ); small-text sizes need verification; statuses must not rely on colour alone.
 - Expiry-alert palette (expired / critical / warning / notice) and stock-status palette are defined as semantic tokens, not raw colours.
 
 ## 7. Forms and validation
@@ -226,4 +229,4 @@ Component tests for primitives and forms (RTL), API-mocked page tests (MSW) incl
 
 ## 17. Open frontend items
 
-OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-012 (count UX), OD-020 (print formats); DR-014 (design-token gaps), DR-015 (hard-coded thresholds).
+OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-012 (count UX), OD-020 (print formats); DR-014 (theme switch and contrast fixes, Phase 13), DR-015 (hard-coded thresholds).
