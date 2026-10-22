@@ -3,6 +3,7 @@ package com.imsvet.ims.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.imsvet.ims.TestcontainersConfiguration;
+import com.imsvet.ims.support.MigrationAccount;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,10 @@ class SecurityAdministrationSchemaTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    /** Trigger metadata is visible only with the TRIGGER privilege, which the application account lacks (ADR-087). */
+    @Autowired
+    private MigrationAccount migration;
+
     @Test
     void phase1TablesExist() {
         assertThat(jdbc.queryForList(
@@ -32,7 +37,7 @@ class SecurityAdministrationSchemaTest {
 
     @Test
     void auditLogHasUpdateAndDeleteGuards() {
-        assertThat(jdbc.queryForList("""
+        assertThat(migration.jdbc().queryForList("""
                 SELECT CONCAT(TRIGGER_NAME, ':', EVENT_MANIPULATION) FROM information_schema.TRIGGERS
                 WHERE TRIGGER_SCHEMA = DATABASE() AND EVENT_OBJECT_TABLE = 'audit_log'""", String.class))
                 .containsExactlyInAnyOrder("trg_audit_log_no_update:UPDATE", "trg_audit_log_no_delete:DELETE");

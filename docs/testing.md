@@ -73,6 +73,8 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 | CT-02 | two sales taking lots A,B vs B,A | no deadlock (ascending lock order) or bounded retry succeeds |
 | CT-03 | parallel document numbering (1 000 allocations) | unique, gap-free on commit (policy OD-017) |
 | CT-04 | sale vs count regularisation on same lot | consistent final balance, no lost update; the sale after the watermark stays valid (ADR-072) |
+
+Until sales exist (Phase 7), CT-01 and CT-04 use a manual adjustment in place of a sale; Phase 7 re-runs both with real sales (roadmap Phase 7 completion criteria).
 | CT-05 | double-submit same Idempotency-Key | one document |
 | CT-06 | two credit sales for same customer near limit | limit not exceeded (OD-011) |
 | CT-07 | simultaneous edit of same product (`@Version`) | second gets `CONCURRENT_MODIFICATION` |
@@ -148,7 +150,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-STOCK-009 | U,A | Threshold validation per product |
 | BR-STOCK-010 | U,S | Reorder proposal contents and rounding (OD-013), no duplicates; trigger, quantity, thresholds incomplete, one pending updated in place, dismissed suppressed until recovery (ADR-076…079) |
 | BR-STOCK-011 | U,R | Sellable stock excludes expired/blocked/recalled/quarantined lots (sellable predicate: `ExpiryPolicyTest`; quantities from Phase 4); product sellable quantity sums only sellable lots |
-| BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock; lock wait timeout → `CONCURRENT_MODIFICATION` within 5 s (ADR-012) |
+| BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock; lock wait timeout → `CONCURRENT_MODIFICATION` within 5 s (ADR-012, `LockWaitTimeoutTest`) |
 | BR-STOCK-013 | U,A | Status in stock / low / out and below-reorder from sellable quantity and thresholds (ADR-080) |
 | BR-STOCK-014 | S,A | Opening stock: setting closed → `OPENING_STOCK_CLOSED`; new lot; existing lot same expiry adds; other expiry, other cost, recalled refused; expired accepted; audited `OPENING_STOCK` |
 | BR-INV-001 | U | variance = counted − theoretical, signs and zero; variance against the balance at the watermark |
@@ -218,7 +220,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SEC-003 | SEC,U | Password policy; stored hash never plaintext; never in logs/responses |
 | BR-SEC-004 | SEC | Disabled user cannot log in / existing credential refused |
 | BR-SEC-005 | SEC | `login_max_failures` failures → RATE_LIMITED even with the right password; other IP or username unaffected; window/lockout expiry with the test `Clock` (ADR-038) |
-| BR-SEC-006 | M | App DB account lacks DROP/ALTER and UPDATE/DELETE on append-only tables |
+| BR-SEC-006 | R,SEC | App DB account lacks DDL (error 1142 on CREATE/ALTER/DROP) and UPDATE/DELETE on append-only tables (1142); every table granted after each migration; the trigger still refuses the migration account (45000) (`DatabaseAccountsTest`, `AuditLogAppendOnlyTest`, ADR-087) |
 | BR-AUDIT-001 | S | Each audited action code produces an audit row (table-driven) |
 | BR-AUDIT-002 | SEC,R | Audit rows cannot be updated or deleted; contain required fields |
 | BR-AUDIT-003 | S | Force audit failure → business action rolled back |

@@ -120,7 +120,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Backend work:** `sales` use cases; stock consumption through `StockService`; recall buyers report completed; confirm transaction (`architecture.md` §5).
 - **Frontend work:** POS layout and flows, documents list/detail, convert/cancel actions.
 - **Tests:** BR-SALE-*, BR-LOT-003..008 end-to-end; CT-01, 02, 05, 06; e2e J4, J5, J9.
-- **Completion criteria:** FR-SALE-001, 002, 003 (screen part), 008, 009; FR-LOT-002, 006 done; stock never negative; confirmed documents immutable; a sale < 2 s.
+- **Completion criteria:** FR-SALE-001, 002, 003 (screen part), 008, 009; FR-LOT-002, 006 done; stock never negative; confirmed documents immutable; a sale < 2 s; concurrency tests CT-01 and CT-04 re-run with real sales (in Phase 4 they use a manual adjustment in place of a sale, user decision 2026-10-22).
 
 ## Phase 8 — Returns
 - **Objective:** handle returns and credit notes correctly.
