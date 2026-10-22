@@ -83,7 +83,8 @@
     "INTERNAL_ERROR": "Une erreur inattendue est survenue (référence {{traceId}}).",
     "UNKNOWN": "La demande a échoué (référence {{traceId}}).",
     "RESOURCE_IN_USE": "Cette entrée est utilisée et ne peut pas être supprimée.",
-    "DUPLICATE_RESOURCE": "Cette valeur existe déjà."
+    "DUPLICATE_RESOURCE": "Cette valeur existe déjà.",
+    "UNIT_FACTOR_LOCKED": "Cette unité est déjà utilisée dans des documents : son contenu ne peut plus changer. Créez une nouvelle unité."
   },
   "pager": {
     "label": "Pagination",
@@ -236,6 +237,7 @@
       "pricesReadOnly": "Les prix ne sont modifiables qu'avec la permission « modifier les prix ».",
       "tabs": {
         "general": "Général",
+        "units": "Unités",
         "ingredients": "Principes actifs",
         "substitutes": "Substituts",
         "species": "Espèces et délais d'attente"
@@ -284,6 +286,27 @@
         "RANGE": "Délai trop grand.",
         "UNKNOWN": "Espèce inconnue."
       }
+    },
+    "units": {
+      "empty": "Aucune unité de conditionnement. Les quantités sont dans l'unité de base ({{baseUnit}}).",
+      "name": "Unité",
+      "content": "Contenu",
+      "price": "Prix de vente",
+      "sellable": "Vendable",
+      "yes": "Oui",
+      "no": "Non",
+      "derived": "{{price}} (calculé)",
+      "edit": "Modifier {{name}}",
+      "addTitle": "Ajouter une unité",
+      "editTitle": "Modifier l'unité {{name}}",
+      "nameField": "Nom de l'unité",
+      "factorField": "Unités de base par unité ({{baseUnit}})",
+      "priceField": "Prix de vente de l'unité",
+      "priceHint": "Vide : prix calculé (contenu × prix de l'unité de base).",
+      "sellableField": "Vendable au comptoir et sur facture",
+      "add": "Ajouter",
+      "cancel": "Annuler",
+      "stale": "Cette unité a été modifiée par quelqu'un d'autre. Annulez et reprenez la modification."
     }
   },
   "fieldErrors": {
@@ -300,6 +323,7 @@
     "WHOLE_NUMBER": "Ce produit se compte en unités entières.",
     "BELOW_MIN": "Le stock maximum est inférieur au minimum.",
     "RANGE": "Valeur hors limites.",
-    "SIZE": "Ce texte est trop long."
+    "SIZE": "Ce texte est trop long.",
+    "POSITIVE": "La valeur doit être supérieure à zéro."
   }
 }

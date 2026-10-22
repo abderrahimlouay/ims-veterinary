@@ -117,12 +117,12 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PROD-003 | U,A | Create product without base unit → 400 |
 | BR-PROD-004 | S,A | Archive product; try to add it to a PO / sale → PRODUCT_ARCHIVED; history still readable |
 | BR-PROD-005 | U,R | Negative price, max<min threshold → rejected by validation and CHECK |
-| BR-PROD-006 | S | Change price → audit row PRICE_CHANGE with old/new |
+| BR-PROD-006 | S | Change price → audit row PRICE_CHANGE with old/new; product prices (`ProductPricesTest`, `PriceAuditFailureTest`) and unit prices incl. clearing to derived (`ProductUnitsTest`, `ProductUnitRulesTest`) |
 | BR-PROD-007 | U,R | Negative or duplicate species withdrawal row → rejected |
-| BR-UNIT-001 | R,A | Duplicate unit name for same product → DUPLICATE_RESOURCE; factor ≤ 0, > 4 decimals, or not whole for a non-divisible product rejected |
-| BR-UNIT-002 | U | 3 boxes × factor 10 → 30 base; 1.5 × 2.5 = 3.75; 1.25 × 1.25 = 1.5625 refused (SCALE, never rounded, ADR-065); non-whole result for a non-divisible product refused |
+| BR-UNIT-001 | R,A | Duplicate unit name for same product → DUPLICATE_RESOURCE; factor ≤ 0, > 4 decimals, or not whole for a non-divisible product rejected (`ProductUnitSchemaTest`, `ProductUnitsTest`) |
+| BR-UNIT-002 | U | 3 boxes × factor 10 → 30 base; 1.5 × 2.5 = 3.75; 1.25 × 1.25 = 1.5625 refused (SCALE, never rounded, ADR-065); non-whole result for a non-divisible product refused (`UnitConversionTest`) |
 | BR-UNIT-003 | S,A | Sell a non-sellable unit → UNIT_NOT_SELLABLE |
-| BR-UNIT-004 | S,A | Change factor of unit already used in document lines → UNIT_FACTOR_LOCKED (exercised from Phase 5; Phase 3 tests that an unused unit's factor can change) |
+| BR-UNIT-004 | S,A | Change factor of unit already used in document lines → UNIT_FACTOR_LOCKED (exercised from Phase 5; Phase 3 tests that an unused unit's factor can change, and with a stubbed `UnitReferences` that a used unit's factor is locked while its other fields stay editable: `ProductUnitsTest`, `ProductUnitRulesTest`) |
 | BR-UNIT-005 | S,R,A | Scan a box barcode → product, box unit, factor, price, quantity 1; scan a base-unit barcode → unit null; barcode with a unit of another product → refused by service and composite FK |
 | BR-LOT-001 | S,A | Receipt line without lot number / expiry → VALIDATION_FAILED, nothing posted |
 | BR-LOT-002 | S,R | Receive same (product, lot number) twice → one lot, balance summed; another expiry → `LOT_EXPIRY_MISMATCH`, nothing written; DB rejects a duplicate (product, lot number) even with another expiry (ADR-070); OD-029 cost |

@@ -40,3 +40,10 @@ const unitPrice = () =>
 export function formatUnitPrice(price: DecimalString): string {
   return unitPrice().format(price as Intl.StringNumericLiteral)
 }
+
+/** A unit factor (4 decimals at most, ADR-065) without trailing zeros: `"30.0000"` → `"30"`, `"2.5000"` → `"2,5"`. */
+export function formatFactor(factor: DecimalString): string {
+  return new Intl.NumberFormat(business().locale, { maximumFractionDigits: 4, useGrouping: false }).format(
+    factor as Intl.StringNumericLiteral,
+  )
+}
