@@ -94,7 +94,9 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/products/by-barcode/X1", "product.read"),
             new Endpoint(HttpMethod.GET, "/api/lots", "lot.read"),
             new Endpoint(HttpMethod.GET, "/api/lots/999999", "lot.read"),
-            new Endpoint(HttpMethod.GET, "/api/products/999999/lots", "lot.read"));
+            new Endpoint(HttpMethod.GET, "/api/products/999999/lots", "lot.read"),
+            new Endpoint(HttpMethod.GET, "/api/lots/fefo?productId=999999&quantity=1", "lot.read"),
+            new Endpoint(HttpMethod.GET, "/api/lots/expiry-alerts", "lot.read"));
 
     static final List<String> ROLES = List.of("Administrator", "Pharmacist", "Seller", "Accountant");
 

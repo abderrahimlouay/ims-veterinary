@@ -58,7 +58,7 @@ com.imsvet.ims        (ADR-034)
 | Module | Owns (tables) | Exposes to others | Consumes |
 |---|---|---|---|
 | `catalog` | products, product_units, barcodes, categories, manufacturers, ingredients, species, dosage_forms, withdrawal periods | `ProductLookup` (id, SKU, name, base unit, divisible; in use from Phase 3 by `inventory`), `UnitConversion` ; defines **`UnitReferences`** (is a unit used by document lines, BR-UNIT-004; implemented by purchasing and sales from Phase 5, none before) | — |
-| `inventory` | lots, stock_movements, inventory_counts(+lines), reorder tables | `StockService` (post movement, reserve/consume in a transaction), `LotQuery`, `FefoAllocator` | catalog |
+| `inventory` | lots, stock_movements, inventory_counts(+lines), reorder tables | `StockService` (post movement, reserve/consume in a transaction), `LotQuery`, `FefoAllocator` (pure, Phase 3), `LotGuard` (lot belongs to product, `LOT_PRODUCT_MISMATCH`, Phase 3) | catalog (through `ProductLookup`) |
 | `purchasing` | suppliers, supplier_prices, purchase_orders(+lines), goods_receipts(+lines), supplier_returns, supplier_invoices | `SupplierLookup` | catalog, inventory, numbering |
 | `sales` | customers, categories, customer_prices, sales documents(+lines), customer_returns, credit notes | `CustomerLookup` ; defines **`CreditLimitPort`** | catalog, inventory, numbering, finance (through port) |
 | `finance` | payments, allocations, cash_sessions, cash_movements | implements `CreditLimitPort`, `BalanceQuery`, `PaymentRecorder` | sales/purchasing read ports |

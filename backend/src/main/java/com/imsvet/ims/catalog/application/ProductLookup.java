@@ -2,7 +2,9 @@ package com.imsvet.ims.catalog.application;
 
 import com.imsvet.ims.catalog.domain.Product;
 import com.imsvet.ims.catalog.infrastructure.ProductRepository;
+import com.imsvet.ims.catalog.infrastructure.ProductUnitRepository;
 import com.imsvet.ims.common.security.InternalService;
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -20,13 +22,27 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductLookup {
 
     /** What other modules need to show and handle a product. */
-    public record ProductRef(long id, String sku, String commercialName, String baseUnit, boolean divisible) {
+    public record ProductRef(long id, String sku, String commercialName, String baseUnit, boolean divisible,
+            boolean archived) {
+    }
+
+    /** A packaging unit of a product (FR-PROD-006/007). */
+    public record UnitRef(long id, String name, BigDecimal factorToBase, boolean sellable) {
     }
 
     private final ProductRepository products;
+    private final ProductUnitRepository units;
 
-    public ProductLookup(ProductRepository products) {
+    public ProductLookup(ProductRepository products, ProductUnitRepository units) {
         this.products = products;
+        this.units = units;
+    }
+
+    /** The unit only when it belongs to that product (BR-UNIT-005). */
+    @Transactional(readOnly = true)
+    public Optional<UnitRef> unit(long productId, long unitId) {
+        return units.findByIdAndProductId(unitId, productId)
+                .map(u -> new UnitRef(u.id(), u.name(), u.factorToBase(), u.sellable()));
     }
 
     @Transactional(readOnly = true)
@@ -41,6 +57,6 @@ public class ProductLookup {
     }
 
     private static ProductRef ref(Product p) {
-        return new ProductRef(p.id(), p.sku(), p.commercialName(), p.baseUnit(), p.divisible());
+        return new ProductRef(p.id(), p.sku(), p.commercialName(), p.baseUnit(), p.divisible(), p.archived());
     }
 }

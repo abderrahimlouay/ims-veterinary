@@ -128,12 +128,12 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-LOT-002 | S,R | Receive same (product, lot number) twice → one lot, balance summed; another expiry → `LOT_EXPIRY_MISMATCH`, nothing written; DB rejects a duplicate (product, lot number) even with another expiry (ADR-070); OD-029 cost |
 | BR-LOT-003 | U,S | Lot expiring yesterday → expired; today and tomorrow → sellable (ADR-055); business date in Africa/Algiers differs from the UTC date around midnight; Phase 3 covers the rule (FEFO preview, alerts), sale confirmation from Phase 7 (`ExpiryPolicyTest`, `LotQueriesTest`) |
 | BR-LOT-004 | S | Blocked and recalled lots excluded from FEFO and rejected at confirm |
-| BR-LOT-005 | U | Allocation order by expiry then id; skips non-sellable; override without permission → FEFO_VIOLATION |
+| BR-LOT-005 | U | Allocation order by expiry then id; skips non-sellable; override without permission → FEFO_VIOLATION (Phase 3: `FefoAllocatorTest`, `FefoAndAlertsTest`; override from Phase 7) |
 | BR-LOT-006 | S | Quantity spanning two lots yields two lines, each with one lot |
-| BR-LOT-007 | S,R | Lot of another product → LOT_PRODUCT_MISMATCH (Phase 3: service check); composite FK refuses a movement whose product differs from its lot's (Phase 4, ADR-062); line without lot → LOT_REQUIRED (Phase 7) |
+| BR-LOT-007 | S,R | Lot of another product → LOT_PRODUCT_MISMATCH (Phase 3: service check); composite FK refuses a movement whose product differs from its lot's (Phase 4, ADR-062); line without lot → LOT_REQUIRED (Phase 7) (Phase 3: `LotGuardTest`) |
 | BR-LOT-008 | S,A | Recall lot → status recalled, reason/user/time stored, `LOT_RECALL` audited in the same transaction, repeat returns same report; buyers lists empty until Phase 7 (ADR-068), then incl. delivery notes and anonymous sales |
 | BR-LOT-009 | U,S,R | Every allowed/forbidden stored transition (table test, ADR-060); effective status priority recalled > blocked > expired > depleted > active (ADR-059); DB CHECK refuses `expired`/`depleted` as stored values; recalled lot cannot be unblocked (`LotStatusTest`, `LotSchemaTest`; API refusals with slice `inventory-lot-actions`) |
-| BR-LOT-010 | U,S | Days left −1 / 0 / 15 / 16 / 30 / 60 / 61 → expired / critical / critical / warning / warning / notice / none (inclusive, ADR-056); change threshold setting → levels follow; invalid values rejected (`ExpiryPolicyTest`, `LotQueriesTest`) |
+| BR-LOT-010 | U,S | Days left −1 / 0 / 15 / 16 / 30 / 60 / 61 → expired / critical / critical / warning / warning / notice / none (inclusive, ADR-056); change threshold setting → levels follow; invalid values rejected (`ExpiryPolicyTest`, `LotQueriesTest`, `FefoAndAlertsTest`) |
 | BR-LOT-011 | A | No endpoint changes lot number/product/expiry (no write route exists in Phase 3) (`LotQueriesTest`) |
 | BR-LOT-012 | S | Receive already expired lot → rejected or flagged per rule |
 | BR-STOCK-001 | R,C | Direct CHECK violation (3819) mapped to STOCK_INSUFFICIENT; two concurrent sales of last unit → exactly one succeeds |
