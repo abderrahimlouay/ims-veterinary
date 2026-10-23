@@ -60,6 +60,8 @@ Guards: `RequireAuth` (redirect to `/login`, preserve target), `RequirePermissio
 | `/lots`, `/lots/:id` | lot list, lot detail + movements, block/unblock/recall | `lot.read` |
 | `/stock` | stock levels, alerts, movement ledger | `stock.read` |
 | `/stock/adjustments/new` | manual adjustment | `stock.adjust` |
+| `/stock/opening-stock/new` | opening stock (ADR-082…084) | `stock.adjust` |
+| `/stock/integrity` | latest integrity run and run on demand (ADR-086) | `audit.read` |
 | `/inventory-counts`, `/inventory-counts/new`, `/inventory-counts/:id` | counts, entry grid, regularise | `inventory.count` |
 | `/reorder` | reorder proposals | `reorder.read` |
 | `/suppliers`, `/suppliers/:id` | list, detail (prices, payables) | `supplier.read` |
@@ -103,6 +105,7 @@ For each: purpose → main elements → key behaviours → states.
 - **Integrity banner:** users with `audit.read` see a banner while the latest integrity run has mismatches, with a link to its report; it disappears after a clean run (ADR-086).
 - **Product list and dashboard (ADR-089):** sellable quantity, status and nearest expiry columns and an "in stock only" filter; stock-aware substitutes; a low-stock dashboard widget; the lot page shows who blocked or recalled the lot.
 - **Reorder proposals:** list by status, *Generate now* (shows the products with thresholds incomplete), *Dismiss*; *Convert to purchase order* arrives in Phase 5.
+- **Delivered in Phase 4 (slice `phase-4/frontend-stock`):** `/stock` with two tabs — stock levels (search, status, below-reorder, in the URL; status and below-reorder badges from the API) and the ledger (`?view=movements`, type and date filters, `productId`/`lotId` from links; quantities shown with a +/− sign and a colour); `/stock/adjustments/new` (lot search or `?lotId=`, type, quantity, reason, "balance after" preview computed exactly on decimal strings — never floats — and a warning when it would go negative; the server decides) opening the lot page, which now lists the lot's movements (`stock.read`) and links to an adjustment (`stock.adjust`); `/stock/opening-stock/new` (product search, lot number, expiry as `JJ/MM/AAAA`, `AAAA-MM-JJ` or `MM/AAAA`, quantity in a unit, unit cost prefilled from the purchase price, expired-lot warning; while `openingStockOpen` from the public settings is false the page only explains that stock found now goes through an inventory count); the integrity banner under the top bar for `audit.read` holders, linking to `/stock/integrity`; product list stock columns and "in stock only"; stock in the substitutes; the low-stock dashboard widget (out / low counts linking to `/stock?status=…`).
 
 ### 4.4 Inventory count
 - Open count (full, or cycle by category or product list, ADR-073) → entry grid (lot, balance at opening, counted, balance when counted, variance, movements since counted, line status). Keyboard: Enter moves to the next counted cell. Variance highlighted. Saving a cell takes a new watermark (ADR-072). "Add a lot" for a lot of the scope without a line or a lot unknown to the system (ADR-074). "Regularise" disabled without `inventory.validate`; confirmation modal summarises net quantity per product; a refusal (`STOCK_INSUFFICIENT`) names the line and keeps the count open (ADR-075).

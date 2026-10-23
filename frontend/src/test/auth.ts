@@ -24,6 +24,7 @@ export const PUBLIC_SETTINGS = {
   currency: 'DZD',
   locale: 'fr-DZ',
   timeZone: 'Africa/Algiers',
+  openingStockOpen: true,
 }
 
 /** `GET /api/auth/me` answers with this user, or 401 when `null`; public settings are served too. */

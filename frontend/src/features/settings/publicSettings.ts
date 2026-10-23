@@ -10,6 +10,8 @@ export interface PublicSettings {
   currency: string
   locale: string
   timeZone: string
+  /** Opening stock may still be entered (ADR-082). */
+  openingStockOpen: boolean
 }
 
 export const publicSettingsKey = ['settings', 'public'] as const

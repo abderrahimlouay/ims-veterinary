@@ -13,7 +13,8 @@
     "audit": "Journal d'audit",
     "references": "Données de référence",
     "products": "Produits",
-    "lots": "Lots"
+    "lots": "Lots",
+    "stock": "Stock"
   },
   "language": {
     "label": "Langue",
@@ -86,7 +87,13 @@
     "RESOURCE_IN_USE": "Cette entrée est utilisée et ne peut pas être supprimée.",
     "DUPLICATE_RESOURCE": "Cette valeur existe déjà.",
     "UNIT_FACTOR_LOCKED": "Cette unité est déjà utilisée dans des documents : son contenu ne peut plus changer. Créez une nouvelle unité.",
-    "BARCODE_DUPLICATE": "Ce code-barres appartient déjà à un produit."
+    "BARCODE_DUPLICATE": "Ce code-barres appartient déjà à un produit.",
+    "STOCK_INSUFFICIENT": "Stock insuffisant sur le lot.",
+    "ADJUSTMENT_REASON_REQUIRED": "Un motif est obligatoire pour un ajustement.",
+    "OPENING_STOCK_CLOSED": "La période du stock d'ouverture est close : le stock trouvé désormais passe par un inventaire.",
+    "LOT_EXPIRY_MISMATCH": "Ce numéro de lot existe déjà avec une autre date de péremption.",
+    "LOT_RECALLED": "Ce lot est rappelé.",
+    "PRODUCT_ARCHIVED": "Ce produit est archivé."
   },
   "pager": {
     "label": "Pagination",
@@ -250,7 +257,8 @@
       "searchHint": "Nom, SKU ou principe actif",
       "ingredient": "Principe actif",
       "species": "Espèce",
-      "noMatch": "Aucun produit ne correspond à la recherche."
+      "noMatch": "Aucun produit ne correspond à la recherche.",
+      "inStockOnly": "En stock seulement"
     },
     "ingredients": {
       "none": "Aucun principe actif.",
@@ -265,7 +273,7 @@
       }
     },
     "substitutes": {
-      "none": "Aucun produit ne partage ses principes actifs."
+      "none": "Aucun produit en stock ne partage ses principes actifs."
     },
     "species": {
       "targets": "Espèces cibles",
@@ -350,7 +358,8 @@
     "SIZE": "Ce texte est trop long.",
     "POSITIVE": "La valeur doit être supérieure à zéro.",
     "FORMAT": "Ce code ne correspond pas au type choisi.",
-    "CHECK_DIGIT": "Le chiffre de contrôle EAN-13 est incorrect."
+    "CHECK_DIGIT": "Le chiffre de contrôle EAN-13 est incorrect.",
+    "COST_MISMATCH": "Ce lot existe déjà avec un autre coût unitaire."
   },
   "lots": {
     "title": "Lots",
@@ -426,6 +435,107 @@
         "warning": "Attention (≤ {{days}} jours)",
         "notice": "À surveiller (≤ {{days}} jours)"
       }
+    }
+  },
+  "stock": {
+    "title": "Stock",
+    "views": "Vues du stock",
+    "view": {
+      "levels": "Niveaux de stock",
+      "movements": "Mouvements"
+    },
+    "search": "Rechercher un produit",
+    "statusFilter": "État du stock",
+    "status": {
+      "in_stock": "En stock",
+      "low": "Stock bas",
+      "out": "Rupture"
+    },
+    "belowReorder": "Sous le seuil de réapprovisionnement",
+    "belowReorderOnly": "Sous le seuil de réapprovisionnement seulement",
+    "noMatch": "Aucun produit ne correspond aux filtres.",
+    "empty": "Aucun produit.",
+    "sellable": "Vendable",
+    "total": "Total",
+    "nearestExpiry": "Péremption la plus proche",
+    "movements": {
+      "title": "Mouvements",
+      "date": "Date",
+      "lot": "Lot",
+      "type": "Type",
+      "quantity": "Quantité",
+      "reason": "Motif",
+      "user": "Utilisateur",
+      "from": "Du",
+      "to": "Au",
+      "limited": "Liste limitée à un produit ou un lot.",
+      "showAll": "Afficher tous les mouvements",
+      "empty": "Aucun mouvement.",
+      "all": "Tous les mouvements du lot"
+    },
+    "movementType": {
+      "purchase_receipt": "Réception",
+      "sale": "Vente",
+      "customer_return": "Retour client",
+      "supplier_return": "Retour fournisseur",
+      "adjustment_breakage": "Casse",
+      "adjustment_expiry": "Péremption",
+      "adjustment_theft": "Vol",
+      "adjustment_internal_use": "Usage interne",
+      "adjustment_inventory": "Inventaire",
+      "opening_stock": "Stock d'ouverture"
+    },
+    "adjustment": {
+      "new": "Nouvel ajustement",
+      "title": "Ajustement de stock",
+      "findLot": "Rechercher un lot (numéro)",
+      "noLot": "Aucun lot avec stock ne correspond.",
+      "pick": "Choisir",
+      "pickLot": "Choisir le lot {{lotNumber}}",
+      "balance": "Solde : {{quantity}}",
+      "changeLot": "Changer de lot",
+      "type": "Type d'ajustement",
+      "quantity": "Quantité retirée ({{unit}})",
+      "after": "Solde après : {{quantity}}",
+      "tooMuch": "La quantité dépasse le solde du lot ; le serveur refusera.",
+      "reason": "Motif",
+      "insufficient": "Stock insuffisant : {{quantity}} disponibles sur le lot.",
+      "submit": "Enregistrer l'ajustement",
+      "done": "Ajustement enregistré."
+    },
+    "opening": {
+      "new": "Stock d'ouverture",
+      "title": "Stock d'ouverture",
+      "done": "Lot {{lotNumber}} enregistré : {{quantity}} en stock.",
+      "openLot": "Ouvrir le lot",
+      "findProduct": "Rechercher un produit",
+      "pickProduct": "Choisir {{name}}",
+      "changeProduct": "Changer de produit",
+      "expiry": "Date de péremption",
+      "expiryHint": "JJ/MM/AAAA, AAAA-MM-JJ ou MM/AAAA (dernier jour du mois)",
+      "expired": "Ce lot est déjà périmé : il sera enregistré mais ne pourra pas être vendu.",
+      "quantity": "Quantité",
+      "unit": "Unité",
+      "unitOption": "{{name}} ({{factor}} {{base}})",
+      "unitCost": "Coût unitaire ({{unit}})",
+      "unitCostHint": "Prérempli avec le prix d'achat du produit.",
+      "submit": "Enregistrer"
+    },
+    "integrity": {
+      "banner": "Contrôle d’intégrité du {{at}} : {{count}} lot(s) dont le solde diffère du journal des mouvements.",
+      "open": "Voir le rapport",
+      "title": "Contrôle d'intégrité du stock",
+      "runNow": "Lancer le contrôle",
+      "none": "Aucun contrôle n'a encore été lancé.",
+      "summary": "Dernier contrôle le {{at}} par {{by}} : {{count}} lots vérifiés.",
+      "nightly": "le contrôle nocturne",
+      "clean": "Chaque solde est égal à la somme de ses mouvements.",
+      "balance": "Solde",
+      "ledgerSum": "Somme des mouvements"
+    },
+    "widget": {
+      "title": "Stock bas",
+      "none": "Aucun produit en rupture ni en stock bas."
     }
   }
 }

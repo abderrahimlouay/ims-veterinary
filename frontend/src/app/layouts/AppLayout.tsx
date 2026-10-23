@@ -4,13 +4,17 @@ import { NavLink, Outlet, useNavigate } from 'react-router'
 import { Button } from '../../components/Button'
 import { LanguageSelect } from '../../components/LanguageSelect'
 import { useCurrentUser, useLogout } from '../../features/auth'
+import { IntegrityBanner } from '../../features/inventory'
 import { usePublicSettings } from '../../features/settings'
 import { NAV_ITEMS, visibleNavItems } from '../navigation'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `block px-3 py-2 rounded-ctl text-sm font-medium ${isActive ? 'bg-brand/10 text-brand' : 'text-ink hover:bg-bg'}`
 
-/** Back-office layout (frontend.md §3): top bar with the user, permission-filtered navigation, content. */
+/**
+ * Back-office layout (frontend.md §3): top bar with the user, the integrity banner for `audit.read` holders (ADR-086),
+ * permission-filtered navigation, content.
+ */
 export function AppLayout() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -43,6 +47,7 @@ export function AppLayout() {
           </Button>
         </div>
       </header>
+      {current && !current.mustChangePassword && <IntegrityBanner />}
       <div className="flex flex-1">
         <nav aria-label={t('nav.label')} className="w-56 shrink-0 p-3 bg-surface border-e border-line flex flex-col gap-1">
           {visibleNavItems(NAV_ITEMS, current?.permissions ?? []).map((item) => (

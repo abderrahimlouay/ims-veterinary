@@ -7,8 +7,9 @@ import { Pager } from '../../components/Pager'
 import { SelectField } from '../../components/SelectField'
 import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
-import { formatUnitPrice } from '../../lib/format'
+import { formatDate, formatQuantity, formatUnitPrice } from '../../lib/format'
 import { hasPermission, useCurrentUser } from '../auth'
+import { StockStatusBadge } from '../inventory'
 import { findByBarcode, useProducts, type ProductSearch } from './productApi'
 import { referenceLabel, useReferenceList, type ReferenceListPath } from './referenceApi'
 
@@ -38,7 +39,8 @@ function FilterSelect({ path, i18nKey, label, value, onChange }: {
 /**
  * `/products` (frontend.md §4.1): search anywhere in name, SKU or active ingredient (ADR-048); a scanner's
  * Enter-terminated barcode opens its product (FR-PROD-003); filters by
- * category, manufacturer, ingredient and species (ADR-047), archived on request. Criteria live in the URL.
+ * category, manufacturer, ingredient and species (ADR-047), archived on request, in stock only (ADR-090); sellable
+ * quantity, stock status and nearest expiry from the server (ADR-089). Criteria live in the URL.
  */
 export function ProductsPage() {
   const { t } = useTranslation()
@@ -52,6 +54,7 @@ export function ProductsPage() {
     ingredientId: params.get('ingredientId') ?? '',
     speciesId: params.get('speciesId') ?? '',
     includeArchived: params.get('includeArchived') === 'true',
+    inStockOnly: params.get('inStockOnly') === 'true',
     page: Number(params.get('page') ?? '0'),
   }
   const [typed, setTyped] = useState(search.q)
@@ -67,12 +70,12 @@ export function ProductsPage() {
     setControls(search)
   }
   const products = useProducts(search)
-  const filtered = search.q !== '' || FILTERS.some((f) => search[f] !== '')
+  const filtered = search.q !== '' || search.inStockOnly || FILTERS.some((f) => search[f] !== '')
 
   const update = (changes: Record<string, string>) => {
     setControls((c) => ({
       ...c,
-      ...Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, k === 'includeArchived' ? v === 'true' : v])),
+      ...Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, k === 'includeArchived' || k === 'inStockOnly' ? v === 'true' : v])),
     }))
     setParams(
       (current) => {
@@ -157,6 +160,14 @@ export function ProductsPage() {
           />
           {t('catalog.products.showArchived')}
         </label>
+        <label className="flex items-end gap-2 text-sm pb-2">
+          <input
+            type="checkbox"
+            checked={controls.inStockOnly}
+            onChange={(e) => update({ inStockOnly: String(e.target.checked) })}
+          />
+          {t('catalog.products.inStockOnly')}
+        </label>
       </div>
       {products.isPending ? (
         <p role="status" className="text-mute">
@@ -177,6 +188,9 @@ export function ProductsPage() {
                   <th className="text-start">{t('catalog.products.category')}</th>
                   <th className="text-start">{t('catalog.products.baseUnit')}</th>
                   <th className="text-end">{t('catalog.products.salePrice')}</th>
+                  <th className="text-end">{t('stock.sellable')}</th>
+                  <th className="text-start ps-4">{t('stock.statusFilter')}</th>
+                  <th className="text-start">{t('stock.nearestExpiry')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -194,6 +208,11 @@ export function ProductsPage() {
                     <td>{p.category ? referenceLabel(p.category, 'categories', t) : '—'}</td>
                     <td>{p.baseUnit}</td>
                     <td className="text-end">{formatUnitPrice(p.salePrice)}</td>
+                    <td className="text-end">{formatQuantity(p.sellableQtyBase)}</td>
+                    <td className="ps-4">
+                      <StockStatusBadge status={p.stockStatus} />
+                    </td>
+                    <td>{p.nearestExpiry ? formatDate(p.nearestExpiry) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
