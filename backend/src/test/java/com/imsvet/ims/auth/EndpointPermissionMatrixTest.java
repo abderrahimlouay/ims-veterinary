@@ -103,7 +103,9 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/lots/999999/recall-report", "lot.recall"),
             new Endpoint(HttpMethod.GET, "/api/inventory/movements", "stock.read"),
             new Endpoint(HttpMethod.POST, "/api/inventory/adjustments", "stock.adjust",
-                    "{\"lotId\":999999,\"type\":\"adjustment_breakage\",\"quantity\":\"1\",\"reason\":\"x\"}"));
+                    "{\"lotId\":999999,\"type\":\"adjustment_breakage\",\"quantity\":\"1\",\"reason\":\"x\"}"),
+            new Endpoint(HttpMethod.POST, "/api/inventory/opening-stock", "stock.adjust",
+                    "{\"productId\":999999,\"lotNumber\":\"L\",\"expiryDate\":\"2027-01-31\",\"quantity\":\"1\",\"unitCost\":\"0\"}"));
 
     static final List<String> ROLES = List.of("Administrator", "Pharmacist", "Seller", "Accountant");
 

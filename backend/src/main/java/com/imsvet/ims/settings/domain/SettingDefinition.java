@@ -16,7 +16,10 @@ public enum SettingDefinition {
     LOGIN_LOCKOUT_MINUTES("login_lockout_minutes", SettingFormat.POSITIVE_INTEGER, true, false),
     CURRENCY("currency", SettingFormat.CURRENCY_CODE, false, true),
     LOCALE("locale", SettingFormat.LOCALE_TAG, true, true),
-    BUSINESS_TIME_ZONE("business_time_zone", SettingFormat.ZONE_ID, false, true);
+    BUSINESS_TIME_ZONE("business_time_zone", SettingFormat.ZONE_ID, false, true),
+    OPENING_STOCK_OPEN("opening_stock_open", SettingFormat.BOOLEAN, true, true),
+    REORDER_JOB_TIME("reorder_job_time", SettingFormat.TIME_OF_DAY, true, false),
+    INTEGRITY_CHECK_TIME("integrity_check_time", SettingFormat.TIME_OF_DAY, true, false);
 
     private final String key;
     private final SettingFormat format;

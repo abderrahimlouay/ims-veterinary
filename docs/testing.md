@@ -129,7 +129,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-UNIT-004 | S,A | Change factor of unit already used in document lines → UNIT_FACTOR_LOCKED (exercised from Phase 5; Phase 3 tests that an unused unit's factor can change, and with a stubbed `UnitReferences` that a used unit's factor is locked while its other fields stay editable: `ProductUnitsTest`, `ProductUnitRulesTest`) |
 | BR-UNIT-005 | S,R,A | Scan a box barcode → product, box unit, factor, price, quantity 1; scan a base-unit barcode → unit null; barcode with a unit of another product → refused by service and composite FK; codes containing `/` and `%` found (ADR-071) (`ProductBarcodesTest`, `ProductBarcodeSchemaTest`) |
 | BR-LOT-001 | S,A | Receipt line without lot number / expiry → VALIDATION_FAILED, nothing posted |
-| BR-LOT-002 | S,R | Receive same (product, lot number) twice → one lot, balance summed; another expiry → `LOT_EXPIRY_MISMATCH`, nothing written; DB rejects a duplicate (product, lot number) even with another expiry (ADR-070); OD-029 cost |
+| BR-LOT-002 | S,R | Receive same (product, lot number) twice → one lot, balance summed; another expiry → `LOT_EXPIRY_MISMATCH`, nothing written; DB rejects a duplicate (product, lot number) even with another expiry (ADR-070); OD-029 cost (Phase 4: `OpeningStockTest`, `OpeningStockConcurrencyTest`) |
 | BR-LOT-003 | U,S | Lot expiring yesterday → expired; today and tomorrow → sellable (ADR-055); business date in Africa/Algiers differs from the UTC date around midnight; Phase 3 covers the rule (FEFO preview, alerts), sale confirmation from Phase 7 (`ExpiryPolicyTest`, `LotQueriesTest`) |
 | BR-LOT-004 | S | Blocked and recalled lots excluded from FEFO and rejected at confirm |
 | BR-LOT-005 | U | Allocation order by expiry then id; skips non-sellable; override without permission → FEFO_VIOLATION (Phase 3: `FefoAllocatorTest`, `FefoAndAlertsTest`; override from Phase 7) |
@@ -153,7 +153,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-STOCK-011 | U,R | Sellable stock excludes expired/blocked/recalled/quarantined lots (sellable predicate: `ExpiryPolicyTest`; quantities from Phase 4); product sellable quantity sums only sellable lots |
 | BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock; lock wait timeout → `CONCURRENT_MODIFICATION` within 5 s (ADR-012, `LockWaitTimeoutTest`) (`StockConcurrencyTest` CT-02) |
 | BR-STOCK-013 | U,A | Status in stock / low / out and below-reorder from sellable quantity and thresholds (ADR-080) |
-| BR-STOCK-014 | S,A | Opening stock: setting closed → `OPENING_STOCK_CLOSED`; new lot; existing lot same expiry adds; other expiry, other cost, recalled refused; expired accepted; audited `OPENING_STOCK` |
+| BR-STOCK-014 | S,A | Opening stock: setting closed → `OPENING_STOCK_CLOSED`; new lot; existing lot same expiry adds; other expiry, other cost, recalled refused; expired accepted; audited `OPENING_STOCK` (`OpeningStockTest`, `OpeningStockConcurrencyTest`, `SettingFormatTest`) |
 | BR-INV-001 | U | variance = counted − theoretical, signs and zero; variance against the balance at the watermark |
 | BR-INV-002 | S | Regularise → one movement per variance line, reason set |
 | BR-INV-003 | S | Full vs partial counts (OD-012) produce correct lines; full: lots with stock; cycle by category and by product list (ADR-073); found lots (ADR-074) |

@@ -3,6 +3,8 @@ package com.imsvet.ims.inventory.infrastructure;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
 import jakarta.persistence.LockModeType;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -10,10 +12,11 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
-/** Lots are read and locked here; no save or delete in Phase 3 (ADR-064, BR-LOT-011). */
+/** Lots are read, locked and created here (find-or-create, BR-LOT-002); never deleted, identity never edited (BR-LOT-011). */
 public interface LotRepository extends Repository<Lot, Long> {
 
     Optional<Lot> findById(Long id);
@@ -31,6 +34,32 @@ public interface LotRepository extends Repository<Lot, Long> {
     List<Lot> findAllByIdInForUpdate(Collection<Long> ids);
 
     List<Lot> findAllByIdIn(Collection<Long> ids);
+
+    /**
+     * Creates the lot (balance 0, active) unless (product, lot number) exists, ignoring case and accents (ADR-070,
+     * ADR-058). A concurrent creation of the same lot waits on the unique key and then does nothing. Returns 1 when
+     * a row was inserted.
+     * The update count cannot tell an insert from a duplicate (the driver reports found rows), so callers reset
+     * {@link #resetLastInsertId()} before and read {@link #lastInsertId()} after, on the same connection.
+     */
+    @Modifying
+    @Query(nativeQuery = true, value = """
+            INSERT INTO lots (product_id, lot_number, expiry_date, unit_cost, quantity_on_hand, status, received_at)
+            VALUES (:productId, :lotNumber, :expiryDate, :unitCost, 0, 'active', :receivedAt)
+            ON DUPLICATE KEY UPDATE id = id""")
+    int insertIfAbsent(long productId, String lotNumber, LocalDate expiryDate, BigDecimal unitCost, Instant receivedAt);
+
+    @Query(nativeQuery = true, value = "SELECT LAST_INSERT_ID(0)")
+    long resetLastInsertId();
+
+    /** The id inserted by this connection since the last reset, or 0. */
+    @Query(nativeQuery = true, value = "SELECT LAST_INSERT_ID()")
+    long lastInsertId();
+
+    /** Locking read by identity (ADR-012, ADR-070). */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM Lot l WHERE l.productId = :productId AND l.lotNumber = :lotNumber")
+    Optional<Lot> findByIdentityForUpdate(long productId, String lotNumber);
 
     /**
      * Every filter optional. {@code stored}, {@code expired} and {@code withStock} together express an effective

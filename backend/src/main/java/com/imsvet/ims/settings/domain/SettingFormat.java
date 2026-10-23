@@ -2,7 +2,11 @@ package com.imsvet.ims.settings.domain;
 
 import java.math.BigDecimal;
 import java.time.DateTimeException;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Currency;
@@ -96,7 +100,37 @@ public enum SettingFormat {
                 throw new IllegalArgumentException("Enter a time zone such as Africa/Algiers.");
             }
         }
+    },
+
+    /** {@code true} or {@code false}, any case (ADR-082). */
+    BOOLEAN {
+        @Override
+        public String normalize(String raw) {
+            String value = raw.trim().toLowerCase(Locale.ROOT);
+            if (!value.equals("true") && !value.equals("false")) {
+                throw new IllegalArgumentException("Enter true or false.");
+            }
+            return value;
+        }
+    },
+
+    /** A time of day {@code HH:mm} in the business time zone, stored with two-digit hours (ADR-078, ADR-086). */
+    TIME_OF_DAY {
+        @Override
+        public String normalize(String raw) {
+            try {
+                return LocalTime.parse(raw.trim(), FLEXIBLE_TIME).format(STORED_TIME);
+            } catch (DateTimeParseException e) {
+                throw new IllegalArgumentException("Enter a time such as 06:00.");
+            }
+        }
     };
+
+    /** Strict: no "24:00" turned into midnight. */
+    private static final DateTimeFormatter FLEXIBLE_TIME = DateTimeFormatter.ofPattern("H:mm")
+            .withResolverStyle(ResolverStyle.STRICT);
+
+    private static final DateTimeFormatter STORED_TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     public abstract String normalize(String raw);
 
