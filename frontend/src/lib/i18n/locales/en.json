@@ -99,7 +99,6 @@
     "INVENTORY_NOT_OPEN": "This count is no longer open.",
     "INVENTORY_ALREADY_OPEN": "A full count is already open.",
     "INVENTORY_LINE_ALREADY_REGULARIZED": "This line is already regularised.",
-    "INVALID_STATE_TRANSITION": "This operation is not possible in the current state.",
     "CONCURRENT_MODIFICATION": "Someone else just changed this data: try again."
   },
   "pager": {

@@ -99,7 +99,6 @@
     "INVENTORY_NOT_OPEN": "هذا الجرد لم يعد مفتوحًا.",
     "INVENTORY_ALREADY_OPEN": "يوجد جرد كامل مفتوح بالفعل.",
     "INVENTORY_LINE_ALREADY_REGULARIZED": "تمت تسوية هذا السطر بالفعل.",
-    "INVALID_STATE_TRANSITION": "هذه العملية غير ممكنة في الحالة الحالية.",
     "CONCURRENT_MODIFICATION": "قام شخص آخر بتعديل هذه البيانات للتو: أعد المحاولة."
   },
   "pager": {

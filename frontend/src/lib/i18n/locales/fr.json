@@ -99,7 +99,6 @@
     "INVENTORY_NOT_OPEN": "Cet inventaire n'est plus ouvert.",
     "INVENTORY_ALREADY_OPEN": "Un inventaire complet est déjà ouvert.",
     "INVENTORY_LINE_ALREADY_REGULARIZED": "Cette ligne est déjà régularisée.",
-    "INVALID_STATE_TRANSITION": "Cette opération n'est pas possible dans l'état actuel.",
     "CONCURRENT_MODIFICATION": "Quelqu'un d'autre vient de modifier ces données : réessayez."
   },
   "pager": {
