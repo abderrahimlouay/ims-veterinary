@@ -1,6 +1,8 @@
 package com.imsvet.ims.inventory.api;
 
 import com.imsvet.ims.common.paging.PageResponse;
+import com.imsvet.ims.inventory.application.IntegrityChecks;
+import com.imsvet.ims.inventory.application.IntegrityChecks.IntegrityRun;
 import com.imsvet.ims.inventory.application.LotViews.MovementEntry;
 import com.imsvet.ims.inventory.application.MovementQueries;
 import com.imsvet.ims.inventory.application.MovementQueries.MovementFilter;
@@ -42,9 +44,11 @@ class InventoryController {
     private final StockAdjustments adjustments;
     private final OpeningStock openingStock;
     private final StockLevels stockLevels;
+    private final IntegrityChecks integrityChecks;
 
     InventoryController(MovementQueries movements, StockAdjustments adjustments, OpeningStock openingStock,
-            StockLevels stockLevels) {
+            StockLevels stockLevels, IntegrityChecks integrityChecks) {
+        this.integrityChecks = integrityChecks;
         this.movements = movements;
         this.adjustments = adjustments;
         this.openingStock = openingStock;
@@ -63,6 +67,17 @@ class InventoryController {
         MovementEntry created = adjustments.adjust(
                 new StockAdjustments.AdjustmentInput(body.lotId(), body.type(), body.quantity(), body.reason()));
         return ResponseEntity.created(URI.create("/api/inventory/movements/" + created.id())).body(created);
+    }
+
+    /** ADR-086: 204 when no run exists yet. */
+    @GetMapping("/integrity-check")
+    ResponseEntity<IntegrityRun> latestIntegrityRun() {
+        return integrityChecks.latest().map(ResponseEntity::ok).orElse(ResponseEntity.noContent().build());
+    }
+
+    @PostMapping("/integrity-check")
+    IntegrityRun runIntegrityCheck() {
+        return integrityChecks.runNow();
     }
 
     @GetMapping("/stock")

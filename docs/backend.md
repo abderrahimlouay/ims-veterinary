@@ -136,7 +136,7 @@ Externalised per profile (`dev`, `test`, `prod`): datasource, Flyway, security (
 |---|---|---|
 | Reorder planner | generate proposals at `reorder_job_time` (ADR-076…079) | idempotent; same code as *Generate now* |
 | Backup | per OD-021 | logged in `backup_log` |
-| Integrity check | reconcile balances vs ledger at `integrity_check_time`, run stored, CRITICAL `LEDGER_MISMATCH` on mismatch (BR-STOCK-007, ADR-086) | report only; same code as the on-demand check |
+| Integrity check | reconcile balances vs ledger once per business day, at the first tick at or after `integrity_check_time` (business time zone; catches up the same day after downtime); run stored; `LEDGER_MISMATCH` security event at ERROR with `severity=CRITICAL` (BR-STOCK-007, ADR-086) | report only; same code as the on-demand check; ticks every 30 s, off with `ims.jobs.enabled=false` (tests) |
 | Session cleanup | expired sessions (Spring Session JDBC cleanup job) | |
 
 No job computes expiry: expired lots are unsellable by rule, evaluated at read and use time (ADR-059). Jobs run with a system identity recorded in audit; in multi-instance deployments a lock (e.g. DB-based) prevents duplicates (single instance assumed `[REC]`).

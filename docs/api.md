@@ -194,7 +194,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | POST | `/api/inventory/reorder-proposals/generate` | run the generation now (ADR-078) | `reorder.manage` | → `{created, updated, thresholdsIncomplete: [{id, sku, commercialName}]}` |
 | POST | `/api/inventory/reorder-proposals/{id}/dismiss` | dismiss a pending proposal (ADR-079) | `reorder.manage` | → `ProposalEntry`; `INVALID_STATE_TRANSITION` |
 | POST | `/api/inventory/reorder-proposals/{id}/convert` | convert to a draft purchase order — **Phase 5** | `reorder.manage` | → `PurchaseOrderDetail` (draft); `INVALID_STATE_TRANSITION` |
-| GET | `/api/inventory/integrity-check` | latest stored run (ADR-086) | `audit.read` | `IntegrityRun` or `null` when none |
+| GET | `/api/inventory/integrity-check` | latest stored run (ADR-086); the banner shows while its `mismatchCount` > 0 | `audit.read` | `IntegrityRun`; 204 when no run exists yet |
 | POST | `/api/inventory/integrity-check` | run the check now | `audit.read` | → `IntegrityRun` |
 
 **Contracts**
