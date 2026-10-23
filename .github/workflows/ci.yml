@@ -72,6 +72,13 @@ jobs:
       - run: npx playwright install --with-deps chromium
       # Starts the backend (spring-boot:test-run on a MySQL container) and the production build (playwright.config.ts).
       - run: npm run test:e2e
+      # Traces and page snapshots of failed journeys, to see why without reproducing locally.
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: frontend/test-results/
+          retention-days: 7
 
   secrets:
     name: Secret scan

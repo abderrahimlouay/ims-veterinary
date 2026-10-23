@@ -24,6 +24,8 @@ test('J8: opening stock, inventory count and regularisation', async ({ page }) =
 
   await nav.getByRole('link', { name: 'Stock' }).click()
   await page.getByRole('link', { name: "Stock d'ouverture" }).click()
+  // The stock list has a search field with the same label: wait for the opening-stock page first.
+  await expect(page.getByRole('heading', { level: 1, name: "Stock d'ouverture" })).toBeVisible()
   await page.getByLabel('Rechercher un produit').fill('E2E Countval')
   await page.getByRole('button', { name: 'Choisir E2E Countval' }).click()
   await page.getByLabel('N° de lot').fill('J8-L1')
@@ -34,6 +36,7 @@ test('J8: opening stock, inventory count and regularisation', async ({ page }) =
 
   await nav.getByRole('link', { name: 'Inventaires' }).click()
   await page.getByRole('link', { name: 'Nouvel inventaire' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Ouvrir un inventaire' })).toBeVisible()
   await page.getByLabel(/Tournant/).check()
   await page.getByLabel('Une liste de produits', { exact: true }).check()
   await page.getByLabel('Rechercher un produit').fill('E2E Countval')
