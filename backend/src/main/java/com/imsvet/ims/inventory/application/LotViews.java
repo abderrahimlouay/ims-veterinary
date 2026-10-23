@@ -49,6 +49,10 @@ public final class LotViews {
                 new MovementUser(m.userId(), userName), m.createdAt());
     }
 
+    /** api.md §4.5 opening-stock result: the lot after the entry and the movement that brought the stock. */
+    public record OpeningResult(LotDetail lot, MovementEntry movement) {
+    }
+
     /** api.md §5.3: one proposed lot; {@code available} is its whole stock on hand. */
     public record FefoLine(long lotId, String lotNumber, LocalDate expiryDate, BigDecimal quantityBase,
             BigDecimal available, String alertLevel) {

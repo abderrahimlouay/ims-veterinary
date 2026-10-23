@@ -1,0 +1,46 @@
+package com.imsvet.ims.inventory.application;
+
+import com.imsvet.ims.common.error.BusinessException;
+import com.imsvet.ims.common.error.ErrorCode;
+import com.imsvet.ims.inventory.domain.Lot;
+import com.imsvet.ims.inventory.infrastructure.LotRepository;
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.Map;
+import org.springframework.stereotype.Component;
+
+/**
+ * Find-or-create of a lot by (product, lot number) under lock (BR-LOT-002, ADR-070), for the flows that bring stock
+ * in: opening stock (Phase 4), lots found during a count (ADR-074), receipts (Phase 5). An existing lot must have
+ * the same expiry date ({@code LOT_EXPIRY_MISMATCH}); the caller decides what else it requires. Runs in the caller's
+ * transaction; the lot starts empty, its stock comes from a movement posted by {@code StockService}.
+ */
+@Component
+public class LotIdentities {
+
+    /** The locked lot and whether this call created it. */
+    public record Found(Lot lot, boolean created) {
+    }
+
+    private final LotRepository lots;
+    private final Clock clock;
+
+    public LotIdentities(LotRepository lots, Clock clock) {
+        this.lots = lots;
+        this.clock = clock;
+    }
+
+    public Found findOrCreate(long productId, String lotNumber, LocalDate expiryDate, BigDecimal unitCost) {
+        lots.resetLastInsertId();
+        lots.insertIfAbsent(productId, lotNumber, expiryDate, unitCost, clock.instant());
+        boolean created = lots.lastInsertId() != 0;
+        Lot lot = lots.findByIdentityForUpdate(productId, lotNumber).orElseThrow();
+        if (!lot.expiryDate().equals(expiryDate)) {
+            throw new BusinessException(ErrorCode.LOT_EXPIRY_MISMATCH,
+                    "This lot number already exists with another expiry date.",
+                    Map.of("lotId", lot.id(), "expiryDate", lot.expiryDate().toString()));
+        }
+        return new Found(lot, created);
+    }
+}

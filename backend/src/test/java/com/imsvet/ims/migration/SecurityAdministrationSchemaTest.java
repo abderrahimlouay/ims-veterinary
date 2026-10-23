@@ -49,14 +49,17 @@ class SecurityAdministrationSchemaTest {
                 .stream().collect(Collectors.toMap(r -> (String) r.get("setting_key"),
                         r -> (String) r.get("setting_value")));
 
-        assertThat(settings).containsExactlyInAnyOrderEntriesOf(Map.of(
-                "expiry_alert_days", "60,30,15",
-                "default_vat_rate", "9.00",
-                "login_max_failures", "5",
-                "login_window_minutes", "15",
-                "login_lockout_minutes", "15",
-                "currency", "DZD",
-                "locale", "fr-DZ",
-                "business_time_zone", "Africa/Algiers"));
+        assertThat(settings).containsExactlyInAnyOrderEntriesOf(Map.ofEntries(
+                Map.entry("expiry_alert_days", "60,30,15"),
+                Map.entry("default_vat_rate", "9.00"),
+                Map.entry("login_max_failures", "5"),
+                Map.entry("login_window_minutes", "15"),
+                Map.entry("login_lockout_minutes", "15"),
+                Map.entry("currency", "DZD"),
+                Map.entry("locale", "fr-DZ"),
+                Map.entry("business_time_zone", "Africa/Algiers"),
+                Map.entry("opening_stock_open", "true"),
+                Map.entry("reorder_job_time", "06:00"),
+                Map.entry("integrity_check_time", "02:00")));
     }
 }

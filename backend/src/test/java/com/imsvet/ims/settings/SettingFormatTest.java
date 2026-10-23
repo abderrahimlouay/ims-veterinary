@@ -61,4 +61,30 @@ class SettingFormatTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> SettingFormat.ZONE_ID.normalize(raw)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    /** ADR-082: {@code opening_stock_open}. */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {"true|true", "TRUE|true", " false |false", "False|false"})
+    void booleansAreStoredInLowerCase(String raw, String stored) {
+        assertThat(SettingFormat.BOOLEAN.normalize(raw)).isEqualTo(stored);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"yes", "1", "on", ""})
+    void otherBooleansAreRejected(String raw) {
+        assertThatThrownBy(() -> SettingFormat.BOOLEAN.normalize(raw)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /** ADR-078, ADR-086: {@code reorder_job_time}, {@code integrity_check_time}. */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {"06:00|06:00", "6:05|06:05", "23:59|23:59", "00:00|00:00"})
+    void timesOfDayAreStoredAsHoursAndMinutes(String raw, String stored) {
+        assertThat(SettingFormat.TIME_OF_DAY.normalize(raw)).isEqualTo(stored);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"24:00", "12:60", "6h", "06:00:00", ""})
+    void otherTimesAreRejected(String raw) {
+        assertThatThrownBy(() -> SettingFormat.TIME_OF_DAY.normalize(raw)).isInstanceOf(IllegalArgumentException.class);
+    }
 }
