@@ -29,6 +29,7 @@ public class PublicSettingsQuery {
                 new BigDecimal(settings.value(SettingDefinition.DEFAULT_VAT_RATE)),
                 settings.value(SettingDefinition.CURRENCY),
                 settings.value(SettingDefinition.LOCALE),
-                settings.value(SettingDefinition.BUSINESS_TIME_ZONE));
+                settings.value(SettingDefinition.BUSINESS_TIME_ZONE),
+                "true".equals(settings.value(SettingDefinition.OPENING_STOCK_OPEN)));
     }
 }

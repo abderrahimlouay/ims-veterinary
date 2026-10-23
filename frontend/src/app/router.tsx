@@ -2,7 +2,7 @@ import type { RouteObject } from 'react-router'
 import { AuditPage, NewUserPage, RolesPage, SettingsPage, UserDetailPage, UsersPage } from '../features/admin'
 import { NewProductPage, ProductDetailPage, ProductsPage, ReferencesPage } from '../features/catalog'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
-import { LotDetailPage, LotsPage } from '../features/inventory'
+import { AdjustmentPage, IntegrityPage, LotDetailPage, LotsPage, OpeningStockPage, StockPage } from '../features/inventory'
 import { AccountPage, LoginPage } from '../features/auth'
 import { RequireAuth, RequirePermission } from './guards'
 import { AppLayout } from './layouts/AppLayout'
@@ -30,6 +30,10 @@ export const routes: RouteObject[] = [
       { path: 'products/:id', element: <RequirePermission code="product.read"><ProductDetailPage /></RequirePermission> },
       { path: 'lots', element: <RequirePermission code="lot.read"><LotsPage /></RequirePermission> },
       { path: 'lots/:id', element: <RequirePermission code="lot.read"><LotDetailPage /></RequirePermission> },
+      { path: 'stock', element: <RequirePermission code="stock.read"><StockPage /></RequirePermission> },
+      { path: 'stock/adjustments/new', element: <RequirePermission code="stock.adjust"><AdjustmentPage /></RequirePermission> },
+      { path: 'stock/opening-stock/new', element: <RequirePermission code="stock.adjust"><OpeningStockPage /></RequirePermission> },
+      { path: 'stock/integrity', element: <RequirePermission code="audit.read"><IntegrityPage /></RequirePermission> },
       { path: 'catalog/references', element: <RequirePermission code="product.read"><ReferencesPage /></RequirePermission> },
       { path: 'admin/users', element: <RequirePermission code="user.read"><UsersPage /></RequirePermission> },
       { path: 'admin/users/new', element: <RequirePermission code="user.manage"><NewUserPage /></RequirePermission> },

@@ -26,6 +26,10 @@ function aProduct(overrides: Record<string, unknown> = {}) {
     maxStock: null,
     reorderPoint: '0.000',
     archived: false,
+    sellableQtyBase: '12.000',
+    totalQtyBase: '15.000',
+    stockStatus: 'low',
+    nearestExpiry: '2027-05-31',
     ingredients: [],
     targetSpecies: [],
     withdrawalPeriods: [],
@@ -45,7 +49,7 @@ function serveReferences() {
 }
 
 describe('product pages', () => {
-  it('lists products with translated categories and four-decimal prices', async () => {
+  it('lists products with translated categories, four-decimal prices and their stock', async () => {
     serveMe(PHARMACIST)
     serveReferences()
     const queries: string[] = []
@@ -60,6 +64,12 @@ describe('product pages', () => {
     const row = (await screen.findByRole('link', { name: 'Amoxival 500' })).closest('tr')!
     expect(within(row).getByText('Antibiotique')).toBeInTheDocument()
     expect(within(row).getByText(/0,0125/)).toBeInTheDocument()
+    expect(within(row).getByText('12,000')).toBeInTheDocument()
+    expect(within(row).getByText('Stock bas')).toBeInTheDocument()
+    expect(within(row).getByText('31 mai 2027')).toBeInTheDocument()
+    await userEvent.click(screen.getByLabelText('En stock seulement'))
+    await waitFor(() => expect(queries.at(-1)).toContain('inStockOnly=true'))
+    await userEvent.click(screen.getByLabelText('En stock seulement'))
     await userEvent.click(screen.getByLabelText('Afficher les produits archivés'))
     expect(screen.getByLabelText('Afficher les produits archivés')).toBeChecked()
     await screen.findByRole('link', { name: 'Amoxival 500' })
@@ -228,7 +238,21 @@ describe('product pages', () => {
         return HttpResponse.json([])
       }),
       http.get('/api/products/5/substitutes', () =>
-        HttpResponse.json([{ id: 9, sku: 'CLAV-1', commercialName: 'Clavamox', category: null, baseUnit: 'tablet', salePrice: '1.5000', archived: false }]),
+        HttpResponse.json([
+          {
+            id: 9,
+            sku: 'CLAV-1',
+            commercialName: 'Clavamox',
+            category: null,
+            baseUnit: 'tablet',
+            salePrice: '1.5000',
+            archived: false,
+            sellableQtyBase: '40.000',
+            totalQtyBase: '40.000',
+            stockStatus: 'in_stock',
+            nearestExpiry: '2027-01-31',
+          },
+        ]),
       ),
     )
     renderApp('/products/5')
@@ -246,6 +270,8 @@ describe('product pages', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: 'Substituts' }))
     expect(await screen.findByRole('link', { name: 'Clavamox' })).toHaveAttribute('href', '/products/9')
+    expect(screen.getByText('40,000 tablet')).toBeInTheDocument()
+    expect(screen.getByText('En stock')).toBeInTheDocument()
   })
 
   it('reports a duplicated ingredient', async () => {

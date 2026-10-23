@@ -3,10 +3,11 @@ import { Link } from 'react-router'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { problemMessage } from '../../lib/errors'
-import { formatUnitPrice } from '../../lib/format'
+import { formatQuantity, formatUnitPrice } from '../../lib/format'
+import { StockStatusBadge } from '../inventory'
 import { useSubstitutes } from './productApi'
 
-/** Products sharing an active ingredient, most shared first (FR-PROD-004); stock is shown from Phase 4. */
+/** Products sharing an active ingredient with sellable stock, most shared first (FR-PROD-004, ADR-089). */
 export function SubstitutesPanel({ productId }: { productId: number }) {
   const { t } = useTranslation()
   const substitutes = useSubstitutes(productId)
@@ -31,6 +32,8 @@ export function SubstitutesPanel({ productId }: { productId: number }) {
             {p.commercialName}
           </Link>
           <code className="text-sm">{p.sku}</code>
+          <span className="text-sm">{`${formatQuantity(p.sellableQtyBase)} ${p.baseUnit}`}</span>
+          <StockStatusBadge status={p.stockStatus} />
           <span className="text-sm">{formatUnitPrice(p.salePrice)}</span>
         </li>
       ))}

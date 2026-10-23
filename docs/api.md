@@ -318,7 +318,7 @@ Scope of revenue/margin per OD-002 / OD-003 and BR-RPT-001 (net of credit notes)
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
 | GET | `/api/audit-logs` | filters `entity`, `entityId`, `userId`, `action`, `from`, `to` (business dates, both inclusive, business time zone); newest first | `audit.read` | page of `AuditEntry {id, userId, username, userFullName, action, entity, entityId, oldValues, newValues, ipAddress, createdAt}` (read-only; values are JSON objects; user fields `null` for system actions, ADR-046) |
-| GET | `/api/settings/public` | settings needed by the UI | authenticated | → `{expiryAlertDays: [60,30,15], defaultVatRate: "9.00", currency, locale, timeZone}` (no security settings) |
+| GET | `/api/settings/public` | settings needed by the UI | authenticated | → `{expiryAlertDays: [60,30,15], defaultVatRate: "9.00", currency, locale, timeZone, openingStockOpen}` (`openingStockOpen` from Phase 4, ADR-082: the opening-stock page explains a closed period before any entry; no security settings) |
 | GET | `/api/settings`, `/api/settings/{key}` | list / read settings | `settings.manage` | `[SettingView {key, value, description, editable, updatedAt}]`; unknown key → `NOT_FOUND` |
 | PUT | `/api/settings/{key}` | change one setting (audited `SETTING_CHANGE` when the value changes) | `settings.manage` | `{value}` → `SettingView` with the canonical value; `VALIDATION_FAILED` field `value`: `INVALID_FORMAT` or `READ_ONLY` (currency, time zone). No batch update (ADR-044) |
 | GET | `/api/backups` | backup log | `backup.manage` | page |

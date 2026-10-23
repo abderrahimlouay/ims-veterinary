@@ -13,7 +13,8 @@
     "audit": "Audit log",
     "references": "Reference data",
     "products": "Products",
-    "lots": "Lots"
+    "lots": "Lots",
+    "stock": "Stock"
   },
   "language": {
     "label": "Language",
@@ -86,7 +87,13 @@
     "RESOURCE_IN_USE": "This entry is used and cannot be deleted.",
     "DUPLICATE_RESOURCE": "This value already exists.",
     "UNIT_FACTOR_LOCKED": "This unit is already used in documents: its content can no longer change. Create a new unit.",
-    "BARCODE_DUPLICATE": "This barcode already belongs to a product."
+    "BARCODE_DUPLICATE": "This barcode already belongs to a product.",
+    "STOCK_INSUFFICIENT": "Not enough stock on the lot.",
+    "ADJUSTMENT_REASON_REQUIRED": "A reason is required for an adjustment.",
+    "OPENING_STOCK_CLOSED": "The opening-stock period is closed: stock found now goes through an inventory count.",
+    "LOT_EXPIRY_MISMATCH": "This lot number already exists with another expiry date.",
+    "LOT_RECALLED": "This lot is recalled.",
+    "PRODUCT_ARCHIVED": "This product is archived."
   },
   "pager": {
     "label": "Pagination",
@@ -250,7 +257,8 @@
       "searchHint": "Name, SKU or active ingredient",
       "ingredient": "Active ingredient",
       "species": "Species",
-      "noMatch": "No product matches the search."
+      "noMatch": "No product matches the search.",
+      "inStockOnly": "In stock only"
     },
     "ingredients": {
       "none": "No active ingredient.",
@@ -265,7 +273,7 @@
       }
     },
     "substitutes": {
-      "none": "No product shares its active ingredients."
+      "none": "No product in stock shares its active ingredients."
     },
     "species": {
       "targets": "Target species",
@@ -350,7 +358,8 @@
     "SIZE": "This text is too long.",
     "POSITIVE": "The value must be greater than zero.",
     "FORMAT": "This code does not match the chosen type.",
-    "CHECK_DIGIT": "The EAN-13 check digit is wrong."
+    "CHECK_DIGIT": "The EAN-13 check digit is wrong.",
+    "COST_MISMATCH": "This lot already exists with another unit cost."
   },
   "lots": {
     "title": "Lots",
@@ -426,6 +435,107 @@
         "warning": "Warning (≤ {{days}} days)",
         "notice": "Notice (≤ {{days}} days)"
       }
+    }
+  },
+  "stock": {
+    "title": "Stock",
+    "views": "Stock views",
+    "view": {
+      "levels": "Stock levels",
+      "movements": "Movements"
+    },
+    "search": "Search a product",
+    "statusFilter": "Stock status",
+    "status": {
+      "in_stock": "In stock",
+      "low": "Low",
+      "out": "Out of stock"
+    },
+    "belowReorder": "Below reorder point",
+    "belowReorderOnly": "Below reorder point only",
+    "noMatch": "No product matches the filters.",
+    "empty": "No product.",
+    "sellable": "Sellable",
+    "total": "Total",
+    "nearestExpiry": "Nearest expiry",
+    "movements": {
+      "title": "Movements",
+      "date": "Date",
+      "lot": "Lot",
+      "type": "Type",
+      "quantity": "Quantity",
+      "reason": "Reason",
+      "user": "User",
+      "from": "From",
+      "to": "To",
+      "limited": "List limited to one product or lot.",
+      "showAll": "Show every movement",
+      "empty": "No movement.",
+      "all": "All the lot's movements"
+    },
+    "movementType": {
+      "purchase_receipt": "Receipt",
+      "sale": "Sale",
+      "customer_return": "Customer return",
+      "supplier_return": "Supplier return",
+      "adjustment_breakage": "Breakage",
+      "adjustment_expiry": "Expiry",
+      "adjustment_theft": "Theft",
+      "adjustment_internal_use": "Internal use",
+      "adjustment_inventory": "Inventory count",
+      "opening_stock": "Opening stock"
+    },
+    "adjustment": {
+      "new": "New adjustment",
+      "title": "Stock adjustment",
+      "findLot": "Find a lot (number)",
+      "noLot": "No lot with stock matches.",
+      "pick": "Choose",
+      "pickLot": "Choose lot {{lotNumber}}",
+      "balance": "Balance: {{quantity}}",
+      "changeLot": "Change lot",
+      "type": "Adjustment type",
+      "quantity": "Quantity removed ({{unit}})",
+      "after": "Balance after: {{quantity}}",
+      "tooMuch": "The quantity exceeds the lot balance; the server will refuse it.",
+      "reason": "Reason",
+      "insufficient": "Not enough stock: {{quantity}} available on the lot.",
+      "submit": "Record the adjustment",
+      "done": "Adjustment recorded."
+    },
+    "opening": {
+      "new": "Opening stock",
+      "title": "Opening stock",
+      "done": "Lot {{lotNumber}} recorded: {{quantity}} in stock.",
+      "openLot": "Open the lot",
+      "findProduct": "Find a product",
+      "pickProduct": "Choose {{name}}",
+      "changeProduct": "Change product",
+      "expiry": "Expiry date",
+      "expiryHint": "DD/MM/YYYY, YYYY-MM-DD or MM/YYYY (last day of the month)",
+      "expired": "This lot has already expired: it will be recorded but cannot be sold.",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "unitOption": "{{name}} ({{factor}} {{base}})",
+      "unitCost": "Unit cost ({{unit}})",
+      "unitCostHint": "Prefilled with the product's purchase price.",
+      "submit": "Record"
+    },
+    "integrity": {
+      "banner": "Integrity check of {{at}}: {{count}} lot(s) whose balance differs from the movement ledger.",
+      "open": "See the report",
+      "title": "Stock integrity check",
+      "runNow": "Run the check",
+      "none": "No check has run yet.",
+      "summary": "Last check on {{at}} by {{by}}: {{count}} lots checked.",
+      "nightly": "the nightly check",
+      "clean": "Every balance equals the sum of its movements.",
+      "balance": "Balance",
+      "ledgerSum": "Sum of movements"
+    },
+    "widget": {
+      "title": "Low stock",
+      "none": "No product is out of stock or low."
     }
   }
 }

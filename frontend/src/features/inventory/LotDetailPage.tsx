@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router'
+import { Link, useLocation, useParams } from 'react-router'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
@@ -10,6 +10,8 @@ import { formatDate, formatDateTime, formatQuantity, formatUnitPrice } from '../
 import { hasPermission, useCurrentUser } from '../auth'
 import { AlertBadge, LotStatusBadge } from './LotBadges'
 import { useLot, useLotAction, useRecallReport, type LotAction, type LotDetail, type RecallReport } from './lotApi'
+import { MovementsTable } from './MovementsTable'
+import { useMovements } from './stockApi'
 
 /** The stored status behind the effective one (ADR-059): only blocked and recalled are stored besides active. */
 function storedStatus(lot: LotDetail): 'active' | 'blocked' | 'recalled' {
@@ -19,11 +21,13 @@ function storedStatus(lot: LotDetail): 'active' | 'blocked' | 'recalled' {
 /**
  * `/lots/:id` (frontend.md §4.2): effective status, balance and expiry; Block / Unblock / Recall with a mandatory
  * reason, offered only when the transition exists (ADR-060: never Unblock on a recalled lot) and the user holds the
- * permission; the recall report lists buyers once sales exist (ADR-068). Movement history arrives in Phase 4.
+ * permission; the recall report lists buyers once sales exist (ADR-068). From Phase 4 the lot's movements (`stock.read`)
+ * and a link to adjust it (`stock.adjust`, any status, ADR-085).
  */
 export function LotDetailPage() {
   const { t } = useTranslation()
   const id = Number(useParams().id)
+  const adjusted = (useLocation().state as { adjusted?: boolean } | null)?.adjusted === true
   const { data: current } = useCurrentUser()
   const lot = useLot(id)
   const [action, setAction] = useState<LotAction>()
@@ -53,6 +57,7 @@ export function LotDetailPage() {
         <LotStatusBadge status={data.status} />
         <AlertBadge level={data.alertLevel} />
       </div>
+      {adjusted && <Alert tone="ok">{t('stock.adjustment.done')}</Alert>}
       <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm">
         <dt className="text-mute">{t('lots.product')}</dt>
         <dd>
@@ -100,6 +105,14 @@ export function LotDetailPage() {
             {t('lots.actions.recall')}
           </Button>
         )}
+        {can('stock.adjust') && (
+          <Link
+            to={`/stock/adjustments/new?lotId=${data.id}`}
+            className="inline-flex items-center h-10 px-4 rounded-ctl text-sm font-medium bg-surface text-ink border border-control hover:bg-bg focus:outline-2 focus:outline-offset-2 focus:outline-brand"
+          >
+            {t('stock.adjustment.new')}
+          </Link>
+        )}
         {stored === 'recalled' && can('lot.recall') && shownReport === undefined && (
           <Button variant="secondary" onClick={() => setShowReport(true)}>
             {t('lots.actions.report')}
@@ -118,6 +131,35 @@ export function LotDetailPage() {
             setShowReport(true)
           }}
         />
+      )}
+      {can('stock.read') && <LotMovements lotId={data.id} />}
+    </section>
+  )
+}
+
+function LotMovements({ lotId }: { lotId: number }) {
+  const { t } = useTranslation()
+  const movements = useMovements({ productId: '', lotId: String(lotId), type: '', from: '', to: '', page: 0 })
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="font-semibold">{t('stock.movements.title')}</h2>
+      {movements.isPending ? (
+        <p role="status" className="text-mute">
+          {t('app.loading')}
+        </p>
+      ) : movements.error instanceof ApiError ? (
+        <Alert tone="danger">{problemMessage(movements.error.problem, t)}</Alert>
+      ) : !movements.data || movements.data.content.length === 0 ? (
+        <p className="text-mute">{t('stock.movements.empty')}</p>
+      ) : (
+        <>
+          <MovementsTable movements={movements.data.content} showLot={false} />
+          {movements.data.page.totalPages > 1 && (
+            <Link to={`/stock?view=movements&lotId=${lotId}`} className="text-sm text-brand underline underline-offset-4">
+              {t('stock.movements.all')}
+            </Link>
+          )}
+        </>
       )}
     </section>
   )

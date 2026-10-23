@@ -134,6 +134,7 @@ class SettingsEndpointTest {
                 .andExpect(jsonPath("$.currency").value("DZD"))
                 .andExpect(jsonPath("$.locale").value("fr-DZ"))
                 .andExpect(jsonPath("$.timeZone").value("Africa/Algiers"))
+                .andExpect(jsonPath("$.openingStockOpen").value(true))
                 .andReturn().getResponse().getContentAsString();
         assertThat(body).doesNotContain("login");
     }

@@ -12,6 +12,11 @@ export interface ProductSummary {
   baseUnit: string
   salePrice: string
   archived: boolean
+  /** From Phase 4 (ADR-089): base-unit quantities, status and nearest expiry computed by the server (ADR-080). */
+  sellableQtyBase: string
+  totalQtyBase: string
+  stockStatus: 'in_stock' | 'low' | 'out'
+  nearestExpiry: string | null
 }
 
 export interface ProductDetail extends ProductSummary {
@@ -77,6 +82,8 @@ export interface ProductSearch {
   ingredientId: string
   speciesId: string
   includeArchived: boolean
+  /** Products with at least one sellable lot (ADR-090). */
+  inStockOnly: boolean
   page: number
 }
 
@@ -92,6 +99,9 @@ export function useProducts(search: ProductSearch, pageSize = 20) {
       }
       if (search.includeArchived) {
         params.set('includeArchived', 'true')
+      }
+      if (search.inStockOnly) {
+        params.set('inStockOnly', 'true')
       }
       return apiFetch<{ content: ProductSummary[]; page: PageMetadata }>(`/api/products?${params}`, { signal })
     },
@@ -155,7 +165,7 @@ export function useReplaceWithdrawalPeriods(id: number) {
   })
 }
 
-/** Same-ingredient products (FR-PROD-004), without stock until Phase 4. */
+/** Same-ingredient products with sellable stock (FR-PROD-004, ADR-089). */
 export function useSubstitutes(id: number) {
   return useQuery({
     queryKey: [...productKeys.all, 'substitutes', id],
