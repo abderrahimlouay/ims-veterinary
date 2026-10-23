@@ -10,10 +10,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.imsvet.ims.TestClock;
 import com.imsvet.ims.TestcontainersConfiguration;
 import com.imsvet.ims.support.ApiClient;
+import com.imsvet.ims.support.StockAssertions;
 import com.imsvet.ims.support.TestLots;
 import com.imsvet.ims.support.TestUsers;
 import com.imsvet.ims.support.TestUsers.TestUser;
 import java.time.LocalDate;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,6 +86,12 @@ class InventoryCountsTest {
         pharmacist.login(user.username(), user.password()).andExpect(status().isOk());
     }
 
+    /** Counting never moves stock; the movements made during the counts keep ledger = balance (BR-STOCK-007). */
+    @AfterEach
+    void ledgerMatchesBalances() {
+        StockAssertions.assertLedgerMatchesBalances(jdbc, List.of(l1, l2, empty, q1));
+    }
+
     @Test
     void aFullCountListsEveryLotWithStockAndOnlyOneMayBeOpen() throws Exception {
         long count = idOf(open("{\"type\":\"full\",\"notes\":\"Year end\"}").andExpect(status().isCreated())
@@ -139,6 +148,8 @@ class InventoryCountsTest {
                 .andExpect(jsonPath("$.countedBy.fullName").value("Amina Benali"))
                 .andExpect(jsonPath("$.countedAt").value("2026-10-20T08:00:00Z"))
                 .andExpect(jsonPath("$.regularized").value(false));
+        assertThat(jdbc.queryForObject("SELECT CAST(variance_qty AS CHAR) FROM inventory_lines WHERE id = ?", String.class,
+                line)).as("generated column = service variance (ADR-016)").isEqualTo("-1.000");
     }
 
     @Test

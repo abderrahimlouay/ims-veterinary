@@ -1,8 +1,8 @@
 # Documentation Review — Cross-Document Consistency Audit
 
-> **Status:** Documentation / Architecture Phase — Implementation Not Started
+> **Status:** Phases 0–3 delivered and tagged; Phase 4 implemented, awaiting the user's approval
 > **Purpose:** record every inconsistency, gap, ambiguity and risk found while reading the four inputs (Spec `said_project.md`, Source Schema `ims_veterinaire_schema_v2.sql`, design prototype, master brief) and while producing the documentation set. Nothing here is silently resolved.
-> **Last updated:** 2026-10-20
+> **Last updated:** 2026-10-23 (audit re-run at the Phase 4 close, §3.3)
 
 Severity scale: **Critical** (would cause data corruption/legal/financial error or blocks a phase if ignored) · **High** (wrong behaviour likely) · **Medium** · **Low** · **Open Decision** (needs the user; see `decisions.md`).
 Status values: *Open* (nothing decided), *Proposed* (resolution recommended, awaiting approval), *Mitigated* (handled in the docs, implementation must follow).
@@ -57,7 +57,7 @@ Gate for implementation: **Critical and High items marked for Phase 0–1 must b
 | DR-031 | Authentication mechanism and permission matrix | High | security.md, api.md §4.1, frontend.md §8 | Spec requires "secure authentication" and roles but not the mechanism nor the rights per role; the matrix in `security.md` is a proposal. | **Resolved 2026-10-20** by ADR-036 (server-side sessions) and ADR-037 (matrix accepted as proposed). | Phase 1 · ADR-036, ADR-037 |
 | DR-032 | Backend module list differs between ADR-006 and backend.md/architecture.md | Medium | decisions.md (ADR-006), backend.md §2, architecture.md §2.2/§3 | ADR-006 lists 18 modules (`product`, `user`, `supplier`, `customer`, `returns`, `payment`…); the other documents and the dependency rules use 14 (`catalog`, `users`, suppliers in `purchasing`, customers/returns in `sales`, payments in `finance`). | **Resolved 2026-10-20 by ADR-034** (user decision: backend.md list). | Phase 0 · ADR-034 |
 | DR-033 | Flyway file-name convention differs | Low | decisions.md (ADR-018), development-workflow.md §6 | ADR-018 shows `V001__…`; the workflow prescribes `V<phase>_<seq>__…`. | **Resolved 2026-10-20** (user decision: `V<phase>_<seq>__`, ADR-018 amended). | Phase 0 · ADR-018 |
-| DR-034 | Test container granularity worded as "per test class" | Low | testing.md §1.7 and §3, decisions.md (ADR-030) | `testing.md` speaks of containers "reused per test class" and "container-per-class" cleanup; with Spring's context cache a container actually lives per test-context configuration (classes sharing a configuration share it). | **Resolved 2026-10-20 by ADR-035** (user decision: one container per test-context configuration); `testing.md` reworded. | Phase 0 · ADR-035 |
+| DR-034 | Test container granularity worded as "per test class" | Low | testing.md §1 (principle 7) and §3, decisions.md (ADR-030) | `testing.md` speaks of containers "reused per test class" and "container-per-class" cleanup; with Spring's context cache a container actually lives per test-context configuration (classes sharing a configuration share it). | **Resolved 2026-10-20 by ADR-035** (user decision: one container per test-context configuration); `testing.md` reworded. | Phase 0 · ADR-035 |
 | DR-036 | Lot identity included the expiry date | High | business-rules.md (BR-LOT-002), requirements.md, domain-model.md (LotIdentity), database.md §2.2/§3.4, database-migration.md §7, decisions.md (ADR-058, OD-029), testing.md §9 | The Source Schema key `(product_id, lot_number, expiry_date)` let one lot number exist twice with different expiries, while `testing.md` expected one lot per (product, lot number). | **Resolved 2026-10-22 by ADR-070** (user decision: `UQ(product_id, lot_number)`; a different expiry is refused with `LOT_EXPIRY_MISMATCH`). | Phase 3 · ADR-070 |
 | DR-035 | Module rules forbade audited and settings-driven modules | Medium | architecture.md §3, ArchitectureTest | `users` and `settings` must write audit entries (BR-AUDIT-001: user, role and setting changes) and `auth` must read the throttling settings (ADR-038), but §3 allowed `auth/users -> common` and `settings -> common` only. | **Resolved 2026-10-21** (Phase 1 login slice): `auth -> users, settings`, `users -> audit`, `settings -> audit`, and (2026-10-21, Phase 2) `catalog -> audit` for BR-PROD-006; acyclic, since `audit` and `settings` depend only on `common` (and `settings -> audit`). | Phase 1 · architecture.md §3 |
 
@@ -85,15 +85,39 @@ A scripted audit (read-only, over all `.md` files) checked the following. Re-run
 ### 3.2 Known limits of the audit
 It verifies identifiers and references, not the semantic correctness of rules. Semantic review of rule wording against the Spec remains a human task before Phase 0. The permission matrix, scales, thresholds and timing targets marked `[REC]` are proposals, not requirements.
 
+### 3.3 Re-run at the Phase 4 close (2026-10-23)
+
+Same checks, scripted over every `.md` file plus the code where the docs name it (`ErrorCode` enum, `@PreAuthorize`, frontend permission guards, the permission seed migration).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Every business rule in `business-rules.md` is in the `testing.md` matrix | Pass — 115/115, no extra IDs |
+| 2 | Every FR in `requirements.md` is in `roadmap.md` | Pass — 57/57 |
+| 3 | Every BR / FR / NFR / ADR / OD / SD / DR / CT reference is defined | Pass — 115 BR, 57 FR, 8 NFR, 91 ADR, 34 OD, 39 SD, 36 DR, 10 CT, none undefined |
+| 4 | Error codes: `ErrorCode` enum = `api.md` §3; codes in the business-rule *Error* column are in §3 | Pass — 48 = 48; none missing (field codes such as `OUT_OF_SCOPE`, audit actions such as `STOCK_CORRECTION` and warnings are outside the catalogue on purpose) |
+| 5 | Permission codes: `security.md` §4 = seed migration; every `@PreAuthorize` and frontend guard uses a §4 code | Pass — 53 = 53, none unknown |
+| 6 | Section references (`file.md §n`) exist | Pass after one correction (below) |
+| 7 | No ADR left *Proposed* although implemented | Pass after four corrections (below); ADR-011 stays *Proposed* on purpose — numbering is Phase 5 with OD-017 |
+| 8 | No OD left open that Phase 4 resolved; no `[OPEN OD-…]` marker on a resolved OD | Pass after three corrections (below); OD-012, OD-013, OD-030 resolved; OD-034 opened (product form, before Phase 5) |
+| 9 | Every Phase 4 schema change is in the delta register | Pass after two additions (below) |
+
+**Corrections made:**
+- `decisions.md` ADR-014, ADR-015, ADR-016, ADR-022: *Proposed* → *Accepted*, each with what implements it (views not created and logic in services; the lot indexes and the generated-column unique technique; `inventory_lines.variance_qty` with a test that the column equals the service's variance; the `inventory` naming).
+- `decisions.md` OD-030 and DR-034: `testing.md §1.7` (no such section) → `testing.md §1 (principle 7)`.
+- `testing.md` BR-INV-003, BR-INV-005, BR-STOCK-010: references to the resolved OD-012/OD-013 replaced by their ADRs.
+- `database-migration.md` §8.2: SD-124 (`reorder_runs`) and SD-125 (`inventories.open_full_flag`) added; `database.md` cites them.
+- `roadmap.md` status line still said Phases 3–13 not started; `CLAUDE.md` and `README.md` status updated for Phase 4.
+- Tests: three reorder tests set lot balances with a direct `UPDATE`, which broke "ledger equals balances in all tests"; they now use an adjustment and opening stock and assert the ledger. `InventoryCountsTest` and `MovementQueriesTest` gained the ledger assertion. The only test that breaks the ledger on purpose is `IntegrityCheckTest` (it must detect a corrupted balance).
+
 ## 4. Traceability snapshot
 
 | From | To | Coverage |
 |---|---|---|
 | Spec requirement (FR/NFR) | Roadmap phase | 100 % |
-| Business rule | Test matrix row | 100 % (110/110) |
+| Business rule | Test matrix row | 100 % (115/115) |
 | Source table | `database.md` | 100 % (44/44) |
 | Workflow W1–W12 | API endpoints (`api.md` §4) and tests (`testing.md` §5) | covered; endpoints depending on OD marked `[OPEN]` |
-| Open decision OD-001…032 | `decisions.md` Part B and Part C phase gate | 100 % |
+| Open decision OD-001…034 | `decisions.md` Part B and Part C phase gate | 100 % |
 
 ## 5. Items the user should decide first
 

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.imsvet.ims.TestClock;
 import com.imsvet.ims.TestcontainersConfiguration;
 import com.imsvet.ims.support.ApiClient;
+import com.imsvet.ims.support.StockAssertions;
 import com.imsvet.ims.support.TestLots;
 import com.imsvet.ims.support.TestUsers;
 import com.imsvet.ims.support.TestUsers.TestUser;
@@ -134,7 +135,7 @@ class ReorderProposalsTest {
         generate().andExpect(jsonPath("$.created").value(greaterThanOrEqualTo(1)));
         long id = proposalId(product);
 
-        jdbc.update("UPDATE lots SET quantity_on_hand = 3 WHERE id = ?", lot);
+        withdraw(lot, "5");
         clock.advance(Duration.ofHours(1));
         generate().andExpect(status().isOk());
 
@@ -143,6 +144,7 @@ class ReorderProposalsTest {
         assertThat(pending(product)).containsEntry("current_qty", "3.000").containsEntry("suggested_qty", "47.000");
         assertThat(jdbc.queryForObject("SELECT updated_at > created_at FROM reorder_proposals WHERE id = ?",
                 Boolean.class, id)).isTrue();
+        StockAssertions.assertLedgerMatchesBalances(jdbc, List.of(lot));
     }
 
     @Test
@@ -159,15 +161,16 @@ class ReorderProposalsTest {
         generate();
         assertThat(pendingCount(product)).isZero();
 
-        jdbc.update("UPDATE lots SET quantity_on_hand = 11 WHERE id = ?", lot);
+        receive(product, "6");
         generate();
         assertThat(pendingCount(product)).isZero();
         assertThat(jdbc.queryForObject("SELECT suppressed FROM reorder_proposals WHERE id = ?", Boolean.class, id))
                 .isFalse();
 
-        jdbc.update("UPDATE lots SET quantity_on_hand = 2 WHERE id = ?", lot);
+        withdraw(lot, "9");
         generate();
         assertThat(pending(product)).containsEntry("suggested_qty", "48.000");
+        StockAssertions.assertLedgerMatchesBalances(jdbc, List.of(lot));
     }
 
     @Test
@@ -203,6 +206,19 @@ class ReorderProposalsTest {
         long id = lots.product(sku, sku);
         jdbc.update("UPDATE products SET reorder_point = ?, max_stock = ? WHERE id = ?", reorderPoint, max, id);
         return id;
+    }
+
+    /** Stock changes go through movements, so the ledger stays equal to the balances (BR-STOCK-007). */
+    private void withdraw(long lot, String quantity) throws Exception {
+        pharmacist.post("/api/inventory/adjustments", "{\"lotId\":" + lot + ",\"type\":\"adjustment_breakage\","
+                + "\"quantity\":\"" + quantity + "\",\"reason\":\"Broken\"}").andExpect(status().isCreated());
+    }
+
+    /** Into lot "A" of the product (same expiry and unit cost as the fixture lot). */
+    private void receive(long product, String quantity) throws Exception {
+        pharmacist.post("/api/inventory/opening-stock", "{\"productId\":" + product + ",\"lotNumber\":\"A\","
+                + "\"expiryDate\":\"" + EXPIRY + "\",\"quantity\":\"" + quantity + "\",\"unitCost\":\"0.5\"}")
+                .andExpect(status().isCreated());
     }
 
     private ResultActions generate() throws Exception {

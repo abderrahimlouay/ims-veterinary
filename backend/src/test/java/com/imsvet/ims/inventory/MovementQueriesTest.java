@@ -9,6 +9,7 @@ import com.imsvet.ims.inventory.application.StockService;
 import com.imsvet.ims.inventory.application.StockService.Movement;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.support.ApiClient;
+import com.imsvet.ims.support.StockAssertions;
 import com.imsvet.ims.support.TestActor;
 import com.imsvet.ims.support.TestLots;
 import com.imsvet.ims.support.TestUsers;
@@ -81,6 +82,7 @@ class MovementQueriesTest {
         TestUser user = new TestUsers(jdbc, encoder).create("Seller");
         seller = ApiClient.create(context, "198.51.100.190");
         seller.login(user.username(), user.password()).andExpect(status().isOk());
+        StockAssertions.assertLedgerMatchesBalances(jdbc, List.of(lot));
     }
 
     @Test
