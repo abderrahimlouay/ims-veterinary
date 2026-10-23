@@ -230,6 +230,8 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-121 | `reorder_proposals.supplier_id` added in Phase 5; `suppressed`, `updated_at`, `dismissed_at/by` | ADR-079 | Accepted 2026-10-22 |
 | SD-122 | New table `integrity_check_runs` | ADR-086 | Accepted 2026-10-22 |
 | SD-123 | Separate migration and application accounts; per-table grants applied after each migration | ADR-087 | Accepted 2026-10-22 |
+| SD-124 | New table `reorder_runs` (each generation; the daily job runs once per business day) | ADR-078 | Accepted 2026-10-23 (slice 10; V04_009) |
+| SD-125 | `inventories.open_full_flag` generated column with a unique key: at most one open full count | BR-INV-007, ADR-073 | Accepted 2026-10-23 (slice 8; V04_005) |
 
 ## 9. Operational requirements for MySQL
 

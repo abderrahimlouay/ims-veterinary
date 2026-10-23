@@ -119,14 +119,14 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** Behaviour of reports is "statement-level consistent", not transaction-level. Reports needing a point-in-time snapshot open a read-only REPEATABLE READ transaction explicitly.
 
 ## ADR-014 — Views are read models; business decisions never rely on views
-- **Status:** Proposed
+- **Status:** Accepted (confirmed 2026-10-23 at the Phase 4 close: implemented as written — no business decision reads a view; `v_expiring_lots`, `v_product_stock` and `v_reorder_needed` are not created, their logic lives in services, ADR-056, ADR-076, ADR-080). The remaining reporting views are decided with their phases (Phase 11, DR-006/DR-007).
 - **Context:** 8 PostgreSQL views (`v_product_stock`, `v_reorder_needed`, `v_expiring_lots`, `v_sale_withdrawal_warnings`, `v_customer_balance`, `v_supplier_payables`, `v_stock_valuation`, `v_sales_margin`) use `FILTER`, `date_trunc`, `::date`, date arithmetic.
 - **Decision:** Re-create them in MySQL syntax (conversion table in `database-migration.md`) **only** where they serve reporting/listing (read-only `@Immutable` entities or projections). Service-level decisions (e.g. credit-limit check, sellable quantity at confirmation) use explicit locking queries, not views.
 - **Alternatives:** Drop views and use only repository queries; materialised views (not available in MySQL).
 - **Consequences:** Some view definitions have known semantic defects (balance, margin) — see `documentation-review.md` DR-006, DR-007; they must be fixed before being relied upon (**OD-003**).
 
 ## ADR-015 — Replacement of PostgreSQL partial indexes
-- **Status:** Proposed
+- **Status:** Accepted (confirmed 2026-10-23 at the Phase 4 close: `idx_lots_fefo` and `idx_lots_expiry` exist since V03_003; the generated-column + unique-index technique is also used for one open full count, V04_005, and one pending proposal, V04_008). The `cash_sessions` part applies in Phase 9.
 - **Context:** 3 partial indexes: `idx_lots_fefo`, `idx_lots_expiry`, `uq_one_open_session`. MySQL has none.
 - **Decision:**
   - `idx_lots_fefo` → ordinary composite index `(product_id, status, expiry_date)`.
@@ -136,7 +136,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** Extra generated column on `cash_sessions` mapped read-only in JPA.
 
 ## ADR-016 — Generated columns retained for line amounts and variances
-- **Status:** Proposed
+- **Status:** Accepted (confirmed 2026-10-23 at the Phase 4 close: `inventory_lines.variance_qty` is generated, V04_007; the entity computes the same `counted − balance_at_count` in Java instead of mapping the column, and `InventoryCountsTest` checks that both are equal). The document-line amounts apply from Phase 5 with OD-007.
 - **Context:** 5 generated columns: `inventory_lines.variance_qty`, `purchase_order_lines.line_ht`, `cash_sessions.variance_amount`, `sales_document_lines.line_ht`, `sales_document_lines.line_ttc`. MySQL supports `GENERATED ALWAYS AS (…) STORED`.
 - **Decision:** Keep them (direct conversion). Map as read-only in JPA (`insertable=false, updatable=false`) and refresh after insert/update. The service computes document totals with `BigDecimal` using **the identical formula and rounding mode** (HALF_UP, scale 2), verified by a parity test.
 - **Alternatives:** Plain columns computed only by the service (risk of divergence from DB); compute on read.
@@ -173,7 +173,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** Client-side previews of totals are labelled "estimate"; the server is authoritative (BR-SALE-008).
 
 ## ADR-022 — Terminology: "inventory" vs "inventory count"
-- **Status:** Proposed (resolves a naming ambiguity)
+- **Status:** Accepted (confirmed 2026-10-23 at the Phase 4 close: package `inventory`, `/api/inventory/...` and `/api/inventory/counts`, tables `inventories`/`inventory_lines` as implemented).
 - **Context:** The brief uses `inventory/` as a package/endpoint name and "Physical Inventory" as a workflow; the Source Schema uses `inventories`/`inventory_lines` for the *counting session*.
 - **Decision:** In prose: **Stock** = quantities/ledger; **Inventory Count** = the physical counting session (tables keep Source names `inventories`, `inventory_lines`). Package `inventory` = stock domain (lots, movements, adjustments, counts, reorder). API: `/api/inventory/...` for stock; counting sessions at `/api/inventory/counts`.
 - **Consequences:** Glossary and all documents use these terms.
@@ -266,7 +266,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Context:** The Testcontainers MySQL container is a bean of `TestcontainersConfiguration`, so Spring's test-context cache gives one container (~10 s start) per distinct test-context configuration. A warm `./mvnw verify` took 45 s with two contexts; the reported 7 min 46 s was a cold run (dependency download and first `mysql:8.4` pull).
 - **Decision:** Keep **one container per Spring test-context configuration** (OD-030 option A). Classes that share a configuration share the context and its container; each new configuration gets a fresh, empty database. No JVM-wide shared container and no Testcontainers reuse in CI.
 - **Alternatives:** (B) one container per JVM shared by all contexts — faster, but needs a cross-context cleanup convention and a dedicated container for empty-DB migration tests; (C) opt-in reuse on developer machines — leftovers between runs would make local results differ from CI.
-- **Consequences:** Strongest isolation; "Flyway on an empty DB" holds by construction. Build time grows ~10 s per new test-context configuration, so tests should reuse the existing configurations (`@SpringBootTest` + `TestcontainersConfiguration`, or the `RANDOM_PORT` variant) rather than add per-class variations. Revisit (new ADR) if the integration suite grows past ~4 configurations or the warm build becomes too slow. `testing.md` §1.7 and §3.
+- **Consequences:** Strongest isolation; "Flyway on an empty DB" holds by construction. Build time grows ~10 s per new test-context configuration, so tests should reuse the existing configurations (`@SpringBootTest` + `TestcontainersConfiguration`, or the `RANDOM_PORT` variant) rather than add per-class variations. Revisit (new ADR) if the integration suite grows past ~4 configurations or the warm build becomes too slow. `testing.md` §1 (principle 7) and §3.
 
 ## ADR-036 — Authentication with server-side sessions (resolves OD-001)
 - **Status:** Accepted (user decision, 2026-10-20, Phase 1 preflight)
@@ -767,7 +767,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Question:** Testcontainers MySQL is a bean of `TestcontainersConfiguration`, so one container (~10 s start) runs per distinct Spring test-context configuration. Phase 0 has two (plain `@SpringBootTest`, and `RANDOM_PORT` + `RestTestClient`); later phases add more (`@DataJpaTest`, `@MockitoBean` variants). Measured 2026-10-20: warm `./mvnw verify` 45 s, of which ~20 s container start-up; the reported 7 min 46 s run was a cold run (first Maven dependency download and first pull of the 1.12 GB `mysql:8.4` image), not a test-design problem.
 - **Options:** (A) keep one container per context (current; strongest isolation, cost grows with each new context); (B) one container per JVM, started once and exposed as `JdbcConnectionDetails` (not as a container bean, so closing one context cannot stop it under another), each context sharing the database — needs a cleanup convention and a dedicated container for "Flyway on an empty DB" migration tests; (C) (A) plus opt-in Testcontainers reuse on developer machines only (`testcontainers.reuse.enable=true` in `~/.testcontainers.properties`, never in CI), which keeps a container alive across runs.
 - **Leaning:** `[REC]` keep (A) now; adopt (B) when the integration suite exceeds ~4 contexts, together with the cleanup convention of `testing.md` §3.
-- **Blocks:** nothing in Phase 0; decide before Phase 4 (first stock/locking suites). **Related:** ADR-030, `testing.md` §1.7, DR-034.
+- **Blocks:** nothing in Phase 0; decide before Phase 4 (first stock/locking suites). **Related:** ADR-030, `testing.md` §1 (principle 7), DR-034.
 
 ## OD-031 — Protection against administrator lock-out
 - **Status:** Resolved 2026-10-20 → **ADR-042** (option A).
@@ -808,7 +808,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053, ~~OD-032~~ → ADR-054 (all 2026-10-21) |
 | 3 Lots & Units | ~~OD-009~~ → ADR-055/056, ~~OD-019~~ → ADR-057, ~~OD-025~~ → ADR-058, ~~OD-027~~ → ADR-059/060; ADR-061…068 (all 2026-10-22) |
 | 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091, ADR-077 amendment (2026-10-23); OD-034 open (product form, before Phase 5) |
-| 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
+| 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029, OD-034 |
 | 6 Customers | OD-006, OD-011 |
 | 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006, ~~OD-033~~ → ADR-071 |
 | 8 Returns | OD-005 |
