@@ -16,7 +16,9 @@ import com.imsvet.ims.catalog.application.ProductCatalog.ProductInput;
 import com.imsvet.ims.catalog.domain.Product;
 import com.imsvet.ims.catalog.infrastructure.DosageFormRepository;
 import com.imsvet.ims.catalog.infrastructure.ManufacturerRepository;
+import com.imsvet.ims.catalog.application.ProductStock;
 import com.imsvet.ims.catalog.infrastructure.ProductRepository;
+import com.imsvet.ims.catalog.infrastructure.ProductSearchRepository;
 import com.imsvet.ims.catalog.infrastructure.TherapeuticCategoryRepository;
 import com.imsvet.ims.settings.application.SettingsProvider;
 import java.math.BigDecimal;
@@ -56,7 +58,8 @@ class PriceAuditFailureTest {
                 "pharmacist", null, List.of(new SimpleGrantedAuthority("price.edit"))));
         ProductCatalog catalog = new ProductCatalog(products, mock(TherapeuticCategoryRepository.class),
                 mock(DosageFormRepository.class), mock(ManufacturerRepository.class), mock(SettingsProvider.class),
-                audit, Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
+                audit, Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), mock(ProductSearchRepository.class),
+                mock(ProductStock.class));
 
         assertThatThrownBy(() -> catalog.update(5, new ProductInput("SKU", "Name", null, null, null, "ml", true,
                 new BigDecimal("9"), null, null, null, null, new BigDecimal("2")), 0))

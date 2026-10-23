@@ -102,6 +102,7 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.POST, "/api/lots/999999/recall", "lot.recall", "{\"reason\":\"x\"}"),
             new Endpoint(HttpMethod.GET, "/api/lots/999999/recall-report", "lot.recall"),
             new Endpoint(HttpMethod.GET, "/api/inventory/movements", "stock.read"),
+            new Endpoint(HttpMethod.GET, "/api/inventory/stock", "stock.read"),
             new Endpoint(HttpMethod.POST, "/api/inventory/adjustments", "stock.adjust",
                     "{\"lotId\":999999,\"type\":\"adjustment_breakage\",\"quantity\":\"1\",\"reason\":\"x\"}"),
             new Endpoint(HttpMethod.POST, "/api/inventory/opening-stock", "stock.adjust",

@@ -600,6 +600,13 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** stock pages only (B).
 - **Consequences:** `roadmap.md` Phase 4, `api.md` §4.3, `frontend.md` §3.1/§4.1/§4.2, `architecture.md` §3 (module rule `inventory → users` for the name port only).
 
+## ADR-090 — Stock conditions cross the catalog/inventory boundary as constant query text (option A)
+- **Status:** Accepted (user decision, 2026-10-23, Phase 4 slice 6; option A with conditions)
+- **Context:** The product list must filter by sellable stock inside the database (NFR-002, never by loading product ids), and the stock list must page and search by product name, SKU and category; `architecture.md` §3 rule 2 forbids a module to read another module's tables, and `v_product_stock` is not created (ADR-080).
+- **Decision:** The catalog defines the port `ProductStock`; `inventory` implements it in **one named class**, `ProductStockConditions`, which returns boolean JPQL conditions on the product alias `p` (`EXISTS`/sums over `Lot`, `p.minStock`, `p.reorderPoint`). Conditions are **constant text**; every value (business date from the injected clock, active status, smallest quantity) is a **bind parameter** — no search term, id or date is ever concatenated. The catalog's search (`ProductSearchRepository`) appends them to its own constant text. The mirror direction needs no exception: `inventory` lists stock through the catalog port `ProductQueries` (`inventory → catalog` is allowed), passing its conditions. `ModuleSqlBoundaryTest` checks the string literals: the catalog never names inventory tables or entities, and inventory names catalog ones only in `ProductStockConditions`. Each condition uses one sellable subquery (two made the low-stock list ~0.55 s on 50,000 products).
+- **Alternatives:** read-only joins in named query classes without a port (B); product list without stock (C).
+- **Consequences:** `architecture.md` §3 rule 2 (exception), `api.md` §4.3/§4.5, `testing.md` §8.1 (in-stock searches; dataset committed and statistics refreshed). Measured 2026-10-23 on 50,000 products: every search under 1 s; the slowest typically 0.40–0.43 s, up to 0.81 s in a run on a loaded machine. A query planned against stale statistics (right after a large bulk load, before InnoDB refreshes them) can scan instead of using `idx_lots_fefo`; see the slice report.
+
 ---
 
 # Part B — Open Decisions

@@ -9,6 +9,8 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Map;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Find-or-create of a lot by (product, lot number) under lock (BR-LOT-002, ADR-070), for the flows that bring stock
@@ -31,6 +33,8 @@ public class LotIdentities {
         this.clock = clock;
     }
 
+    /** MANDATORY: LAST_INSERT_ID is per connection, so reset, insert and read must share the caller's transaction. */
+    @Transactional(propagation = Propagation.MANDATORY)
     public Found findOrCreate(long productId, String lotNumber, LocalDate expiryDate, BigDecimal unitCost) {
         lots.resetLastInsertId();
         lots.insertIfAbsent(productId, lotNumber, expiryDate, unitCost, clock.instant());

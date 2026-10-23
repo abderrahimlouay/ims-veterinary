@@ -56,6 +56,18 @@ public interface LotRepository extends Repository<Lot, Long> {
     @Query(nativeQuery = true, value = "SELECT LAST_INSERT_ID()")
     long lastInsertId();
 
+    /**
+     * Per product: total balance, sellable balance (stored active, not expired at {@code businessDate}, BR-STOCK-011)
+     * and the nearest expiry of a sellable lot with stock. Rows: product id, total, sellable, nearest expiry.
+     */
+    @Query("""
+            SELECT l.productId, SUM(l.quantityOnHand),
+                   SUM(CASE WHEN l.status = :active AND l.expiryDate >= :businessDate THEN l.quantityOnHand ELSE 0 END),
+                   MIN(CASE WHEN l.status = :active AND l.expiryDate >= :businessDate AND l.quantityOnHand > 0
+                            THEN l.expiryDate END)
+            FROM Lot l WHERE l.productId IN :productIds GROUP BY l.productId""")
+    List<Object[]> stockFigures(Collection<Long> productIds, LotStatus active, LocalDate businessDate);
+
     /** Locking read by identity (ADR-012, ADR-070). */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT l FROM Lot l WHERE l.productId = :productId AND l.lotNumber = :lotNumber")
