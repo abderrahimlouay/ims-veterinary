@@ -238,7 +238,7 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 ## 10. W10 — Reorder proposal
 
-1. **Generation** (daily at `reorder_job_time`, or *Generate now*, ADR-078): for every product not archived with `reorder_point` > 0 and sellable ≤ `reorder_point` (ADR-076), create or update its one pending proposal with `max_stock − sellable` (ADR-077, ADR-079); products without `max_stock` are reported *thresholds incomplete*; a dismissed product is skipped until a generation sees it above the reorder point.
+1. **Generation** (daily at `reorder_job_time`, or *Generate now*, ADR-078): for every product not archived with `reorder_point` > 0 and sellable ≤ `reorder_point` (ADR-076), create or update its one pending proposal with `max_stock − sellable` (ADR-077, ADR-079); products without `max_stock` are reported *thresholds incomplete*, those with `max_stock` ≤ `reorder_point` *thresholds inconsistent* (no proposal for either); a dismissed product is skipped until a generation sees it above the reorder point.
 2. Pharmacist reviews proposals and **dismisses** them, or (from Phase 5, with suppliers and purchase orders) **converts** one to a draft purchase order (→ W1a). Proposal status `converted`/`dismissed`.
 
 ## 10a. W10a — Opening stock (Phase 4)

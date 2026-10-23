@@ -630,7 +630,8 @@
     "title": "Propositions de réapprovisionnement",
     "generate": "Générer maintenant",
     "generated": "{{created}} proposition(s) créée(s), {{updated}} mise(s) à jour.",
-    "incomplete": "Seuils incomplets (stock maximum absent ou déjà atteint) :",
+    "incomplete": "Seuils incomplets (stock maximum absent) :",
+    "inconsistent": "Seuils incohérents (stock maximum ≤ seuil de réapprovisionnement) :",
     "statusFilter": "Statut",
     "status": {
       "pending": "En attente",

@@ -12,7 +12,8 @@ import { PROPOSAL_STATUSES, useDismissProposal, useGenerateProposals, useProposa
 
 /**
  * `/reorder` (frontend.md §4.3, W10): proposals by status (pending by default); "Generate now" runs the daily
- * generation at once and lists the products whose thresholds are incomplete (ADR-077, ADR-078); "Dismiss" holds
+ * generation at once and lists the products whose thresholds are incomplete (no max stock, ADR-077) or inconsistent
+ * (max stock at or below the reorder point), apart (ADR-078); "Dismiss" holds
  * the product back until its stock recovers (ADR-079). Conversion to a purchase order arrives in Phase 5.
  */
 export function ReorderPage() {
@@ -39,19 +40,8 @@ export function ReorderPage() {
       {generate.data && (
         <Alert tone="ok">
           {t('reorder.generated', { created: generate.data.created, updated: generate.data.updated })}
-          {generate.data.thresholdsIncomplete.length > 0 && (
-            <span className="block mt-1">
-              {t('reorder.incomplete')}{' '}
-              {generate.data.thresholdsIncomplete.map((p, i) => (
-                <span key={p.id}>
-                  {i > 0 && ', '}
-                  <Link to={`/products/${p.id}`} className="underline">
-                    {p.commercialName}
-                  </Link>
-                </span>
-              ))}
-            </span>
-          )}
+          <ProductLinks label={t('reorder.incomplete')} products={generate.data.thresholdsIncomplete} />
+          <ProductLinks label={t('reorder.inconsistent')} products={generate.data.thresholdsInconsistent} />
         </Alert>
       )}
       {generate.error instanceof ApiError && <Alert tone="danger">{problemMessage(generate.error.problem, t)}</Alert>}
@@ -128,5 +118,24 @@ export function ReorderPage() {
         </>
       )}
     </section>
+  )
+}
+
+function ProductLinks({ label, products }: { label: string; products: { id: number; commercialName: string }[] }) {
+  if (products.length === 0) {
+    return null
+  }
+  return (
+    <span className="block mt-1">
+      {label}{' '}
+      {products.map((p, i) => (
+        <span key={p.id}>
+          {i > 0 && ', '}
+          <Link to={`/products/${p.id}`} className="underline">
+            {p.commercialName}
+          </Link>
+        </span>
+      ))}
+    </span>
   )
 }

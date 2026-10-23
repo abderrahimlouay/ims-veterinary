@@ -38,7 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
  * first lifts the suppression of dismissed products whose sellable stock is now above the reorder point (ADR-079),
  * then, for every product not archived with a reorder point > 0 and sellable ≤ reorder point (ADR-076, found in the
  * database through the catalog port, ADR-090), creates or updates its one pending proposal with max − sellable
- * (ADR-077), or reports it thresholds incomplete. Idempotent; the run is recorded. Runs in the caller's transaction.
+ * (ADR-077), or reports it thresholds incomplete (no max stock) or inconsistent (max stock at or below the reorder
+ * point, user decision 2026-10-23). Idempotent; the run is recorded. Runs in the caller's transaction.
  */
 @Component
 public class ReorderGenerator {
@@ -46,8 +47,12 @@ public class ReorderGenerator {
     public record ProductBrief(long id, String sku, String commercialName) {
     }
 
-    /** api.md §4.5 generation result. */
-    public record GenerationResult(int created, int updated, List<ProductBrief> thresholdsIncomplete) {
+    /**
+     * api.md §4.5 generation result: {@code thresholdsIncomplete} have no max stock (ADR-077);
+     * {@code thresholdsInconsistent} have a max stock at or below the reorder point (user decision 2026-10-23).
+     */
+    public record GenerationResult(int created, int updated, List<ProductBrief> thresholdsIncomplete,
+            List<ProductBrief> thresholdsInconsistent) {
     }
 
     private final ProductQueries productQueries;
@@ -75,6 +80,7 @@ public class ReorderGenerator {
         int created = 0;
         int updated = 0;
         List<ProductBrief> incomplete = new ArrayList<>();
+        List<ProductBrief> inconsistent = new ArrayList<>();
         int page = 0;
         Page<ProductRef> candidates;
         do {
@@ -87,6 +93,10 @@ public class ReorderGenerator {
                             wanted.stream().map(ProductRef::id).toList()).stream()
                             .collect(Collectors.toMap(ReorderProposal::productId, Function.identity()));
             for (ProductRef product : wanted) {
+                if (product.maxStock() != null && product.maxStock().compareTo(product.reorderPoint()) <= 0) {
+                    inconsistent.add(new ProductBrief(product.id(), product.sku(), product.commercialName()));
+                    continue;
+                }
                 BigDecimal sellable = figures.get(product.id()).sellable();
                 Optional<BigDecimal> quantity = ReorderQuantity.suggested(product.maxStock(), sellable,
                         product.divisible());
@@ -108,7 +118,7 @@ public class ReorderGenerator {
                     "Another generation of reorder proposals is running; try again.");
         }
         runs.save(new ReorderRun(now, triggeredBy, created, updated, incomplete.size()));
-        return new GenerationResult(created, updated, incomplete);
+        return new GenerationResult(created, updated, incomplete, inconsistent);
     }
 
     /** Returns the products still suppressed. */

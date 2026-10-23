@@ -528,6 +528,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** Suggested quantity = `max_stock − sellable`, in base units, rounded **up** to a whole number for a non-divisible product (ADR-050). A product that needs a proposal but has no `max_stock` gets none and is reported as *thresholds incomplete* in the generation result. No formula is invented for it.
 - **Alternatives:** reorder point + a configured target (B); up to max, else twice the reorder point (C).
 - **Consequences:** BR-STOCK-010, `api.md` (generation result).
+- **Amendment (user decision, 2026-10-23, after slice 10):** a product whose `max_stock` is at or below its `reorder_point` is not *thresholds incomplete* but *thresholds inconsistent*: it gets no proposal and is reported apart in the generation result (`thresholdsInconsistent`) and on the reorder page. No validation rule is added to the product form; whether to add one is OD-034.
 
 ## ADR-078 — When proposals are generated (resolves OD-013, schedule)
 - **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #7 A)
@@ -789,6 +790,13 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Leaning:** `[REC]` (A): every valid code works and the response is unchanged.
 - **Blocks:** Phase 7 (POS scanning). Phase 3 implements the path form as documented. **Related:** ADR-057, ADR-058, ADR-067, BR-UNIT-005.
 
+## OD-034 — Should the product form refuse a max stock at or below the reorder point?
+- **Status:** Open (raised 2026-10-23, Phase 4 close).
+- **Question:** BR-PROD-005 / BR-STOCK-009 only require `max_stock ≥ min_stock`. A `max_stock` at or below `reorder_point` makes reorder proposals impossible; Phase 4 reports such products as *thresholds inconsistent* (ADR-077 amendment) but still accepts them. Should creating or editing a product refuse it?
+- **Options:** (A) refuse it (`VALIDATION_FAILED`, field `maxStock`, new code, plus a DB CHECK through a migration); (B) accept it with a warning on the product form; (C) keep the current behaviour (reported only at generation).
+- **Leaning:** none recorded; for the user.
+- **Blocks:** nothing in Phase 4; to decide before Phase 5 uses the thresholds for purchase orders. **Related:** BR-PROD-005, BR-STOCK-009, BR-STOCK-010, ADR-077.
+
 ---
 
 # Part C — Decision backlog by phase
@@ -799,7 +807,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 1 Auth | ~~OD-001~~ → ADR-036, ~~OD-023~~ → ADR-037; ADR-017/020/021/027 confirmed Accepted; ADR-038–041, ~~OD-031~~ → ADR-042 (all 2026-10-20) |
 | 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053, ~~OD-032~~ → ADR-054 (all 2026-10-21) |
 | 3 Lots & Units | ~~OD-009~~ → ADR-055/056, ~~OD-019~~ → ADR-057, ~~OD-025~~ → ADR-058, ~~OD-027~~ → ADR-059/060; ADR-061…068 (all 2026-10-22) |
-| 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091 (2026-10-23) |
+| 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091, ADR-077 amendment (2026-10-23); OD-034 open (product form, before Phase 5) |
 | 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 Customers | OD-006, OD-011 |
 | 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006, ~~OD-033~~ → ADR-071 |

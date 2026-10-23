@@ -251,7 +251,12 @@ describe('reorder proposals (W10)', () => {
         }),
       ),
       http.post('/api/inventory/reorder-proposals/generate', () =>
-        HttpResponse.json({ created: 1, updated: 0, thresholdsIncomplete: [{ id: 9, sku: 'NOMAX', commercialName: 'Sans maximum' }] }),
+        HttpResponse.json({
+          created: 1,
+          updated: 0,
+          thresholdsIncomplete: [{ id: 9, sku: 'NOMAX', commercialName: 'Sans maximum' }],
+          thresholdsInconsistent: [{ id: 10, sku: 'MAXLOW', commercialName: 'Maximum trop bas' }],
+        }),
       ),
       http.post('/api/inventory/reorder-proposals/3/dismiss', () => {
         dismissed = true
@@ -264,7 +269,9 @@ describe('reorder proposals (W10)', () => {
     expect(row).toHaveTextContent('46,000 tablet')
     await userEvent.click(screen.getByRole('button', { name: 'Générer maintenant' }))
     expect(await screen.findByText('1 proposition(s) créée(s), 0 mise(s) à jour.', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText(/Seuils incomplets \(stock maximum absent\)/)).toContainElement(screen.getByRole('link', { name: 'Sans maximum' }))
     expect(screen.getByRole('link', { name: 'Sans maximum' })).toHaveAttribute('href', '/products/9')
+    expect(screen.getByText(/Seuils incohérents/)).toContainElement(screen.getByRole('link', { name: 'Maximum trop bas' }))
     await userEvent.click(screen.getByRole('button', { name: 'Écarter la proposition pour Amoxival 500' }))
     expect(await screen.findByText('Aucune proposition.')).toBeInTheDocument()
   })

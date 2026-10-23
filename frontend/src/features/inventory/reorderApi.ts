@@ -23,7 +23,10 @@ export interface ProposalEntry {
 export interface GenerationResult {
   created: number
   updated: number
+  /** No max stock (ADR-077). */
   thresholdsIncomplete: { id: number; sku: string; commercialName: string }[]
+  /** Max stock at or below the reorder point (user decision 2026-10-23). */
+  thresholdsInconsistent: { id: number; sku: string; commercialName: string }[]
 }
 
 const reorderKeys = {
