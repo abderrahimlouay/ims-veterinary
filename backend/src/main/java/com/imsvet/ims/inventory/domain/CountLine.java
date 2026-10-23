@@ -102,6 +102,23 @@ public class CountLine {
         this.countedAt = now;
     }
 
+    /** A found lot gets its lot when regularisation creates it (ADR-074). */
+    public void attachLot(Long createdLotId) {
+        if (lotId != null) {
+            throw new IllegalStateException("Line " + id + " already has lot " + lotId);
+        }
+        this.lotId = createdLotId;
+    }
+
+    /** At most once (BR-INV-004); {@code movementId} null for a zero variance. */
+    public void regularize(Long movementId) {
+        if (regularized) {
+            throw new IllegalStateException("Line " + id + " is regularised");
+        }
+        this.regularized = true;
+        this.adjustmentMovementId = movementId;
+    }
+
     /** {@code counted − balance at count} (BR-INV-001), or null while not counted. */
     public BigDecimal varianceQty() {
         return countedQty == null ? null : countedQty.subtract(balanceAtCount);
