@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { z } from 'zod'
@@ -30,6 +30,7 @@ import {
   type ProductWrite,
 } from './productApi'
 import { referenceLabel, useReferenceList, type ReferenceListPath } from './referenceApi'
+import { thresholdsInconsistent } from './thresholds'
 
 const DECIMAL_3 = /^\d+(\.\d{1,3})?$/
 /** ADR-049: prices per base unit, up to 4 decimals. */
@@ -122,7 +123,7 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
   const canEditPrices = editable && hasPermission(current, 'price.edit')
   const [problem, setProblem] = useState<Problem>()
   const [saved, setSaved] = useState(false)
-  const { register, handleSubmit, formState, setError } = useForm<Form>({
+  const { register, handleSubmit, formState, setError, control } = useForm<Form>({
     resolver: zodResolver(schema),
     values: toForm(product, publicSettings.data?.defaultVatRate),
   })
@@ -131,6 +132,8 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
     return message === undefined ? undefined : t(message)
   }
   const mutation = product ? update : create
+  const [maxStock, reorderPoint] = useWatch({ control, name: ['maxStock', 'reorderPoint'] })
+  const inconsistent = thresholdsInconsistent(maxStock ?? '', reorderPoint ?? '')
 
   const onSubmit = handleSubmit((v) => {
     setProblem(undefined)
@@ -162,7 +165,14 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
         </label>
         <TextField label={t('catalog.products.vatRate')} inputMode="decimal" disabled={!editable} error={fieldError('vatRate')} {...register('vatRate')} />
         <TextField label={t('catalog.products.minStock')} inputMode="decimal" disabled={!editable} error={fieldError('minStock')} {...register('minStock')} />
-        <TextField label={t('catalog.products.maxStock')} inputMode="decimal" disabled={!editable} error={fieldError('maxStock')} {...register('maxStock')} />
+        <TextField
+          label={t('catalog.products.maxStock')}
+          inputMode="decimal"
+          disabled={!editable}
+          error={fieldError('maxStock')}
+          hint={inconsistent ? t('catalog.products.thresholdsInconsistent') : undefined}
+          {...register('maxStock')}
+        />
         <TextField label={t('catalog.products.reorderPoint')} inputMode="decimal" disabled={!editable} error={fieldError('reorderPoint')} {...register('reorderPoint')} />
         <TextField label={t('catalog.products.purchasePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('purchasePrice')} {...register('purchasePrice')} />
         <TextField label={t('catalog.products.salePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('salePrice')} {...register('salePrice')} />

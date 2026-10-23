@@ -242,6 +242,7 @@
       "minStock": "Stock minimum",
       "maxStock": "Stock maximum",
       "reorderPoint": "Seuil de réapprovisionnement",
+      "thresholdsInconsistent": "Attention : stock maximum ≤ seuil de réapprovisionnement ; aucune proposition de réapprovisionnement ne pourra être générée pour ce produit.",
       "salePrice": "Prix de vente (unité de base)",
       "purchasePrice": "Prix d'achat (unité de base)",
       "updatedAt": "Modifié le",

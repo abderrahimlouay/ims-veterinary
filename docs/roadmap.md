@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–3 complete (tags `phase-0-done` … `phase-3-done`); Phase 4 implemented (2026-10-23), waiting for the user's approval before the `phase-4-done` tag; Phases 5–13 not started
+> **Status:** Phases 0–4 complete (tags `phase-0-done` … `phase-4-done`); Phases 5–13 not started
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-10-22
 
@@ -91,12 +91,12 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** stock levels, ledger, adjustment form, count grid and regularisation, reorder list.
 - **Tests:** BR-STOCK-*, BR-INV-*; concurrency CT-01/02/04; fault-injection atomicity.
 - **Completion criteria:** FR-STOCK-001..007 done (conversion of proposals completes in Phase 5); negative stock impossible even via SQL; ledger equals balances in all tests.
-- **Delivered (2026-10-23; waiting for the user's approval before the `phase-4-done` tag):** decisions PR #38 (ADR-072…089), then PRs #39–#47 and #49–#52 (slices database accounts, user names, stock ledger, adjustments, opening stock, stock levels and in-stock search, integrity check, counts, regularisation, reorder proposals, frontend stock, frontend counts and reorder), #48 (ADR-091), #53 (zod advisory), #54 (thresholds inconsistent, ADR-077 amendment) and the close PR; migrations V04_001…009; ADR-090, ADR-091; OD-034 opened (product form and max ≤ reorder point, before Phase 5). e2e J8 (opening stock → count → regularisation → ledger) added; J2 checks the stock of a new product.
-- **Deferred, so nothing is lost:** Phase 5 — convert a proposal to a purchase order (BR-PURCH-010), `supplier_id` on proposals and open-order subtraction (ADR-079), receipts creating lots through `LotIdentities` with `purchase_receipt` movements, unit cost of a repeated lot (OD-029; opening stock refuses another cost with `COST_MISMATCH` until then), OD-034, `lots.supplier_id`, BR-UNIT-004; Phase 7 — `sale` movements, CT-01 and CT-04 re-run with real sales, recall buyers list (ADR-068), FEFO override (OD-010), cancellation of confirmed documents (OD-004, DR-002); Phase 8 — `customer_return` / `supplier_return` movements and the discard of returned goods (OD-005, DR-002); Phase 11 — reporting views (stock valuation, DR-006/007); Phase 12 — the read-only `backup` database account (ADR-087) and backup design (OD-021); an import tool may run `ANALYZE TABLE` itself (ADR-091 alternative); the production bundle passed 500 kB (code splitting to consider with the POS, Phase 7).
+- **Delivered (2026-10-23; approved and tagged `phase-4-done` on `d046a18`):** decisions PR #38 (ADR-072…089), then PRs #39–#47 and #49–#52 (slices database accounts, user names, stock ledger, adjustments, opening stock, stock levels and in-stock search, integrity check, counts, regularisation, reorder proposals, frontend stock, frontend counts and reorder), #48 (ADR-091), #53 (zod advisory), #54 (thresholds inconsistent, ADR-077 amendment) and the close PR; migrations V04_001…009; ADR-090, ADR-091; OD-034 opened at the close and resolved the same day by ADR-092 (warning on the product form). e2e J8 (opening stock → count → regularisation → ledger) added; J2 checks the stock of a new product.
+- **Deferred, so nothing is lost:** Phase 5 — convert a proposal to a purchase order (BR-PURCH-010), `supplier_id` on proposals and open-order subtraction (ADR-079), receipts creating lots through `LotIdentities` with `purchase_receipt` movements, unit cost of a repeated lot (OD-029; opening stock refuses another cost with `COST_MISMATCH` until then), `lots.supplier_id`, BR-UNIT-004; Phase 7 — `sale` movements, CT-01 and CT-04 re-run with real sales, recall buyers list (ADR-068), FEFO override (OD-010), cancellation of confirmed documents (OD-004, DR-002); Phase 8 — `customer_return` / `supplier_return` movements and the discard of returned goods (OD-005, DR-002); Phase 11 — reporting views (stock valuation, DR-006/007); Phase 12 — the read-only `backup` database account (ADR-087) and backup design (OD-021); an import tool may run `ANALYZE TABLE` itself (ADR-091 alternative); the production bundle passed 500 kB (code splitting planned in Phase 12).
 
 ## Phase 5 — Purchasing
 - **Objective:** buy goods and bring them into stock with lot and expiry.
-- **Prerequisites:** Phase 4; OD-007 (rounding/VAT), OD-014 (non-conforming goods), OD-015 (over-receipt), OD-017 (numbering), OD-029 (lot cost), OD-034 (max stock ≤ reorder point on the product form).
+- **Prerequisites:** Phase 4; OD-007 (rounding/VAT), OD-014 (non-conforming goods), OD-015 (over-receipt), OD-017 (numbering), OD-029 (lot cost).
 - **Features:** suppliers and price history; purchase orders (draft → validated → sent → received/closed); goods receipts; supplier returns; reorder proposal → PO; `NumberingService`.
 - **Database work:** suppliers, supplier prices, purchase orders/lines, goods receipts/lines, supplier returns, document sequences (numbering key fix, SD register).
 - **Backend work:** `purchasing`, `numbering`; atomic receipt use case; totals computation; PO PDF deferred to Phase 10.
@@ -170,7 +170,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Features:** performance tuning at target volume; security review (OWASP ASVS-oriented checklist); accessibility audit; data-migration rehearsal from the legacy source (if any); operations runbook; UAT.
 - **Database work:** index tuning; review of the least-privilege DB accounts introduced in Phase 4 (ADR-087, BR-SEC-006); restore rehearsal.
 - **Backend work:** rate limits, headers, config hardening, observability checks.
-- **Frontend work:** accessibility fixes, bundle size, browser matrix.
+- **Frontend work:** accessibility fixes, bundle size, browser matrix. The production bundle passed 500 kB in Phase 4 (Vite warning): split the large pages (POS, reports) into lazily loaded chunks here (user decision 2026-10-23).
 - **Tests:** full regression, e2e suite, load test, dependency/secret scans, backup restore test.
 - **Completion criteria:** all NFRs verified; no open Critical/High items in `documentation-review.md`; user acceptance signed off.
 

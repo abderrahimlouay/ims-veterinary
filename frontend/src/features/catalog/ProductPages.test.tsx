@@ -274,6 +274,36 @@ describe('product pages', () => {
     expect(screen.getByText('En stock')).toBeInTheDocument()
   })
 
+  it('warns, without refusing, when the max stock is at or below a reorder point above zero (ADR-092)', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    let saved: unknown
+    server.use(
+      http.get('/api/products/5', () => HttpResponse.json(aProduct({ maxStock: '50.000', reorderPoint: '0.000' }))),
+      http.put('/api/products/5', async ({ request }) => {
+        saved = await request.json()
+        return HttpResponse.json(aProduct({ maxStock: '10.000', reorderPoint: '10.000', version: 1 }))
+      }),
+    )
+    renderApp('/products/5')
+
+    const max = await screen.findByLabelText('Stock maximum')
+    expect(max).not.toHaveAccessibleDescription()
+    await userEvent.clear(screen.getByLabelText('Seuil de réapprovisionnement'))
+    await userEvent.type(screen.getByLabelText('Seuil de réapprovisionnement'), '10')
+    expect(max).not.toHaveAccessibleDescription()
+    await userEvent.clear(max)
+    await userEvent.type(max, '10')
+    expect(max).toHaveAccessibleDescription(/stock maximum ≤ seuil de réapprovisionnement/)
+    await userEvent.clear(max)
+    expect(max).not.toHaveAccessibleDescription()
+    await userEvent.type(max, '10')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await screen.findByText('Modifications enregistrées.')
+    expect(saved).toMatchObject({ maxStock: '10', reorderPoint: '10' })
+  })
+
   it('reports a duplicated ingredient', async () => {
     serveMe(PHARMACIST)
     serveReferences()

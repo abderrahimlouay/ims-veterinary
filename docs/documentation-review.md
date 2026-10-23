@@ -98,12 +98,12 @@ Same checks, scripted over every `.md` file plus the code where the docs name it
 | 5 | Permission codes: `security.md` §4 = seed migration; every `@PreAuthorize` and frontend guard uses a §4 code | Pass — 53 = 53, none unknown |
 | 6 | Section references (`file.md §n`) exist | Pass after one correction (below) |
 | 7 | No ADR left *Proposed* although implemented | Pass after four corrections (below); ADR-011 stays *Proposed* on purpose — numbering is Phase 5 with OD-017 |
-| 8 | No OD left open that Phase 4 resolved; no `[OPEN OD-…]` marker on a resolved OD | Pass after three corrections (below); OD-012, OD-013, OD-030 resolved; OD-034 opened (product form, before Phase 5) |
+| 8 | No OD left open that Phase 4 resolved; no `[OPEN OD-…]` marker on a resolved OD | Pass after three corrections (below); OD-012, OD-013, OD-030 resolved; OD-034 opened, then resolved the same day by ADR-092 |
 | 9 | Every Phase 4 schema change is in the delta register | Pass after two additions (below) |
 
 **Corrections made:**
 - `decisions.md` ADR-014, ADR-015, ADR-016, ADR-022: *Proposed* → *Accepted*, each with what implements it (views not created and logic in services; the lot indexes and the generated-column unique technique; `inventory_lines.variance_qty` with a test that the column equals the service's variance; the `inventory` naming).
-- `decisions.md` OD-030 and DR-034: `testing.md §1.7` (no such section) → `testing.md §1 (principle 7)`.
+- `decisions.md` OD-030 and DR-034: a reference to a nonexistent section 1.7 of `testing.md` → `testing.md §1 (principle 7)`.
 - `testing.md` BR-INV-003, BR-INV-005, BR-STOCK-010: references to the resolved OD-012/OD-013 replaced by their ADRs.
 - `database-migration.md` §8.2: SD-124 (`reorder_runs`) and SD-125 (`inventories.open_full_flag`) added; `database.md` cites them.
 - `roadmap.md` status line still said Phases 3–13 not started; `CLAUDE.md` and `README.md` status updated for Phase 4.
