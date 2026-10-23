@@ -3,9 +3,9 @@ import { ADMIN } from './fixtures'
 import { logIn } from './session'
 
 /**
- * J8 (testing.md §8): opening stock for a new product, a cycle count on it, a counted quantity below the balance,
- * regularisation, and the ledger showing both movements (W10a, W5, ADR-072…075). Runs after the journeys that
- * expect no lot yet.
+ * J8 (testing.md §8): a new product (with the max-stock warning of ADR-092), its opening stock, a cycle count on
+ * it, a counted quantity below the balance, regularisation, and the ledger showing both movements (W10a, W5,
+ * ADR-072…075). Runs after the journeys that expect no lot yet.
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 
@@ -19,6 +19,12 @@ test('J8: opening stock, inventory count and regularisation', async ({ page }) =
   await page.getByLabel('SKU', { exact: true }).fill('E2E-J8-CNT')
   await page.getByLabel('Nom commercial').fill('E2E Countval')
   await page.getByLabel('Unité de base', { exact: true }).fill('tablet')
+  const warning = page.getByText(/stock maximum ≤ seuil de réapprovisionnement/)
+  await page.getByLabel('Seuil de réapprovisionnement').fill('5')
+  await page.getByLabel('Stock maximum').fill('5')
+  await expect(warning).toBeVisible()
+  await page.getByLabel('Stock maximum').fill('50')
+  await expect(warning).toBeHidden()
   await page.getByRole('button', { name: 'Enregistrer' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'E2E Countval' })).toBeVisible()
 

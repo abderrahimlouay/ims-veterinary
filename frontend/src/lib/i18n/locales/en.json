@@ -242,6 +242,7 @@
       "minStock": "Minimum stock",
       "maxStock": "Maximum stock",
       "reorderPoint": "Reorder point",
+      "thresholdsInconsistent": "Warning: max stock ≤ reorder point; no reorder proposal can be generated for this product.",
       "salePrice": "Sale price (base unit)",
       "purchasePrice": "Purchase price (base unit)",
       "updatedAt": "Changed on",

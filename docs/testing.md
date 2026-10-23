@@ -120,7 +120,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PROD-008 | U,A | EAN13 with wrong length / letters / wrong check digit → VALIDATION_FAILED; CODE128 with a non-ASCII character refused; QR accepts any text; 65 characters refused (`BarcodeFormatTest`, `ProductBarcodesTest`) |
 | BR-PROD-003 | U,A | Create product without base unit → 400 |
 | BR-PROD-004 | S,A | Archive product; try to add it to a PO / sale → PRODUCT_ARCHIVED; history still readable |
-| BR-PROD-005 | U,R | Negative price, max<min threshold → rejected by validation and CHECK |
+| BR-PROD-005 | U,R | Negative price, max<min threshold → rejected by validation and CHECK; max ≤ reorder point (> 0) accepted with a warning (ADR-092: `thresholds.test.ts`, `ProductPages.test.tsx`, e2e J8) |
 | BR-PROD-006 | S | Change price → audit row PRICE_CHANGE with old/new; product prices (`ProductPricesTest`, `PriceAuditFailureTest`) and unit prices incl. clearing to derived (`ProductUnitsTest`, `ProductUnitRulesTest`) |
 | BR-PROD-007 | U,R | Negative or duplicate species withdrawal row → rejected |
 | BR-UNIT-001 | R,A | Duplicate unit name for same product → DUPLICATE_RESOURCE; factor ≤ 0, > 4 decimals, or not whole for a non-divisible product rejected (`ProductUnitSchemaTest`, `ProductUnitsTest`) |

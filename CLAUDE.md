@@ -1,6 +1,6 @@
 # CLAUDE.md — IMS Vétérinaire
 
-> **Project phase: Phase 4 (Inventory & stock) implemented (2026-10-23), waiting for the user's approval before the `phase-4-done` tag; Phase 3 tagged `phase-3-done` (2026-10-22). Phase 5 does not start without the user's approval.** Build/test commands are in `README.md`.
+> **Project phase: Phase 4 (Inventory & stock) complete (tag `phase-4-done`, 2026-10-23). Phase 5 does not start until the user sends it.** Build/test commands are in `README.md`.
 
 ## 1. Project
 Stock, purchasing, sales and finance application for a veterinary-medicine pharmacy/wholesaler (lots, expiry, FEFO, withdrawal periods, credit sales, recalls). Source of intent: the functional Spec (`said_project.md`). Everything you need is in `docs/`; start with `docs/roadmap.md` and `docs/development-workflow.md`.
