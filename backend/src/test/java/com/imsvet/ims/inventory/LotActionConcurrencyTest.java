@@ -3,6 +3,7 @@ package com.imsvet.ims.inventory;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.imsvet.ims.TestClock;
+import com.imsvet.ims.CommittedDataDatabase;
 import com.imsvet.ims.TestcontainersConfiguration;
 import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
@@ -11,12 +12,12 @@ import com.imsvet.ims.support.TestLots;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +31,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 /**
  * Concurrency CT-10 (testing.md §6, ADR-012), repeated 20 times: lot actions lock the lot row ({@code FOR UPDATE}), so two simultaneous
  * blocks of one lot cannot both succeed: one blocks, the other sees the blocked lot and is refused, and exactly one
- * audit entry is written. Runs on committed data, without a test transaction.
+ * audit entry is written. Runs on committed data, without a test transaction, in the database for committed data
+ * (the lot's opening movement can never be deleted).
  */
 @SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@Import({ TestcontainersConfiguration.class, CommittedDataDatabase.class })
 class LotActionConcurrencyTest {
 
     @Autowired
@@ -52,14 +54,9 @@ class LotActionConcurrencyTest {
     void committedLot() {
         clock.reset();
         TestLots lots = new TestLots(jdbc);
-        product = lots.product("CONC-LOT", "Concurrent");
-        lot = lots.lot(product, "L-CONC", LocalDate.of(2027, 5, 31), "10");
-    }
-
-    @AfterEach
-    void removeLot() {
-        jdbc.update("DELETE FROM lots WHERE id = ?", lot);
-        jdbc.update("DELETE FROM products WHERE id = ?", product);
+        String key = UUID.randomUUID().toString().substring(0, 8);
+        product = lots.product("CONC-" + key, "Concurrent");
+        lot = lots.lot(product, "L-" + key, LocalDate.of(2027, 5, 31), "10");
     }
 
     @RepeatedTest(20)

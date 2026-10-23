@@ -35,7 +35,8 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 - Builders/fixtures per aggregate with sensible defaults; one canonical **seed scenario** (products with units and barcodes, lots with varied expiries and statuses, customers of each type, one supplier, open and closed cash sessions).
 - Never reuse production data; no personal data in fixtures.
 - Time-dependent fixtures use relative dates from the test `Clock`.
-- Database cleanup by transactional rollback (or a fresh container for a new test-context configuration, ADR-035) — classes sharing a configuration share one database, so tests must not depend on data left by another class; concurrency tests use committed data and explicit cleanup.
+- Database cleanup by transactional rollback (or a fresh container for a new test-context configuration, ADR-035) — classes sharing a configuration share one database, so tests must not depend on data left by another class; concurrency tests use committed data and explicit cleanup. Rows of the append-only ledgers (`stock_movements`, `audit_log`) can never be deleted, so tests that commit them import `CommittedDataDatabase`, which gives them their own context and MySQL container; the shared database stays clean for the others.
+- Lots created by the `TestLots` fixture with stock come with their `opening_stock` movement, so ledger = balance (BR-STOCK-007) holds in every test; `StockAssertions.assertLedgerMatchesBalances` checks it.
 
 ## 4. Backend test requirements by layer
 
@@ -139,18 +140,18 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-LOT-010 | U,S | Days left −1 / 0 / 15 / 16 / 30 / 60 / 61 → expired / critical / critical / warning / warning / notice / none (inclusive, ADR-056); change threshold setting → levels follow; invalid values rejected (`ExpiryPolicyTest`, `LotQueriesTest`, `FefoAndAlertsTest`); each dashboard count equals the size of the list it opens (`FefoAndAlertsTest.eachAlertCountEqualsTheSizeOfItsLotList`, `ExpiryPolicyTest` windows, `LotPages.test.tsx`) |
 | BR-LOT-011 | A | No endpoint changes lot number/product/expiry (no write route exists in Phase 3) (`LotQueriesTest`) |
 | BR-LOT-012 | S | Receive already expired lot → rejected or flagged per rule |
-| BR-STOCK-001 | R,C | Direct CHECK violation (3819) mapped to STOCK_INSUFFICIENT; two concurrent sales of last unit → exactly one succeeds; adjustment and regularisation that would go negative refused, nothing posted |
-| BR-STOCK-002 | S | Every stock-changing use case produces exactly the expected movement rows; no class other than `StockService` writes `stock_movements` or lot balances (architecture test, ADR-088); fault injection after the movement insert rolls back movement, balance and document |
-| BR-STOCK-003 | R,SEC | UPDATE/DELETE on stock_movements refused (trigger/privileges); failed tx leaves no movement; trigger refuses UPDATE/DELETE by the migration account (SQLSTATE 45000); application account gets error 1142 (ADR-087) |
-| BR-STOCK-004 | S | Movement row carries user, type, reference, timestamp |
-| BR-STOCK-005 | U,R | Sign per movement type; wrong sign rejected; CHECK accepts exactly the ten types of ADR-081 |
+| BR-STOCK-001 | R,C | Direct CHECK violation (3819) mapped to STOCK_INSUFFICIENT; two concurrent sales of last unit → exactly one succeeds; adjustment and regularisation that would go negative refused, nothing posted (`StockServiceTest`, `StockConstraintTranslatorTest`, `StockConcurrencyTest` CT-01, `LotSchemaTest`) |
+| BR-STOCK-002 | S | Every stock-changing use case produces exactly the expected movement rows; no class other than `StockService` writes `stock_movements` or lot balances (architecture test, ADR-088); fault injection after the movement insert rolls back movement, balance and document (`StockServiceTest`, `StockAtomicityTest`, `ArchitectureTest.onlyStockServiceWritesStock`) |
+| BR-STOCK-003 | R,SEC | UPDATE/DELETE on stock_movements refused (trigger/privileges); failed tx leaves no movement; trigger refuses UPDATE/DELETE by the migration account (SQLSTATE 45000); application account gets error 1142 (ADR-087) (`StockMovementSchemaTest`, `StockMovementAppendOnlyTest`) |
+| BR-STOCK-004 | S | Movement row carries user, type, reference, timestamp (`StockServiceTest`, `StockMovementSchemaTest`, `MovementQueriesTest`) |
+| BR-STOCK-005 | U,R | Sign per movement type; wrong sign rejected; CHECK accepts exactly the ten types of ADR-081 (`MovementTypeTest`, `StockMovementSchemaTest`, `StockServiceTest`) |
 | BR-STOCK-006 | S,A | Adjustment without reason → ADJUSTMENT_REASON_REQUIRED; reason > 500 → `SIZE` |
 | BR-STOCK-007 | S,R | Integrity check detects deliberately corrupted balance (test DB only); nightly and on-demand runs stored; mismatch logs CRITICAL and sets the banner; clean run clears it (ADR-086) |
 | BR-STOCK-008 | U | Adjustment categories map to correct movement types; allowed on blocked, recalled and expired lots; audited `STOCK_CORRECTION` old/new (ADR-085) |
 | BR-STOCK-009 | U,A | Threshold validation per product |
 | BR-STOCK-010 | U,S | Reorder proposal contents and rounding (OD-013), no duplicates; trigger, quantity, thresholds incomplete, one pending updated in place, dismissed suppressed until recovery (ADR-076…079) |
 | BR-STOCK-011 | U,R | Sellable stock excludes expired/blocked/recalled/quarantined lots (sellable predicate: `ExpiryPolicyTest`; quantities from Phase 4); product sellable quantity sums only sellable lots |
-| BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock; lock wait timeout → `CONCURRENT_MODIFICATION` within 5 s (ADR-012, `LockWaitTimeoutTest`) |
+| BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock; lock wait timeout → `CONCURRENT_MODIFICATION` within 5 s (ADR-012, `LockWaitTimeoutTest`) (`StockConcurrencyTest` CT-02) |
 | BR-STOCK-013 | U,A | Status in stock / low / out and below-reorder from sellable quantity and thresholds (ADR-080) |
 | BR-STOCK-014 | S,A | Opening stock: setting closed → `OPENING_STOCK_CLOSED`; new lot; existing lot same expiry adds; other expiry, other cost, recalled refused; expired accepted; audited `OPENING_STOCK` |
 | BR-INV-001 | U | variance = counted − theoretical, signs and zero; variance against the balance at the watermark |

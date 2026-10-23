@@ -1,6 +1,9 @@
 package com.imsvet.ims.architecture;
 
 import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
+import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
+import static com.tngtech.archunit.core.domain.properties.HasOwner.Predicates.With.owner;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleName;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameEndingWith;
@@ -70,6 +73,13 @@ class ArchitectureTest {
             .that().resideInAPackage(ROOT + "inventory..")
             .should().dependOnClassesThat(resideInAPackage(ROOT + "users..")
                     .and(not(simpleName("UserNames"))));
+
+    /** BR-STOCK-002, ADR-088: only StockService writes movements or changes a lot balance. */
+    @ArchTest
+    static final ArchRule onlyStockServiceWritesStock = noClasses()
+            .that().doNotHaveSimpleName("StockService")
+            .should().dependOnClassesThat().haveSimpleName("StockMovementRepository")
+            .orShould().callMethodWhere(target(name("applyDelta")).and(target(owner(simpleName("Lot")))));
 
     @ArchTest
     static final ArchRule commonDependsOnNoModule = noClasses()
