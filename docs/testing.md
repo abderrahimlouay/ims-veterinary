@@ -154,14 +154,14 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock; lock wait timeout → `CONCURRENT_MODIFICATION` within 5 s (ADR-012, `LockWaitTimeoutTest`) (`StockConcurrencyTest` CT-02) |
 | BR-STOCK-013 | U,A | Status in stock / low / out and below-reorder from sellable quantity and thresholds (ADR-080) (`StockStatusTest`, `StockLevelsTest`) |
 | BR-STOCK-014 | S,A | Opening stock: setting closed → `OPENING_STOCK_CLOSED`; new lot; existing lot same expiry adds; other expiry, other cost, recalled refused; expired accepted; audited `OPENING_STOCK` (`OpeningStockTest`, `OpeningStockConcurrencyTest`, `SettingFormatTest`) |
-| BR-INV-001 | U | variance = counted − theoretical, signs and zero; variance against the balance at the watermark |
+| BR-INV-001 | U | variance = counted − theoretical, signs and zero; variance against the balance at the watermark (`CountLineTest`, `InventoryCountsTest`) |
 | BR-INV-002 | S | Regularise → one movement per variance line, reason set |
-| BR-INV-003 | S | Full vs partial counts (OD-012) produce correct lines; full: lots with stock; cycle by category and by product list (ADR-073); found lots (ADR-074) |
-| BR-INV-004 | S,A | Edit closed count → INVENTORY_NOT_OPEN; regularise twice → INVENTORY_LINE_ALREADY_REGULARIZED |
-| BR-INV-005 | S | Sale during open count behaves per OD-012: a sale after the lot was counted (no false variance), a sale before it was counted, a receipt during the count (ADR-072) |
+| BR-INV-003 | S | Full vs partial counts (OD-012) produce correct lines; full: lots with stock; cycle by category and by product list (ADR-073); found lots (ADR-074) (`InventoryCountsTest`) |
+| BR-INV-004 | S,A | Edit closed count → INVENTORY_NOT_OPEN; regularise twice → INVENTORY_LINE_ALREADY_REGULARIZED (cancelled count: `InventoryCountsTest`) |
+| BR-INV-005 | S | Sale during open count behaves per OD-012: a sale after the lot was counted (no false variance), a sale before it was counted, a receipt during the count (ADR-072) (`InventoryCountsTest`; sales from Phase 7, manual adjustments meanwhile) |
 | BR-INV-006 | SEC,S | Regularise without inventory.validate → ACCESS_DENIED; audited |
-| BR-INV-007 | S | Second open full count → INVENTORY_ALREADY_OPEN |
-| BR-INV-008 | S,C | Two edits of one line take two watermarks; regularisation posts the variance on the current balance; a variance that would go negative → `STOCK_INSUFFICIENT`, nothing posted, count open; CT-04 |
+| BR-INV-007 | S | Second open full count → INVENTORY_ALREADY_OPEN (`InventoryCountsTest`, `InventorySchemaTest`) |
+| BR-INV-008 | S,C | Two edits of one line take two watermarks; regularisation posts the variance on the current balance; a variance that would go negative → `STOCK_INSUFFICIENT`, nothing posted, count open; CT-04 (two edits: `InventoryCountsTest`) |
 | BR-PURCH-001 | U | PO state machine, all transitions |
 | BR-PURCH-002 | U | Line and PO totals (discount, VAT, rounding OD-007); client values ignored |
 | BR-PURCH-003 | A | Edit validated/sent PO → DOCUMENT_IMMUTABLE |

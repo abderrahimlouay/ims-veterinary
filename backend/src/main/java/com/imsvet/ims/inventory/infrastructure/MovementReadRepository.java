@@ -14,6 +14,10 @@ public interface MovementReadRepository extends Repository<StockMovement, Long> 
 
     Optional<StockMovement> findById(Long id);
 
+    /** The lot's last movement id (a count line's watermark, ADR-072), or null when it has none. */
+    @Query("SELECT MAX(m.id) FROM StockMovement m WHERE m.lotId = :lotId")
+    Long lastIdOfLot(long lotId);
+
     /** {@code from} inclusive, {@code to} exclusive. */
     @Query("""
             SELECT m FROM StockMovement m
