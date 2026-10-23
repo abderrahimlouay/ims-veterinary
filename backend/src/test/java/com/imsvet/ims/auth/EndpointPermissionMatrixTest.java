@@ -112,6 +112,7 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.POST, "/api/inventory/counts/999999/lines", "inventory.count",
                     "{\"lotId\":999999,\"countedQty\":\"1\"}"),
             new Endpoint(HttpMethod.POST, "/api/inventory/counts/999999/cancel", "inventory.validate"),
+            new Endpoint(HttpMethod.POST, "/api/inventory/counts/999999/regularize", "inventory.validate", "{}"),
             new Endpoint(HttpMethod.POST, "/api/inventory/adjustments", "stock.adjust",
                     "{\"lotId\":999999,\"type\":\"adjustment_breakage\",\"quantity\":\"1\",\"reason\":\"x\"}"),
             new Endpoint(HttpMethod.POST, "/api/inventory/opening-stock", "stock.adjust",

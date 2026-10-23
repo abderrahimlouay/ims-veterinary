@@ -134,6 +134,16 @@ public class InventoryCount {
         this.closedAt = now;
     }
 
+    /** Regularisation closes the count (ADR-075); the caller checks {@link #open()} first. */
+    public void close(Long userId, Instant now) {
+        if (!open()) {
+            throw new IllegalStateException("Count " + id + " is " + status.code());
+        }
+        this.status = CountStatus.CLOSED;
+        this.closedBy = userId;
+        this.closedAt = now;
+    }
+
     public Long id() {
         return id;
     }

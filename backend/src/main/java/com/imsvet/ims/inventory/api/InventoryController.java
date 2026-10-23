@@ -2,6 +2,7 @@ package com.imsvet.ims.inventory.api;
 
 import com.imsvet.ims.common.paging.PageResponse;
 import com.imsvet.ims.inventory.application.CountQueries;
+import com.imsvet.ims.inventory.application.CountRegularisation;
 import com.imsvet.ims.inventory.application.CountViews.CountDetail;
 import com.imsvet.ims.inventory.application.CountViews.CountSummary;
 import com.imsvet.ims.inventory.application.CountViews.Line;
@@ -58,6 +59,10 @@ class InventoryController {
     record CountedRequest(BigDecimal countedQty) {
     }
 
+    /** ADR-075: omitted or empty, every counted line. */
+    record RegularizeRequest(List<Long> lineIds) {
+    }
+
     /** ADR-074: {@code lotId}, or the fields of a lot unknown to the system; checked by the service. */
     record AddLineRequest(Long lotId, Long productId, String lotNumber, LocalDate expiryDate, BigDecimal unitCost,
             BigDecimal countedQty) {
@@ -70,10 +75,12 @@ class InventoryController {
     private final IntegrityChecks integrityChecks;
     private final InventoryCounts inventoryCounts;
     private final CountQueries countQueries;
+    private final CountRegularisation regularisation;
 
     InventoryController(MovementQueries movements, StockAdjustments adjustments, OpeningStock openingStock,
             StockLevels stockLevels, IntegrityChecks integrityChecks, InventoryCounts inventoryCounts,
-            CountQueries countQueries) {
+            CountQueries countQueries, CountRegularisation regularisation) {
+        this.regularisation = regularisation;
         this.integrityChecks = integrityChecks;
         this.inventoryCounts = inventoryCounts;
         this.countQueries = countQueries;
@@ -125,6 +132,11 @@ class InventoryController {
         Line added = inventoryCounts.add(id, new InventoryCounts.AddInput(body.lotId(), body.productId(),
                 body.lotNumber(), body.expiryDate(), body.unitCost(), body.countedQty()));
         return ResponseEntity.created(URI.create("/api/inventory/counts/" + id)).body(added);
+    }
+
+    @PostMapping("/counts/{id}/regularize")
+    CountDetail regularize(@PathVariable long id, @RequestBody(required = false) RegularizeRequest body) {
+        return regularisation.regularize(id, body == null ? null : body.lineIds());
     }
 
     @PostMapping("/counts/{id}/cancel")
