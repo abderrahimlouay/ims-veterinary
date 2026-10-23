@@ -27,7 +27,8 @@ public final class LotViews {
 
     public record LotDetail(long id, LotProduct product, String lotNumber, LocalDate expiryDate,
             BigDecimal quantityOnHand, String status, String alertLevel, long daysLeft, BigDecimal unitCost,
-            String blockedReason, Long blockedBy, Instant blockedAt, Instant receivedAt, boolean sellable) {
+            String blockedReason, Long blockedBy, String blockedByName, Instant blockedAt, Instant receivedAt,
+            boolean sellable) {
     }
 
     /** api.md §5.3: one proposed lot; {@code available} is its whole stock on hand. */
@@ -74,10 +75,11 @@ public final class LotViews {
                 status(l, policy), level(l, policy), policy.daysLeft(l.expiryDate()));
     }
 
-    static LotDetail detail(Lot l, ProductRef product, ExpiryPolicy policy) {
+    /** {@code blockedByName}: the full name of {@code blockedBy} (ADR-089), {@code null} when not blocked. */
+    static LotDetail detail(Lot l, ProductRef product, ExpiryPolicy policy, String blockedByName) {
         return new LotDetail(l.id(), product(product), l.lotNumber(), l.expiryDate(), l.quantityOnHand(),
                 status(l, policy), level(l, policy), policy.daysLeft(l.expiryDate()), l.unitCost(), l.blockedReason(),
-                l.blockedBy(), l.blockedAt(), l.receivedAt(), policy.sellable(l.status(), l.expiryDate(),
+                l.blockedBy(), blockedByName, l.blockedAt(), l.receivedAt(), policy.sellable(l.status(), l.expiryDate(),
                         l.quantityOnHand()));
     }
 

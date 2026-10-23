@@ -377,6 +377,8 @@
     "notSellable": "Not sellable",
     "blockReason": "Block reason",
     "recallReason": "Recall reason",
+    "blockedBy": "Blocked by",
+    "recalledBy": "Recalled by",
     "blockedAt": "Since",
     "status": {
       "active": "Active",

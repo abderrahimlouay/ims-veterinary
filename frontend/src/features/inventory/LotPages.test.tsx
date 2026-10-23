@@ -31,6 +31,7 @@ function aDetail(overrides: Record<string, unknown> = {}) {
     unitCost: '0.5000',
     blockedReason: null,
     blockedBy: null,
+    blockedByName: null,
     blockedAt: null,
     receivedAt: '2026-10-01T08:00:00Z',
     sellable: true,
@@ -188,6 +189,27 @@ describe('lot detail and actions (ADR-060, W6)', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Rapport de rappel' }))
 
     expect(await screen.findByText(/Stock restant : 3,000 tablet/)).toBeInTheDocument()
+  })
+
+  it('names who blocked or recalled the lot (ADR-089)', async () => {
+    serveMe(SELLER)
+    server.use(
+      http.get('/api/lots/21', () =>
+        HttpResponse.json(
+          aDetail({ status: 'blocked', sellable: false, blockedReason: 'Damaged', blockedBy: 7, blockedByName: 'Amina Benali', blockedAt: '2026-10-20T08:00:00Z' }),
+        ),
+      ),
+      http.get('/api/lots/22', () =>
+        HttpResponse.json(
+          aDetail({ id: 22, status: 'recalled', sellable: false, blockedReason: 'Notice', blockedBy: 9, blockedByName: 'Karim Haddad', blockedAt: '2026-10-20T08:00:00Z' }),
+        ),
+      ),
+    )
+    const router = renderApp('/lots/21')
+
+    expect((await screen.findByText('Bloqué par')).nextElementSibling).toHaveTextContent('Amina Benali')
+    await router.navigate('/lots/22')
+    expect((await screen.findByText('Rappelé par')).nextElementSibling).toHaveTextContent('Karim Haddad')
   })
 
   it('offers no action without the permissions', async () => {

@@ -18,6 +18,7 @@ import com.imsvet.ims.inventory.domain.ExpiryPolicy;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
+import com.imsvet.ims.users.application.UserNames;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -44,11 +45,13 @@ public class LotQueries {
     private final LotRepository lots;
     private final ProductLookup products;
     private final ExpiryPolicies policies;
+    private final UserNames userNames;
 
-    public LotQueries(LotRepository lots, ProductLookup products, ExpiryPolicies policies) {
+    public LotQueries(LotRepository lots, ProductLookup products, ExpiryPolicies policies, UserNames userNames) {
         this.lots = lots;
         this.products = products;
         this.policies = policies;
+        this.userNames = userNames;
     }
 
     @PreAuthorize("hasAuthority('lot.read')")
@@ -79,7 +82,7 @@ public class LotQueries {
         Lot lot = lots.findById(id).orElseThrow(
                 () -> new BusinessException(ErrorCode.NOT_FOUND, "Lot not found.", Map.of("id", id)));
         ProductRef product = products.find(lot.productId()).orElseThrow();
-        return LotViews.detail(lot, product, policies.current());
+        return LotViews.detail(lot, product, policies.current(), blockedByName(lot, userNames));
     }
 
     /** All lots of the product in FEFO order: expiry date, then id (BR-LOT-005). */
@@ -110,6 +113,11 @@ public class LotQueries {
         return new ExpiryAlerts(byLevel.get(AlertLevel.EXPIRED), byLevel.get(AlertLevel.CRITICAL),
                 byLevel.get(AlertLevel.WARNING), byLevel.get(AlertLevel.NOTICE),
                 new Thresholds(policy.notice(), policy.warning(), policy.critical()), policy.businessDate());
+    }
+
+    /** ADR-089: who blocked or recalled the lot, by name; {@code null} when nobody did. */
+    static String blockedByName(Lot lot, UserNames userNames) {
+        return lot.blockedBy() == null ? null : userNames.fullNames(List.of(lot.blockedBy())).get(lot.blockedBy());
     }
 
     private static EffectiveLotStatus status(String code) {

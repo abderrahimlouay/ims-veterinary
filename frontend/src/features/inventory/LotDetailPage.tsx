@@ -79,6 +79,12 @@ export function LotDetailPage() {
             <dd>{data.blockedReason}</dd>
           </>
         )}
+        {data.blockedByName !== null && (
+          <>
+            <dt className="text-mute">{stored === 'recalled' ? t('lots.recalledBy') : t('lots.blockedBy')}</dt>
+            <dd>{data.blockedByName}</dd>
+          </>
+        )}
         {data.blockedAt !== null && (
           <>
             <dt className="text-mute">{t('lots.blockedAt')}</dt>

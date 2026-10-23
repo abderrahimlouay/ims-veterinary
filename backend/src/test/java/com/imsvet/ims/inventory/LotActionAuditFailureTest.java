@@ -18,6 +18,7 @@ import com.imsvet.ims.inventory.application.LotActions;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
+import com.imsvet.ims.users.application.UserNames;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -45,7 +46,7 @@ class LotActionAuditFailureTest {
         doThrow(new IllegalStateException("audit_log unavailable"))
                 .when(audit).record(any(), anyString(), any(), anyMap(), anyMap());
         LotActions actions = new LotActions(lots, mock(ProductLookup.class), mock(ExpiryPolicies.class), audit, actors,
-                Clock.fixed(Instant.EPOCH, ZoneOffset.UTC));
+                Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), mock(UserNames.class));
 
         assertThatThrownBy(() -> actions.block(4, "Damaged")).hasMessage("audit_log unavailable");
 

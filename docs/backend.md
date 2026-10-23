@@ -66,7 +66,7 @@ com.imsvet.ims        (ADR-034)
 | `audit` | audit_log | `AuditRecorder` (must run inside the caller's transaction, BR-AUDIT-003) | — |
 | `numbering` | document_sequences | `NumberingService.next(type)` | — |
 | `settings` | app_settings | `SettingsProvider` (typed reads, e.g. login throttling limits) | audit |
-| `users` | users, roles, permissions; password policy (ADR-039) | `UserAccounts` (credentials, active account, own password change) | audit |
+| `users` | users, roles, permissions; password policy (ADR-039) | `UserAccounts` (credentials, active account, own password change); `UserNames` (full names by id, for `inventory`, ADR-089) | audit |
 | `auth` | sessions (ADR-036, Spring Session tables) | security chain, `SessionUser` principal | users, settings |
 
 Ports invert dependencies so `sales` ↔ `finance` do not form a cycle; modules never read each other's tables directly except through views owned by `reporting`.
