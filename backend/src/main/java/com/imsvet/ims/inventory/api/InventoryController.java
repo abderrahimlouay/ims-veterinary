@@ -4,22 +4,44 @@ import com.imsvet.ims.common.paging.PageResponse;
 import com.imsvet.ims.inventory.application.LotViews.MovementEntry;
 import com.imsvet.ims.inventory.application.MovementQueries;
 import com.imsvet.ims.inventory.application.MovementQueries.MovementFilter;
+import com.imsvet.ims.inventory.application.StockAdjustments;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.net.URI;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** api.md §4.5 {@code /api/inventory}: the ledger in this slice; permissions on the services. */
+/** api.md §4.5 {@code /api/inventory}: the ledger and manual adjustments; permissions on the services. */
 @RestController
 @RequestMapping("/api/inventory")
 class InventoryController {
 
-    private final MovementQueries movements;
+    /** ADR-085: the reason is checked by the service ({@code ADJUSTMENT_REASON_REQUIRED}); only its length here. */
+    record AdjustmentRequest(@NotNull Long lotId, String type, BigDecimal quantity, @Size(max = 500) String reason) {
+    }
 
-    InventoryController(MovementQueries movements) {
+    private final MovementQueries movements;
+    private final StockAdjustments adjustments;
+
+    InventoryController(MovementQueries movements, StockAdjustments adjustments) {
         this.movements = movements;
+        this.adjustments = adjustments;
+    }
+
+    @PostMapping("/adjustments")
+    ResponseEntity<MovementEntry> adjust(@Valid @RequestBody AdjustmentRequest body) {
+        MovementEntry created = adjustments.adjust(
+                new StockAdjustments.AdjustmentInput(body.lotId(), body.type(), body.quantity(), body.reason()));
+        return ResponseEntity.created(URI.create("/api/inventory/movements/" + created.id())).body(created);
     }
 
     @GetMapping("/movements")
