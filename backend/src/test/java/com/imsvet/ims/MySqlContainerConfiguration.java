@@ -1,8 +1,10 @@
 package com.imsvet.ims;
 
+import com.imsvet.ims.common.db.MySqlVersion;
 import com.imsvet.ims.support.MigrationAccount;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.UUID;
@@ -15,7 +17,7 @@ import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * Real MySQL (ADR-030), same release line as production (ADR-032), with the two accounts of ADR-087: Flyway
+ * Real MySQL (ADR-030), same release line as production (ADR-032), refused when older than 8.0.30 (ADR-003), with the two accounts of ADR-087: Flyway
  * migrates with {@link #MIGRATION_USER} and the application connects with the restricted {@link #APP_USER}, whose
  * rights come only from the grants callback. Used alone by {@link TestImsApplication}; tests get it through
  * {@link TestcontainersConfiguration}. Passwords are generated per run, never written anywhere.
@@ -42,6 +44,11 @@ public class MySqlContainerConfiguration {
         MySQLContainer mysql = new MySQLContainer(MYSQL_IMAGE).withPassword(MYSQL_PASSWORD)
                 .withCommand("--log-bin-trust-function-creators=1");
         mysql.start();
+        try (Connection root = DriverManager.getConnection(mysql.getJdbcUrl(), "root", MYSQL_PASSWORD);
+                Statement sql = root.createStatement(); ResultSet version = sql.executeQuery("SELECT VERSION()")) {
+            version.next();
+            MySqlVersion.requireSupported(version.getString(1));
+        }
         createAccounts(mysql);
         return mysql;
     }

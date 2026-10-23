@@ -12,7 +12,9 @@ import java.util.regex.Pattern;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.callback.Context;
 import org.flywaydb.core.api.callback.Event;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Component;
  * never any DDL. New tables are covered without a migration of their own.
  */
 @Component
+@ConditionalOnBooleanProperty(name = "spring.flyway.enabled", matchIfMissing = true)
 public class ApplicationAccountGrants implements Callback {
 
     /** Ledgers whose rows are never changed or removed (ADR-017, BR-STOCK-003, BR-AUDIT-002). */
@@ -41,6 +44,26 @@ public class ApplicationAccountGrants implements Callback {
         this.historyTable = historyTable;
     }
 
+    /**
+     * Spring's binder leaves an unset {@code ${IMS_DB_MIGRATION_…}} as text, which would only fail later as a login
+     * error. Reading the Flyway account strictly here (this callback is created before Flyway runs) stops the start
+     * at once with {@link MissingDatabaseAccountAnalyzer} or {@link SharedDatabaseAccountAnalyzer}.
+     */
+    @Autowired
+    ApplicationAccountGrants(@Value("${spring.datasource.username}") String applicationUser,
+            @Value("${ims.db.application-host}") String applicationHost,
+            @Value("${spring.flyway.table:flyway_schema_history}") String historyTable,
+            @Value("${spring.flyway.user}") String migrationUser,
+            @Value("${spring.flyway.password}") String migrationPassword) {
+        this(applicationUser, applicationHost, historyTable);
+        if (migrationPassword.isBlank()) {
+            throw new IllegalStateException("The migration account password is empty. " + DatabaseAccountsGuidance.ACTION);
+        }
+        if (migrationUser.equalsIgnoreCase(applicationUser)) {
+            throw new SharedDatabaseAccountException(applicationUser);
+        }
+    }
+
     @Override
     public boolean supports(Event event, Context context) {
         return event == Event.AFTER_MIGRATE;
@@ -55,10 +78,10 @@ public class ApplicationAccountGrants implements Callback {
     public void handle(Event event, Context context) {
         Connection connection = context.getConnection();
         try {
+            MySqlVersion.requireSupported(version(connection));
             String migrator = currentUser(connection);
             if (migrator.equalsIgnoreCase(applicationUser)) {
-                throw new IllegalStateException(
-                        "Flyway and the application must use different database accounts (ADR-087)");
+                throw new SharedDatabaseAccountException(applicationUser);
             }
             String grantee = "'" + applicationUser + "'@'" + applicationHost + "'";
             try (Statement sql = connection.createStatement()) {
@@ -95,6 +118,13 @@ public class ApplicationAccountGrants implements Callback {
             }
         }
         return tables;
+    }
+
+    private static String version(Connection connection) throws SQLException {
+        try (Statement sql = connection.createStatement(); ResultSet row = sql.executeQuery("SELECT VERSION()")) {
+            row.next();
+            return row.getString(1);
+        }
     }
 
     private static String currentUser(Connection connection) throws SQLException {
