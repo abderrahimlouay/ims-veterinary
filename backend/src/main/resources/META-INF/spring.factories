@@ -1,0 +1,4 @@
+# Startup failure reports that say what to do (ADR-087)
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+com.imsvet.ims.common.db.MissingDatabaseAccountAnalyzer,\
+com.imsvet.ims.common.db.SharedDatabaseAccountAnalyzer

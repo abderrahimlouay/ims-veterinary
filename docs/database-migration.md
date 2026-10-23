@@ -238,7 +238,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 
 | Setting | Value / recommendation | Reason |
 |---|---|---|
-| Version | ≥ 8.0.16 (CHECK enforcement); target 8.4 LTS | ADR-003 |
+| Version | ≥ 8.0.30 (CHECK enforcement since 8.0.16, `REVOKE IF EXISTS` for the grants of ADR-087), checked by the grants callback and the test container; target 8.4 LTS | ADR-003 |
 | Engine / charset | InnoDB, `utf8mb4`, `utf8mb4_0900_ai_ci` | ADR-024 |
 | `sql_mode` | `STRICT_TRANS_TABLES,ONLY_FULL_GROUP_BY,NO_ENGINE_SUBSTITUTION,ERROR_FOR_DIVISION_BY_ZERO` | No silent truncation |
 | Server/JDBC time zone | UTC | ADR-010 |

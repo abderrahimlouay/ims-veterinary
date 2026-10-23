@@ -12,7 +12,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 |---|---|
 | Language / build | Java 21 LTS, Maven wrapper (ADR-032) |
 | Framework | Spring Boot 4.x (4.1.1 at Phase 0), Spring MVC (ADR-032) |
-| Persistence | Spring Data JPA / Hibernate, MySQL 8.4 LTS (≥ 8.0.16 required for CHECK), Flyway (ADR-018) |
+| Persistence | Spring Data JPA / Hibernate, MySQL 8.4 LTS (≥ 8.0.30 required: CHECK enforcement, `REVOKE IF EXISTS` for the grants of ADR-087; checked at migration time), Flyway (ADR-018) |
 | Security | Spring Security, method security, BCrypt/Argon2 (`security.md`) |
 | Mapping | MapStruct (ADR-019) |
 | Validation | Jakarta Bean Validation + domain validation in services |

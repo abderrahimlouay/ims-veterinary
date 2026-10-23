@@ -36,7 +36,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** See `backend.md`.
 
 ## ADR-003 — MySQL as the database
-- **Status:** Accepted (project brief). Minimum features: **MySQL 8.0.16+** (enforced `CHECK` constraints, functional indexes, `SKIP LOCKED`). Target release line: **8.4 LTS** `[REC]` — MySQL 8.0 reached end of life in April 2026, so a new project should not start on it (verify at Phase 0, **OD-024**).
+- **Status:** Accepted (project brief); minimum raised to **8.0.30** by the user on 2026-10-23 (`REVOKE IF EXISTS` in the grants of ADR-087), checked at migration time and on the test container. Minimum features: **MySQL 8.0.30+** (enforced `CHECK` constraints since 8.0.16, functional indexes, `SKIP LOCKED`, `REVOKE IF EXISTS`). Target release line: **8.4 LTS** `[REC]` — MySQL 8.0 reached end of life in April 2026, so a new project should not start on it (verify at Phase 0, **OD-024**).
 - **Context:** The Source Schema was designed for PostgreSQL 14+. The target is MySQL.
 - **Decision:** MySQL (InnoDB, `utf8mb4`). The Source Schema is a *reference design*, not a script to convert mechanically.
 - **Alternatives:** Keep PostgreSQL (rejected by brief); MariaDB (different `CHECK`/JSON/generated-column behaviour; not evaluated).
@@ -587,7 +587,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #17 A)
 - **Decision:** Flyway runs with a **migration account** (`IMS_DB_MIGRATION_USERNAME` / `IMS_DB_MIGRATION_PASSWORD`, DDL rights); the application connects with an **application account** (`IMS_DB_USERNAME` / `IMS_DB_PASSWORD`) that has `SELECT, INSERT, UPDATE, DELETE` on the application tables except `stock_movements` and `audit_log`, where it has only `SELECT, INSERT`, and no DDL. The grants are applied after every migration by a Flyway callback for each table, so a new table is covered automatically. The append-only triggers (ADR-017) stay and also stop privileged accounts. Testcontainers (tests, `spring-boot:test-run`, end-to-end) and CI create both accounts and run Flyway with the migration account and the application with the restricted one. Tests prove that the trigger refuses `UPDATE`/`DELETE` by the migration account (SQLSTATE 45000) and that the application account gets error 1142.
 - **Alternatives:** triggers now, privileges in Phase 12 (B).
-- **Consequences:** `.env.example`, `README.md`, `database-migration.md` §9, `security.md`, BR-STOCK-003, BR-SEC-006, roadmap Phase 12 (privileges already done).
+- **Consequences:** `.env.example`, `README.md`, `database-migration.md` §9, `security.md`, BR-STOCK-003, BR-SEC-006, roadmap Phase 12 (privileges already done). A missing account variable or one account for both roles stops the start before any connection, with a report naming the four variables and the README section (user request 2026-10-23).
 
 ## ADR-088 — `StockService` is the only writer of stock
 - **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #18 A)
