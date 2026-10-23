@@ -13,7 +13,25 @@ Java 21 · Spring Boot 4.1 · Maven · MySQL 8.4 LTS · Flyway · React 19 + Vit
 ## Prerequisites
 - JDK 21, Node.js 24 with npm.
 - Docker, usable **without sudo** by your user (Testcontainers starts MySQL for the backend tests). On Linux: `sudo usermod -aG docker $USER`, then log out and in.
-- For running the backend outside tests: a MySQL 8.4 database started with `log_bin_trust_function_creators=1` (ADR-043; Flyway creates triggers) and the variables of `.env.example`.
+- For running the backend outside tests: a MySQL 8.4 database started with `log_bin_trust_function_creators=1` (ADR-043; Flyway creates triggers), its two accounts (below) and the variables of `.env.example`.
+
+## Database accounts (ADR-087)
+The application never connects with the account that changes the schema:
+
+| Account | Variables | Rights |
+|---|---|---|
+| Migration (Flyway only) | `IMS_DB_MIGRATION_USERNAME`, `IMS_DB_MIGRATION_PASSWORD` | every right on the application schema, with `GRANT OPTION` |
+| Application | `IMS_DB_USERNAME`, `IMS_DB_PASSWORD` | none at creation; after each migration Flyway grants `SELECT, INSERT, UPDATE, DELETE` on every table and only `SELECT, INSERT` on `stock_movements` and `audit_log` — no DDL |
+
+Create them once as a MySQL administrator, with your own strong passwords:
+
+```sql
+CREATE USER '<migration-user>'@'%' IDENTIFIED BY '<migration-password>';
+GRANT ALL PRIVILEGES ON `<schema>`.* TO '<migration-user>'@'%' WITH GRANT OPTION;
+CREATE USER '<application-user>'@'%' IDENTIFIED BY '<application-password>';
+```
+
+Passwords come **only from environment variables**; nothing in the repository holds one. The `dev` profile defaults the URL (`localhost:3306/ims`) and the account names (`ims_app`, `ims_migrator`) for a local database only: these names are public and must not be used in production, where the `prod` profile has no default at all and every variable must be set. Tests, `spring-boot:test-run` and CI create both accounts in their throw-away container with random passwords.
 
 ## First start (ADR-040)
 On an empty database, set `IMS_BOOTSTRAP_ADMIN_USERNAME` and `IMS_BOOTSTRAP_ADMIN_PASSWORD` (≥ 12 characters, not a common password) once: the application creates that Administrator, who must change the password at first login. Remove both variables afterwards; they are ignored as soon as a user exists.

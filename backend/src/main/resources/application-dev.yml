@@ -1,5 +1,9 @@
-# Local development against a MySQL 8.4 instance. The password has no default on purpose.
+# Local development against a MySQL 8.4 instance. Only the URL and account names have defaults; the passwords never
+# have one, and the prod profile has no defaults at all (README).
 spring:
   datasource:
     url: ${IMS_DB_URL:jdbc:mysql://localhost:3306/ims}
-    username: ${IMS_DB_USERNAME:ims}
+    username: ${IMS_DB_USERNAME:ims_app}
+  flyway:
+    url: ${IMS_DB_URL:jdbc:mysql://localhost:3306/ims}
+    user: ${IMS_DB_MIGRATION_USERNAME:ims_migrator}
