@@ -15,12 +15,15 @@ import java.time.LocalDate;
 
 /**
  * A received batch of one product (database.md §2.2/§3.4). Identity (product, lot number, expiry) is immutable
- * (BR-LOT-011); the balance changes only through stock movements (Phase 4, ADR-028); lots are never created in
+ * (BR-LOT-011); the balance changes only through stock movements ({@link #applyDelta}, ADR-028); lots are never created in
  * Phase 3 (ADR-064); the stored status changes only through {@link #apply}. The product is referenced by id: catalog tables are read through {@code ProductLookup}.
  */
 @Entity
 @Table(name = "lots")
 public class Lot {
+
+    /** Base quantities keep 3 decimals (database.md §2.3). */
+    private static final int QUANTITY_SCALE = 3;
 
     /** Null-safe: also applied to an absent query parameter. */
     @Converter
@@ -73,6 +76,14 @@ public class Lot {
     private Instant receivedAt;
 
     protected Lot() {
+    }
+
+    /**
+     * Moves the balance by a movement's quantity (ADR-028). Only {@code StockService} calls it, after locking the lot
+     * and checking that the balance stays ≥ 0 (BR-STOCK-001/002; architecture test); the CHECK is the safety net.
+     */
+    public void applyDelta(BigDecimal delta) {
+        this.quantityOnHand = quantityOnHand.add(delta).setScale(QUANTITY_SCALE);
     }
 
     /**

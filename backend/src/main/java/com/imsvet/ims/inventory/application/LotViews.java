@@ -4,6 +4,7 @@ import com.imsvet.ims.catalog.application.ProductLookup.ProductRef;
 import com.imsvet.ims.inventory.domain.AlertLevel;
 import com.imsvet.ims.inventory.domain.ExpiryPolicy;
 import com.imsvet.ims.inventory.domain.Lot;
+import com.imsvet.ims.inventory.domain.StockMovement;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,6 +30,23 @@ public final class LotViews {
             BigDecimal quantityOnHand, String status, String alertLevel, long daysLeft, BigDecimal unitCost,
             String blockedReason, Long blockedBy, String blockedByName, Instant blockedAt, Instant receivedAt,
             boolean sellable) {
+    }
+
+    /** api.md §4.5 {@code MovementEntry}: an immutable ledger line with its lot, product and operator. */
+    public record MovementEntry(long id, MovementLot lot, LotProduct product, String type, BigDecimal quantity,
+            String referenceType, Long referenceId, String reason, MovementUser user, Instant createdAt) {
+    }
+
+    public record MovementLot(long id, String lotNumber, LocalDate expiryDate) {
+    }
+
+    public record MovementUser(long id, String fullName) {
+    }
+
+    static MovementEntry movement(StockMovement m, Lot lot, ProductRef product, String userName) {
+        return new MovementEntry(m.id(), new MovementLot(lot.id(), lot.lotNumber(), lot.expiryDate()), product(product),
+                m.type().code(), m.quantity(), m.referenceType(), m.referenceId(), m.reason(),
+                new MovementUser(m.userId(), userName), m.createdAt());
     }
 
     /** api.md §5.3: one proposed lot; {@code available} is its whole stock on hand. */

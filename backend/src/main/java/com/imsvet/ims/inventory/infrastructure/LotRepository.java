@@ -4,6 +4,7 @@ import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
 import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,13 @@ public interface LotRepository extends Repository<Lot, Long> {
     Optional<Lot> findByIdForUpdate(long id);
 
     void flush();
+
+    /** Locking read of several lots in ascending id order, so concurrent use cases never deadlock (ADR-012). */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM Lot l WHERE l.id IN :ids ORDER BY l.id")
+    List<Lot> findAllByIdInForUpdate(Collection<Long> ids);
+
+    List<Lot> findAllByIdIn(Collection<Long> ids);
 
     /**
      * Every filter optional. {@code stored}, {@code expired} and {@code withStock} together express an effective
