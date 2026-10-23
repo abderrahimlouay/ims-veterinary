@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isNegativeDecimal, subtractDecimal } from './decimal'
+import { isNegativeDecimal, subtractDecimal, sumDecimals } from './decimal'
 
 describe('decimal previews (ADR-021: no floating point)', () => {
   it('subtracts exactly at three decimals', () => {
@@ -14,6 +14,12 @@ describe('decimal previews (ADR-021: no floating point)', () => {
     expect(subtractDecimal('10', 'abc')).toBeNull()
     expect(subtractDecimal('10', '')).toBeNull()
     expect(subtractDecimal('10', '1.0001')).toBeNull()
+  })
+
+  it('sums exactly', () => {
+    expect(sumDecimals(['-2.000', '0.1', '0.2'])).toBe('-1.700')
+    expect(sumDecimals([])).toBe('0.000')
+    expect(sumDecimals(['1', 'x'])).toBeNull()
   })
 
   it('tells a negative value', () => {

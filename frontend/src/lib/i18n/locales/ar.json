@@ -14,7 +14,9 @@
     "references": "البيانات المرجعية",
     "products": "المنتجات",
     "lots": "الحصص",
-    "stock": "المخزون"
+    "stock": "المخزون",
+    "counts": "الجرد",
+    "reorder": "إعادة الطلب"
   },
   "language": {
     "label": "اللغة",
@@ -93,7 +95,12 @@
     "OPENING_STOCK_CLOSED": "فترة المخزون الافتتاحي مغلقة: المخزون المكتشف الآن يمر عبر الجرد.",
     "LOT_EXPIRY_MISMATCH": "رقم الحصة هذا موجود بتاريخ انتهاء صلاحية آخر.",
     "LOT_RECALLED": "هذه الحصة مسحوبة.",
-    "PRODUCT_ARCHIVED": "هذا المنتج مؤرشف."
+    "PRODUCT_ARCHIVED": "هذا المنتج مؤرشف.",
+    "INVENTORY_NOT_OPEN": "هذا الجرد لم يعد مفتوحًا.",
+    "INVENTORY_ALREADY_OPEN": "يوجد جرد كامل مفتوح بالفعل.",
+    "INVENTORY_LINE_ALREADY_REGULARIZED": "تمت تسوية هذا السطر بالفعل.",
+    "INVALID_STATE_TRANSITION": "هذه العملية غير ممكنة في الحالة الحالية.",
+    "CONCURRENT_MODIFICATION": "قام شخص آخر بتعديل هذه البيانات للتو: أعد المحاولة."
   },
   "pager": {
     "label": "ترقيم الصفحات",
@@ -359,7 +366,9 @@
     "POSITIVE": "يجب أن تكون القيمة أكبر من صفر.",
     "FORMAT": "هذا الرمز لا يطابق النوع المختار.",
     "CHECK_DIGIT": "رقم التحقق EAN-13 غير صحيح.",
-    "COST_MISMATCH": "هذه الحصة موجودة بتكلفة وحدة أخرى."
+    "COST_MISMATCH": "هذه الحصة موجودة بتكلفة وحدة أخرى.",
+    "OUT_OF_SCOPE": "هذا المنتج خارج نطاق الجرد.",
+    "NOT_COUNTED": "يمكن تسوية الأسطر المعدودة فقط."
   },
   "lots": {
     "title": "الحصص",
@@ -536,6 +545,110 @@
     "widget": {
       "title": "مخزون منخفض",
       "none": "لا يوجد منتج في حالة نفاد أو مخزون منخفض."
+    }
+  },
+  "counts": {
+    "title": "الجرد",
+    "new": "جرد جديد",
+    "newTitle": "فتح جرد",
+    "statusFilter": "الحالة",
+    "status": {
+      "open": "مفتوح",
+      "closed": "مغلق",
+      "cancelled": "ملغى"
+    },
+    "empty": "لا يوجد جرد.",
+    "number": "الجرد",
+    "label": "الجرد رقم {{id}}",
+    "type": "نوع الجرد",
+    "types": {
+      "full": "كامل",
+      "cycle": "دوري"
+    },
+    "typeHint": {
+      "full": "كامل: كل الحصص التي بها مخزون (جرد واحد مفتوح في كل مرة)",
+      "cycle": "دوري: فئة واحدة أو قائمة منتجات"
+    },
+    "startedAt": "فُتح في",
+    "startedBy": "فتحه",
+    "progress": "المعدود",
+    "counted": "{{counted}} / {{lines}}",
+    "scope": "النطاق",
+    "scopes": {
+      "category": "فئة علاجية واحدة",
+      "products": "قائمة منتجات"
+    },
+    "scopeRequired": "اختر فئة أو منتجًا واحدًا على الأقل.",
+    "findProduct": "البحث عن منتج",
+    "add": {
+      "existing": "حصة موجودة بدون سطر",
+      "unknown": "حصة غير معروفة للنظام",
+      "submit": "إضافة السطر"
+    },
+    "addProduct": "إضافة {{name}}",
+    "removeProduct": "إزالة {{name}}",
+    "chosenProducts": "المنتجات المختارة",
+    "notes": "ملاحظات",
+    "open": "فتح الجرد",
+    "addLot": "إضافة حصة",
+    "regularize": "تسوية",
+    "cancel": "إلغاء الجرد",
+    "validateOnly": "مخصص لحاملي صلاحية «اعتماد الجرد».",
+    "startedLine": "فُتح في {{at}} بواسطة {{by}}",
+    "closedLine": "أُغلق في {{at}} بواسطة {{by}}",
+    "noLines": "لا توجد حصة بمخزون في النطاق: أضف الحصص المكتشفة.",
+    "foundLot": "مكتشفة: {{lotNumber}}",
+    "grid": {
+      "product": "المنتج",
+      "lot": "الحصة",
+      "theoretical": "الرصيد عند الفتح",
+      "counted": "المعدود",
+      "balanceAtCount": "الرصيد عند العد",
+      "variance": "الفرق",
+      "since": "الحركات منذ العد",
+      "current": "الرصيد الحالي",
+      "status": "السطر",
+      "countedFor": "الكمية المعدودة — {{line}}"
+    },
+    "lineStatus": {
+      "toCount": "للعد",
+      "counted": "عدّه {{by}}",
+      "regularized": "تمت التسوية"
+    },
+    "regularizeTitle": "تسوية الجرد رقم {{id}}",
+    "regularizeHint": "ستتم تسوية {{lines}} سطرًا معدودًا من أصل {{total}}؛ يصبح كل فرق حركة جرد على الرصيد الحالي، ثم يُغلق الجرد.",
+    "netVariance": "صافي الفرق",
+    "regularizeConfirm": "تسوية وإغلاق",
+    "refused": {
+      "STOCK_INSUFFICIENT": "مرفوض: السطر «{{line}}» سيجعل رصيد الحصة سالبًا (خروج مخزون منذ العد). لم يُسجَّل شيء؛ يبقى الجرد مفتوحًا.",
+      "LOT_EXPIRY_MISMATCH": "مرفوض: حصة السطر «{{line}}» أصبحت موجودة بتاريخ انتهاء آخر. لم يُسجَّل شيء؛ يبقى الجرد مفتوحًا."
+    },
+    "cancelTitle": "إلغاء الجرد رقم {{id}}",
+    "cancelHint": "لا تُسجَّل أي حركة؛ لا يمكن تعديل الجرد الملغى.",
+    "cancelConfirm": "إلغاء الجرد"
+  },
+  "reorder": {
+    "title": "مقترحات إعادة الطلب",
+    "generate": "التوليد الآن",
+    "generated": "تم إنشاء {{created}} مقترح وتحديث {{updated}}.",
+    "incomplete": "حدود غير مكتملة (لا يوجد حد أقصى للمخزون أو تم بلوغه):",
+    "statusFilter": "الحالة",
+    "status": {
+      "pending": "قيد الانتظار",
+      "converted": "محوَّل",
+      "dismissed": "مستبعد"
+    },
+    "empty": "لا توجد مقترحات.",
+    "current": "القابل للبيع عند التوليد",
+    "suggested": "الكمية المقترحة",
+    "updatedAt": "آخر تحديث",
+    "actions": "إجراءات",
+    "dismiss": "استبعاد",
+    "dismissFor": "استبعاد المقترح لـ {{name}}",
+    "dismissedBy": "استبعده {{by}}",
+    "widget": {
+      "title": "إعادة الطلب",
+      "pending": "مقترحات قيد الانتظار: {{count}}"
     }
   }
 }

@@ -14,7 +14,9 @@
     "references": "Données de référence",
     "products": "Produits",
     "lots": "Lots",
-    "stock": "Stock"
+    "stock": "Stock",
+    "counts": "Inventaires",
+    "reorder": "Réapprovisionnement"
   },
   "language": {
     "label": "Langue",
@@ -93,7 +95,12 @@
     "OPENING_STOCK_CLOSED": "La période du stock d'ouverture est close : le stock trouvé désormais passe par un inventaire.",
     "LOT_EXPIRY_MISMATCH": "Ce numéro de lot existe déjà avec une autre date de péremption.",
     "LOT_RECALLED": "Ce lot est rappelé.",
-    "PRODUCT_ARCHIVED": "Ce produit est archivé."
+    "PRODUCT_ARCHIVED": "Ce produit est archivé.",
+    "INVENTORY_NOT_OPEN": "Cet inventaire n'est plus ouvert.",
+    "INVENTORY_ALREADY_OPEN": "Un inventaire complet est déjà ouvert.",
+    "INVENTORY_LINE_ALREADY_REGULARIZED": "Cette ligne est déjà régularisée.",
+    "INVALID_STATE_TRANSITION": "Cette opération n'est pas possible dans l'état actuel.",
+    "CONCURRENT_MODIFICATION": "Quelqu'un d'autre vient de modifier ces données : réessayez."
   },
   "pager": {
     "label": "Pagination",
@@ -359,7 +366,9 @@
     "POSITIVE": "La valeur doit être supérieure à zéro.",
     "FORMAT": "Ce code ne correspond pas au type choisi.",
     "CHECK_DIGIT": "Le chiffre de contrôle EAN-13 est incorrect.",
-    "COST_MISMATCH": "Ce lot existe déjà avec un autre coût unitaire."
+    "COST_MISMATCH": "Ce lot existe déjà avec un autre coût unitaire.",
+    "OUT_OF_SCOPE": "Ce produit n'est pas dans le périmètre de l'inventaire.",
+    "NOT_COUNTED": "Seules les lignes comptées peuvent être régularisées."
   },
   "lots": {
     "title": "Lots",
@@ -536,6 +545,110 @@
     "widget": {
       "title": "Stock bas",
       "none": "Aucun produit en rupture ni en stock bas."
+    }
+  },
+  "counts": {
+    "title": "Inventaires",
+    "new": "Nouvel inventaire",
+    "newTitle": "Ouvrir un inventaire",
+    "statusFilter": "Statut",
+    "status": {
+      "open": "Ouvert",
+      "closed": "Clôturé",
+      "cancelled": "Annulé"
+    },
+    "empty": "Aucun inventaire.",
+    "number": "Inventaire",
+    "label": "Inventaire n° {{id}}",
+    "type": "Type d'inventaire",
+    "types": {
+      "full": "Complet",
+      "cycle": "Tournant"
+    },
+    "typeHint": {
+      "full": "Complet : tous les lots avec stock (un seul ouvert à la fois)",
+      "cycle": "Tournant : une catégorie ou une liste de produits"
+    },
+    "startedAt": "Ouvert le",
+    "startedBy": "Ouvert par",
+    "progress": "Comptées",
+    "counted": "{{counted}} / {{lines}}",
+    "scope": "Périmètre",
+    "scopes": {
+      "category": "Une catégorie thérapeutique",
+      "products": "Une liste de produits"
+    },
+    "scopeRequired": "Choisissez une catégorie ou au moins un produit.",
+    "findProduct": "Rechercher un produit",
+    "add": {
+      "existing": "Un lot existant sans ligne",
+      "unknown": "Un lot inconnu du système",
+      "submit": "Ajouter la ligne"
+    },
+    "addProduct": "Ajouter {{name}}",
+    "removeProduct": "Retirer {{name}}",
+    "chosenProducts": "Produits choisis",
+    "notes": "Notes",
+    "open": "Ouvrir l'inventaire",
+    "addLot": "Ajouter un lot",
+    "regularize": "Régulariser",
+    "cancel": "Annuler l'inventaire",
+    "validateOnly": "Réservé aux détenteurs de la permission « valider les inventaires ».",
+    "startedLine": "Ouvert le {{at}} par {{by}}",
+    "closedLine": "clôturé le {{at}} par {{by}}",
+    "noLines": "Aucun lot avec stock dans le périmètre : ajoutez les lots trouvés.",
+    "foundLot": "Trouvé : {{lotNumber}}",
+    "grid": {
+      "product": "Produit",
+      "lot": "Lot",
+      "theoretical": "Solde à l'ouverture",
+      "counted": "Compté",
+      "balanceAtCount": "Solde au comptage",
+      "variance": "Écart",
+      "since": "Mouvements depuis",
+      "current": "Solde actuel",
+      "status": "Ligne",
+      "countedFor": "Quantité comptée — {{line}}"
+    },
+    "lineStatus": {
+      "toCount": "À compter",
+      "counted": "Comptée par {{by}}",
+      "regularized": "Régularisée"
+    },
+    "regularizeTitle": "Régulariser l'inventaire n° {{id}}",
+    "regularizeHint": "{{lines}} ligne(s) comptée(s) sur {{total}} seront régularisées ; chaque écart devient un mouvement d'inventaire sur le solde actuel, puis l'inventaire est clôturé.",
+    "netVariance": "Écart net",
+    "regularizeConfirm": "Régulariser et clôturer",
+    "refused": {
+      "STOCK_INSUFFICIENT": "Refusé : la ligne « {{line}} » rendrait le solde du lot négatif (sorties depuis le comptage). Rien n'a été enregistré ; l'inventaire reste ouvert.",
+      "LOT_EXPIRY_MISMATCH": "Refusé : le lot de la ligne « {{line}} » existe désormais avec une autre date de péremption. Rien n'a été enregistré ; l'inventaire reste ouvert."
+    },
+    "cancelTitle": "Annuler l'inventaire n° {{id}}",
+    "cancelHint": "Aucun mouvement n'est enregistré ; l'inventaire annulé ne peut plus être modifié.",
+    "cancelConfirm": "Annuler l'inventaire"
+  },
+  "reorder": {
+    "title": "Propositions de réapprovisionnement",
+    "generate": "Générer maintenant",
+    "generated": "{{created}} proposition(s) créée(s), {{updated}} mise(s) à jour.",
+    "incomplete": "Seuils incomplets (stock maximum absent ou déjà atteint) :",
+    "statusFilter": "Statut",
+    "status": {
+      "pending": "En attente",
+      "converted": "Convertie",
+      "dismissed": "Écartée"
+    },
+    "empty": "Aucune proposition.",
+    "current": "Vendable à la génération",
+    "suggested": "Quantité proposée",
+    "updatedAt": "Mise à jour",
+    "actions": "Actions",
+    "dismiss": "Écarter",
+    "dismissFor": "Écarter la proposition pour {{name}}",
+    "dismissedBy": "Écartée par {{by}}",
+    "widget": {
+      "title": "Réapprovisionnement",
+      "pending": "Propositions en attente : {{count}}"
     }
   }
 }

@@ -2,7 +2,18 @@ import type { RouteObject } from 'react-router'
 import { AuditPage, NewUserPage, RolesPage, SettingsPage, UserDetailPage, UsersPage } from '../features/admin'
 import { NewProductPage, ProductDetailPage, ProductsPage, ReferencesPage } from '../features/catalog'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
-import { AdjustmentPage, IntegrityPage, LotDetailPage, LotsPage, OpeningStockPage, StockPage } from '../features/inventory'
+import {
+  AdjustmentPage,
+  CountPage,
+  CountsPage,
+  IntegrityPage,
+  LotDetailPage,
+  LotsPage,
+  NewCountPage,
+  OpeningStockPage,
+  ReorderPage,
+  StockPage,
+} from '../features/inventory'
 import { AccountPage, LoginPage } from '../features/auth'
 import { RequireAuth, RequirePermission } from './guards'
 import { AppLayout } from './layouts/AppLayout'
@@ -34,6 +45,10 @@ export const routes: RouteObject[] = [
       { path: 'stock/adjustments/new', element: <RequirePermission code="stock.adjust"><AdjustmentPage /></RequirePermission> },
       { path: 'stock/opening-stock/new', element: <RequirePermission code="stock.adjust"><OpeningStockPage /></RequirePermission> },
       { path: 'stock/integrity', element: <RequirePermission code="audit.read"><IntegrityPage /></RequirePermission> },
+      { path: 'inventory-counts', element: <RequirePermission code="inventory.count"><CountsPage /></RequirePermission> },
+      { path: 'inventory-counts/new', element: <RequirePermission code="inventory.count"><NewCountPage /></RequirePermission> },
+      { path: 'inventory-counts/:id', element: <RequirePermission code="inventory.count"><CountPage /></RequirePermission> },
+      { path: 'reorder', element: <RequirePermission code="reorder.read"><ReorderPage /></RequirePermission> },
       { path: 'catalog/references', element: <RequirePermission code="product.read"><ReferencesPage /></RequirePermission> },
       { path: 'admin/users', element: <RequirePermission code="user.read"><UsersPage /></RequirePermission> },
       { path: 'admin/users/new', element: <RequirePermission code="user.manage"><NewUserPage /></RequirePermission> },

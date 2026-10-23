@@ -25,6 +25,19 @@ export function subtractDecimal(a: string, b: string, scale = 3): string | null 
   return left === null || right === null ? null : fromScaled(left - right, scale)
 }
 
+/** The exact sum at `scale` decimals (default 3); `null` when one value is not a decimal. */
+export function sumDecimals(values: readonly string[], scale = 3): string | null {
+  let total = 0n
+  for (const value of values) {
+    const scaled = toScaled(value, scale)
+    if (scaled === null) {
+      return null
+    }
+    total += scaled
+  }
+  return fromScaled(total, scale)
+}
+
 /** Whether the decimal string is below zero. */
 export function isNegativeDecimal(value: string): boolean {
   return value.trim().startsWith('-') && /[1-9]/.test(value)

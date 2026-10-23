@@ -14,7 +14,9 @@
     "references": "Reference data",
     "products": "Products",
     "lots": "Lots",
-    "stock": "Stock"
+    "stock": "Stock",
+    "counts": "Inventory counts",
+    "reorder": "Reorder"
   },
   "language": {
     "label": "Language",
@@ -93,7 +95,12 @@
     "OPENING_STOCK_CLOSED": "The opening-stock period is closed: stock found now goes through an inventory count.",
     "LOT_EXPIRY_MISMATCH": "This lot number already exists with another expiry date.",
     "LOT_RECALLED": "This lot is recalled.",
-    "PRODUCT_ARCHIVED": "This product is archived."
+    "PRODUCT_ARCHIVED": "This product is archived.",
+    "INVENTORY_NOT_OPEN": "This count is no longer open.",
+    "INVENTORY_ALREADY_OPEN": "A full count is already open.",
+    "INVENTORY_LINE_ALREADY_REGULARIZED": "This line is already regularised.",
+    "INVALID_STATE_TRANSITION": "This operation is not possible in the current state.",
+    "CONCURRENT_MODIFICATION": "Someone else just changed this data: try again."
   },
   "pager": {
     "label": "Pagination",
@@ -359,7 +366,9 @@
     "POSITIVE": "The value must be greater than zero.",
     "FORMAT": "This code does not match the chosen type.",
     "CHECK_DIGIT": "The EAN-13 check digit is wrong.",
-    "COST_MISMATCH": "This lot already exists with another unit cost."
+    "COST_MISMATCH": "This lot already exists with another unit cost.",
+    "OUT_OF_SCOPE": "This product is not in the count's scope.",
+    "NOT_COUNTED": "Only counted lines can be regularised."
   },
   "lots": {
     "title": "Lots",
@@ -536,6 +545,110 @@
     "widget": {
       "title": "Low stock",
       "none": "No product is out of stock or low."
+    }
+  },
+  "counts": {
+    "title": "Inventory counts",
+    "new": "New count",
+    "newTitle": "Open a count",
+    "statusFilter": "Status",
+    "status": {
+      "open": "Open",
+      "closed": "Closed",
+      "cancelled": "Cancelled"
+    },
+    "empty": "No count.",
+    "number": "Count",
+    "label": "Count #{{id}}",
+    "type": "Count type",
+    "types": {
+      "full": "Full",
+      "cycle": "Cycle"
+    },
+    "typeHint": {
+      "full": "Full: every lot with stock (one open at a time)",
+      "cycle": "Cycle: one category or a list of products"
+    },
+    "startedAt": "Opened on",
+    "startedBy": "Opened by",
+    "progress": "Counted",
+    "counted": "{{counted}} / {{lines}}",
+    "scope": "Scope",
+    "scopes": {
+      "category": "One therapeutic category",
+      "products": "A list of products"
+    },
+    "scopeRequired": "Choose a category or at least one product.",
+    "findProduct": "Find a product",
+    "add": {
+      "existing": "An existing lot without a line",
+      "unknown": "A lot unknown to the system",
+      "submit": "Add the line"
+    },
+    "addProduct": "Add {{name}}",
+    "removeProduct": "Remove {{name}}",
+    "chosenProducts": "Chosen products",
+    "notes": "Notes",
+    "open": "Open the count",
+    "addLot": "Add a lot",
+    "regularize": "Regularise",
+    "cancel": "Cancel the count",
+    "validateOnly": "Only for holders of the \"validate counts\" permission.",
+    "startedLine": "Opened on {{at}} by {{by}}",
+    "closedLine": "closed on {{at}} by {{by}}",
+    "noLines": "No lot with stock in scope: add the lots found.",
+    "foundLot": "Found: {{lotNumber}}",
+    "grid": {
+      "product": "Product",
+      "lot": "Lot",
+      "theoretical": "Balance at opening",
+      "counted": "Counted",
+      "balanceAtCount": "Balance when counted",
+      "variance": "Variance",
+      "since": "Movements since",
+      "current": "Current balance",
+      "status": "Line",
+      "countedFor": "Counted quantity — {{line}}"
+    },
+    "lineStatus": {
+      "toCount": "To count",
+      "counted": "Counted by {{by}}",
+      "regularized": "Regularised"
+    },
+    "regularizeTitle": "Regularise count #{{id}}",
+    "regularizeHint": "{{lines}} counted line(s) out of {{total}} will be regularised; each variance becomes an inventory movement on the current balance, then the count closes.",
+    "netVariance": "Net variance",
+    "regularizeConfirm": "Regularise and close",
+    "refused": {
+      "STOCK_INSUFFICIENT": "Refused: line \"{{line}}\" would make the lot balance negative (stock left since it was counted). Nothing was recorded; the count stays open.",
+      "LOT_EXPIRY_MISMATCH": "Refused: the lot of line \"{{line}}\" now exists with another expiry date. Nothing was recorded; the count stays open."
+    },
+    "cancelTitle": "Cancel count #{{id}}",
+    "cancelHint": "No movement is recorded; a cancelled count can no longer change.",
+    "cancelConfirm": "Cancel the count"
+  },
+  "reorder": {
+    "title": "Reorder proposals",
+    "generate": "Generate now",
+    "generated": "{{created}} proposal(s) created, {{updated}} updated.",
+    "incomplete": "Thresholds incomplete (no max stock, or already reached):",
+    "statusFilter": "Status",
+    "status": {
+      "pending": "Pending",
+      "converted": "Converted",
+      "dismissed": "Dismissed"
+    },
+    "empty": "No proposal.",
+    "current": "Sellable at generation",
+    "suggested": "Suggested quantity",
+    "updatedAt": "Updated",
+    "actions": "Actions",
+    "dismiss": "Dismiss",
+    "dismissFor": "Dismiss the proposal for {{name}}",
+    "dismissedBy": "Dismissed by {{by}}",
+    "widget": {
+      "title": "Reorder",
+      "pending": "Pending proposals: {{count}}"
     }
   }
 }
