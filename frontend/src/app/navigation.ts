@@ -11,6 +11,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { to: '/products', labelKey: 'nav.products', permission: 'product.read' },
   { to: '/lots', labelKey: 'nav.lots', permission: 'lot.read' },
   { to: '/stock', labelKey: 'nav.stock', permission: 'stock.read' },
+  { to: '/inventory-counts', labelKey: 'nav.counts', permission: 'inventory.count' },
+  { to: '/reorder', labelKey: 'nav.reorder', permission: 'reorder.read' },
   { to: '/catalog/references', labelKey: 'nav.references', permission: 'product.read' },
   { to: '/admin/users', labelKey: 'nav.users', permission: 'user.read' },
   { to: '/admin/roles', labelKey: 'nav.roles', permission: 'role.manage' },

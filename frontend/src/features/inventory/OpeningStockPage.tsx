@@ -10,7 +10,7 @@ import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { businessToday, parseExpiry } from '../../lib/expiry'
 import { formatDate, formatQuantity } from '../../lib/format'
-import { useCurrentUser } from '../auth'
+import { hasPermission, useCurrentUser } from '../auth'
 import { useProduct, useProducts, useUnits, type ProductSummary } from '../catalog'
 import { usePublicSettings } from '../settings'
 import type { LotDetail } from './lotApi'
@@ -41,7 +41,14 @@ export function OpeningStockPage() {
           {t('app.loading')}
         </p>
       ) : settings.data?.openingStockOpen === false ? (
-        <Alert tone="danger">{t('errors.OPENING_STOCK_CLOSED')}</Alert>
+        <Alert tone="danger">
+          {t('errors.OPENING_STOCK_CLOSED')}{' '}
+          {hasPermission(current, 'inventory.count') && (
+            <Link to="/inventory-counts/new" className="underline">
+              {t('counts.new')}
+            </Link>
+          )}
+        </Alert>
       ) : (
         <>
           {entered && (

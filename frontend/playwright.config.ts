@@ -16,9 +16,11 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   // J1 bootstraps the administrator's own password; the other journeys log in with it, so they run after J1.
+  // J8 creates the first lots, so it runs after the journeys that expect none yet (J2's empty lot screens).
   projects: [
     { name: 'j1', testMatch: /j1-.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
-    { name: 'chromium', testIgnore: /j1-.*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', testIgnore: /(j1|j8)-.*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'stock', testMatch: /j8-.*\.spec\.ts/, dependencies: ['chromium'], use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: [
     {
