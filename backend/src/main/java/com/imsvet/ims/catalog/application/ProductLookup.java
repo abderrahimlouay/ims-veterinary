@@ -3,9 +3,11 @@ package com.imsvet.ims.catalog.application;
 import com.imsvet.ims.catalog.domain.Product;
 import com.imsvet.ims.catalog.infrastructure.ProductRepository;
 import com.imsvet.ims.catalog.infrastructure.ProductUnitRepository;
+import com.imsvet.ims.catalog.infrastructure.TherapeuticCategoryRepository;
 import com.imsvet.ims.common.security.InternalService;
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -32,10 +34,29 @@ public class ProductLookup {
 
     private final ProductRepository products;
     private final ProductUnitRepository units;
+    private final TherapeuticCategoryRepository categories;
 
-    public ProductLookup(ProductRepository products, ProductUnitRepository units) {
+    public ProductLookup(ProductRepository products, ProductUnitRepository units,
+            TherapeuticCategoryRepository categories) {
         this.products = products;
         this.units = units;
+        this.categories = categories;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean categoryExists(int categoryId) {
+        return categories.findById(categoryId).isPresent();
+    }
+
+    /** The products of a therapeutic category, archived ones included (a cycle count's scope, ADR-073). */
+    @Transactional(readOnly = true)
+    public List<Long> idsInCategory(int categoryId) {
+        return products.findIdsByCategoryId(categoryId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Integer> categoryOf(long productId) {
+        return products.findCategoryIdById(productId);
     }
 
     /** The unit only when it belongs to that product (BR-UNIT-005). */

@@ -98,6 +98,20 @@ public interface LotRepository extends Repository<Lot, Long> {
             LocalDate expiringBy, LocalDate expiryFrom, LocalDate expiryTo, String pattern, LocalDate today,
             Pageable pageable);
 
+    /** Lots with stock (a full count's lines, ADR-073), by product then FEFO. */
+    @Query("SELECT l FROM Lot l WHERE l.quantityOnHand > 0 ORDER BY l.productId, l.expiryDate, l.id")
+    List<Lot> findWithStock();
+
+    /** Lots with stock of these products (a cycle count's lines, ADR-073), by product then FEFO. */
+    @Query("""
+            SELECT l FROM Lot l WHERE l.quantityOnHand > 0 AND l.productId IN :productIds
+            ORDER BY l.productId, l.expiryDate, l.id""")
+    List<Lot> findWithStockOfProducts(Collection<Long> productIds);
+
+    /** Non-locking read by identity, ignoring case and accents (ADR-058). */
+    @Query("SELECT l FROM Lot l WHERE l.productId = :productId AND l.lotNumber = :lotNumber")
+    Optional<Lot> findByIdentity(long productId, String lotNumber);
+
     /** Lots with stock expiring on or before {@code limit}, expired ones included (W12). */
     @Query("SELECT l FROM Lot l WHERE l.quantityOnHand > 0 AND l.expiryDate <= :limit ORDER BY l.expiryDate, l.id")
     List<Lot> findWithStockExpiringBy(LocalDate limit);
