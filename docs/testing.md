@@ -149,7 +149,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-STOCK-007 | S,R | Integrity check detects deliberately corrupted balance (test DB only); nightly and on-demand runs stored; mismatch logs CRITICAL and sets the banner; clean run clears it (ADR-086) (`IntegrityCheckTest`, `IntegrityCheckJobTest`) |
 | BR-STOCK-008 | U | Adjustment categories map to correct movement types; allowed on blocked, recalled and expired lots; audited `STOCK_CORRECTION` old/new (ADR-085) (`StockAdjustmentsTest`) |
 | BR-STOCK-009 | U,A | Threshold validation per product |
-| BR-STOCK-010 | U,S | Reorder proposal contents and rounding (OD-013), no duplicates; trigger, quantity, thresholds incomplete, one pending updated in place, dismissed suppressed until recovery (ADR-076…079) |
+| BR-STOCK-010 | U,S | Reorder proposal contents and rounding (OD-013), no duplicates; trigger, quantity, thresholds incomplete, one pending updated in place, dismissed suppressed until recovery (ADR-076…079) (`ReorderQuantityTest`, `ReorderProposalsTest`, `ReorderJobTest`) |
 | BR-STOCK-011 | U,R | Sellable stock excludes expired/blocked/recalled/quarantined lots (sellable predicate: `ExpiryPolicyTest`; quantities from Phase 4); product sellable quantity sums only sellable lots; product stock sums only sellable lots (`StockLevelsTest`) |
 | BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock; lock wait timeout → `CONCURRENT_MODIFICATION` within 5 s (ADR-012, `LockWaitTimeoutTest`) (`StockConcurrencyTest` CT-02) |
 | BR-STOCK-013 | U,A | Status in stock / low / out and below-reorder from sellable quantity and thresholds (ADR-080) (`StockStatusTest`, `StockLevelsTest`) |
