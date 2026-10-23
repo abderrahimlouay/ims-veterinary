@@ -13,6 +13,7 @@ import com.imsvet.ims.inventory.domain.LotStatus;
 import com.imsvet.ims.inventory.domain.LotStatus.Action;
 import com.imsvet.ims.inventory.domain.LotStatus.IllegalLotTransitionException;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
+import com.imsvet.ims.users.application.UserNames;
 import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,15 +35,17 @@ public class LotActions {
     private final AuditRecorder audit;
     private final ActorProvider actors;
     private final Clock clock;
+    private final UserNames userNames;
 
     public LotActions(LotRepository lots, ProductLookup products, ExpiryPolicies policies, AuditRecorder audit,
-            ActorProvider actors, Clock clock) {
+            ActorProvider actors, Clock clock, UserNames userNames) {
         this.lots = lots;
         this.products = products;
         this.policies = policies;
         this.audit = audit;
         this.actors = actors;
         this.clock = clock;
+        this.userNames = userNames;
     }
 
     @PreAuthorize("hasAuthority('lot.block')")
@@ -101,7 +104,8 @@ public class LotActions {
     }
 
     private LotDetail detail(Lot lot) {
-        return LotViews.detail(lot, products.find(lot.productId()).orElseThrow(), policies.current());
+        return LotViews.detail(lot, products.find(lot.productId()).orElseThrow(), policies.current(),
+                LotQueries.blockedByName(lot, userNames));
     }
 
     private static BusinessException notFound(long id) {

@@ -30,6 +30,8 @@ export interface LotDetail extends LotSummary {
   unitCost: string
   blockedReason: string | null
   blockedBy: number | null
+  /** Who blocked or recalled the lot (ADR-089). */
+  blockedByName: string | null
   blockedAt: string | null
   receivedAt: string
   sellable: boolean

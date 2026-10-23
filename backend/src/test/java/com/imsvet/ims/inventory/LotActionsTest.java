@@ -10,6 +10,7 @@ import com.imsvet.ims.support.ApiClient;
 import com.imsvet.ims.support.TestLots;
 import com.imsvet.ims.support.TestUsers;
 import com.imsvet.ims.support.TestUsers.TestUser;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,10 @@ class LotActionsTest {
     @Autowired
     private TestClock clock;
 
+    /** Direct SQL changes are seen once the persistence context of the test transaction is cleared. */
+    @Autowired
+    private EntityManager entityManager;
+
     private TestUser user;
     private ApiClient pharmacist;
     private TestLots lots;
@@ -64,10 +69,14 @@ class LotActionsTest {
 
     @Test
     void blockingStoresReasonUserAndTimeAndIsAudited() throws Exception {
+        jdbc.update("UPDATE users SET full_name = 'Amina Benali' WHERE id = ?", user.id());
+        entityManager.clear();
+
         action("block", "Damaged packaging").andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("blocked"))
                 .andExpect(jsonPath("$.blockedReason").value("Damaged packaging"))
                 .andExpect(jsonPath("$.blockedBy").value(user.id()))
+                .andExpect(jsonPath("$.blockedByName").value("Amina Benali"))
                 .andExpect(jsonPath("$.blockedAt").value("2026-10-20T08:00:00Z"))
                 .andExpect(jsonPath("$.sellable").value(false));
 

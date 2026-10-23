@@ -9,6 +9,7 @@ import com.imsvet.ims.support.ApiClient;
 import com.imsvet.ims.support.TestLots;
 import com.imsvet.ims.support.TestUsers;
 import com.imsvet.ims.support.TestUsers.TestUser;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +49,10 @@ class LotQueriesTest {
 
     @Autowired
     private TestClock clock;
+
+    /** Direct SQL changes are seen once the persistence context of the test transaction is cleared. */
+    @Autowired
+    private EntityManager entityManager;
 
     private TestUser user;
     private ApiClient seller;
@@ -116,12 +121,19 @@ class LotQueriesTest {
 
     @Test
     void theDetailAddsCostBlockingAndSellability() throws Exception {
+        jdbc.update("UPDATE users SET full_name = 'Karim Haddad' WHERE id = ?", user.id());
+        jdbc.update("UPDATE lots SET blocked_by = ?, blocked_reason = 'Check' WHERE id = ?", user.id(), blocked);
+        entityManager.clear();
+
         seller.get("/api/lots/" + soon).andExpect(status().isOk())
                 .andExpect(jsonPath("$.unitCost").value("0.5000"))
                 .andExpect(jsonPath("$.receivedAt").value("2026-10-01T08:00:00Z"))
                 .andExpect(jsonPath("$.sellable").value(true))
-                .andExpect(jsonPath("$.blockedReason").doesNotExist());
-        seller.get("/api/lots/" + blocked).andExpect(jsonPath("$.sellable").value(false));
+                .andExpect(jsonPath("$.blockedReason").doesNotExist())
+                .andExpect(jsonPath("$.blockedByName").doesNotExist());
+        seller.get("/api/lots/" + blocked).andExpect(jsonPath("$.sellable").value(false))
+                .andExpect(jsonPath("$.blockedBy").value(user.id()))
+                .andExpect(jsonPath("$.blockedByName").value("Karim Haddad"));
         seller.get("/api/lots/" + expired).andExpect(jsonPath("$.sellable").value(false));
         seller.get("/api/lots/999999").andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }

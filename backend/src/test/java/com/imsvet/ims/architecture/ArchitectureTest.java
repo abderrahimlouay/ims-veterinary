@@ -1,5 +1,8 @@
 package com.imsvet.ims.architecture;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleName;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.simpleNameEndingWith;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -51,7 +54,7 @@ class ArchitectureTest {
             .whereLayer("numbering").mayOnlyAccessLayers("common")
             .whereLayer("settings").mayOnlyAccessLayers("common", "audit")
             .whereLayer("audit").mayOnlyAccessLayers("common")
-            .whereLayer("inventory").mayOnlyAccessLayers("common", "catalog", "numbering", "settings", "audit")
+            .whereLayer("inventory").mayOnlyAccessLayers("common", "catalog", "numbering", "settings", "audit", "users")
             .whereLayer("purchasing").mayOnlyAccessLayers(
                     "common", "catalog", "inventory", "numbering", "settings", "audit")
             .whereLayer("sales").mayOnlyAccessLayers(
@@ -60,6 +63,13 @@ class ArchitectureTest {
                     "common", "sales", "purchasing", "numbering", "audit", "settings")
             .whereLayer("printing").mayOnlyAccessLayers("common", "purchasing", "sales", "finance")
             .whereLayer("backup").mayOnlyAccessLayers("common", "settings", "audit");
+
+    /** ADR-089: {@code inventory} reads user names through {@code UserNames} only, nothing else of {@code users}. */
+    @ArchTest
+    static final ArchRule inventoryUsesOnlyTheUserNamesPort = noClasses()
+            .that().resideInAPackage(ROOT + "inventory..")
+            .should().dependOnClassesThat(resideInAPackage(ROOT + "users..")
+                    .and(not(simpleName("UserNames"))));
 
     @ArchTest
     static final ArchRule commonDependsOnNoModule = noClasses()

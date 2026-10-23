@@ -377,6 +377,8 @@
     "notSellable": "غير قابلة للبيع",
     "blockReason": "سبب الحجز",
     "recallReason": "سبب السحب",
+    "blockedBy": "حجزها",
+    "recalledBy": "سحبها",
     "blockedAt": "منذ",
     "status": {
       "active": "نشطة",
