@@ -146,7 +146,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-STOCK-004 | S | Movement row carries user, type, reference, timestamp (`StockServiceTest`, `StockMovementSchemaTest`, `MovementQueriesTest`) |
 | BR-STOCK-005 | U,R | Sign per movement type; wrong sign rejected; CHECK accepts exactly the ten types of ADR-081 (`MovementTypeTest`, `StockMovementSchemaTest`, `StockServiceTest`) |
 | BR-STOCK-006 | S,A | Adjustment without reason → ADJUSTMENT_REASON_REQUIRED; reason > 500 → `SIZE` (`StockAdjustmentsTest`, `StockMovementSchemaTest`) |
-| BR-STOCK-007 | S,R | Integrity check detects deliberately corrupted balance (test DB only); nightly and on-demand runs stored; mismatch logs CRITICAL and sets the banner; clean run clears it (ADR-086) |
+| BR-STOCK-007 | S,R | Integrity check detects deliberately corrupted balance (test DB only); nightly and on-demand runs stored; mismatch logs CRITICAL and sets the banner; clean run clears it (ADR-086) (`IntegrityCheckTest`, `IntegrityCheckJobTest`) |
 | BR-STOCK-008 | U | Adjustment categories map to correct movement types; allowed on blocked, recalled and expired lots; audited `STOCK_CORRECTION` old/new (ADR-085) (`StockAdjustmentsTest`) |
 | BR-STOCK-009 | U,A | Threshold validation per product |
 | BR-STOCK-010 | U,S | Reorder proposal contents and rounding (OD-013), no duplicates; trigger, quantity, thresholds incomplete, one pending updated in place, dismissed suppressed until recovery (ADR-076…079) |
