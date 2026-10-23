@@ -630,7 +630,8 @@
     "title": "Reorder proposals",
     "generate": "Generate now",
     "generated": "{{created}} proposal(s) created, {{updated}} updated.",
-    "incomplete": "Thresholds incomplete (no max stock, or already reached):",
+    "incomplete": "Thresholds incomplete (no max stock):",
+    "inconsistent": "Thresholds inconsistent (max stock ≤ reorder point):",
     "statusFilter": "Status",
     "status": {
       "pending": "Pending",

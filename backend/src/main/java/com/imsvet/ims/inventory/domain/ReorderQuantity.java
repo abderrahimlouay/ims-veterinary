@@ -6,8 +6,9 @@ import java.util.Optional;
 
 /**
  * ADR-077: the suggested reorder quantity is {@code max_stock − sellable} in base units, rounded up to a whole number
- * for a non-divisible product (ADR-050). Empty without a max stock, or when the max is already reached: the product
- * is then reported thresholds incomplete, no quantity is invented.
+ * for a non-divisible product (ADR-050). Empty without a max stock (reported thresholds incomplete) or when the max is
+ * already reached; no quantity is invented. A max at or below the reorder point never gets here (thresholds
+ * inconsistent).
  */
 public final class ReorderQuantity {
 

@@ -97,16 +97,34 @@ class ReorderProposalsTest {
     @Test
     void withoutAMaxStockTheProductIsReportedNotProposed() throws Exception {
         long noMax = product("RO-NOMAX", "10", null);
-        long maxBelowStock = product("RO-MAXLOW", "10", "5");
-        lots.lot(maxBelowStock, "A", EXPIRY, "6");
 
         generate().andExpect(status().isOk())
                 .andExpect(jsonPath("$.thresholdsIncomplete[*].id").value(hasItem((int) noMax)))
                 .andExpect(jsonPath("$.thresholdsIncomplete[?(@.id == " + noMax + ")].sku").value(hasItem("RO-NOMAX")))
-                .andExpect(jsonPath("$.thresholdsIncomplete[*].id").value(hasItem((int) maxBelowStock)));
+                .andExpect(jsonPath("$.thresholdsInconsistent[*].id").value(not(hasItem((int) noMax))));
 
         assertThat(proposals(noMax)).isZero();
-        assertThat(proposals(maxBelowStock)).isZero();
+    }
+
+    /** User decision 2026-10-23: max stock at or below the reorder point is inconsistent, reported apart. */
+    @Test
+    void aMaxStockAtOrBelowTheReorderPointIsReportedInconsistentNotProposed() throws Exception {
+        long below = product("RO-MAXBELOW", "10", "8");
+        lots.lot(below, "A", EXPIRY, "5");
+        long equal = product("RO-MAXEQUAL", "10", "10");
+        long belowStock = product("RO-MAXLOW", "10", "5");
+        lots.lot(belowStock, "A", EXPIRY, "6");
+
+        generate().andExpect(status().isOk())
+                .andExpect(jsonPath("$.thresholdsInconsistent[*].id").value(hasItem((int) below)))
+                .andExpect(jsonPath("$.thresholdsInconsistent[*].id").value(hasItem((int) equal)))
+                .andExpect(jsonPath("$.thresholdsInconsistent[*].id").value(hasItem((int) belowStock)))
+                .andExpect(jsonPath("$.thresholdsInconsistent[?(@.id == " + below + ")].sku").value(hasItem("RO-MAXBELOW")))
+                .andExpect(jsonPath("$.thresholdsIncomplete[*].id").value(not(hasItem((int) below))));
+
+        assertThat(proposals(below)).isZero();
+        assertThat(proposals(equal)).isZero();
+        assertThat(proposals(belowStock)).isZero();
     }
 
     @Test
