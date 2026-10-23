@@ -7,6 +7,9 @@ import com.imsvet.ims.inventory.application.CountViews.CountDetail;
 import com.imsvet.ims.inventory.application.CountViews.CountSummary;
 import com.imsvet.ims.inventory.application.CountViews.Line;
 import com.imsvet.ims.inventory.application.InventoryCounts;
+import com.imsvet.ims.inventory.application.ReorderGenerator.GenerationResult;
+import com.imsvet.ims.inventory.application.ReorderProposals;
+import com.imsvet.ims.inventory.application.ReorderProposals.ProposalEntry;
 import com.imsvet.ims.inventory.application.IntegrityChecks;
 import com.imsvet.ims.inventory.application.IntegrityChecks.IntegrityRun;
 import com.imsvet.ims.inventory.application.LotViews.MovementEntry;
@@ -76,10 +79,12 @@ class InventoryController {
     private final InventoryCounts inventoryCounts;
     private final CountQueries countQueries;
     private final CountRegularisation regularisation;
+    private final ReorderProposals reorderProposals;
 
     InventoryController(MovementQueries movements, StockAdjustments adjustments, OpeningStock openingStock,
             StockLevels stockLevels, IntegrityChecks integrityChecks, InventoryCounts inventoryCounts,
-            CountQueries countQueries, CountRegularisation regularisation) {
+            CountQueries countQueries, CountRegularisation regularisation, ReorderProposals reorderProposals) {
+        this.reorderProposals = reorderProposals;
         this.regularisation = regularisation;
         this.integrityChecks = integrityChecks;
         this.inventoryCounts = inventoryCounts;
@@ -142,6 +147,22 @@ class InventoryController {
     @PostMapping("/counts/{id}/cancel")
     CountDetail cancelCount(@PathVariable long id) {
         return inventoryCounts.cancel(id);
+    }
+
+    @GetMapping("/reorder-proposals")
+    PageResponse<ProposalEntry> reorderProposals(@RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return reorderProposals.search(status, page, size);
+    }
+
+    @PostMapping("/reorder-proposals/generate")
+    GenerationResult generateReorderProposals() {
+        return reorderProposals.generateNow();
+    }
+
+    @PostMapping("/reorder-proposals/{id}/dismiss")
+    ProposalEntry dismissReorderProposal(@PathVariable long id) {
+        return reorderProposals.dismiss(id);
     }
 
     /** ADR-086: 204 when no run exists yet. */

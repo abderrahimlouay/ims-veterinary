@@ -134,7 +134,7 @@ Externalised per profile (`dev`, `test`, `prod`): datasource, Flyway, security (
 
 | Job | Purpose | Notes |
 |---|---|---|
-| Reorder planner | generate proposals at `reorder_job_time` (ADR-076…079) | idempotent; same code as *Generate now* |
+| Reorder planner | generate proposals once per business day, at the first tick at or after `reorder_job_time` (business time zone; catches up the same day after downtime), detected from `reorder_runs` (ADR-076…079) | idempotent; same code as *Generate now*; ticks every 30 s, separately from the integrity check, off with `ims.jobs.enabled=false` (tests) |
 | Backup | per OD-021 | logged in `backup_log` |
 | Integrity check | reconcile balances vs ledger once per business day, at the first tick at or after `integrity_check_time` (business time zone; catches up the same day after downtime); run stored; `LEDGER_MISMATCH` security event at ERROR with `severity=CRITICAL` (BR-STOCK-007, ADR-086) | report only; same code as the on-demand check; ticks every 30 s, off with `ims.jobs.enabled=false` (tests) |
 | Session cleanup | expired sessions (Spring Session JDBC cleanup job) | |
