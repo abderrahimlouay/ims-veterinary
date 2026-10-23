@@ -235,6 +235,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 
 - **Two accounts (ADR-087, from Phase 4):** Flyway connects with the migration account (`IMS_DB_MIGRATION_USERNAME`/`_PASSWORD`, DDL and `GRANT` rights, plus the trigger rights of ADR-017); the application connects with the application account (`IMS_DB_USERNAME`/`_PASSWORD`). After every migration a Flyway callback grants the application account `SELECT, INSERT, UPDATE, DELETE` on each application table and only `SELECT, INSERT` on `stock_movements` and `audit_log`; it never has DDL. Testcontainers and CI create both accounts the same way.
 - **Lock wait (ADR-012):** application connections set `innodb_lock_wait_timeout = 5`.
+- **After a bulk load (ADR-091):** run `ANALYZE TABLE` on every loaded table (e.g. `products`, `product_active_ingredients`, `lots`, `stock_movements`) before users search; stale statistics make MySQL scan instead of using the indexes.
 
 | Setting | Value / recommendation | Reason |
 |---|---|---|

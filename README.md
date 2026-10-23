@@ -36,6 +36,9 @@ If a variable is missing, or the same account is given for both roles, the appli
 ## First start (ADR-040)
 On an empty database, set `IMS_BOOTSTRAP_ADMIN_USERNAME` and `IMS_BOOTSTRAP_ADMIN_PASSWORD` (≥ 12 characters, not a common password) once: the application creates that Administrator, who must change the password at first login. Remove both variables afterwards; they are ignored as soon as a user exists.
 
+## Bulk loads (ADR-091)
+After any bulk load (legacy import, a large opening-stock load, generated data), refresh the statistics of the loaded tables with the migration account before users work, for example `ANALYZE TABLE products, product_active_ingredients, lots, stock_movements;`. Until InnoDB refreshes them on its own, MySQL may plan searches as if the tables were empty and scan them.
+
 ## Commands
 
 ### Backend (`backend/`)
