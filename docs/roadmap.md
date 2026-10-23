@@ -84,7 +84,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 4 — Inventory & stock
 - **Objective:** a trustworthy, immutable stock ledger.
-- **Prerequisites:** Phase 3; decided 2026-10-22: ADR-072…075 (counts, was OD-012), ADR-076…079 (reorder, was OD-013), ADR-012 (accepted, amended), ADR-028, ADR-080…089.
+- **Prerequisites:** Phase 3; decided 2026-10-22: ADR-072…075 (counts, was OD-012), ADR-076…079 (reorder, was OD-013), ADR-012 (accepted, amended), ADR-028, ADR-080…089; during the phase ADR-090 (stock conditions across modules) and ADR-091 (statistics after bulk loads).
 - **Features:** ledger; stock levels (sellable vs total, status, ADR-080); manual adjustments (ADR-085); opening stock while the opening period is open (ADR-082…084); physical inventory (full/cycle, watermark per counted line, found lots, ADR-072…075); reorder proposals (generate, dismiss; conversion in Phase 5, ADR-076…079); integrity check with stored runs and banner (ADR-086); separate database accounts (ADR-087); stock columns, in-stock filter, stock-aware substitutes, low-stock widget and the blocking user's name (ADR-089).
 - **Database work:** stock_movements (append-only), inventory_counts and lines, reorder proposals, CHECK constraints, triggers (two MySQL triggers, ADR-017), balance maintenance.
 - **Backend work:** `StockService` (the only writer), locking convention (ascending lot id), count workflow, reorder planner job, integrity check.

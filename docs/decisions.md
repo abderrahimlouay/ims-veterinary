@@ -605,7 +605,14 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Context:** The product list must filter by sellable stock inside the database (NFR-002, never by loading product ids), and the stock list must page and search by product name, SKU and category; `architecture.md` §3 rule 2 forbids a module to read another module's tables, and `v_product_stock` is not created (ADR-080).
 - **Decision:** The catalog defines the port `ProductStock`; `inventory` implements it in **one named class**, `ProductStockConditions`, which returns boolean JPQL conditions on the product alias `p` (`EXISTS`/sums over `Lot`, `p.minStock`, `p.reorderPoint`). Conditions are **constant text**; every value (business date from the injected clock, active status, smallest quantity) is a **bind parameter** — no search term, id or date is ever concatenated. The catalog's search (`ProductSearchRepository`) appends them to its own constant text. The mirror direction needs no exception: `inventory` lists stock through the catalog port `ProductQueries` (`inventory → catalog` is allowed), passing its conditions. `ModuleSqlBoundaryTest` checks the string literals: the catalog never names inventory tables or entities, and inventory names catalog ones only in `ProductStockConditions`. Each condition uses one sellable subquery (two made the low-stock list ~0.55 s on 50,000 products).
 - **Alternatives:** read-only joins in named query classes without a port (B); product list without stock (C).
-- **Consequences:** `architecture.md` §3 rule 2 (exception), `api.md` §4.3/§4.5, `testing.md` §8.1 (in-stock searches; dataset committed and statistics refreshed). Measured 2026-10-23 on 50,000 products: every search under 1 s; the slowest typically 0.40–0.43 s, up to 0.81 s in a run on a loaded machine. A query planned against stale statistics (right after a large bulk load, before InnoDB refreshes them) can scan instead of using `idx_lots_fefo`; see the slice report.
+- **Consequences:** `architecture.md` §3 rule 2 (exception), `api.md` §4.3/§4.5, `testing.md` §8.1 (in-stock searches; dataset committed and statistics refreshed). Measured 2026-10-23 on 50,000 products: every search under 1 s; the slowest typically 0.40–0.43 s, up to 0.81 s in a run on a loaded machine. A query planned against stale statistics (right after a large bulk load, before InnoDB refreshes them) can scan instead of using `idx_lots_fefo`; refreshed by `ANALYZE TABLE` (ADR-091).
+
+## ADR-091 — Refresh table statistics after a bulk load
+- **Status:** Accepted (user decision, 2026-10-23, Phase 4 slice 6 follow-up)
+- **Context:** Right after a large bulk load (legacy import, opening stock in bulk, test datasets) InnoDB statistics can still describe the tables as they were before the load; MySQL then plans the product and stock searches against nearly empty tables and scans (a 50,000-product load examined 3.4 billion rows).
+- **Decision:** `ANALYZE TABLE` on the loaded tables is an **operations step after every bulk load**, documented in the README and `database-migration.md` §9; no application code runs it for now. The 50,000-product performance test runs `ANALYZE TABLE` after generating its data (it already does, ADR-090).
+- **Alternatives:** the import code runs it itself (later, when an import tool exists); rely on InnoDB's automatic recalculation (not timely enough).
+- **Consequences:** README "Bulk loads", `database-migration.md` §9, `testing.md` §8.1.
 
 ---
 
@@ -792,7 +799,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 1 Auth | ~~OD-001~~ → ADR-036, ~~OD-023~~ → ADR-037; ADR-017/020/021/027 confirmed Accepted; ADR-038–041, ~~OD-031~~ → ADR-042 (all 2026-10-20) |
 | 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053, ~~OD-032~~ → ADR-054 (all 2026-10-21) |
 | 3 Lots & Units | ~~OD-009~~ → ADR-055/056, ~~OD-019~~ → ADR-057, ~~OD-025~~ → ADR-058, ~~OD-027~~ → ADR-059/060; ADR-061…068 (all 2026-10-22) |
-| 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22) |
+| 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091 (2026-10-23) |
 | 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
 | 6 Customers | OD-006, OD-011 |
 | 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006, ~~OD-033~~ → ADR-071 |
