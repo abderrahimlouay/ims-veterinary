@@ -23,7 +23,7 @@ public class ProductLookup {
 
     /** What other modules need to show and handle a product. */
     public record ProductRef(long id, String sku, String commercialName, String baseUnit, boolean divisible,
-            boolean archived) {
+            boolean archived, BigDecimal minStock, BigDecimal maxStock, BigDecimal reorderPoint) {
     }
 
     /** A packaging unit of a product (FR-PROD-006/007). */
@@ -56,7 +56,8 @@ public class ProductLookup {
                 .collect(Collectors.toMap(ProductRef::id, Function.identity()));
     }
 
-    private static ProductRef ref(Product p) {
-        return new ProductRef(p.id(), p.sku(), p.commercialName(), p.baseUnit(), p.divisible(), p.archived());
+    static ProductRef ref(Product p) {
+        return new ProductRef(p.id(), p.sku(), p.commercialName(), p.baseUnit(), p.divisible(), p.archived(),
+                p.minStock(), p.maxStock(), p.reorderPoint());
     }
 }

@@ -1,5 +1,6 @@
 package com.imsvet.ims.catalog.application;
 
+import com.imsvet.ims.catalog.application.ProductStock.StockFilter;
 import com.imsvet.ims.catalog.application.ProductViews.ProductIngredientView;
 import com.imsvet.ims.catalog.application.ProductViews.ProductSummary;
 import com.imsvet.ims.catalog.domain.ActiveIngredient;
@@ -7,6 +8,7 @@ import com.imsvet.ims.catalog.domain.Product;
 import com.imsvet.ims.catalog.domain.ProductIngredient;
 import com.imsvet.ims.catalog.infrastructure.ActiveIngredientRepository;
 import com.imsvet.ims.catalog.infrastructure.ProductRepository;
+import com.imsvet.ims.catalog.infrastructure.ProductSearchRepository;
 import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
 import com.imsvet.ims.common.error.ValidationException;
@@ -16,14 +18,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Active ingredients of a product and substitutes sharing one (FR-PROD-004). Substitutes are not yet
- * filtered by sellable stock: stock exists from Phase 4.
+ * Active ingredients of a product and substitutes sharing one (FR-PROD-004). Substitutes are the products with
+ * sellable stock, filtered in the database (ADR-089, ADR-090), with their stock figures.
  */
 @Service
 public class ProductIngredients {
@@ -35,10 +36,15 @@ public class ProductIngredients {
 
     private final ProductRepository products;
     private final ActiveIngredientRepository ingredients;
+    private final ProductSearchRepository search;
+    private final ProductStock stock;
 
-    public ProductIngredients(ProductRepository products, ActiveIngredientRepository ingredients) {
+    public ProductIngredients(ProductRepository products, ActiveIngredientRepository ingredients,
+            ProductSearchRepository search, ProductStock stock) {
         this.products = products;
         this.ingredients = ingredients;
+        this.search = search;
+        this.stock = stock;
     }
 
     @PreAuthorize("hasAuthority('product.update')")
@@ -78,8 +84,8 @@ public class ProductIngredients {
         if (ingredientIds.isEmpty()) {
             return List.of();
         }
-        return products.findSubstitutes(ingredientIds, product.id(), PageRequest.of(0, MAX_SUBSTITUTES)).stream()
-                .map(ProductViews::summary).toList();
+        return ProductViews.summaries(search.substitutes(ingredientIds, product.id(),
+                List.of(stock.condition(StockFilter.HAS_SELLABLE)), MAX_SUBSTITUTES), stock);
     }
 
     private Product find(long id) {

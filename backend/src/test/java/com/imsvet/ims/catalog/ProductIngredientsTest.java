@@ -9,9 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.imsvet.ims.TestClock;
 import com.imsvet.ims.TestcontainersConfiguration;
 import com.imsvet.ims.support.ApiClient;
+import com.imsvet.ims.support.TestLots;
 import com.imsvet.ims.support.TestUsers;
 import com.imsvet.ims.support.TestUsers.TestUser;
 import jakarta.persistence.EntityManager;
+import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,6 +101,7 @@ class ProductIngredientsTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /** From Phase 4 only products with sellable stock are proposed (ADR-089); every candidate here has some. */
     @Test
     void substitutesShareAnIngredientMostSharedFirstAndExcludeArchivedProducts() throws Exception {
         long original = product("S-0", "Original");
@@ -113,6 +116,12 @@ class ProductIngredientsTest {
         replace(archived, amoxiClav);
         replace(unrelated, "[{\"ingredientId\":" + ivermectin + "}]");
         pharmacist.post("/api/products/" + archived + "/archive", "").andExpect(status().isOk());
+        TestLots lots = new TestLots(jdbc);
+        for (long product : new long[] { both, one, archived, unrelated }) {
+            lots.lot(product, "SUB-" + product, LocalDate.of(2027, 6, 30), "5");
+        }
+        long empty = product("S-5", "Empty both");
+        replace(empty, amoxiClav);
 
         pharmacist.get("/api/products/" + original + "/substitutes").andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))

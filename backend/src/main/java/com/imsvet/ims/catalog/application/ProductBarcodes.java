@@ -1,5 +1,7 @@
 package com.imsvet.ims.catalog.application;
 
+import com.imsvet.ims.catalog.application.ProductStock.Figures;
+import com.imsvet.ims.catalog.application.ProductStock.ProductThresholds;
 import com.imsvet.ims.catalog.application.ProductViews.BarcodeView;
 import com.imsvet.ims.catalog.application.ProductViews.ScanResult;
 import com.imsvet.ims.catalog.application.ProductViews.UnitView;
@@ -40,8 +42,11 @@ public class ProductBarcodes {
     private final ProductRepository products;
     private final ProductUnitRepository units;
     private final ProductBarcodeRepository barcodes;
+    private final ProductStock stock;
 
-    public ProductBarcodes(ProductRepository products, ProductUnitRepository units, ProductBarcodeRepository barcodes) {
+    public ProductBarcodes(ProductRepository products, ProductUnitRepository units, ProductBarcodeRepository barcodes,
+            ProductStock stock) {
+        this.stock = stock;
         this.products = products;
         this.units = units;
         this.barcodes = barcodes;
@@ -97,7 +102,9 @@ public class ProductBarcodes {
         Product product = barcode.product();
         UnitView unit = barcode.unitId() == null ? null
                 : units.findByIdAndProductId(barcode.unitId(), product.id()).map(ProductViews::unit).orElseThrow();
-        return ProductViews.scan(product, unit);
+        Figures figures = stock.figures(List.of(new ProductThresholds(product.id(), product.minStock(),
+                product.reorderPoint()))).get(product.id());
+        return ProductViews.scan(product, figures, unit);
     }
 
     private static BarcodeType type(String codeType) {

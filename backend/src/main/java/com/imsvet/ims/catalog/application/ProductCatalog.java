@@ -3,12 +3,15 @@ package com.imsvet.ims.catalog.application;
 import com.imsvet.ims.audit.application.AuditRecorder;
 import com.imsvet.ims.audit.domain.AuditAction;
 import com.imsvet.ims.catalog.application.ProductViews.ProductDetail;
+import com.imsvet.ims.catalog.application.ProductStock.Condition;
+import com.imsvet.ims.catalog.application.ProductStock.StockFilter;
 import com.imsvet.ims.catalog.application.ProductViews.ProductSummary;
 import com.imsvet.ims.catalog.domain.Product;
 import com.imsvet.ims.catalog.domain.ReferenceEntry;
 import com.imsvet.ims.catalog.infrastructure.DosageFormRepository;
 import com.imsvet.ims.catalog.infrastructure.ManufacturerRepository;
 import com.imsvet.ims.catalog.infrastructure.ProductRepository;
+import com.imsvet.ims.catalog.infrastructure.ProductSearchRepository;
 import com.imsvet.ims.catalog.infrastructure.ReferenceRepository;
 import com.imsvet.ims.catalog.infrastructure.TherapeuticCategoryRepository;
 import com.imsvet.ims.common.error.BusinessException;
@@ -64,10 +67,12 @@ public class ProductCatalog {
     private final SettingsProvider settings;
     private final AuditRecorder audit;
     private final Clock clock;
+    private final ProductSearchRepository search;
+    private final ProductStock stock;
 
     public ProductCatalog(ProductRepository products, TherapeuticCategoryRepository categories,
             DosageFormRepository dosageForms, ManufacturerRepository manufacturers, SettingsProvider settings,
-            AuditRecorder audit, Clock clock) {
+            AuditRecorder audit, Clock clock, ProductSearchRepository search, ProductStock stock) {
         this.products = products;
         this.categories = categories;
         this.dosageForms = dosageForms;
@@ -75,16 +80,19 @@ public class ProductCatalog {
         this.settings = settings;
         this.audit = audit;
         this.clock = clock;
+        this.search = search;
+        this.stock = stock;
     }
 
     /** The search criteria of {@code GET /api/products} (ADR-047, ADR-048, barcode exact); all optional. */
     public record SearchCriteria(String q, Integer categoryId, Integer manufacturerId, Integer ingredientId,
-            Integer speciesId, String barcode, boolean includeArchived) {
+            Integer speciesId, String barcode, boolean includeArchived, boolean inStockOnly) {
     }
 
     /**
      * NFR-002 search: {@code q} anywhere in the name, the SKU or an active-ingredient name, ignoring case and
-     * accents (collation); exact SKU first, then names starting with {@code q}, then the others, by name.
+     * accents (collation); exact SKU first, then names starting with {@code q}, then the others, by name. With
+     * {@code inStockOnly}, only products with sellable stock, filtered in the database (ADR-090).
      */
     @PreAuthorize("hasAuthority('product.read')")
     @Transactional(readOnly = true)
@@ -95,11 +103,12 @@ public class ProductCatalog {
         String pattern = escaped == null ? null : "%" + escaped + "%";
         String prefix = escaped == null ? null : escaped + "%";
         String barcode = c.barcode() == null || c.barcode().isEmpty() ? null : c.barcode();
-        List<Product> found = products.search(term, pattern, prefix, c.categoryId(), c.manufacturerId(),
-                c.ingredientId(), c.speciesId(), barcode, c.includeArchived(), request);
-        long total = products.countSearch(pattern, c.categoryId(), c.manufacturerId(), c.ingredientId(),
-                c.speciesId(), barcode, c.includeArchived());
-        return PageResponse.of(new PageImpl<>(found, request, total), ProductViews::summary);
+        ProductSearchRepository.Criteria criteria = new ProductSearchRepository.Criteria(term, pattern, prefix,
+                c.categoryId(), c.manufacturerId(), c.ingredientId(), c.speciesId(), barcode, c.includeArchived());
+        List<Condition> conditions = c.inStockOnly() ? List.of(stock.condition(StockFilter.HAS_SELLABLE)) : List.of();
+        List<Product> found = search.search(criteria, conditions, request);
+        long total = search.count(criteria, conditions);
+        return PageResponse.of(new PageImpl<>(ProductViews.summaries(found, stock), request, total), s -> s);
     }
 
     @PreAuthorize("hasAuthority('product.read')")

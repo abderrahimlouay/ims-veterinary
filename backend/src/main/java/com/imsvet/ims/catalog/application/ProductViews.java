@@ -6,9 +6,13 @@ import com.imsvet.ims.catalog.domain.ProductBarcode;
 import com.imsvet.ims.catalog.domain.ProductUnit;
 import com.imsvet.ims.catalog.domain.ReferenceEntry;
 import java.math.BigDecimal;
+import com.imsvet.ims.catalog.application.ProductStock.Figures;
+import com.imsvet.ims.catalog.application.ProductStock.ProductThresholds;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Read models of products (api.md §4.3). Decimals travel as strings (ADR-021): prices with 4 decimals,
@@ -19,8 +23,10 @@ public final class ProductViews {
     private ProductViews() {
     }
 
+    /** From Phase 4 with stock (ADR-089): sellable and total base quantities, status, nearest sellable expiry. */
     public record ProductSummary(long id, String sku, String commercialName, ReferenceItemView category,
-            String baseUnit, BigDecimal salePrice, boolean archived) {
+            String baseUnit, BigDecimal salePrice, boolean archived, BigDecimal sellableQtyBase,
+            BigDecimal totalQtyBase, String stockStatus, LocalDate nearestExpiry) {
     }
 
     public record ProductDetail(long id, String sku, String commercialName, ReferenceItemView category,
@@ -56,8 +62,8 @@ public final class ProductViews {
         return new BarcodeView(b.id(), b.code(), b.codeType(), unit == null ? null : unit(unit));
     }
 
-    static ScanResult scan(Product product, UnitView unit) {
-        return new ScanResult(summary(product), unit, BigDecimal.ONE);
+    static ScanResult scan(Product product, Figures stock, UnitView unit) {
+        return new ScanResult(summary(product, stock), unit, BigDecimal.ONE);
     }
 
     static UnitView unit(ProductUnit u) {
@@ -65,9 +71,17 @@ public final class ProductViews {
                 u.version());
     }
 
-    static ProductSummary summary(Product p) {
+    static ProductSummary summary(Product p, Figures stock) {
         return new ProductSummary(p.id(), p.sku(), p.commercialName(), ref(p.category()), p.baseUnit(),
-                p.salePrice(), p.archived());
+                p.salePrice(), p.archived(), stock.sellable(), stock.total(), stock.status(),
+                stock.nearestSellableExpiry());
+    }
+
+    /** Summaries with their stock figures, read for all products at once (ADR-089). */
+    static List<ProductSummary> summaries(List<Product> products, ProductStock stock) {
+        Map<Long, Figures> figures = stock.figures(products.stream()
+                .map(p -> new ProductThresholds(p.id(), p.minStock(), p.reorderPoint())).toList());
+        return products.stream().map(p -> summary(p, figures.get(p.id()))).toList();
     }
 
     static ProductDetail detail(Product p) {

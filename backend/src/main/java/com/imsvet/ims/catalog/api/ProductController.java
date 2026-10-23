@@ -73,9 +73,10 @@ class ProductController {
             @RequestParam(required = false) Integer categoryId, @RequestParam(required = false) Integer manufacturerId,
             @RequestParam(required = false) Integer ingredientId, @RequestParam(required = false) Integer speciesId,
             @RequestParam(required = false) String barcode, @RequestParam(defaultValue = "false") boolean includeArchived,
+            @RequestParam(defaultValue = "false") boolean inStockOnly,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return catalog.search(new ProductCatalog.SearchCriteria(q, categoryId, manufacturerId, ingredientId, speciesId,
-                barcode, includeArchived), page, size);
+                barcode, includeArchived, inStockOnly), page, size);
     }
 
     @PostMapping
