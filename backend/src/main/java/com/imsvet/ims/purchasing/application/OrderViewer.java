@@ -3,6 +3,7 @@ package com.imsvet.ims.purchasing.application;
 import com.imsvet.ims.catalog.application.ProductLookup;
 import com.imsvet.ims.catalog.application.ProductLookup.ProductRef;
 import com.imsvet.ims.purchasing.application.OrderViews.OrderLine;
+import com.imsvet.ims.purchasing.application.OrderViews.OrderReceipt;
 import com.imsvet.ims.purchasing.application.OrderViews.PurchaseOrderDetail;
 import com.imsvet.ims.purchasing.application.OrderViews.PurchaseOrderSummary;
 import com.imsvet.ims.purchasing.application.OrderViews.SupplierRef;
@@ -11,6 +12,7 @@ import com.imsvet.ims.purchasing.application.OrderViews.UserRef;
 import com.imsvet.ims.purchasing.domain.PurchaseOrder;
 import com.imsvet.ims.purchasing.domain.PurchaseOrderLine;
 import com.imsvet.ims.purchasing.domain.Supplier;
+import com.imsvet.ims.purchasing.infrastructure.GoodsReceiptRepository;
 import com.imsvet.ims.purchasing.infrastructure.SupplierRepository;
 import com.imsvet.ims.users.application.UserNames;
 import java.util.List;
@@ -25,11 +27,14 @@ import org.springframework.stereotype.Component;
 class OrderViewer {
 
     private final SupplierRepository suppliers;
+    private final GoodsReceiptRepository receipts;
     private final ProductLookup products;
     private final UserNames userNames;
 
-    OrderViewer(SupplierRepository suppliers, ProductLookup products, UserNames userNames) {
+    OrderViewer(SupplierRepository suppliers, GoodsReceiptRepository receipts, ProductLookup products,
+            UserNames userNames) {
         this.suppliers = suppliers;
+        this.receipts = receipts;
         this.products = products;
         this.userNames = userNames;
     }
@@ -48,7 +53,9 @@ class OrderViewer {
                 o.expectedDate(), lines.stream().map(l -> line(l, refs.get(l.productId()))).toList(), o.totalHt(),
                 o.totalVat(), o.totalTtc(), user(o.createdBy(), names), o.createdAt(), o.validatedAt(), o.sentAt(),
                 o.cancelReason(), user(o.cancelledBy(), names), o.cancelledAt(), o.closedReason(),
-                user(o.closedBy(), names), o.closedAt(), List.of(), o.version());
+                user(o.closedBy(), names), o.closedAt(), receipts.findByPurchaseOrderId(o.id()).stream()
+                        .map(r -> new OrderReceipt(r.id(), r.number(), r.receivedAt(), r.status().code())).toList(),
+                o.version());
     }
 
     private OrderLine line(PurchaseOrderLine l, ProductRef p) {

@@ -7,7 +7,7 @@ import java.util.Optional;
 /**
  * BR-PURCH-001: {@code draft → validated → sent → partially_received → closed}; {@code cancelled} from draft,
  * validated or sent; a forced close from partially received (ADR-096). Receipts move sent and partially received
- * orders (slice 5).
+ * orders ({@link #receivable()}): partially received, then closed once everything is received (BR-PURCH-004).
  */
 public enum OrderStatus {
     DRAFT, VALIDATED, SENT, PARTIALLY_RECEIVED, CLOSED, CANCELLED;
@@ -24,6 +24,11 @@ public enum OrderStatus {
             case CANCEL -> this == DRAFT || this == VALIDATED || this == SENT ? CANCELLED : null;
             case CLOSE -> this == PARTIALLY_RECEIVED ? CLOSED : null;
         });
+    }
+
+    /** Only sent and partially received orders can be received (ADR-096). */
+    public boolean receivable() {
+        return this == SENT || this == PARTIALLY_RECEIVED;
     }
 
     /** The stored and API value. */

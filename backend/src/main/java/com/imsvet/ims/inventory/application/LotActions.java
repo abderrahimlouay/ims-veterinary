@@ -11,11 +11,9 @@ import com.imsvet.ims.inventory.application.LotViews.RecallReport;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
 import com.imsvet.ims.inventory.domain.LotStatus.Action;
-import com.imsvet.ims.inventory.domain.LotStatus.IllegalLotTransitionException;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import com.imsvet.ims.users.application.UserNames;
 import java.time.Clock;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -32,9 +30,7 @@ public class LotActions {
     private final LotRepository lots;
     private final ProductLookup products;
     private final ExpiryPolicies policies;
-    private final AuditRecorder audit;
-    private final ActorProvider actors;
-    private final Clock clock;
+    private final LotStatusChanges statusChanges;
     private final UserNames userNames;
 
     public LotActions(LotRepository lots, ProductLookup products, ExpiryPolicies policies, AuditRecorder audit,
@@ -42,9 +38,7 @@ public class LotActions {
         this.lots = lots;
         this.products = products;
         this.policies = policies;
-        this.audit = audit;
-        this.actors = actors;
-        this.clock = clock;
+        this.statusChanges = new LotStatusChanges(lots, audit, actors, clock);
         this.userNames = userNames;
     }
 
@@ -83,20 +77,7 @@ public class LotActions {
     }
 
     private Lot change(Lot lot, Action action, AuditAction auditAction, String reason) {
-        LotStatus next;
-        try {
-            next = lot.status().after(action);
-        } catch (IllegalLotTransitionException e) {
-            throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, e.getMessage(),
-                    Map.of("status", lot.status().code(), "action", action.name()));
-        }
-        Map<String, Object> newValues = new LinkedHashMap<>();
-        newValues.put("status", next.code());
-        newValues.put("reason", reason);
-        audit.record(auditAction, "lots", lot.id(), Map.of("status", lot.status().code()), newValues);
-        lot.apply(action, reason, actors.current().userId(), clock.instant());
-        lots.flush();
-        return lot;
+        return statusChanges.change(lot, action, auditAction, reason);
     }
 
     private Lot locked(long id) {

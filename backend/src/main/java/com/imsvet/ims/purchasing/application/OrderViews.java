@@ -25,7 +25,7 @@ public final class OrderViews {
             BigDecimal vatRate, BigDecimal lineHt, BigDecimal lineVat) {
     }
 
-    /** Receipts of the order, from slice 5. */
+    /** Receipts of the order, oldest first. */
     public record OrderReceipt(long id, String number, Instant receivedAt, String status) {
     }
 

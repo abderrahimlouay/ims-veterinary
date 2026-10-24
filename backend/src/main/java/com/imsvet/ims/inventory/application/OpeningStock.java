@@ -11,13 +11,14 @@ import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
 import com.imsvet.ims.common.error.ValidationException;
 import com.imsvet.ims.common.error.ValidationException.Violation;
-import com.imsvet.ims.inventory.application.LotIdentities.Found;
 import com.imsvet.ims.inventory.application.LotViews.OpeningResult;
-import com.imsvet.ims.inventory.application.StockService.Movement;
+import com.imsvet.ims.inventory.application.StockEntries.Batch;
+import com.imsvet.ims.inventory.application.StockEntries.Entered;
+import com.imsvet.ims.inventory.application.StockEntries.Entry;
 import com.imsvet.ims.inventory.domain.Lot;
-import com.imsvet.ims.inventory.domain.LotStatus;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.inventory.domain.StockMovement;
+import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import com.imsvet.ims.inventory.infrastructure.MovementReadRepository;
 import com.imsvet.ims.settings.application.SettingsProvider;
 import com.imsvet.ims.settings.domain.SettingDefinition;
@@ -35,9 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Opening stock (W10a, FR-STOCK-007, BR-STOCK-014): allowed only while {@code opening_stock_open} is true (ADR-082);
  * product, lot number, expiry and unit cost required (BR-LOT-001, ADR-083); quantity in a unit of the product,
- * converted exactly (ADR-065); lot found or created by (product, lot number) under lock: another expiry, another
- * unit cost (until OD-029) or a recalled lot refused, a blocked lot accepted (ADR-084). One {@code opening_stock}
- * movement through {@link StockService}, audited {@code OPENING_STOCK}, all in one transaction.
+ * converted exactly (ADR-065); lot found or created by (product, lot number) under lock through {@link StockEntries}:
+ * another expiry or a recalled lot refused, a blocked lot accepted (ADR-084), the lot cost the weighted average
+ * (ADR-098). One {@code opening_stock} movement, audited {@code OPENING_STOCK}, all in one transaction.
  */
 @Service
 public class OpeningStock {
@@ -52,19 +53,19 @@ public class OpeningStock {
 
     private final SettingsProvider settings;
     private final ProductLookup products;
-    private final LotIdentities identities;
-    private final StockService stock;
+    private final StockEntries entries;
+    private final LotRepository lots;
     private final MovementReadRepository movements;
     private final ExpiryPolicies policies;
     private final UserNames userNames;
     private final AuditRecorder audit;
 
-    public OpeningStock(SettingsProvider settings, ProductLookup products, LotIdentities identities, StockService stock,
+    public OpeningStock(SettingsProvider settings, ProductLookup products, StockEntries entries, LotRepository lots,
             MovementReadRepository movements, ExpiryPolicies policies, UserNames userNames, AuditRecorder audit) {
         this.settings = settings;
         this.products = products;
-        this.identities = identities;
-        this.stock = stock;
+        this.entries = entries;
+        this.lots = lots;
         this.movements = movements;
         this.policies = policies;
         this.userNames = userNames;
@@ -87,25 +88,16 @@ public class OpeningStock {
         String lotNumber = validate(in);
         BigDecimal quantity = toBase(in, product);
         BigDecimal unitCost = in.unitCost().setScale(COST_SCALE);
-        Found found = identities.findOrCreate(product.id(), lotNumber, in.expiryDate(), unitCost);
-        Lot lot = found.lot();
-        if (!found.created()) {
-            if (lot.status() == LotStatus.RECALLED) {
-                throw new BusinessException(ErrorCode.LOT_RECALLED, "This lot is recalled.", Map.of("lotId", lot.id()));
-            }
-            if (lot.unitCost().compareTo(unitCost) != 0) {
-                throw invalid(List.of(new Violation("unitCost", "COST_MISMATCH",
-                        "This lot already exists with another unit cost.")));
-            }
-        }
-        long movementId = stock.post(List.of(new Movement(lot.id(), product.id(), MovementType.OPENING_STOCK, quantity,
-                null, "opening_stock", null))).getFirst();
+        Entered entered = entries.enter(new Batch(MovementType.OPENING_STOCK, "opening_stock", null, null, null, false),
+                List.of(new Entry(product.id(), lotNumber, in.expiryDate(), quantity, unitCost, false))).getFirst();
+        Lot lot = lots.findById(entered.lotId()).orElseThrow();
+        long movementId = entered.movementId();
         Map<String, Object> newValues = new LinkedHashMap<>();
         newValues.put("lotNumber", lot.lotNumber());
         newValues.put("expiryDate", lot.expiryDate().toString());
         newValues.put("quantity", quantity.toPlainString());
         newValues.put("unitCost", unitCost.toPlainString());
-        newValues.put("created", found.created());
+        newValues.put("created", entered.created());
         newValues.put("movementId", movementId);
         audit.record(AuditAction.OPENING_STOCK, "lots", lot.id(), null, newValues);
         StockMovement movement = movements.findById(movementId).orElseThrow();

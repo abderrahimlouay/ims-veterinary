@@ -79,7 +79,7 @@ Until sales exist (Phase 7), CT-01 and CT-04 use a manual adjustment in place of
 | CT-05 | double-submit same Idempotency-Key | one document (`IdempotencyKeysTest`, 20 repetitions: the second waits on the key, then replays the first; per endpoint again in BR-PURCH-013 / BR-SALE-016) |
 | CT-06 | two credit sales for same customer near limit | limit not exceeded (OD-011) |
 | CT-07 | simultaneous edit of same product (`@Version`) | second gets `CONCURRENT_MODIFICATION` |
-| CT-08 | parallel goods receipts of same new lot number | one lot, summed balance |
+| CT-08 | parallel goods receipts of same new lot number | one lot, summed balance, weighted-average cost, ledger = balance (`GoodsReceiptConcurrencyTest`, 20 repetitions; with two receipts beyond one order line's outstanding quantity: one refused) |
 | CT-09 | two cash sessions opened concurrently by same cashier | one succeeds |
 | CT-10 | two simultaneous blocks of the same lot | one succeeds, the other `INVALID_STATE_TRANSITION`; one `LOT_BLOCK` audit entry (`LotActionConcurrencyTest`, Phase 3) |
 
@@ -165,11 +165,11 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PURCH-001 | U,S | PO state machine: every illegal transition refused, every legal one checked; cancel and forced close need a reason and are audited (`PurchaseOrdersTest`) |
 | BR-PURCH-002 | U,R | Line and PO totals per line, HALF_UP (ADR-093), prices per ordered unit 4 decimals (ADR-094); generated `line_ht`/`line_vat` equal the service for x.xx5 cases, 4-decimal prices and a fractional divisible quantity (ADR-016 parity); client values ignored (`PurchaseOrdersTest`, `PurchaseOrderSchemaTest`) |
 | BR-PURCH-003 | A,C | Edit any non-draft PO → DOCUMENT_IMMUTABLE; same product twice → DUPLICATE; stale version → CONCURRENT_MODIFICATION; two parallel edits: one wins, 10 times (`PurchaseOrdersTest`, `PurchaseOrderConcurrencyTest`) |
-| BR-PURCH-004 | S | Partial receipts update received qty and PO status; over-receipt → RECEIPT_QUANTITY_EXCEEDS_ORDER; product not on the order → NOT_ON_ORDER; draft/validated/closed order not receivable; free receipt accepted |
-| BR-PURCH-005 | S | Receipt lines produce lot + positive movement with lot/expiry through `StockService`; ledger = balance |
+| BR-PURCH-004 | S,C | Partial receipts update received qty and PO status (closed by full reception, no reason); over-receipt → RECEIPT_QUANTITY_EXCEEDS_ORDER; product not on the order → NOT_ON_ORDER; draft/validated/cancelled/closed order not receivable; another supplier than the order's → NOT_ORDER_SUPPLIER; free receipt accepted; two parallel receipts beyond the outstanding quantity → one refused (`GoodsReceiptsTest`, `GoodsReceiptConcurrencyTest`) |
+| BR-PURCH-005 | S | Receipt lines produce lot + positive movement with lot/expiry through `StockService`; ledger = balance; lot number, expiry, quantity and cost validated; one line per lot (`DUPLICATE`) |
 | BR-PURCH-006 | S | Non-conforming line → lot blocked (audited); lot with stock → LOT_BLOCK_CONFIRMATION_REQUIRED naming the quantity, accepted with `confirmLotBlocking` |
-| BR-PURCH-007 | S | Fault injected on line 3 (and on the audit / price history) → no lots, no movements, no number, PO unchanged |
-| BR-PURCH-008 | S | Receipt appends a history entry only when price or discount changes; manual entry (`SuppliersTest`, slice 1) |
+| BR-PURCH-007 | S | A refusal on line 3 after two lots were created, and separately a failed `LOT_BLOCK` audit write (trigger) → no lots, no movements, no receipt, no price entry, no number, no idempotency key, PO and lot status unchanged (`GoodsReceiptAtomicityTest`, committed data) |
+| BR-PURCH-008 | S | Receipt appends a history entry (with its receipt, discount of the PO line, 0 without order) only when price or discount differs from the latest entry in force; manual entry (`SuppliersTest`) |
 | BR-PURCH-009 | S,C | Supplier return reduces lot (any status); more than available → STOCK_INSUFFICIENT; lot of another supplier → OTHER_SUPPLIER; audited |
 | BR-PURCH-010 | S | Convert several proposals into one draft PO per supplier; twice → INVALID_STATE_TRANSITION; generation subtracts open orders (ADR-102) |
 | BR-PURCH-011 | S | PO / receipt for inactive supplier → SUPPLIER_INACTIVE at creation and validation (archived product → PRODUCT_ARCHIVED); deactivate and reactivate (`SuppliersTest`, `PurchaseOrdersTest`); name unique ignoring case and accents (`SupplierSchemaTest`) |

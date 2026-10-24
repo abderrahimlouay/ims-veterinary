@@ -31,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * A supplier's price and discount history (FR-PURCH-002, BR-PURCH-008, ADR-100): read newest first, and manual
  * entries — price per base unit ≥ 0 with at most 4 decimals (ADR-094), discount 0–100 with at most 2 decimals,
- * valid from the business date unless given. Receipts append entries from slice 5.
+ * valid from the business date unless given. Receipts append entries ({@code GoodsReceipts}, ADR-100).
  */
 @Service
 public class SupplierPrices {
@@ -124,7 +124,7 @@ public class SupplierPrices {
     private static PriceEntry entry(SupplierPrice p, ProductRef product, Map<Long, String> names) {
         return new PriceEntry(p.id(), new PriceProduct(product.id(), product.sku(), product.commercialName(),
                 product.baseUnit()), p.unitPrice(), p.discountPct(), p.validFrom(), p.createdAt(),
-                new UserRef(p.createdBy(), names.get(p.createdBy())));
+                new UserRef(p.createdBy(), names.get(p.createdBy())), p.receiptId(), p.cancelled());
     }
 
     private static ValidationException invalid(String field, String code, String message) {

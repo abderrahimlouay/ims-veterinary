@@ -19,9 +19,12 @@ public final class SupplierViews {
     public record UserRef(long id, String fullName) {
     }
 
-    /** A price-history entry: price per base unit (ADR-094). */
+    /**
+     * A price-history entry: price per base unit (ADR-094); {@code receiptId} when a receipt appended it,
+     * {@code cancelled} once that receipt is cancelled (shown struck through, ADR-106).
+     */
     public record PriceEntry(long id, PriceProduct product, BigDecimal unitPrice, BigDecimal discountPct,
-            LocalDate validFrom, Instant createdAt, UserRef createdBy) {
+            LocalDate validFrom, Instant createdAt, UserRef createdBy, Long receiptId, boolean cancelled) {
     }
 
     private SupplierViews() {
