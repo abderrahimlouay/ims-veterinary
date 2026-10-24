@@ -47,6 +47,7 @@ After any bulk load (legacy import, a large opening-stock load, generated data),
 | Full build with all tests (unit, architecture, API, migration on MySQL container) | `./mvnw verify` |
 | Tests without Docker (architecture, unit, MockMvc) | `./mvnw test -Dtest='ArchitectureTest,ErrorCatalogueTest,BusinessCalendarTest,DecimalJsonTest,ProblemDetailsHandlerTest'` |
 | Run locally against a throw-away MySQL container | `./mvnw spring-boot:test-run` |
+| Trial with demo data (fictional; reset = restart: a new container is migrated and seeded; never in prod) | `IMS_BOOTSTRAP_ADMIN_USERNAME=admin IMS_BOOTSTRAP_ADMIN_PASSWORD=… ./mvnw spring-boot:test-run -Dspring-boot.run.profiles=dev,demo` — the other demo users' passwords are printed once at start, or set `IMS_DEMO_PASSWORD` |
 | Run locally against your own MySQL (profile `dev`) | `IMS_DB_PASSWORD=… IMS_DB_MIGRATION_PASSWORD=… ./mvnw spring-boot:run` (two accounts from Phase 4, ADR-087: Flyway uses the migration account, the application the restricted one) |
 | Health check | `curl localhost:8080/actuator/health` |
 
