@@ -72,7 +72,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 |---|---|---|
 | CT-01 | N parallel sales of the last unit of a lot | exactly stock/qty succeed; others `STOCK_INSUFFICIENT`; balance ≥ 0; ledger = balance |
 | CT-02 | two sales taking lots A,B vs B,A | no deadlock (ascending lock order) or bounded retry succeeds |
-| CT-03 | parallel document numbering (1 000 allocations) | unique, gap-free on commit (ADR-097) |
+| CT-03 | parallel document numbering (1 000 allocations) | unique, gap-free on commit (ADR-097) — `NumberingTransactionTest`, 20 repetitions |
 | CT-04 | sale vs count regularisation on same lot | consistent final balance, no lost update; the sale after the watermark stays valid (ADR-072) — `CountRegularisationConcurrencyTest`, 20 repetitions |
 
 Until sales exist (Phase 7), CT-01 and CT-04 use a manual adjustment in place of a sale; Phase 7 re-runs both with real sales (roadmap Phase 7 completion criteria).
@@ -175,7 +175,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PURCH-011 | S | PO / receipt for inactive supplier → SUPPLIER_INACTIVE; deactivate and reactivate (`SuppliersTest`); name unique ignoring case and accents (`SupplierSchemaTest`) |
 | BR-PURCH-012 | S,C | Cancel a receipt: reversal movements, PO rolled back, audited, number kept; a later movement on one lot → RECEIPT_NOT_CANCELLABLE naming it; fault injection rolls everything back; created lot stays at 0 without supplier; cost restored; status restored only if unchanged — block/unblock/recall between receipt and cancellation leave it; forced-closed order stays closed; price-history entry marked cancelled and ignored by the prefill (ADR-106) |
 | BR-PURCH-013 | S | Same key + same body → first receipt, nothing posted twice; same key + other body → IDEMPOTENCY_CONFLICT |
-| BR-DOC-001 | C,R | CT-03: 1000 concurrent numbers unique and gap-free on commit; format `KEY-YYYY-NNNNNN`; yearly reset; a rolled-back transaction leaves no gap (ADR-097) |
+| BR-DOC-001 | C,R | CT-03: 1000 concurrent numbers unique and gap-free on commit, 20 times; format `KEY-YYYY-NNNNNN`; yearly reset on the Algiers business year (31 Dec 23:30 UTC = next year); no number without a transaction; a rolled-back transaction leaves no gap; the counter stays locked until commit; number then lots in opposite orders never deadlock, 20 times (`NumberingServiceTest`, `NumberingTransactionTest`) |
 | BR-SALE-001 | U | Document chain and allowed conversions |
 | BR-SALE-002 | S | Which documents move stock (OD-002): quote none; others per decision |
 | BR-SALE-003 | S | Confirm quote → no movement |

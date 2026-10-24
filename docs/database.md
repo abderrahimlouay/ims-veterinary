@@ -204,7 +204,7 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 
 ### 3.5 Purchasing (module 4)
 
-**document_sequences** — `doc_key VARCHAR(30)`, `year SMALLINT`, `last_value INT NOT NULL DEFAULT 0`, `PK(doc_key, year)`. Row-locked by `NumberingService` (ADR-011) in the creating transaction; keys `PO`, `GR`, `SR` from Phase 5 (sales keys in Phase 7); year = business year; numbers `KEY-YYYY-NNNNNN` (ADR-097).
+**document_sequences** — `doc_key VARCHAR(30)`, `year SMALLINT`, `last_number INT NOT NULL DEFAULT 0` (`last_value` is reserved in MySQL 8), `PK(doc_key, year)`. Row-locked by `NumberingService` (ADR-011) in the creating transaction; keys `PO`, `GR`, `SR` from Phase 5 (sales keys in Phase 7); year = business year; numbers `KEY-YYYY-NNNNNN` (ADR-097).
 
 **purchase_orders** — `id BIGINT AI PK`, `number VARCHAR(30) NOT NULL UQ` (assigned by service — SD-007), `supplier_id FK`, `status VARCHAR(30) NOT NULL DEFAULT 'draft'` (draft | validated | sent | partially_received | closed | cancelled), `order_date DATE NOT NULL`, `expected_date DATE NULL`, `total_ht / total_vat / total_ttc DECIMAL(14,2) NOT NULL DEFAULT 0`, `created_by FK→users`, `created_at`, `version`; number assigned at creation (ADR-097); `closed_reason TEXT NULL`, `closed_by NULL FK→users`, `closed_at NULL` for a forced close, `cancelled_by`, `cancelled_at` (ADR-096, SD-130).
 
