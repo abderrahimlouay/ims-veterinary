@@ -18,7 +18,9 @@
     "counts": "الجرد",
     "reorder": "إعادة الطلب",
     "suppliers": "الموردون",
-    "purchaseOrders": "أوامر الشراء"
+    "purchaseOrders": "أوامر الشراء",
+    "goodsReceipts": "الاستلامات",
+    "supplierReturns": "المرتجعات إلى الموردين"
   },
   "language": {
     "label": "اللغة",
@@ -103,7 +105,11 @@
     "INVENTORY_LINE_ALREADY_REGULARIZED": "تمت تسوية هذا السطر بالفعل.",
     "CONCURRENT_MODIFICATION": "قام شخص آخر بتعديل هذه البيانات للتو: أعد المحاولة.",
     "SUPPLIER_INACTIVE": "هذا المورد معطل: لا يمكن الطلب منه ولا الاستلام منه.",
-    "DOCUMENT_IMMUTABLE": "لم يعد بالإمكان تعديل هذه الوثيقة."
+    "DOCUMENT_IMMUTABLE": "لم يعد بالإمكان تعديل هذه الوثيقة.",
+    "LOT_BLOCK_CONFIRMATION_REQUIRED": "ستحجب حصص لها مخزون بالكامل: أكد لحجبها.",
+    "RECEIPT_QUANTITY_EXCEEDS_ORDER": "أكثر من الكمية المتبقية للاستلام في الأمر.",
+    "IDEMPOTENCY_CONFLICT": "أرسل هذا الاستلام من قبل بمحتوى آخر: أعد تحميل الصفحة.",
+    "RECEIPT_NOT_CANCELLABLE": "تحركت حصة من هذا الاستلام منذ ذلك: لم يعد بالإمكان إلغاؤه."
   },
   "pager": {
     "label": "ترقيم الصفحات",
@@ -370,9 +376,13 @@
     "POSITIVE": "يجب أن تكون القيمة أكبر من صفر.",
     "FORMAT": "هذا الرمز لا يطابق النوع المختار.",
     "CHECK_DIGIT": "رقم التحقق EAN-13 غير صحيح.",
-    "COST_MISMATCH": "هذه الحصة موجودة بتكلفة وحدة أخرى.",
     "OUT_OF_SCOPE": "هذا المنتج خارج نطاق الجرد.",
-    "NOT_COUNTED": "يمكن تسوية الأسطر المعدودة فقط."
+    "NOT_COUNTED": "يمكن تسوية الأسطر المعدودة فقط.",
+    "EXPIRED": "هذه الحصة منتهية الصلاحية: استلمها فقط كغير مطابقة.",
+    "NOT_ON_ORDER": "هذا المنتج ليس في هذا السطر من الأمر.",
+    "NOT_ORDER_SUPPLIER": "مورد الاستلام هو مورد الأمر.",
+    "OTHER_SUPPLIER": "استلمت هذه الحصة من مورد آخر.",
+    "PATTERN": "الصيغة غير صالحة."
   },
   "lots": {
     "title": "الحصص",
@@ -496,7 +506,8 @@
       "adjustment_theft": "سرقة",
       "adjustment_internal_use": "استعمال داخلي",
       "adjustment_inventory": "جرد",
-      "opening_stock": "مخزون افتتاحي"
+      "opening_stock": "مخزون افتتاحي",
+      "receipt_cancellation": "إلغاء استلام"
     },
     "adjustment": {
       "new": "تسوية جديدة",
@@ -654,7 +665,12 @@
     "widget": {
       "title": "إعادة الطلب",
       "pending": "مقترحات قيد الانتظار: {{count}}"
-    }
+    },
+    "converted": "المسودات المنشأة:",
+    "supplier": "مورد الأمر",
+    "convert": "إنشاء المسودة ({{n}} محددة)",
+    "select": "التحديد",
+    "selectFor": "تحديد {{name}}"
   },
   "purchasing": {
     "save": "حفظ",
@@ -755,13 +771,56 @@
         "sent": "أرسل",
         "cancelled": "ألغاه {{by}}",
         "closed": "أغلق"
-      }
+      },
+      "receive": "استلام"
     },
     "receipts": {
       "statuses": {
         "confirmed": "مؤكد",
         "cancelled": "ملغى"
-      }
+      },
+      "title": "الاستلامات",
+      "newFree": "استلام جديد دون أمر",
+      "newFor": "استلام {{number}}",
+      "notReceivable": "لا يمكن استلام إلا أمر مرسل أو مستلم جزئيا.",
+      "empty": "لا يوجد استلام.",
+      "order": "الأمر",
+      "free": "دون أمر",
+      "receivedAt": "تاريخ الاستلام",
+      "receivedBy": "في {{at}} من طرف {{by}}",
+      "docRef": "رقم وصل التسليم",
+      "noLines": "لا توجد أسطر: أضف منتجا.",
+      "fromSupplier": "المورد: {{name}}",
+      "outstanding": "المتبقي {{quantity}}",
+      "lotNumber": "رقم الحصة",
+      "expiry": "تاريخ انتهاء الصلاحية",
+      "expiryHint": "يوم/شهر/سنة أو شهر/سنة",
+      "expired": "هذه الحصة منتهية الصلاحية.",
+      "unitCost": "التكلفة لكل وحدة أساسية",
+      "conforming": "مطابق",
+      "nonConforming": "غير مطابق",
+      "lotBlocked": "حصة محجوبة",
+      "conformity": "المطابقة",
+      "addLot": "حصة أخرى",
+      "confirm": "تأكيد الاستلام",
+      "blockWarning": "لهذه الحصص مخزون وستحجب بالكامل:",
+      "blockLot": "{{lotNumber}}: {{quantity}} في المخزون",
+      "blockConfirm": "حجب هذه الحصص والتأكيد",
+      "cancel": "إلغاء الاستلام",
+      "cancelledBy": "ألغاه {{by}} في {{at}}: {{reason}}",
+      "notCancellable": "تحركت الحصة {{lotNumber}} منذ ذلك ({{movement}} في {{at}}): لم يعد بالإمكان إلغاء الاستلام."
+    },
+    "returns": {
+      "title": "المرتجعات إلى الموردين",
+      "new": "مرتجع جديد إلى مورد",
+      "empty": "لا يوجد مرتجع.",
+      "createdAt": "تاريخ الإنشاء",
+      "lotLine": "{{name}} — الحصة {{lotNumber}} ({{quantity}} في المخزون)",
+      "quantity": "الكمية ({{unit}})",
+      "findLot": "البحث عن حصة برقمها",
+      "pickLot": "اختيار الحصة {{lotNumber}}",
+      "confirm": "تأكيد المرتجع",
+      "summary": "{{supplier}} — من طرف {{by}} في {{at}} — {{reason}}"
     }
   }
 }

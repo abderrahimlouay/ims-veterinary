@@ -45,6 +45,11 @@ export function OrderDetailPage() {
         <h1 className="text-2xl font-semibold">{o.number}</h1>
         <span className="rounded-ctl border border-line px-2 py-1 text-sm">{t(`purchasing.orders.statuses.${o.status}`)}</span>
         <div className="ms-auto flex gap-2">
+          {(o.status === 'sent' || o.status === 'partially_received') && hasPermission(current, 'receipt.create') && (
+            <Link to={`/goods-receipts/new?orderId=${o.id}`} className="h-10 px-4 inline-flex items-center rounded-ctl bg-brand text-brand-ink text-sm font-medium">
+              {t('purchasing.orders.receive')}
+            </Link>
+          )}
           {editable && (
             <Link to={`/purchase-orders/${o.id}/edit`} className="h-10 px-4 inline-flex items-center rounded-ctl border border-control text-sm font-medium">
               {t('purchasing.orders.editButton')}

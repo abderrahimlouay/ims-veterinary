@@ -106,8 +106,8 @@ export function useOrders(status: string, supplierId: string, page: number) {
   })
 }
 
-export function useOrder(id: number) {
-  return useQuery({ queryKey: orderKeys.detail(id), queryFn: () => apiFetch<PurchaseOrderDetail>(`/api/purchase-orders/${id}`) })
+export function useOrder(id: number, enabled = true) {
+  return useQuery({ queryKey: orderKeys.detail(id), queryFn: () => apiFetch<PurchaseOrderDetail>(`/api/purchase-orders/${id}`), enabled })
 }
 
 /** Creates (`id` undefined) or replaces a draft with its current version (ADR-027). */

@@ -61,8 +61,9 @@ const supplierKeys = {
 }
 
 /** `active`: '' all, 'true' or 'false'. */
-export function useSuppliers(q: string, active: string, page: number, size = 20) {
+export function useSuppliers(q: string, active: string, page: number, size = 20, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: supplierKeys.list(q, active, page, size),
     queryFn: () => {
       const params = new URLSearchParams({ page: String(page), size: String(size) })

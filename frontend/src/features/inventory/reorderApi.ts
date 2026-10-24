@@ -18,6 +18,8 @@ export interface ProposalEntry {
   updatedAt: string
   dismissedAt: string | null
   dismissedBy: { id: number; fullName: string } | null
+  /** The supplier a converted proposal was ordered from (ADR-102). */
+  supplierId: number | null
 }
 
 export interface GenerationResult {
@@ -61,5 +63,18 @@ export function useDismissProposal() {
   return useMutation({
     mutationFn: (id: number) => apiFetch<ProposalEntry>(`/api/inventory/reorder-proposals/${id}/dismiss`, { method: 'POST' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: reorderKeys.all }),
+  })
+}
+
+/** Converts selected pending proposals into one new draft order for the supplier (BR-PURCH-010, ADR-102). */
+export function useConvertProposals() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ supplierId, proposalIds }: { supplierId: number; proposalIds: number[] }) =>
+      apiFetch<{ id: number; number: string }[]>('/api/inventory/reorder-proposals/convert', {
+        method: 'POST',
+        json: { groups: [{ supplierId, proposalIds }] },
+      }),
+    onSuccess: () => queryClient.invalidateQueries(),
   })
 }
