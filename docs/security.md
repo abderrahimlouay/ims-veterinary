@@ -94,6 +94,7 @@ The Spec names four roles with "restricted rights" but gives no matrix. The cata
 | `purchase.read` / `purchase.create` | view / create+edit draft purchase orders | ● | ● | – | ● (read) |
 | `purchase.validate` | validate, send, cancel purchase orders | ● | ● | – | – |
 | `receipt.read` / `receipt.create` | view / confirm goods receipts | ● | ● | – | ● (read) |
+| `receipt.cancel` | cancel a whole goods receipt (ADR-103) | ● | ● | – | – |
 | `return.supplier.create` | supplier returns | ● | ● | – | – |
 | `return.read` | view returns | ● | ● | ● | ● |
 | `customer.read` | view customers, balances | ● | ● | ● | ● |
@@ -116,8 +117,6 @@ The Spec names four roles with "restricted rights" but gives no matrix. The cata
 | `report.sales` / `report.stock` | sales and stock reports | ● | ● | – | ● |
 | `report.finance` | receivables/payables/cash reports | ● | – | – | ● |
 | `report.margin` | cost and margin figures | ● | ● | – | ● |
-
-Decided for Phase 5 and added to this matrix together with its seed migration (PermissionMatrixSeedTest keeps both equal): `receipt.cancel` — cancel a whole goods receipt (ADR-103): Administrator ●, Pharmacist ●, Seller –, Accountant –.
 
 Rules: permissions are additive per role; a user has one role; permission codes are seeded by migration and are **not** created at runtime by users; the API never trusts a permission list sent by the client.
 
@@ -149,14 +148,13 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `LOT_BLOCK`, `LOT_UNBLOCK`, `LOT_RECALL` | lot status actions | SCH (`recall_lot`) + REC |
 | `RETURN_CREATE` | customer / supplier returns | REC |
 | `PO_CANCEL`, `PO_CLOSE` | purchase-order cancellation and forced close, with the reason (ADR-096, ADR-105) | user decision 2026-10-24 |
+| `RECEIPT_CANCEL` | cancellation of a whole goods receipt, with the reason (ADR-103) | user decision 2026-10-24 |
 | `PAYMENT_REVERSE` | reversal of a payment/cash entry | REC |
 | `CREDIT_LIMIT_CHANGE` | customer credit-limit change | REC |
 | `USER_CREATE`, `USER_UPDATE`, `USER_DEACTIVATE`, `ROLE_PERMISSION_CHANGE`, `PASSWORD_RESET` | identity administration (re-activation is a `USER_UPDATE`) | REC |
 | `SETTING_CHANGE` | alert thresholds, VAT default, company data | REC |
 | `BACKUP_RUN`, `BACKUP_DOWNLOAD` | backup operations | REC |
 | `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (OD-010, BR-SALE-007) |
-
-Decided for Phase 5 and added to this catalogue together with the code (AuditActionCatalogueTest keeps both equal): `RECEIPT_CANCEL` (cancellation of a goods receipt, ADR-103).
 
 Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD-102, BR-SEC-006). Passwords, tokens and hashes are never written to audit values.
 

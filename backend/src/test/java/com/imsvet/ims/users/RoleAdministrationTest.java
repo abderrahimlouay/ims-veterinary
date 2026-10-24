@@ -58,8 +58,8 @@ class RoleAdministrationTest {
     @Test
     void listsRolesWithTheirPermissionsAndTheCatalogue() throws Exception {
         client.get("/api/roles").andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(4)))
-                .andExpect(jsonPath("$[?(@.name == 'Administrator')].permissions[*]", hasSize(53)));
-        client.get("/api/permissions").andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(53)))
+                .andExpect(jsonPath("$[?(@.name == 'Administrator')].permissions[*]", hasSize(54)));
+        client.get("/api/permissions").andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(54)))
                 .andExpect(jsonPath("$[0].code").value("audit.read"));
         client.get("/api/roles/" + roleId("Seller")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Seller"))

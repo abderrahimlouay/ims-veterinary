@@ -109,6 +109,11 @@ public class SupplierPrice {
         return receiptId;
     }
 
+    /** Its receipt was cancelled: kept, but no longer a price (ADR-106, SD-132). */
+    public void cancel() {
+        this.cancelled = true;
+    }
+
     /** Set when the receipt that appended it is cancelled (ADR-106, SD-132). */
     public boolean cancelled() {
         return cancelled;

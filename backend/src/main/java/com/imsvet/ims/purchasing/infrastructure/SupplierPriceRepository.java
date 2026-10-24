@@ -20,6 +20,9 @@ public interface SupplierPriceRepository extends Repository<SupplierPrice, Long>
             ORDER BY p.validFrom DESC, p.id DESC""")
     Page<SupplierPrice> history(long supplierId, Long productId, Pageable pageable);
 
+    /** The entries a receipt appended (ADR-106). */
+    List<SupplierPrice> findByReceiptId(long receiptId);
+
     /**
      * Entries in force on {@code day}, newest first, without those of a cancelled receipt (ADR-106): the first is the
      * "latest price" used by the prefill (ADR-099) and by a receipt to decide whether to append (ADR-100).

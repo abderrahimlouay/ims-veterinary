@@ -14,6 +14,7 @@ public enum AuditAction {
     RETURN_CREATE,
     PO_CANCEL,
     PO_CLOSE,
+    RECEIPT_CANCEL,
     PAYMENT_REVERSE,
     CREDIT_LIMIT_CHANGE,
     USER_CREATE,

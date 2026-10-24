@@ -76,7 +76,7 @@ class PermissionMatrixSeedTest {
                 SELECT CONCAT(r.name, ' ', p.code) FROM role_permissions rp
                 JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id""", String.class));
 
-        assertThat(documentedCodes).hasSize(53);
+        assertThat(documentedCodes).hasSize(54);
         assertThat(seededCodes).isEqualTo(documentedCodes);
         assertThat(seededGrants).isEqualTo(documentedGrants);
     }

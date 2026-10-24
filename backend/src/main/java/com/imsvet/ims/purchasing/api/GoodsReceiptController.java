@@ -44,6 +44,9 @@ class GoodsReceiptController {
         }
     }
 
+    record ReasonRequest(String reason) {
+    }
+
     private final GoodsReceipts receipts;
 
     GoodsReceiptController(GoodsReceipts receipts) {
@@ -69,5 +72,10 @@ class GoodsReceiptController {
     @GetMapping("/{id}")
     ReceiptDetail get(@PathVariable long id) {
         return receipts.get(id);
+    }
+
+    @PostMapping("/{id}/cancel")
+    ReceiptDetail cancel(@PathVariable long id, @RequestBody(required = false) ReasonRequest body) {
+        return receipts.cancel(id, body == null ? null : body.reason());
     }
 }
