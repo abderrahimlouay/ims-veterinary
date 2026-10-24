@@ -11,12 +11,16 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Lot number, expiry and stored status by id, for documents of other modules that name their lots (receipts). */
+/**
+ * Lot number, expiry, stored status, product and supplier by id, for documents of other modules that name their lots
+ * (receipts, supplier returns).
+ */
 @Service
 @InternalService
 public class LotReferences {
 
-    public record LotRef(long id, String lotNumber, LocalDate expiryDate, String status) {
+    public record LotRef(long id, long productId, String lotNumber, LocalDate expiryDate, String status,
+            Long supplierId) {
     }
 
     private final LotRepository lots;
@@ -32,6 +36,7 @@ public class LotReferences {
     }
 
     private static LotRef ref(Lot lot) {
-        return new LotRef(lot.id(), lot.lotNumber(), lot.expiryDate(), lot.status().code());
+        return new LotRef(lot.id(), lot.productId(), lot.lotNumber(), lot.expiryDate(), lot.status().code(),
+                lot.supplierId());
     }
 }
