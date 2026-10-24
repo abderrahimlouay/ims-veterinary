@@ -236,7 +236,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-127 | Receipt cancellation: `goods_receipts.status`, `cancel_reason`, `cancelled_by/at`; `goods_receipt_lines.movement_id`; movement type `receipt_cancellation` (−) in the type and sign CHECKs | ADR-103 | Accepted 2026-10-24 |
 | SD-128 | New table `idempotency_keys` | ADR-104 | Accepted 2026-10-24 |
 | SD-129 | `suppliers.name` unique (case- and accent-insensitive collation) | ADR-100 | Accepted 2026-10-24 |
-| SD-130 | `purchase_orders.closed_reason`, `closed_by/at`, `cancelled_by/at` | ADR-096, ADR-105 | Accepted 2026-10-24 |
+| SD-130 | `purchase_orders.closed_reason`, `closed_by/at`, `cancel_reason`, `cancelled_by/at`, `validated_by/at`, `sent_by/at`, `updated_at` | ADR-096, ADR-105 | Accepted 2026-10-24 (cancel reason required by the user, slice 3) |
 | SD-131 | `goods_receipt_lines.lot_created`, `lot_cost_before`, `lot_status_before`, `lot_blocked` (state restored by a cancellation) | ADR-106 | Accepted 2026-10-24 |
 | SD-132 | `supplier_price_history.receipt_id` and `cancelled` | ADR-106 | Accepted 2026-10-24 |
 

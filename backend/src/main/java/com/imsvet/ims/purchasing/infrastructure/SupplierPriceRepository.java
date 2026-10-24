@@ -1,6 +1,8 @@
 package com.imsvet.ims.purchasing.infrastructure;
 
 import com.imsvet.ims.purchasing.domain.SupplierPrice;
+import java.time.LocalDate;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -17,4 +19,14 @@ public interface SupplierPriceRepository extends Repository<SupplierPrice, Long>
             WHERE p.supplierId = :supplierId AND (:productId IS NULL OR p.productId = :productId)
             ORDER BY p.validFrom DESC, p.id DESC""")
     Page<SupplierPrice> history(long supplierId, Long productId, Pageable pageable);
+
+    /**
+     * Entries in force on {@code day}, newest first: the first is the "latest price" (ADR-099). Entries of a
+     * cancelled receipt are excluded here once SD-132 adds their flag (ADR-106, slice 6).
+     */
+    @Query("""
+            SELECT p FROM SupplierPrice p
+            WHERE p.supplierId = :supplierId AND p.productId = :productId AND p.validFrom <= :day
+            ORDER BY p.validFrom DESC, p.id DESC""")
+    List<SupplierPrice> inForce(long supplierId, long productId, LocalDate day, Pageable first);
 }

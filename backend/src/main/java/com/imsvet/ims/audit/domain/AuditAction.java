@@ -12,6 +12,8 @@ public enum AuditAction {
     LOT_UNBLOCK,
     LOT_RECALL,
     RETURN_CREATE,
+    PO_CANCEL,
+    PO_CLOSE,
     PAYMENT_REVERSE,
     CREDIT_LIMIT_CHANGE,
     USER_CREATE,
