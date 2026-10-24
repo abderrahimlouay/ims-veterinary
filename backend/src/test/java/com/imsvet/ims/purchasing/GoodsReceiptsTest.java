@@ -276,6 +276,28 @@ class GoodsReceiptsTest {
                 .andExpect(jsonPath("$.lines[0].quantityBase").value("2.500"));
     }
 
+    /**
+     * One line per lot (workflows.md W1b): the same lot number for two products is two lots and is received; the same
+     * lot twice on one order line is refused on the second line, telling the user to add the quantities on one line.
+     * Two order lines never have the same product (ADR-105 (e)).
+     */
+    @Test
+    void aLotIsReceivedOnOneLineButTheSameNumberOfAnotherProductIsAnotherLot() throws Exception {
+        receive(free(line(null, tablets, null, "2", "SAME-1", "2027-06-30", "0.3", true) + ","
+                + line(null, syrup, null, "2", "SAME-1", "2027-06-30", "0.3", true))).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.lines.length()").value(2));
+
+        JsonNode order = sentOrder("{\"productId\":" + tablets + ",\"quantity\":\"10\",\"unitPrice\":\"1\"}");
+        long poLine = order.get("lines").get(0).get("id").asLong();
+        receive(onOrder(order.get("id").asLong(), line(poLine, tablets, null, "2", "L-TWICE", "2027-06-30", "0.3", true)
+                + "," + line(poLine, tablets, null, "3", "l-twice", "2027-06-30", "0.3", true)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("lines[1].lotNumber"))
+                .andExpect(jsonPath("$.errors[0].code").value("DUPLICATE"))
+                .andExpect(jsonPath("$.errors[0].message").value(
+                        "This lot is already on another line of this receipt: add the quantities on one line."));
+    }
+
     /** BR-LOT-012, ADR-095: an expired conforming line is refused; marked non-conforming it enters a blocked lot. */
     @Test
     void anExpiredLineIsReceivedOnlyAsNonConforming() throws Exception {

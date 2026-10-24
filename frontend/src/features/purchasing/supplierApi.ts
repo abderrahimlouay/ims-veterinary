@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../api/client'
 import type { PageMetadata } from '../../components/Pager'
 
@@ -119,4 +119,27 @@ export function useAddPrice(id: number) {
     mutationFn: (price: PriceWrite) => apiFetch<PriceEntry>(`/api/suppliers/${id}/prices`, { method: 'POST', json: price }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: supplierKeys.all }),
   })
+}
+
+/**
+ * Supplier names by id, one request per supplier, for screens that hold only ids (reorder proposals, ADR-102);
+ * an id whose name cannot be read (unknown, or no `supplier.read`) is absent, and the screen shows the id instead.
+ */
+export function useSupplierNames(ids: readonly number[], enabled = true): Map<number, string> {
+  const distinct = [...new Set(ids)]
+  const results = useQueries({
+    queries: distinct.map((id) => ({
+      queryKey: supplierKeys.detail(id),
+      queryFn: () => apiFetch<SupplierDetail>(`/api/suppliers/${id}`),
+      enabled,
+      retry: false,
+    })),
+  })
+  const names = new Map<number, string>()
+  results.forEach((r) => {
+    if (r.data) {
+      names.set(r.data.id, r.data.name)
+    }
+  })
+  return names
 }

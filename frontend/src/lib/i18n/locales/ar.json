@@ -670,7 +670,9 @@
     "supplier": "مورد الأمر",
     "convert": "إنشاء المسودة ({{n}} محددة)",
     "select": "التحديد",
-    "selectFor": "تحديد {{name}}"
+    "selectFor": "تحديد {{name}}",
+    "supplierColumn": "المورد",
+    "supplierId": "المورد رقم {{id}}"
   },
   "purchasing": {
     "save": "حفظ",
@@ -808,7 +810,8 @@
       "blockConfirm": "حجب هذه الحصص والتأكيد",
       "cancel": "إلغاء الاستلام",
       "cancelledBy": "ألغاه {{by}} في {{at}}: {{reason}}",
-      "notCancellable": "تحركت الحصة {{lotNumber}} منذ ذلك ({{movement}} في {{at}}): لم يعد بالإمكان إلغاء الاستلام."
+      "notCancellable": "تحركت الحصة {{lotNumber}} منذ ذلك ({{movement}} في {{at}}): لم يعد بالإمكان إلغاء الاستلام.",
+      "duplicateLot": "هذه الحصة موجودة في سطر آخر: اجمع الكميات في سطر واحد."
     },
     "returns": {
       "title": "المرتجعات إلى الموردين",

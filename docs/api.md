@@ -53,7 +53,16 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 
 ## 3. Error code catalogue
 
-Phase 5 field codes: `EXPIRED`, `NOT_ON_ORDER`, `NOT_ORDER_SUPPLIER`, `OTHER_SUPPLIER`, `DUPLICATE`.
+Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are not in `ErrorCode`, so they are listed here and each is tested where noted). Phase 5:
+
+| Field code | Field | Meaning | Test |
+|---|---|---|---|
+| `EXPIRED` | `lines[i].expiryDate` (receipt) | a conforming line whose expiry is already past (BR-LOT-012) | `GoodsReceiptsTest.anExpiredLineIsReceivedOnlyAsNonConforming` |
+| `NOT_ON_ORDER` | `lines[i].productId` / `lines[i].poLineId` (receipt) | product not on that order line, or an order line on a free receipt (ADR-096) | `GoodsReceiptsTest.onlySentOrPartiallyReceivedOrdersOfThatSupplierAndTheirProductsAreReceived` |
+| `NOT_ORDER_SUPPLIER` | `supplierId` (receipt) | the receipt names another supplier than its order's (accepted 2026-10-24) | same test |
+| `OTHER_SUPPLIER` | `lines[i].lotId` (supplier return) | lot received from another supplier (ADR-101) | `SupplierReturnsTest.moreThanTheBalanceOrALotOfAnotherSupplierIsRefused` |
+| `DUPLICATE` | `lines[i].productId` (order), `lines[i].lotNumber` (receipt: "add the quantities on one line"), `lines[i].lotId` (return), `groups[i].supplierId` / `proposalIds` (conversion) | the same product, lot, supplier group or proposal twice | `PurchaseOrdersTest`, `GoodsReceiptsTest.aLotIsReceivedOnOneLineButTheSameNumberOfAnotherProductIsAnotherLot`, `SupplierReturnsTest`, `ReorderConversionTest` |
+| `PATTERN` | `Idempotency-Key` | the key is not a UUID (ADR-104) | `IdempotencyKeysTest`, `GoodsReceiptsTest.theSameIdempotencyKeyReturnsTheFirstReceipt` |
 
 | Code | HTTP | Meaning | Related rules |
 |---|---|---|---|
