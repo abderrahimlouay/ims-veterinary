@@ -284,8 +284,8 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 |---|---|---|---|---|
 | GET | `/api/returns/customer` · `/{id}` | list / detail | `return.read` | |
 | POST | `/api/returns/customer` ● | create customer return + credit note | `return.customer.create` | see §5.8 |
-| GET | `/api/returns/supplier` · `/{id}` | list / detail | `return.read` | |
-| POST | `/api/returns/supplier` | create supplier return (ADR-101), numbered `SR`, audited `RETURN_CREATE` | `return.supplier.create` | `{supplierId, reason, lines[{lotId, quantity, unitId?}]}` → 201 `SupplierReturnDetail`; `STOCK_INSUFFICIENT`, `SUPPLIER_INACTIVE` is not checked (returns to an inactive supplier are allowed), `VALIDATION_FAILED` (`reason` `REQUIRED`, `lotId` `OTHER_SUPPLIER`) |
+| GET | `/api/returns/supplier` · `/{id}` | list (`supplierId`, `from`, `to` business dates inclusive; newest first) / detail | `return.read` | page of `SupplierReturnSummary {id, number, supplier, reason, createdAt}` / `SupplierReturnDetail {id, number, supplier, reason, createdAt, createdBy, lines[{id, product, lotId, lotNumber, expiryDate, quantityBase, movementId}]}` |
+| POST | `/api/returns/supplier` | create supplier return (ADR-101), numbered `SR`, audited `RETURN_CREATE` | `return.supplier.create` | `{supplierId, reason, lines[{lotId, quantity, unitId?}]}` → 201 `SupplierReturnDetail`; `STOCK_INSUFFICIENT`, `SUPPLIER_INACTIVE` is not checked (returns to an inactive supplier are allowed), `VALIDATION_FAILED` (`supplierId` `REQUIRED`/`UNKNOWN`, `reason` `REQUIRED`, `lines` `REQUIRED`, `lotId` `REQUIRED`/`UNKNOWN`/`OTHER_SUPPLIER`/`DUPLICATE`, `quantity` `POSITIVE`/`SCALE`/`WHOLE_NUMBER`, `unitId` `UNKNOWN`); lots of any status; the lots are locked in ascending id by `StockService` |
 
 ### 4.12 `/api/payments`, `/api/cash-sessions`
 

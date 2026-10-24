@@ -4,9 +4,7 @@ import com.imsvet.ims.audit.application.AuditRecorder;
 import com.imsvet.ims.audit.domain.AuditAction;
 import com.imsvet.ims.catalog.application.ProductLookup;
 import com.imsvet.ims.catalog.application.ProductLookup.ProductRef;
-import com.imsvet.ims.catalog.application.ProductLookup.UnitRef;
 import com.imsvet.ims.catalog.domain.UnitConversion;
-import com.imsvet.ims.catalog.domain.UnitConversion.InexactConversionException;
 import com.imsvet.ims.common.actor.ActorProvider;
 import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
@@ -340,7 +338,7 @@ public class GoodsReceipts {
             throw new BusinessException(ErrorCode.PRODUCT_ARCHIVED, "This product is archived.",
                     Map.of("productId", product.id()));
         }
-        BigDecimal quantityBase = quantityBase(in, product, prefix);
+        BigDecimal quantityBase = BaseQuantities.toBase(products, product, in.unitId(), in.quantity(), prefix);
         String lotNumber = in.lotNumber() == null ? "" : in.lotNumber().trim();
         if (lotNumber.isEmpty()) {
             throw OrderLineValidator.invalid(prefix + "lotNumber", "REQUIRED", "The lot number is required.");
@@ -376,30 +374,6 @@ public class GoodsReceipts {
                 .filter(l -> l.id().equals(in.poLineId()) && l.productId().equals(in.productId())).findFirst()
                 .orElseThrow(() -> OrderLineValidator.invalid(prefix + "productId", "NOT_ON_ORDER",
                         "This product is not on this line of the order."));
-    }
-
-    private BigDecimal quantityBase(ReceivedLine in, ProductRef product, String prefix) {
-        BigDecimal factor = BigDecimal.ONE;
-        if (in.unitId() != null) {
-            UnitRef unit = products.unit(product.id(), in.unitId()).orElseThrow(
-                    () -> OrderLineValidator.invalid(prefix + "unitId", "UNKNOWN", "Not a unit of this product."));
-            factor = unit.factorToBase();
-        }
-        if (in.quantity() == null) {
-            throw OrderLineValidator.invalid(prefix + "quantity", "REQUIRED", "The quantity is required.");
-        }
-        try {
-            return UnitConversion.toBase(in.quantity(), factor, product.divisible());
-        } catch (InexactConversionException e) {
-            throw switch (e.refusal()) {
-                case NOT_POSITIVE -> OrderLineValidator.invalid(prefix + "quantity", "POSITIVE",
-                        "The quantity must be greater than zero.");
-                case SCALE -> OrderLineValidator.invalid(prefix + "quantity", "SCALE",
-                        "This quantity cannot be converted exactly.");
-                case WHOLE_NUMBER -> OrderLineValidator.invalid(prefix + "quantity", "WHOLE_NUMBER",
-                        "This product is counted in whole units.");
-            };
-        }
     }
 
     private static BigDecimal cost(BigDecimal value, String prefix) {
