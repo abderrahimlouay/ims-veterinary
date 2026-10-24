@@ -698,6 +698,16 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #12b–12h A, scope confirmed)
 - **Decision:** (b) A receipt into an existing **recalled** lot is refused (`LOT_RECALLED`); a **blocked** lot is accepted and stays blocked. (c) `lots.supplier_id` is set by the first receipt and kept (later receipts from another supplier do not change it; opening-stock and found lots have none). (d) A PO line's VAT rate is prefilled from the product and editable while draft. (e) The same product twice in one PO is refused (`VALIDATION_FAILED`, `DUPLICATE`). (f) PO prices and receipt costs are typed with `purchase.create` / `receipt.create`; `price.edit` stays for catalogue prices. (g) Audited: PO cancel (`PO_CANCEL`), forced close (`PO_CLOSE`), supplier returns (`RETURN_CREATE`), receipt cancellation (`RECEIPT_CANCEL`); receipts and other PO changes are traced by the documents and the ledger. (h) Supplier invoices, payments and payables stay in Phase 9; the PO PDF in Phase 10.
 - **Consequences:** `security.md` §7, `api.md` §4.6–4.8, W1.
+
+## ADR-106 — What a receipt cancellation restores
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 plan; Q1 A, Q2 A with a condition, Q3 A, Q4 variant, Q5 B); completes ADR-103.
+- **Decision:** Cancelling a receipt (ADR-103) also undoes, per line, what the receipt changed outside the ledger:
+  1. **Lot cost:** each receipt line stores the lot's cost before the receipt (SD-131); the cancellation restores it. A lot created by the receipt has no previous cost and keeps its cost (its balance is 0).
+  2. **Lot status:** each receipt line stores the lot's status before the receipt and whether the receipt blocked the lot (SD-131). The previous status is restored **only if the lot is still in the state this receipt set**: status `blocked` with the block date and reason written by this receipt (status changes are not movements, so the lot's status data are compared, not the ledger). If the status changed after the receipt (unblocked, blocked again, recalled), it is left as it is. A restore is audited `LOT_UNBLOCK`.
+  3. **Purchase order:** an order closed by full reception goes back to `sent` or `partially_received` from the remaining received quantities; an order closed by a forced close stays closed.
+  4. **Price history:** an entry appended by the receipt is kept but marked cancelled by that receipt (SD-132); it is shown struck through and is ignored by the PO price prefill, by "latest price" and by the comparison that decides whether a later receipt appends an entry. Nothing is deleted.
+  5. **Lot supplier:** if the receipt created the lot, `lots.supplier_id` is cleared; a later receipt sets it again (the first supplier is kept, ADR-105).
+- **Consequences:** BR-PURCH-008, BR-PURCH-012, W1d, `database.md` goods_receipt_lines and supplier_price_history, SD-131, SD-132, `api.md` §4.6/§4.8, `frontend.md` §4.5; tests: cost restored, status restored, and block/unblock/recall between the receipt and its cancellation leave the status untouched; cancelled history entry ignored by the prefill.
 ---
 
 # Part B — Open Decisions
@@ -896,7 +906,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053, ~~OD-032~~ → ADR-054 (all 2026-10-21) |
 | 3 Lots & Units | ~~OD-009~~ → ADR-055/056, ~~OD-019~~ → ADR-057, ~~OD-025~~ → ADR-058, ~~OD-027~~ → ADR-059/060; ADR-061…068 (all 2026-10-22) |
 | 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091, ADR-077 amendment, ~~OD-034~~ → ADR-092 (2026-10-23) |
-| 5 Purchasing | ~~OD-007~~ → ADR-093, ~~OD-014~~ → ADR-095, ~~OD-015~~ → ADR-096, ~~OD-017~~ → ADR-097 (ADR-011 accepted), ~~OD-029~~ → ADR-098; ADR-094, ADR-099…105 (all 2026-10-24) |
+| 5 Purchasing | ~~OD-007~~ → ADR-093, ~~OD-014~~ → ADR-095, ~~OD-015~~ → ADR-096, ~~OD-017~~ → ADR-097 (ADR-011 accepted), ~~OD-029~~ → ADR-098; ADR-094, ADR-099…106 (all 2026-10-24) |
 | 6 Customers | OD-006, OD-011 |
 | 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006, ~~OD-033~~ → ADR-071 |
 | 8 Returns | OD-005 |

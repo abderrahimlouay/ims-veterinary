@@ -81,7 +81,7 @@ Supplier → Purchase Order → Goods Receipt → Lot Creation → Stock Update 
 ### 1d. Cancel a goods receipt (ADR-103)
 1. A `receipt.cancel` holder cancels a **whole** confirmed receipt with a mandatory reason.
 2. **Refused** with `RECEIPT_NOT_CANCELLABLE` (naming the lot and the later movement) if any of its lots has a movement after the receipt's own.
-3. **One transaction:** one `receipt_cancellation` (−) movement per line through `StockService`; PO lines' received quantities and PO status rolled back; receipt `cancelled` (number kept); audited `RECEIPT_CANCEL`. A lot created by the receipt stays with a zero balance.
+3. **One transaction:** one `receipt_cancellation` (−) movement per line through `StockService`; PO lines' received quantities and PO status rolled back; receipt `cancelled` (number kept); audited `RECEIPT_CANCEL`. A lot created by the receipt stays with a zero balance and its supplier is cleared; otherwise the lot cost before the receipt is restored, and a lot the receipt blocked gets its previous status back only if its status was not changed since (audited `LOT_UNBLOCK`); an order closed by a forced close stays closed; price-history entries of the receipt are marked cancelled (ADR-106).
 
 ### 1c. Supplier invoice and payment
 1. Accountant records the supplier invoice (number, receipt link optional, dates, total TTC, credit-note flag). Due date defaults to `invoice_date + payment_terms_days` (BR-PAY-008).

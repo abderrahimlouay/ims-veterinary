@@ -173,7 +173,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PURCH-009 | S,C | Supplier return reduces lot (any status); more than available → STOCK_INSUFFICIENT; lot of another supplier → OTHER_SUPPLIER; audited |
 | BR-PURCH-010 | S | Convert several proposals into one draft PO per supplier; twice → INVALID_STATE_TRANSITION; generation subtracts open orders (ADR-102) |
 | BR-PURCH-011 | S | PO / receipt for inactive supplier → SUPPLIER_INACTIVE |
-| BR-PURCH-012 | S,C | Cancel a receipt: reversal movements, PO rolled back, audited, number kept; a later movement on one lot → RECEIPT_NOT_CANCELLABLE naming it; fault injection rolls everything back; created lot stays at 0 |
+| BR-PURCH-012 | S,C | Cancel a receipt: reversal movements, PO rolled back, audited, number kept; a later movement on one lot → RECEIPT_NOT_CANCELLABLE naming it; fault injection rolls everything back; created lot stays at 0 without supplier; cost restored; status restored only if unchanged — block/unblock/recall between receipt and cancellation leave it; forced-closed order stays closed; price-history entry marked cancelled and ignored by the prefill (ADR-106) |
 | BR-PURCH-013 | S | Same key + same body → first receipt, nothing posted twice; same key + other body → IDEMPOTENCY_CONFLICT |
 | BR-DOC-001 | C,R | CT-03: 1000 concurrent numbers unique and gap-free on commit; format `KEY-YYYY-NNNNNN`; yearly reset; a rolled-back transaction leaves no gap (ADR-097) |
 | BR-SALE-001 | U | Document chain and allowed conversions |
