@@ -166,7 +166,7 @@ Backend = trust boundary; TLS everywhere; hashed passwords; permission-based RBA
 2. Sales/payment semantics unresolved (OD-002, OD-003) — blocks the POS design if left open.
 3. Lock contention at the counter on popular lots — mitigated by short transactions and ordering.
 4. Collation making codes case-insensitive (ADR-024; usernames ADR-041, SKUs ADR-051; lot numbers ADR-058, barcodes `utf8mb4_bin`).
-5. Numbering gaps vs legal requirement (OD-017).
+5. Numbering gaps vs legal requirement: no gap from a failed transaction (ADR-097); the legal rule for sales invoices is confirmed before Phase 7.
 
 ## 16. Decisions index
 

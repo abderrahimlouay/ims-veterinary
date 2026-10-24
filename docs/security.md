@@ -94,6 +94,7 @@ The Spec names four roles with "restricted rights" but gives no matrix. The cata
 | `purchase.read` / `purchase.create` | view / create+edit draft purchase orders | ● | ● | – | ● (read) |
 | `purchase.validate` | validate, send, cancel purchase orders | ● | ● | – | – |
 | `receipt.read` / `receipt.create` | view / confirm goods receipts | ● | ● | – | ● (read) |
+| `receipt.cancel` | cancel a whole goods receipt (ADR-103; seeded by a Phase 5 migration) | ● | ● | – | – |
 | `return.supplier.create` | supplier returns | ● | ● | – | – |
 | `return.read` | view returns | ● | ● | ● | ● |
 | `customer.read` | view customers, balances | ● | ● | ● | ● |
@@ -146,6 +147,8 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `OPENING_STOCK` | opening-stock entry (allowed only while `opening_stock_open`, ADR-082) | REC |
 | `LOT_BLOCK`, `LOT_UNBLOCK`, `LOT_RECALL` | lot status actions | SCH (`recall_lot`) + REC |
 | `RETURN_CREATE` | customer / supplier returns | REC |
+| `RECEIPT_CANCEL` | cancellation of a goods receipt (ADR-103) | user decision 2026-10-24 |
+| `PO_CANCEL`, `PO_CLOSE` | purchase-order cancellation and forced close (ADR-096, ADR-105) | user decision 2026-10-24 |
 | `PAYMENT_REVERSE` | reversal of a payment/cash entry | REC |
 | `CREDIT_LIMIT_CHANGE` | customer credit-limit change | REC |
 | `USER_CREATE`, `USER_UPDATE`, `USER_DEACTIVATE`, `ROLE_PERMISSION_CHANGE`, `PASSWORD_RESET` | identity administration (re-activation is a `USER_UPDATE`) | REC |

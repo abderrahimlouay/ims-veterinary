@@ -99,7 +99,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** The frontend converts to local time for display. "Today" for expiry/numbering is computed in the **business time zone** (setting, **OD-008**), not the server's.
 
 ## ADR-011 — Document numbering via `document_sequences` row lock
-- **Status:** Proposed (mechanism). Assignment time, format and gapless policy are **OD-017**.
+- **Status:** Accepted 2026-10-24 (mechanism); assignment time, format and policy decided by **ADR-097** (OD-017).
 - **Context:** Source Schema uses a PL/pgSQL function `next_doc_number()` as a **column `DEFAULT`**. MySQL cannot use a stored function with side effects as a default, and the pattern `INSERT … ON CONFLICT … RETURNING` does not exist.
 - **Decision:** A `NumberingService` increments the `(doc_key, year)` row inside the **same transaction** that persists the document, using `SELECT … FOR UPDATE` (or `INSERT … ON DUPLICATE KEY UPDATE last_value = LAST_INSERT_ID(last_value + 1)`), and formats `KEY-YYYY-000001`. A rollback also rolls the counter back, so committed documents have no gaps.
 - **Alternatives:** DB sequence emulation with AUTO_INCREMENT table (gaps on rollback), UUIDs (not human numbering), application-wide in-memory counter (breaks with restarts/concurrency).
@@ -528,6 +528,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** Suggested quantity = `max_stock − sellable`, in base units, rounded **up** to a whole number for a non-divisible product (ADR-050). A product that needs a proposal but has no `max_stock` gets none and is reported as *thresholds incomplete* in the generation result. No formula is invented for it.
 - **Alternatives:** reorder point + a configured target (B); up to max, else twice the reorder point (C).
 - **Consequences:** BR-STOCK-010, `api.md` (generation result).
+- **Amendment (2026-10-24, ADR-102):** from Phase 5 the suggested quantity subtracts the outstanding quantity of open orders: `max − sellable − outstanding`; ≤ 0 gives no proposal.
 - **Amendment (user decision, 2026-10-23, after slice 10):** a product whose `max_stock` is at or below its `reorder_point` is not *thresholds incomplete* but *thresholds inconsistent*: it gets no proposal and is reported apart in the generation result (`thresholdsInconsistent`) and on the reorder page. No validation rule is added to the product form; the form warns about it (OD-034 → ADR-092).
 
 ## ADR-078 — When proposals are generated (resolves OD-013, schedule)
@@ -553,6 +554,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** The `stock_movements.movement_type` CHECK lists the ten decided types now: `purchase_receipt`, `sale`, `customer_return`, `supplier_return`, `adjustment_breakage`, `adjustment_expiry`, `adjustment_theft`, `adjustment_internal_use`, `adjustment_inventory`, `opening_stock`. Phase 4 produces only `opening_stock`, the four manual `adjustment_*` and `adjustment_inventory`. Cancellation and discard types are **not** added; they wait for OD-004 / OD-005 (SD-107, DR-002).
 - **Alternatives:** each phase adds its own types (B).
 - **Consequences:** `database.md` §3.4, BR-STOCK-005.
+- **Amendment (2026-10-24, ADR-103):** an eleventh type, `receipt_cancellation` (−), reverses a cancelled goods receipt; added to the CHECK by a Phase 5 migration (SD-127).
 
 ## ADR-082 — Opening stock only while the opening period is open
 - **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #11 B)
@@ -571,6 +573,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** Find-or-create by (product, lot number) under lock (BR-LOT-002, ADR-070). Another expiry date → `LOT_EXPIRY_MISMATCH`. Same expiry: the quantity is added to the lot; a unit cost different from the lot's is refused (`VALIDATION_FAILED`, field `unitCost`, code `COST_MISMATCH`) until OD-029 decides cost on repeated entries (Phase 5); a recalled lot is refused (`LOT_RECALLED`); a blocked lot is accepted and stays blocked.
 - **Alternatives:** add and keep the existing cost silently (B); weighted average (C).
 - **Consequences:** BR-STOCK-014, `api.md` §4.5.
+- **Amendment (2026-10-24, ADR-098):** the cost is no longer refused: the lot cost becomes the weighted average (or the entry cost when the balance is 0); `COST_MISMATCH` is removed.
 
 ## ADR-085 — Manual adjustments
 - **Status:** Accepted (user decision, 2026-10-22, Phase 4 preflight; #14 A)
@@ -622,6 +625,79 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** The product form accepts it and shows a warning on the max-stock field, only when `reorder_point` > 0 and `max_stock` is set and ≤ `reorder_point`. No server validation and no database CHECK. The generation report stays as it is (*thresholds inconsistent*).
 - **Alternatives:** refuse it with a field error and a CHECK (A); keep it reported only at generation (C).
 - **Consequences:** `frontend.md` §4.1, BR-PROD-005 note, `testing.md` (component test and J8).
+
+## ADR-093 — VAT and rounding per line (resolves OD-007)
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #1 A)
+- **Decision:** Per line: `line_ht = round(quantity × unit_price × (1 − discount_pct/100), 2)`, `line_vat = round(line_ht × vat_rate/100, 2)`, `line_ttc = line_ht + line_vat`; document totals are the sums of the rounded line amounts. Rounding mode HALF_UP everywhere. The server computes every amount; client values are ignored (BR-SALE-008, BR-PURCH-002). The generated `line_ht` column and the service use the identical formula (ADR-016 parity test).
+- **Alternatives:** VAT per rate group on the document (B); round only the document totals (C).
+- **Consequences:** BR-PURCH-002, `database.md` purchase_order_lines, `api.md` §4.7. **Before Phase 7** the legal rounding rule for *sales* invoices must be confirmed with an accountant (the user asked for this to be repeated in the Phase 5 close report).
+
+## ADR-094 — Purchase-order line prices per ordered unit, 4 decimals
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #2 A)
+- **Context:** The Source schema had `purchase_order_lines.unit_price DECIMAL(14,2)` per ordered unit, while ADR-049 keeps prices per base unit with 4 decimals and `supplier_price_history` is per base unit.
+- **Decision:** A PO line price is per **ordered unit** (the line's unit, base unit when none) with **4 decimals** (`DECIMAL(14,4)`, SD-126). A supplier price-history entry derived from it is stored per base unit: `round(unit_price / factor_to_base, 4)` HALF_UP. Receipt unit costs are per base unit (4 decimals) as on lots.
+- **Alternatives:** per ordered unit with 2 decimals (B); always per base unit (C).
+- **Consequences:** `database.md` purchase_order_lines, `api.md` §4.7, BR-PURCH-002/008.
+
+## ADR-095 — Non-conforming goods enter stock in a blocked lot (resolves OD-014)
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #3 A, BR-LOT-012 (b), plus the user's rules on whole-lot blocking)
+- **Decision:** A receipt line marked non-conforming is received like any other (movement `purchase_receipt`, lot found or created) and its lot is **blocked** with the reason "Non-conforming at receipt <number>"; it can then leave through a supplier return (W4 allows blocked lots). When that lot **already has stock**, the whole lot becomes blocked: the screen warns before confirming and shows how many units already in stock will be blocked, and the API refuses the receipt with `LOT_BLOCK_CONFIRMATION_REQUIRED` (context: each such lot, its number and the quantity already in stock) unless the request carries `confirmLotBlocking: true`. A line whose expiry date is already past is refused (`VALIDATION_FAILED`, field `expiryDate`, code `EXPIRED`) **unless** it is marked non-conforming, in which case it follows this rule (BR-LOT-012 (b)). The blocking is audited `LOT_BLOCK` in the same transaction.
+- **Alternatives:** refuse non-conforming lines (B); enter them unflagged (C).
+- **Consequences:** BR-PURCH-006, BR-LOT-012, W1b, `api.md` §5.4, `frontend.md` §4.5.
+
+## ADR-096 — Over-receipt, free receipts and closing a purchase order (resolves OD-015)
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #4 A, A, A, A, A)
+- **Decision:** A receipt line linked to a PO line may not exceed the quantity still outstanding (`RECEIPT_QUANTITY_EXCEEDS_ORDER`). A receipt **without PO** (free receipt) is allowed with `receipt.create`. A PO receipt may only contain products of that PO (`VALIDATION_FAILED`, `NOT_ON_ORDER`). Only `sent` and `partially_received` orders can be received (`INVALID_STATE_TRANSITION` otherwise). A partially received order can be **closed with a mandatory reason** (`purchase.validate`); what remains is no longer expected; audited `PO_CLOSE`.
+- **Alternatives:** tolerance in % or free over-receipt; no free receipts; extra lines; receiving validated orders; no forced close.
+- **Consequences:** BR-PURCH-001/004, W1, `api.md` §4.7–4.8, §5.4.
+
+## ADR-097 — Document numbering policy (resolves OD-017, DR-001)
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #5 all recommended); completes ADR-011.
+- **Decision:** Format `KEY-YYYY-NNNNNN` (six digits, zero-padded). Keys now: `PO` purchase order, `GR` goods receipt, `SR` supplier return; sales keys are decided in Phase 7. The counter resets each **business-calendar year** (the year of the business date, ADR-033), one `document_sequences` row per `(doc_key, year)`, incremented under row lock inside the creating transaction (ADR-011), so a failed transaction leaves no gap. A purchase order is numbered **at creation** (drafts are kept, never deleted; cancelled orders keep their number); receipts and supplier returns are numbered at confirmation (they are created confirmed). Numbers are never edited or reused (BR-DOC-001).
+- **Alternatives:** no yearly reset; PO numbered at validation.
+- **Consequences:** BR-DOC-001, `database.md` document_sequences, CT-03 (1,000 parallel allocations: unique, gap-free on commit), `NumberingService` in module `numbering`.
+
+## ADR-098 — Weighted-average lot cost, for receipts and opening stock (resolves OD-029, DR-022)
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #6 A, applied to opening stock too, plus the user's rules); amends ADR-084.
+- **Decision:** When stock enters an existing lot (receipt or opening stock), under the lot lock and on its **current** balance: `new_cost = round((balance × cost + quantity × entry_cost) / (balance + quantity), 4)` HALF_UP; when the balance is 0 the entry cost **replaces** the old one (no division by zero). Each receipt line keeps its own cost (`goods_receipt_lines.unit_cost`). Opening stock follows the same rule, so `COST_MISMATCH` disappears (ADR-084 amended).
+- **Alternatives:** keep the first cost; refuse a different cost; FIFO cost layers.
+- **Consequences:** BR-LOT-002, BR-STOCK-014, ADR-084, W1b, W10a, `api.md` §4.5 (opening stock) and §5.4; tests: empty lot, existing lot, two parallel receipts of one lot (CT-08), opening stock with the same rule.
+
+## ADR-099 — `products.purchase_price` is a manual reference price
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #7 A)
+- **Decision:** `products.purchase_price` stays a manual reference price (per base unit, `price.edit`, audited `PRICE_CHANGE`, BR-PROD-006); receipts never change it. It prefills opening stock, and a PO line when the supplier has no price-history entry for the product; otherwise the latest entry of that supplier prefills the line (converted to the ordered unit).
+- **Alternatives:** last receipt cost; computed average.
+- **Consequences:** `database.md` products, `frontend.md` §4.5.
+
+## ADR-100 — Suppliers and their price history
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #8 all recommended)
+- **Decision:** Kinds `laboratory` / `wholesaler`; tax id optional free text; **name unique ignoring case and accents** (column collation, `DUPLICATE_RESOURCE`, SD-129); payment terms in days ≥ 0. A supplier may be deactivated at any time, also with open orders, whose receipts are then refused (`SUPPLIER_INACTIVE`, BR-PURCH-011); reactivation allowed; never deleted. A price-history entry (per base unit, discount 0–100, `valid_from` = business date) is appended **on receipt confirmation** only when the price or discount differs from the latest entry for that supplier and product, and manual entries are allowed with `supplier.manage` (BR-PURCH-008). A receipt line's discount is that of its PO line (0 for a free receipt).
+- **Consequences:** BR-PURCH-008/011, `api.md` §4.6, `database.md` suppliers.
+
+## ADR-101 — Supplier returns in Phase 5: stock only
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #9 A / B / yes)
+- **Decision:** A supplier return has a number (`SR`), a supplier, a mandatory reason and lines (lot, quantity ≤ lot balance); it posts `supplier_return` (−) movements through `StockService` and is audited `RETURN_CREATE`, all in one transaction. Only lots whose `supplier_id` is that supplier, or empty (opening stock, found lots), can be returned to it (`VALIDATION_FAILED`, `OTHER_SUPPLIER`). Active, blocked, recalled and expired lots may be returned. The financial side (supplier credit note) stays Phase 9 (OD-016, DR-009).
+- **Consequences:** BR-PURCH-009, W4, `api.md` §4.8a.
+
+## ADR-102 — Converting reorder proposals to purchase orders; open orders subtracted
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #10 A, A, A); completes ADR-079, amends ADR-077.
+- **Decision:** The user selects pending proposals and picks the supplier at conversion (prefilled with the supplier of the latest price-history entry for the product); one **new draft PO per supplier** is created with one line per proposal (base unit, suggested quantity, price prefilled per ADR-099); each proposal becomes `converted` with its `supplier_id` (SD-121) and converts once (BR-PURCH-010). From Phase 5 the generation subtracts open orders: `suggested = max_stock − sellable − outstanding`, where *outstanding* is the ordered but not yet received base quantity on `validated`, `sent` and `partially_received` orders (drafts not counted); when that is ≤ 0 no proposal is created (an existing pending proposal is left as is, ADR-079).
+- **Consequences:** BR-STOCK-010, BR-PURCH-010, W10, `api.md` §4.5.
+
+## ADR-103 — Cancelling a whole goods receipt
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #11 B with the user's rules)
+- **Decision:** A confirmed goods receipt can be cancelled **as a whole**, with a mandatory reason and the new permission `receipt.cancel` (Administrator, Pharmacist), only if **none of its lots has any movement after the receipt's own movement** on that lot; otherwise `RECEIPT_NOT_CANCELLABLE` names the lot and the later movement (type, date). In one transaction: one reversal movement of the new type `receipt_cancellation` (−, SD-127) per receipt line through `StockService`, the PO lines' received quantities and the PO status rolled back, the receipt marked `cancelled` (it keeps its number, BR-DOC-001, and is shown as cancelled), audited `RECEIPT_CANCEL`. A lot created by the receipt stays, with a zero balance (lots are never deleted). OD-004 (sales) and OD-005 (returns) are unaffected.
+- **Consequences:** new BR-PURCH-012, BR-STOCK-005 (sign of the new type), ADR-081 (eleven types), `security.md` §4 and §7, W1d, `api.md` §4.8, permission seed and matrix test.
+
+## ADR-104 — Idempotency keys for confirmed documents
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #12a A)
+- **Decision:** `POST` of numbered documents (from Phase 5: goods receipts; later sales and payments) accepts `Idempotency-Key` (UUID). A table `idempotency_keys` (SD-128) stores per user and endpoint the key, a hash of the request body and the created resource, written in the same transaction as the document: the same key with the same body returns the first result (no second number, movement or document); with another body `IDEMPOTENCY_CONFLICT`. Keys are kept (no purge until a retention is decided).
+- **Consequences:** `api.md` §1, §5.4; BR-PURCH-007; reused by BR-SALE-016 in Phase 7.
+
+## ADR-105 — Receipt and purchase-order details
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #12b–12h A, scope confirmed)
+- **Decision:** (b) A receipt into an existing **recalled** lot is refused (`LOT_RECALLED`); a **blocked** lot is accepted and stays blocked. (c) `lots.supplier_id` is set by the first receipt and kept (later receipts from another supplier do not change it; opening-stock and found lots have none). (d) A PO line's VAT rate is prefilled from the product and editable while draft. (e) The same product twice in one PO is refused (`VALIDATION_FAILED`, `DUPLICATE`). (f) PO prices and receipt costs are typed with `purchase.create` / `receipt.create`; `price.edit` stays for catalogue prices. (g) Audited: PO cancel (`PO_CANCEL`), forced close (`PO_CLOSE`), supplier returns (`RETURN_CREATE`), receipt cancellation (`RECEIPT_CANCEL`); receipts and other PO changes are traced by the documents and the ledger. (h) Supplier invoices, payments and payables stay in Phase 9; the PO PDF in Phase 10.
+- **Consequences:** `security.md` §7, `api.md` §4.6–4.8, W1.
 ---
 
 # Part B — Open Decisions
@@ -663,6 +739,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 6/7. **Related:** BR-SALE-006, BR-SALE-007.
 
 ## OD-007 — Rounding, VAT computation, decimals
+- **Status:** Resolved 2026-10-24 → **ADR-093**.
 - **Question:** Round per line or per document? VAT per line or per rate group? Rounding mode (HALF_UP assumed)? Decimal places for unit prices (2 in schema) and quantities (3).
 - **Blocks:** Phase 5 (PO totals). **Related:** ADR-016, BR-SALE-008, BR-PURCH-002.
 
@@ -696,10 +773,12 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 4/5. **Related:** BR-STOCK-010.
 
 ## OD-014 — Non-conforming goods at receipt
+- **Status:** Resolved 2026-10-24 → **ADR-095**.
 - **Question:** `goods_receipt_lines.is_conforming = false`: does the stock enter the lot as *blocked*, not enter at all, or enter normally and be returned later?
 - **Blocks:** Phase 5. **Related:** BR-PURCH-006.
 
 ## OD-015 — Over-receipt and receipt without purchase order
+- **Status:** Resolved 2026-10-24 → **ADR-096**.
 - **Question:** May received quantity exceed the ordered quantity? May goods be received without a PO (`purchase_order_id` is nullable)?
 - **Blocks:** Phase 5. **Related:** BR-PURCH-004.
 
@@ -708,6 +787,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 9. **Related:** BR-PAY-009…011, DR-009.
 
 ## OD-017 — Document numbering policy
+- **Status:** Resolved 2026-10-24 → **ADR-097**.
 - **Question:** Number assigned at creation (draft) or at confirmation? Format (`KEY-YYYY-000001`)? Yearly reset? Gapless required for invoices only? Final key list (Source comment: `PO, INV, RCT, QUO, DN, CN`; code uses `PO, GR, SR, CR`)? Are cancelled numbers kept (assumed yes)?
 - **Blocks:** Phase 5 (first numbered document). **Related:** ADR-011, BR-DOC-001.
 
@@ -765,6 +845,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 
 
 ## OD-029 — Lot cost on repeated receipt of the same lot
+- **Status:** Resolved 2026-10-24 → **ADR-098**.
 - **Question:** A lot is unique per (product, lot number) (ADR-070). If the same lot is received again at a **different unit cost**, what happens to `lots.unit_cost`? Valuation (FR-RPT-002) and margin (FR-RPT-001) depend on it.
 - **Options:** (A) weighted-average cost recomputed on each receipt; (B) keep the first cost and ignore the new one; (C) forbid a second receipt of the same lot at a different cost (force a distinct lot identity); (D) track cost per receipt line and value by FIFO layers (needs schema change).
 - **Blocks:** Phase 5. **Related:** BR-LOT-002, BR-SALE-009, `products.purchase_price` ("last/avg cost" is ambiguous in the Source).
@@ -815,7 +896,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 2 Catalogue | ~~OD-018~~ → ADR-047/048, ~~OD-022~~ → ADR-049/050, OD-025 for SKU → ADR-051, ADR-052, ADR-053, ~~OD-032~~ → ADR-054 (all 2026-10-21) |
 | 3 Lots & Units | ~~OD-009~~ → ADR-055/056, ~~OD-019~~ → ADR-057, ~~OD-025~~ → ADR-058, ~~OD-027~~ → ADR-059/060; ADR-061…068 (all 2026-10-22) |
 | 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091, ADR-077 amendment, ~~OD-034~~ → ADR-092 (2026-10-23) |
-| 5 Purchasing | OD-007, OD-014, OD-015, OD-017, OD-029 |
+| 5 Purchasing | ~~OD-007~~ → ADR-093, ~~OD-014~~ → ADR-095, ~~OD-015~~ → ADR-096, ~~OD-017~~ → ADR-097 (ADR-011 accepted), ~~OD-029~~ → ADR-098; ADR-094, ADR-099…105 (all 2026-10-24) |
 | 6 Customers | OD-006, OD-011 |
 | 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006, ~~OD-033~~ → ADR-071 |
 | 8 Returns | OD-005 |

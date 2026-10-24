@@ -49,7 +49,7 @@
 | Permission | Permission / droit | Fine-grained right (e.g. `sale.create`) granted via roles. |
 | Purchase order | Bon de commande | Order to a supplier; states draft, validated, sent, partially received, received, cancelled. |
 | Quote | Devis | Offer to a customer with no stock or financial effect. |
-| Quarantine | Quarantaine | Holding state for non-conforming goods (OD-014). |
+| Quarantine | Quarantaine | Not a separate state: non-conforming goods enter a blocked lot (ADR-095). |
 | Receipt (till) | Ticket de caisse | Short sales ticket for counter sales, printable on thermal paper. |
 | Recall | Rappel de lot | Procedure blocking a lot and listing everyone who received it. |
 | Reorder proposal | Proposition de commande | System-generated suggestion to buy when stock falls under the reorder point. |
@@ -62,9 +62,9 @@
 | Statement | Relevé de compte | Chronological list of a customer's sales, credit notes and payments. |
 | Supplier | Fournisseur | Laboratory or wholesaler. |
 | Therapeutic category | Catégorie thérapeutique | Classification of products by therapeutic use. |
-| Unit cost | Coût unitaire | Purchase cost per base unit of a lot (policy OD-029). |
+| Unit cost | Coût unitaire | Purchase cost per base unit of a lot; weighted average on each entry (ADR-098). |
 | Variance (count) | Écart d'inventaire | Counted quantity minus theoretical quantity. |
-| VAT | TVA | Value-added tax; rates and rounding OD-007. |
+| VAT | TVA | Value-added tax; computed per line, HALF_UP (ADR-093). |
 | Veterinarian (customer) | Vétérinaire | A customer type or a link from a breeder to their vet. |
 | Wilaya / Commune | Wilaya / Commune | Algerian administrative divisions used for customer location and statistics. |
 | Withdrawal period | Délai d'attente | Time after treatment before meat, milk or eggs may enter the food chain; stored per species. |

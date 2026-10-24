@@ -49,14 +49,14 @@ No final DDL is given here; column lists are the contract the first migrations m
 
 ### 2.4 Purchases
 `purchase_orders` (header, status, totals) → `purchase_order_lines` (ordered quantity, `quantity_base`, `received_base`, price, discount, VAT, generated `line_ht`).
-`goods_receipts` (+ `goods_receipt_lines`) record what physically arrived: each line points to a **lot** (so lot number and expiry are mandatory by construction), `quantity_base`, `unit_cost`, `is_conforming`. A receipt may reference a PO and a PO line (`po_line_id`), or neither (OD-015).
+`goods_receipts` (+ `goods_receipt_lines`) record what physically arrived: each line points to a **lot** (so lot number and expiry are mandatory by construction), `quantity_base`, `unit_cost`, `is_conforming`. A receipt may reference a PO and a PO line (`po_line_id`), or neither (free receipt, ADR-096).
 `supplier_invoices` record the supplier's bill (optionally tied to a receipt); `supplier_payments` settle them; `supplier_price_history` records negotiated prices/discounts over time.
 `supplier_returns` (+ lines) send stock back from specific lots.
 
 ### 2.5 Sales
 One table family handles every sales paper: `sales_documents.doc_type` ∈ quote, delivery_note, invoice, receipt, credit_note; `parent_id` chains quote → delivery note → invoice and invoice → credit note (OD-002 decides which types move stock).
 Lines carry `product_id`, `lot_id` (required at confirmation for stock-moving documents), `unit_id`, `target_species_id` (drives withdrawal-period warnings), `quantity`, `quantity_base`, `unit_price` (per sold unit), `unit_cost` (snapshot of lot cost for margin), `discount_pct`, `vat_rate` (snapshot), generated `line_ht` / `line_ttc`.
-Totals (`total_ht`, `total_discount`, `total_vat`, `total_ttc`) are computed by the server and stored (rounding: OD-007).
+Totals (`total_ht`, `total_discount`, `total_vat`, `total_ttc`) are computed by the server and stored (rounding per line, HALF_UP, ADR-093).
 `customer_id IS NULL` allowed only for anonymous counter receipts (credit sales require a customer — DB `CHECK`).
 
 ### 2.6 Returns
@@ -90,7 +90,7 @@ Format: **Column | MySQL type | Null / default | Notes**. `PK`, `FK→`, `UQ`, `
 
 **users** — `id BIGINT AI PK`, `username VARCHAR(60) NOT NULL UQ`, `password_hash TEXT NOT NULL`, `full_name VARCHAR(150) NOT NULL`, `email VARCHAR(150) NULL UQ`, `role_id SMALLINT NOT NULL FK→roles`, `is_active BOOLEAN NOT NULL DEFAULT TRUE`, `last_login_at DATETIME(6) NULL`, `must_change_password BOOLEAN NOT NULL DEFAULT FALSE` (SD-114, ADR-039), `created_at`, `version` (SD-101). Hash = bcrypt cost 12 (ADR-039), never plaintext. `username` uses the default `utf8mb4_0900_ai_ci`: case- and accent-insensitive (ADR-041).
 
-**app_settings** — `setting_key VARCHAR(80) PK` (SD-006), `setting_value TEXT NOT NULL`, `description TEXT`, `updated_at DATETIME(6) NOT NULL`. Seed: `expiry_alert_days = '60,30,15'`, `default_vat_rate = '9.00'` (Source values; VAT computation is OD-007), `login_max_failures = '5'`, `login_window_minutes = '15'`, `login_lockout_minutes = '15'` (ADR-038), `currency = 'DZD'`, `locale = 'fr-DZ'`, `business_time_zone = 'Africa/Algiers'` (ADR-033, ADR-044; only `locale` editable among these); Phase 4: `opening_stock_open = 'true'` (ADR-082), `reorder_job_time = '06:00'` (ADR-078), `integrity_check_time = '02:00'` (ADR-086), all editable. Every key has a format (ADR-044); keys are created only by migrations.
+**app_settings** — `setting_key VARCHAR(80) PK` (SD-006), `setting_value TEXT NOT NULL`, `description TEXT`, `updated_at DATETIME(6) NOT NULL`. Seed: `expiry_alert_days = '60,30,15'`, `default_vat_rate = '9.00'` (Source values; VAT computed per line, ADR-093), `login_max_failures = '5'`, `login_window_minutes = '15'`, `login_lockout_minutes = '15'` (ADR-038), `currency = 'DZD'`, `locale = 'fr-DZ'`, `business_time_zone = 'Africa/Algiers'` (ADR-033, ADR-044; only `locale` editable among these); Phase 4: `opening_stock_open = 'true'` (ADR-082), `reorder_job_time = '06:00'` (ADR-078), `integrity_check_time = '02:00'` (ADR-086), all editable. Every key has a format (ADR-044); keys are created only by migrations.
 
 **audit_log** — `id BIGINT AI PK`, `user_id BIGINT NULL FK→users`, `action VARCHAR(60) NOT NULL` (PRICE_CHANGE, INVOICE_CANCEL, STOCK_CORRECTION, LOT_RECALL…), `entity VARCHAR(60) NOT NULL`, `entity_id BIGINT NULL`, `old_values JSON NULL`, `new_values JSON NULL` (SD-004), `ip_address VARCHAR(45) NULL` (SD-005), `created_at`. Indexes: `(entity, entity_id)`, `(user_id, created_at DESC)`. Append-only (SD-102, BR-AUDIT-002): `BEFORE UPDATE` and `BEFORE DELETE` triggers raise `SQLSTATE '45000'` (ADR-017).
 
@@ -121,7 +121,7 @@ Reference names are unique case- and accent-insensitively and never blank (CHECK
 | base_unit | VARCHAR(20) | NOT NULL | smallest stock unit |
 | is_divisible | BOOLEAN | NOT NULL | ADR-050, SD-115: whole quantities only when false |
 | vat_rate | DECIMAL(5,2) | NOT NULL, CK 0–100 | **no database default**: a new product takes the `default_vat_rate` setting (VAT is never hard-coded, CLAUDE.md §11) |
-| purchase_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049); last/average definition: OD-029 (Phase 5) |
+| purchase_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049); manual reference price, never changed by receipts (ADR-099) |
 | sale_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049) |
 | min_stock | DECIMAL(14,3) | NOT NULL DEFAULT 0, CK ≥ 0 | alert level |
 | max_stock | DECIMAL(14,3) | NULL, CK ≥ min_stock | |
@@ -144,9 +144,9 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 
 ### 3.3 Suppliers & customers
 
-**suppliers** — `id BIGINT AI PK`, `name VARCHAR(150) NOT NULL`, `supplier_kind VARCHAR(20) NOT NULL DEFAULT 'wholesaler' CK IN ('laboratory','wholesaler')`, `tax_id VARCHAR(40) NULL`, `phone`, `email`, `address TEXT`, `payment_terms_days SMALLINT NOT NULL DEFAULT 0 CK ≥ 0`, `is_active BOOLEAN NOT NULL DEFAULT TRUE`, `version` (SD-101).
+**suppliers** — `id BIGINT AI PK`, `name VARCHAR(150) NOT NULL`, `supplier_kind VARCHAR(20) NOT NULL DEFAULT 'wholesaler' CK IN ('laboratory','wholesaler')`, `tax_id VARCHAR(40) NULL`, `phone`, `email`, `address TEXT`, `payment_terms_days SMALLINT NOT NULL DEFAULT 0 CK ≥ 0`, `is_active BOOLEAN NOT NULL DEFAULT TRUE`, `version` (SD-101); `UQ(name)` with the default collation, ignoring case and accents (ADR-100, SD-129).
 
-**supplier_price_history** — `id BIGINT AI PK`, `supplier_id FK→suppliers`, `product_id FK→products`, `unit_price DECIMAL(14,4) NOT NULL CK ≥ 0` (per base unit, ADR-049), `discount_pct DECIMAL(5,2) NOT NULL DEFAULT 0 CK 0–100`, `valid_from DATE NOT NULL`. Index `(supplier_id, product_id, valid_from DESC)`.
+**supplier_price_history** — `id BIGINT AI PK`, `supplier_id FK→suppliers`, `product_id FK→products`, `unit_price DECIMAL(14,4) NOT NULL CK ≥ 0` (per base unit, ADR-049), `discount_pct DECIMAL(5,2) NOT NULL DEFAULT 0 CK 0–100`, `valid_from DATE NOT NULL`. Index `(supplier_id, product_id, valid_from DESC)`. Appended on receipt when price or discount changes, or manually (ADR-100).
 
 **customer_categories** — `id INT AI PK`, `name VARCHAR(80) NOT NULL UQ`, `discount_pct DECIMAL(5,2) NOT NULL DEFAULT 0 CK 0–100`.
 
@@ -164,8 +164,8 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 | product_id | BIGINT | NOT NULL FK→products | |
 | lot_number | VARCHAR(60) | NOT NULL | manufacturer lot (BR-LOT-001); default collation, case- and accent-insensitive (ADR-058) |
 | expiry_date | DATE | NOT NULL | |
-| supplier_id | BIGINT | NULL FK→suppliers | added in Phase 5 with `suppliers` (ADR-066, SD-117) |
-| unit_cost | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit |
+| supplier_id | BIGINT | NULL FK→suppliers | added in Phase 5 with `suppliers` (ADR-066, SD-117); set by the first receipt and kept (ADR-105) |
+| unit_cost | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit; weighted average on each entry, entry cost when the balance is 0 (ADR-098) |
 | quantity_on_hand | DECIMAL(14,3) | NOT NULL DEFAULT 0, **CK ≥ 0** | maintained balance (ADR-028) |
 | status | VARCHAR(30) | NOT NULL DEFAULT 'active' | CK IN (active, blocked, recalled) — expired/depleted computed (ADR-059, SD-116) |
 | blocked_reason | TEXT | NULL | |
@@ -182,8 +182,8 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 | id | BIGINT AI | PK | |
 | lot_id | BIGINT | NOT NULL FK→lots | |
 | product_id | BIGINT | NOT NULL FK→products | composite `FK (lot_id, product_id) → lots(id, product_id)` (SD-103, ADR-062) |
-| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock) — all ten from Phase 4 (ADR-081); no `unit_conversion` (ADR-061, SD-118); cancellation/discard only after OD-004/005 (SD-107) |
-| quantity | DECIMAL(14,3) | NOT NULL, **CK ≠ 0** | signed, base unit; CK sign per type (BR-STOCK-005): receipts, customer returns and opening stock > 0, sales, supplier returns and the four manual adjustments < 0, `adjustment_inventory` either |
+| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock) — all ten from Phase 4 (ADR-081), plus `receipt_cancellation` from Phase 5 (ADR-103, SD-127); no `unit_conversion` (ADR-061, SD-118); cancellation/discard only after OD-004/005 (SD-107) |
+| quantity | DECIMAL(14,3) | NOT NULL, **CK ≠ 0** | signed, base unit; CK sign per type (BR-STOCK-005): receipts, customer returns and opening stock > 0, sales, supplier returns, receipt cancellations and the four manual adjustments < 0, `adjustment_inventory` either |
 | reference_type | VARCHAR(40) | NULL | e.g. `sales_document`, `goods_receipt`, `inventory` |
 | reference_id | BIGINT | NULL | |
 | reason | TEXT | NULL | **CK**: required (non-blank) when `movement_type LIKE 'adjustment\_%'` |
@@ -204,23 +204,25 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 
 ### 3.5 Purchasing (module 4)
 
-**document_sequences** — `doc_key VARCHAR(30)`, `year SMALLINT`, `last_value INT NOT NULL DEFAULT 0`, `PK(doc_key, year)`. Row-locked by `NumberingService` (ADR-011). Key list: OD-017.
+**document_sequences** — `doc_key VARCHAR(30)`, `year SMALLINT`, `last_value INT NOT NULL DEFAULT 0`, `PK(doc_key, year)`. Row-locked by `NumberingService` (ADR-011) in the creating transaction; keys `PO`, `GR`, `SR` from Phase 5 (sales keys in Phase 7); year = business year; numbers `KEY-YYYY-NNNNNN` (ADR-097).
 
-**purchase_orders** — `id BIGINT AI PK`, `number VARCHAR(30) NOT NULL UQ` (assigned by service — SD-007), `supplier_id FK`, `status VARCHAR(30) NOT NULL DEFAULT 'draft'` (draft | validated | sent | partially_received | closed | cancelled), `order_date DATE NOT NULL`, `expected_date DATE NULL`, `total_ht / total_vat / total_ttc DECIMAL(14,2) NOT NULL DEFAULT 0`, `created_by FK→users`, `created_at`, `version`.
+**purchase_orders** — `id BIGINT AI PK`, `number VARCHAR(30) NOT NULL UQ` (assigned by service — SD-007), `supplier_id FK`, `status VARCHAR(30) NOT NULL DEFAULT 'draft'` (draft | validated | sent | partially_received | closed | cancelled), `order_date DATE NOT NULL`, `expected_date DATE NULL`, `total_ht / total_vat / total_ttc DECIMAL(14,2) NOT NULL DEFAULT 0`, `created_by FK→users`, `created_at`, `version`; number assigned at creation (ADR-097); `closed_reason TEXT NULL`, `closed_by NULL FK→users`, `closed_at NULL` for a forced close, `cancelled_by`, `cancelled_at` (ADR-096, SD-130).
 
-**purchase_order_lines** — `id`, `purchase_order_id FK CASCADE`, `product_id FK`, `unit_id NULL FK→product_units`, `quantity DECIMAL(14,3) CK > 0` (ordered unit), `quantity_base DECIMAL(14,3) CK > 0`, `received_base DECIMAL(14,3) NOT NULL DEFAULT 0 CK ≥ 0`, `unit_price DECIMAL(14,2) CK ≥ 0` (per ordered unit), `discount_pct DECIMAL(5,2) CK 0–100`, `vat_rate DECIMAL(5,2) NOT NULL DEFAULT 0`, `line_ht DECIMAL(14,2) GENERATED ALWAYS AS (ROUND(quantity × unit_price × (1 − discount_pct/100), 2)) STORED`.
+**purchase_order_lines** — `id`, `purchase_order_id FK CASCADE`, `product_id FK`, `unit_id NULL FK→product_units`, `quantity DECIMAL(14,3) CK > 0` (ordered unit), `quantity_base DECIMAL(14,3) CK > 0`, `received_base DECIMAL(14,3) NOT NULL DEFAULT 0 CK ≥ 0`, `unit_price DECIMAL(14,4) CK ≥ 0` (per ordered unit, ADR-094, SD-126), `discount_pct DECIMAL(5,2) CK 0–100`, `vat_rate DECIMAL(5,2) NOT NULL DEFAULT 0` (prefilled from the product), `line_ht DECIMAL(14,2) GENERATED ALWAYS AS (ROUND(quantity × unit_price × (1 − discount_pct/100), 2)) STORED`, `line_vat DECIMAL(14,2) GENERATED ALWAYS AS (ROUND(line_ht × vat_rate / 100, 2)) STORED` (ADR-093, SD-126); `UQ(purchase_order_id, product_id)` (ADR-105); composite FK `(unit_id, product_id) → product_units(id, product_id)`.
 
-**goods_receipts** — `id`, `number VARCHAR(30) NOT NULL UQ` (service), `purchase_order_id NULL FK`, `supplier_id FK`, `supplier_doc_ref VARCHAR(60) NULL`, `received_at`, `received_by FK→users`, `notes TEXT`.
+**goods_receipts** — `id`, `number VARCHAR(30) NOT NULL UQ` (service), `purchase_order_id NULL FK`, `supplier_id FK`, `supplier_doc_ref VARCHAR(60) NULL`, `received_at`, `received_by FK→users`, `notes TEXT`; `status VARCHAR(15) NOT NULL DEFAULT 'confirmed' CK IN (confirmed, cancelled)`, `cancel_reason TEXT NULL`, `cancelled_by NULL FK→users`, `cancelled_at NULL` (ADR-103, SD-127).
 
-**goods_receipt_lines** — `id`, `receipt_id FK CASCADE`, `po_line_id NULL FK→purchase_order_lines`, `product_id FK`, `lot_id FK→lots` (lot number + expiry mandatory by construction), `quantity_base DECIMAL(14,3) CK > 0`, `unit_cost DECIMAL(14,4) CK ≥ 0`, `is_conforming BOOLEAN NOT NULL DEFAULT TRUE` (stock treatment: OD-014).
+**goods_receipt_lines** — `id`, `receipt_id FK CASCADE`, `po_line_id NULL FK→purchase_order_lines`, `product_id FK`, `lot_id FK→lots` (lot number + expiry mandatory by construction), `quantity_base DECIMAL(14,3) CK > 0`, `unit_cost DECIMAL(14,4) CK ≥ 0` (per base unit, kept per line, ADR-098), `is_conforming BOOLEAN NOT NULL DEFAULT TRUE` (non-conforming: lot blocked, ADR-095), `movement_id FK→stock_movements` (the line's `purchase_receipt` movement, used to find later movements, ADR-103, SD-127); composite FK `(lot_id, product_id) → lots(id, product_id)` (SD-103).
 
-**supplier_returns** — `id`, `number VARCHAR(30) UQ` (service), `supplier_id FK`, `reason TEXT NOT NULL`, `created_by FK`, `created_at`. **supplier_return_lines** — `id`, `return_id FK CASCADE`, `lot_id FK`, `quantity_base CK > 0`.
+**supplier_returns** — `id`, `number VARCHAR(30) UQ` (service, `SR`, ADR-097), `supplier_id FK`, `reason TEXT NOT NULL`, `created_by FK`, `created_at`. **supplier_return_lines** — `id`, `return_id FK CASCADE`, `lot_id FK`, `product_id` with composite FK to lots (SD-103), `quantity_base CK > 0`, `movement_id FK→stock_movements`. Only lots of that supplier or without supplier (ADR-101).
+
+**idempotency_keys** (ADR-104, SD-128) — `id BIGINT AI PK`, `user_id FK→users`, `endpoint VARCHAR(80)`, `idem_key CHAR(36)`, `request_hash CHAR(64)` (SHA-256 of the body), `resource_type VARCHAR(40)`, `resource_id BIGINT`, `created_at`; `UQ(user_id, endpoint, idem_key)`. Written in the transaction of the document it protects.
 
 ### 3.6 Sales / POS (module 5)
 
 **cash_sessions** — `id`, `cashier_id FK→users`, `status VARCHAR(30) NOT NULL DEFAULT 'open'` (open | closed), `opened_at`, `closed_at NULL`, `opening_amount DECIMAL(14,2) NOT NULL DEFAULT 0`, `expected_amount DECIMAL(14,2) NULL`, `counted_amount DECIMAL(14,2) NULL`, `variance_amount DECIMAL(14,2) GENERATED ALWAYS AS (counted_amount − expected_amount) STORED`, `open_cashier_id BIGINT GENERATED ALWAYS AS (IF(status='open', cashier_id, NULL)) … UQ` (SD-009).
 
-**sales_documents** — `id`, `doc_type VARCHAR(30) NOT NULL`, `number VARCHAR(30) NOT NULL`, `status VARCHAR(30) NOT NULL DEFAULT 'draft'` (draft | confirmed | cancelled), `customer_id NULL FK`, `parent_id NULL FK→sales_documents`, `is_credit_sale BOOLEAN NOT NULL DEFAULT FALSE`, `due_date DATE NULL`, `cash_session_id NULL FK`, `issued_at`, `total_ht / total_discount / total_vat / total_ttc DECIMAL(14,2) NOT NULL DEFAULT 0`, `notes TEXT`, `created_by FK`, `cancelled_by NULL FK`, `cancelled_at NULL`, `version`. `UQ(doc_type, number)`; `CK (is_credit_sale = FALSE OR customer_id IS NOT NULL)`. Indexes `(customer_id, issued_at DESC)`, `(issued_at)`. **[OPEN]** payment-method/payment-status columns (SD-108, OD-003); number assignment moment (OD-017).
+**sales_documents** — `id`, `doc_type VARCHAR(30) NOT NULL`, `number VARCHAR(30) NOT NULL`, `status VARCHAR(30) NOT NULL DEFAULT 'draft'` (draft | confirmed | cancelled), `customer_id NULL FK`, `parent_id NULL FK→sales_documents`, `is_credit_sale BOOLEAN NOT NULL DEFAULT FALSE`, `due_date DATE NULL`, `cash_session_id NULL FK`, `issued_at`, `total_ht / total_discount / total_vat / total_ttc DECIMAL(14,2) NOT NULL DEFAULT 0`, `notes TEXT`, `created_by FK`, `cancelled_by NULL FK`, `cancelled_at NULL`, `version`. `UQ(doc_type, number)`; `CK (is_credit_sale = FALSE OR customer_id IS NOT NULL)`. Indexes `(customer_id, issued_at DESC)`, `(issued_at)`. **[OPEN]** payment-method/payment-status columns (SD-108, OD-003); number assignment moment for sales documents decided in Phase 7 (format ADR-097).
 
 **sales_document_lines** — `id`, `document_id FK CASCADE`, `product_id FK`, `lot_id NULL FK→lots`, `unit_id NULL FK→product_units`, `target_species_id NULL FK→animal_species`, `quantity DECIMAL(14,3) CK > 0`, `quantity_base DECIMAL(14,3) CK > 0`, `unit_price DECIMAL(14,2) CK ≥ 0`, `unit_cost DECIMAL(14,4) NOT NULL DEFAULT 0`, `discount_pct DECIMAL(5,2) CK 0–100`, `vat_rate DECIMAL(5,2) NOT NULL DEFAULT 0`, `line_ht` and `line_ttc` generated (formulas in ADR-016). Indexes `(document_id)`, `(lot_id)` (recall), `(product_id)`.
 
@@ -314,7 +316,7 @@ Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), set
 | Master data (products, customers, suppliers, users) | Deactivate/archive; never delete once referenced |
 | Stock movements, audit log | Append-only; retained indefinitely (retention policy OD-021) |
 | Sales/purchase documents | Never physically deleted; cancelled documents keep their numbers |
-| Drafts | May be deleted only while `draft` and with no number consumed (OD-017) |
+| Drafts | Purchase orders are numbered at creation and never deleted (cancelled instead, ADR-097); sales drafts: decided in Phase 7 |
 | Backups | `backup_log` records each run (mechanism OD-021) |
 
 ## 10. Items awaiting decisions

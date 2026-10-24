@@ -123,8 +123,8 @@ For each entity: **purpose · key attributes · relationships (cardinality) · l
 | **Supplier** | Laboratory or wholesaler: name, kind, tax id, contacts, payment terms, active | 1—* PurchaseOrder, GoodsReceipt, SupplierInvoice, PriceHistoryEntry, SupplierReturn | active ⇄ inactive | terms ≥ 0; inactive not usable (BR-PURCH-011) |
 | **PriceHistoryEntry** | Price and discount for a supplier×product from a date | *→1 Supplier, *→1 Product | append-only | price ≥ 0; discount 0–100 |
 | **PurchaseOrder** | Order to a supplier: number, status, dates, totals HT/VAT/TTC | *→1 Supplier; 1—* OrderLine; 0..* GoodsReceipt | **draft → validated → sent → partially_received → closed; → cancelled** (§5.2) | server-computed totals; only drafts editable (BR-PURCH-001…003) |
-| **OrderLine** | Product, unit, quantity, base quantity, received base quantity, price, discount, VAT | *→1 PurchaseOrder, *→1 Product, *→0..1 ProductUnit | with order | quantity > 0; received ≤ ordered unless OD-015 |
-| **GoodsReceipt** | Physical receipt: number, supplier doc ref, who/when, notes | *→0..1 PurchaseOrder, *→1 Supplier; 1—* ReceiptLine | created and confirmed in one step (no draft in Source) | atomic with stock posting (BR-PURCH-007) |
+| **OrderLine** | Product, unit, quantity, base quantity, received base quantity, price, discount, VAT | *→1 PurchaseOrder, *→1 Product, *→0..1 ProductUnit | with order | quantity > 0; received ≤ ordered (ADR-096) |
+| **GoodsReceipt** | Physical receipt: number, supplier doc ref, who/when, notes | *→0..1 PurchaseOrder, *→1 Supplier; 1—* ReceiptLine | created confirmed (no draft); `confirmed → cancelled` as a whole while its lots have no later movement (ADR-103) | atomic with stock posting (BR-PURCH-007); cancellation reverses it (BR-PURCH-012) |
 | **ReceiptLine** | Lot, base quantity, unit cost, conformity flag, PO line | *→1 GoodsReceipt, *→1 Lot, *→0..1 OrderLine | with receipt | lot number + expiry mandatory (BR-PURCH-005) |
 | **SupplierReturn** (+ lines) | Goods sent back: reason; lines (lot, base quantity) | *→1 Supplier | created and confirmed | reason mandatory; ≤ lot stock (BR-PURCH-009) |
 
@@ -166,7 +166,7 @@ stateDiagram-v2
 `recalled` is terminal. **Expired** (`expiry_date` < business date, ADR-055) and **depleted** (quantity 0) are computed, never stored. Effective status = first that applies of recalled, blocked, expired, depleted, active; a depleted lot receiving stock is active again without any transition. Sellable ⇔ stored `active` ∧ not expired ∧ quantity > 0 (BR-STOCK-011). Implemented by a pure domain object (`LotStatus` transition table) and an `ExpiryPolicy` (business date + thresholds) so both are unit-tested without a database.
 
 ### 5.2 Purchase order
-`draft → validated → sent → partially_received → closed`; `draft | validated | sent → cancelled`. Receipts advance it automatically; the first receipt moves a `sent` order to `partially_received`; full reception closes it (BR-PURCH-001, -004).
+`draft → validated → sent → partially_received → closed`; `draft | validated | sent → cancelled`. Receipts advance it automatically; the first receipt moves a `sent` order to `partially_received`; full reception closes it; a `partially_received` order can be closed with a reason (BR-PURCH-001, -004, ADR-096). Cancelling a receipt rolls the received quantities and the status back (ADR-103).
 
 ### 5.3 Sales document
 `draft → confirmed`; `confirmed → cancelled` only if OD-004 allows. `draft → cancelled` (abandon). A confirmed stock-moving document has posted movements; quotes never do (BR-SALE-002, -003, -014).
@@ -186,10 +186,10 @@ Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → 
 | Concept | Kind | Description |
 |---|---|---|
 | **Quantity (base)** | Value object | `BigDecimal` in base units; conversion via ProductUnit factor; whole numbers for non-divisible products (ADR-050) |
-| **Money** | Value object | `BigDecimal` + scale/rounding policy (OD-007); currency DZD (ADR-033) |
+| **Money** | Value object | `BigDecimal` + per-line HALF_UP rounding (ADR-093); currency DZD (ADR-033) |
 | **Percentage** | Value object | 0–100 |
 | **LotIdentity** | Value object | (product, lot number); the expiry date must match the existing lot (ADR-070) |
-| **DocumentNumber** | Value object | `KEY-YYYY-NNNNNN` (format OD-017) |
+| **DocumentNumber** | Value object | `KEY-YYYY-NNNNNN`, yearly reset (ADR-097) |
 | **ExpiryAlertLevel** | Value object | expired / critical / warning / notice derived from thresholds (BR-LOT-010) |
 | **StockService** | Application service (inventory) | The only component that changes `quantity_on_hand` and writes movements (BR-STOCK-002, ADR-088) |
 | **FefoAllocator** | Domain service | Splits a requested quantity over sellable lots in FEFO order (BR-LOT-005) |

@@ -53,6 +53,8 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 
 ## 3. Error code catalogue
 
+Codes decided for Phase 5 and added to this table (and to `ErrorCode`) by the slice that implements them, since the table must equal the enum (ErrorCatalogueTest): `LOT_BLOCK_CONFIRMATION_REQUIRED` (409, a non-conforming line would block a lot that already has stock; context: lots and quantities, ADR-095) and `RECEIPT_NOT_CANCELLABLE` (409, a lot of the receipt has a later movement; context: lot and movement, ADR-103). Phase 5 field codes: `EXPIRED`, `NOT_ON_ORDER`, `OTHER_SUPPLIER`, `DUPLICATE`.
+
 | Code | HTTP | Meaning | Related rules |
 |---|---|---|---|
 | `VALIDATION_FAILED` | 400 | malformed or invalid input (field errors) | all API validation |
@@ -72,7 +74,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | `INVALID_STATE_TRANSITION` | 409 | action not allowed in current status | BR-LOT-009, BR-PURCH-001/010, BR-SALE-001/014 |
 | `DOCUMENT_IMMUTABLE` | 409 | document/record can no longer be edited | BR-PURCH-003, BR-SALE-004, BR-PAY-003, BR-LOT-011 |
 | `RESOURCE_IN_USE` | 409 | cannot delete: referenced | BR-CUST-003 |
-| `IDEMPOTENCY_CONFLICT` | 409 | key reused with different request | BR-SALE-016 |
+| `IDEMPOTENCY_CONFLICT` | 409 | key reused with different request | BR-SALE-016, BR-PURCH-013 |
 | `INVENTORY_NOT_OPEN` | 409 | count is closed/cancelled | BR-INV-004 |
 | `OPENING_STOCK_CLOSED` | 409 | the opening-stock period is closed (setting `opening_stock_open`); use an inventory count | BR-STOCK-014, ADR-082 |
 | `INVENTORY_ALREADY_OPEN` | 409 | another full count is open | BR-INV-007 |
@@ -92,7 +94,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | `FEFO_VIOLATION` | 422 | FEFO order not respected without permission | BR-LOT-005 |
 | `STOCK_INSUFFICIENT` | 422 | not enough stock | BR-STOCK-001, BR-SALE-015, BR-PURCH-009 |
 | `ADJUSTMENT_REASON_REQUIRED` | 422 | reason missing | BR-STOCK-006, BR-INV-002 |
-| `RECEIPT_QUANTITY_EXCEEDS_ORDER` | 422 | over-receipt refused (if OD-015 forbids) | BR-PURCH-004 |
+| `RECEIPT_QUANTITY_EXCEEDS_ORDER` | 422 | more than the outstanding quantity received (ADR-096) | BR-PURCH-004 |
 | `SUPPLIER_INACTIVE` | 422 | supplier inactive | BR-PURCH-011 |
 | `CUSTOMER_INACTIVE` | 422 | customer inactive | BR-CUST-004, BR-SALE-012 |
 | `CUSTOMER_REQUIRED_FOR_CREDIT` | 422 | credit sale without customer | BR-SALE-012 |
@@ -182,7 +184,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/inventory/stock` | product stock levels: `status` (`in_stock`, `low`, `out`), `belowReorder`, `categoryId`, `q` (as the product search), `includeArchived`; ordered like the product search; filtered in the database (ADR-090) | `stock.read` | page of `StockLevel` (ADR-080); `VALIDATION_FAILED` field `status` (`UNKNOWN`) |
 | GET | `/api/inventory/movements` | ledger: `productId`, `lotId`, `type`, `userId`, `from`, `to` (dates in the business time zone), newest first | `stock.read` | page of `MovementEntry` |
 | POST | `/api/inventory/adjustments` ● | manual adjustment (ADR-085) | `stock.adjust` | `{lotId, type (adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use), quantity (> 0, base unit), reason (≤ 500)}` → 201 `MovementEntry` (negative); audited `STOCK_CORRECTION`; `ADJUSTMENT_REASON_REQUIRED`, `STOCK_INSUFFICIENT`, `NOT_FOUND`, `VALIDATION_FAILED` (`type` `UNKNOWN`, `quantity` `POSITIVE`/`SCALE`/`WHOLE_NUMBER`) |
-| POST | `/api/inventory/opening-stock` | initial stock entry (ADR-082…084) | `stock.adjust` | `{productId, lotNumber, expiryDate, quantity, unitId?, unitCost}` → 201 `{lot: LotDetail, movement: MovementEntry}` (`Location` of the lot); an existing lot is matched ignoring case and accents (ADR-058); audited `OPENING_STOCK`; `OPENING_STOCK_CLOSED`, `LOT_EXPIRY_MISMATCH`, `LOT_RECALLED`, `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` (`unitCost` `COST_MISMATCH` against an existing lot, `REQUIRED`, `SCALE`; `quantity` `POSITIVE`/`SCALE`/`WHOLE_NUMBER`; `unitId` `UNKNOWN`) |
+| POST | `/api/inventory/opening-stock` | initial stock entry (ADR-082…084) | `stock.adjust` | `{productId, lotNumber, expiryDate, quantity, unitId?, unitCost}` → 201 `{lot: LotDetail, movement: MovementEntry}` (`Location` of the lot); an existing lot is matched ignoring case and accents (ADR-058); audited `OPENING_STOCK`; `OPENING_STOCK_CLOSED`, `LOT_EXPIRY_MISMATCH`, `LOT_RECALLED`, `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` (`unitCost` `REQUIRED`, `SCALE` — from Phase 5 an existing lot's cost becomes the weighted average, ADR-098, and `COST_MISMATCH` is removed; `quantity` `POSITIVE`/`SCALE`/`WHOLE_NUMBER`; `unitId` `UNKNOWN`) |
 | GET | `/api/inventory/counts` | list counts: `status` (`open`, `closed`, `cancelled`), newest first | `inventory.count` | page of `CountSummary`; `VALIDATION_FAILED` field `status` (`UNKNOWN`) |
 | POST | `/api/inventory/counts` | open a count: one line per lot with stock in scope, `theoreticalQty` = its balance | `inventory.count` | `{type (full, cycle), categoryId?, productIds?, notes? (≤ 1000)}` (cycle: exactly one of `categoryId` / `productIds`, ADR-073; archived products included) → 201 `CountDetail`; `INVENTORY_ALREADY_OPEN` (full), `VALIDATION_FAILED` (`type` `REQUIRED`/`UNKNOWN`; `scope` `REQUIRED`, `ONE_OF`, `NOT_ALLOWED` for a full count; `categoryId`/`productIds` `UNKNOWN`) |
 | GET | `/api/inventory/counts/{id}` | detail with lines and variances | `inventory.count` | `CountDetail` |
@@ -193,7 +195,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/inventory/reorder-proposals` | list: `status` (`pending`, `converted`, `dismissed`), newest first | `reorder.read` | page of `ProposalEntry`; `VALIDATION_FAILED` field `status` (`UNKNOWN`) |
 | POST | `/api/inventory/reorder-proposals/generate` | run the generation now (ADR-078), same code as the daily job; recorded in `reorder_runs` with who asked | `reorder.manage` | → `{created, updated, thresholdsIncomplete: [{id, sku, commercialName}], thresholdsInconsistent: [{id, sku, commercialName}]}` (`thresholdsIncomplete`: products needing a proposal without `maxStock`, ADR-077; `thresholdsInconsistent`: products whose `maxStock` is at or below `reorderPoint`, ADR-077 amendment — neither gets a proposal); `CONCURRENT_MODIFICATION` when another generation runs at the same moment |
 | POST | `/api/inventory/reorder-proposals/{id}/dismiss` | dismiss a pending proposal (ADR-079); no new proposal for the product until a generation sees its sellable quantity above the reorder point | `reorder.manage` | → `ProposalEntry`; `NOT_FOUND`, `INVALID_STATE_TRANSITION` |
-| POST | `/api/inventory/reorder-proposals/{id}/convert` | convert to a draft purchase order — **Phase 5** | `reorder.manage` | → `PurchaseOrderDetail` (draft); `INVALID_STATE_TRANSITION` |
+| POST | `/api/inventory/reorder-proposals/convert` | convert selected pending proposals to draft purchase orders (ADR-102, Phase 5) | `reorder.manage` + `purchase.create` | `{groups: [{supplierId, proposalIds[]}]}` → `[PurchaseOrderDetail]` (one new draft per supplier); `INVALID_STATE_TRANSITION` (a proposal not pending), `SUPPLIER_INACTIVE`, `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` |
 | GET | `/api/inventory/integrity-check` | latest stored run (ADR-086); the banner shows while its `mismatchCount` > 0 | `audit.read` | `IntegrityRun`; 204 when no run exists yet |
 | POST | `/api/inventory/integrity-check` | run the check now | `audit.read` | → `IntegrityRun` |
 
@@ -211,33 +213,35 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET/POST | `/api/suppliers` | list / create | `supplier.read` / `supplier.manage` | `SupplierDetail` fields: name, kind (`laboratory`/`wholesaler`), taxId, phone, email, address, paymentTermsDays |
+| GET/POST | `/api/suppliers` | list (`q`, `active`) / create | `supplier.read` / `supplier.manage` | `SupplierDetail` fields: name (unique ignoring case and accents, `DUPLICATE_RESOURCE`), kind (`laboratory`/`wholesaler`), taxId (optional), phone, email, address, paymentTermsDays (≥ 0), active, version (ADR-100) |
 | GET/PUT | `/api/suppliers/{id}` | view / update | `supplier.read` / `supplier.manage` | with `version` |
-| POST | `/api/suppliers/{id}/deactivate` · `/activate` | toggle | `supplier.manage` | |
-| GET/POST | `/api/suppliers/{id}/prices` | price & discount history / add entry | `supplier.read` / `supplier.manage` | `{productId, unitPrice, discountPct, validFrom}` |
-| GET | `/api/suppliers/{id}/payables` | open invoices and remaining | `payment.read` | list with `remaining` |
-| GET/POST | `/api/supplier-invoices` | list / record | `supplierinvoice.manage` | `{supplierId, invoiceNumber, receiptId?, invoiceDate, dueDate?, totalTtc, creditNote}`; `DUPLICATE_RESOURCE` |
-| GET | `/api/supplier-invoices/{id}` | detail with payments | `supplierinvoice.manage` | |
+| POST | `/api/suppliers/{id}/deactivate` · `/activate` | toggle, allowed with open orders (their receipts are then refused, ADR-100) | `supplier.manage` | → `SupplierDetail` |
+| GET/POST | `/api/suppliers/{id}/prices` | price & discount history (`productId`) / add a manual entry | `supplier.read` / `supplier.manage` | `{productId, unitPrice (per base unit, 4 decimals), discountPct (0–100), validFrom}`; receipts append entries when the price or discount changes (BR-PURCH-008) |
+| GET | `/api/suppliers/{id}/payables` | open invoices and remaining — **Phase 9** | `payment.read` | list with `remaining` |
+| GET/POST | `/api/supplier-invoices` | list / record — **Phase 9** | `supplierinvoice.manage` | `{supplierId, invoiceNumber, receiptId?, invoiceDate, dueDate?, totalTtc, creditNote}`; `DUPLICATE_RESOURCE` |
+| GET | `/api/supplier-invoices/{id}` | detail with payments — **Phase 9** | `supplierinvoice.manage` | |
 
 ### 4.7 `/api/purchase-orders`
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET | `/api/purchase-orders` | list: `status`, `supplierId`, `from`, `to` | `purchase.read` | page |
-| POST | `/api/purchase-orders` | create draft | `purchase.create` | `{supplierId, expectedDate?, lines[{productId, unitId?, quantity, unitPrice, discountPct, vatRate?}]}` → 201 (server totals); `SUPPLIER_INACTIVE`, `PRODUCT_ARCHIVED` |
-| GET | `/api/purchase-orders/{id}` | detail | `purchase.read` | lines include `receivedBase` |
-| PUT | `/api/purchase-orders/{id}` | edit draft (full replace of lines) | `purchase.create` | `DOCUMENT_IMMUTABLE` if not draft |
-| POST | `/api/purchase-orders/{id}/validate` · `/send` · `/cancel` | status actions | `purchase.validate` | `INVALID_STATE_TRANSITION` |
-| POST | `/api/purchase-orders/{id}/close` | force close partially received **[OPEN OD-015]** | `purchase.validate` | `{reason}` |
-| GET | `/api/purchase-orders/{id}/pdf` | printable PO | `purchase.read` | `application/pdf` |
+| GET | `/api/purchase-orders` | list: `status`, `supplierId`, `from`, `to`, newest first | `purchase.read` | page of `PurchaseOrderSummary {id, number, supplier, status, orderDate, expectedDate, totalTtc}` |
+| POST | `/api/purchase-orders` | create draft, numbered `PO-YYYY-NNNNNN` at creation (ADR-097) | `purchase.create` | `{supplierId, expectedDate?, lines[{productId, unitId?, quantity, unitPrice (per ordered unit, 4 decimals), discountPct, vatRate?}]}` (`vatRate` defaults to the product's, ADR-105) → 201 `PurchaseOrderDetail` (server totals per line, ADR-093); `SUPPLIER_INACTIVE`, `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` (`DUPLICATE` product, `unitId` `UNKNOWN`, quantities and prices) |
+| GET | `/api/purchase-orders/{id}` | detail | `purchase.read` | `PurchaseOrderDetail {id, number, supplier, status, orderDate, expectedDate, lines[{id, product, unit, quantity, quantityBase, receivedBase, outstandingBase, unitPrice, discountPct, vatRate, lineHt, lineVat}], totalHt, totalVat, totalTtc, closedReason, closedBy, closedAt, cancelledBy, cancelledAt, receipts[{id, number, receivedAt, status}], version}` |
+| GET | `/api/purchase-orders/prefill` | price prefill for a line: latest supplier price, else `purchase_price` (ADR-099) | `purchase.create` | `?supplierId&productId&unitId?` → `{unitPrice, discountPct, vatRate, source (history, product)}` |
+| PUT | `/api/purchase-orders/{id}` | edit draft (full replace of lines) | `purchase.create` | with `version`; `DOCUMENT_IMMUTABLE` if not draft, `CONCURRENT_MODIFICATION` |
+| POST | `/api/purchase-orders/{id}/validate` · `/send` · `/cancel` | status actions; cancel audited `PO_CANCEL` | `purchase.validate` | `INVALID_STATE_TRANSITION`; validate also `SUPPLIER_INACTIVE` |
+| POST | `/api/purchase-orders/{id}/close` | forced close of a partially received order (ADR-096), audited `PO_CLOSE` | `purchase.validate` | `{reason}` → `PurchaseOrderDetail`; `INVALID_STATE_TRANSITION` |
+| GET | `/api/purchase-orders/{id}/pdf` | printable PO — **Phase 10** | `purchase.read` | `application/pdf` |
 
 ### 4.8 `/api/goods-receipts`
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET | `/api/goods-receipts` | list: `supplierId`, `purchaseOrderId`, `from`, `to` | `receipt.read` | page |
-| GET | `/api/goods-receipts/{id}` | detail with lots and movements | `receipt.read` | |
+| GET | `/api/goods-receipts` | list: `supplierId`, `purchaseOrderId`, `status`, `from`, `to`, newest first | `receipt.read` | page of `ReceiptSummary {id, number, supplier, purchaseOrder, receivedAt, status}` |
+| GET | `/api/goods-receipts/{id}` | detail with lots and movements | `receipt.read` | `ReceiptDetail` (§5.4 response) with `status`, `cancelReason`, `cancelledBy`, `cancelledAt` |
 | POST | `/api/goods-receipts` ● | confirm a receipt (creates/feeds lots, posts stock) | `receipt.create` | see §5.4 |
+| POST | `/api/goods-receipts/{id}/cancel` ● | cancel the whole receipt (ADR-103) | `receipt.cancel` | `{reason}` → `ReceiptDetail` (`cancelled`); `RECEIPT_NOT_CANCELLABLE` (`context.lotId`, `lotNumber`, `movementId`, `movementType`, `movementAt`), `INVALID_STATE_TRANSITION` (already cancelled), `VALIDATION_FAILED` (`reason`); audited `RECEIPT_CANCEL` |
 
 ### 4.9 `/api/customers`, `/api/customer-categories`
 
@@ -265,7 +269,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | POST | `/api/sales/{id}/lines` ● | add line; server resolves unit, price, FEFO lot(s), warnings | `sale.create` | see §5.5 → updated document |
 | PUT/DELETE | `/api/sales/{id}/lines/{lineId}` | edit / remove draft line | `sale.create` | `DOCUMENT_IMMUTABLE` if not draft |
 | PUT | `/api/sales/{id}` | edit draft header | `sale.create` | `version` |
-| DELETE | `/api/sales/{id}` | abandon a draft | `sale.create` | only drafts (numbering **OD-017**) |
+| DELETE | `/api/sales/{id}` | abandon a draft | `sale.create` | only drafts (sales numbering decided in Phase 7, format ADR-097) |
 | POST | `/api/sales/{id}/confirm` ● | confirm; stock-moving per OD-002 | `sale.create` | see §5.6 |
 | POST | `/api/sales/{id}/cancel` **[OPEN OD-004]** | cancel a confirmed document | `sale.cancel` | `{reason}` |
 | POST | `/api/sales/{id}/convert` | derive quote→DN→invoice | `sale.create` | `{targetType}` → new draft with `parentId` |
@@ -279,7 +283,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/returns/customer` · `/{id}` | list / detail | `return.read` | |
 | POST | `/api/returns/customer` ● | create customer return + credit note | `return.customer.create` | see §5.8 |
 | GET | `/api/returns/supplier` · `/{id}` | list / detail | `return.read` | |
-| POST | `/api/returns/supplier` | create supplier return | `return.supplier.create` | `{supplierId, reason, lines[{lotId, quantity, unitId?}]}`; `STOCK_INSUFFICIENT` |
+| POST | `/api/returns/supplier` | create supplier return (ADR-101), numbered `SR`, audited `RETURN_CREATE` | `return.supplier.create` | `{supplierId, reason, lines[{lotId, quantity, unitId?}]}` → 201 `SupplierReturnDetail`; `STOCK_INSUFFICIENT`, `SUPPLIER_INACTIVE` is not checked (returns to an inactive supplier are allowed), `VALIDATION_FAILED` (`reason` `REQUIRED`, `lotId` `OTHER_SUPPLIER`) |
 
 ### 4.12 `/api/payments`, `/api/cash-sessions`
 
@@ -348,18 +352,20 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 - **Rules:** only sellable lots (BR-STOCK-011, ADR-055); order `expiry_date, id`; `requestedBase = quantity × factor`, exact (ADR-065); **informational** — stock is re-validated at confirmation. **Errors:** `NOT_FOUND`, `UNIT_NOT_SELLABLE`, `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` (`productId`/`quantity` missing; `quantity` `POSITIVE` / `SCALE` (more than 3 decimals, or a base quantity needing more) / `WHOLE_NUMBER`, `unitId` `UNKNOWN` when the unit belongs to another product). `available` is the lot's whole stock on hand; `alertLevel` may be `null`.
 
 ### 5.4 Confirm goods receipt
-- **POST `/api/goods-receipts`** — **Permission:** `receipt.create`. **Header:** `Idempotency-Key`.
+- **POST `/api/goods-receipts`** — **Permission:** `receipt.create`. **Header:** `Idempotency-Key` (UUID, ADR-104).
 - **Request:**
 ```json
 { "supplierId": 3, "purchaseOrderId": 41, "supplierDocRef": "BL-88213", "notes": "",
+  "confirmLotBlocking": false,
   "lines": [ { "poLineId": 120, "productId": 12, "unitId": 7, "quantity": "10",
                "lotNumber": "L2407A", "expiryDate": "2027-03-31",
                "unitCost": "0.3500", "conforming": true } ] }
 ```
-- **Response 201:** `{ id, number, supplier, purchaseOrder: {id, status}, lines: [{lotId, lotNumber, expiryDate, quantityBase, unitCost, movementId, conforming}] }`
-- **Validation:** `lotNumber` non-blank and `expiryDate` present (BR-LOT-001/BR-PURCH-005); quantity > 0; expiry not past (BR-LOT-012); `quantityBase = quantity × unit factor` computed server-side.
-- **Errors:** `VALIDATION_FAILED`, `SUPPLIER_INACTIVE`, `PRODUCT_ARCHIVED`, `INVALID_STATE_TRANSITION` (PO not receivable), `RECEIPT_QUANTITY_EXCEEDS_ORDER`, `NOT_FOUND`, `IDEMPOTENCY_CONFLICT`.
-- **Transaction:** all-or-nothing (BR-PURCH-007).
+- **Response 201:** `{ id, number, status, supplier, purchaseOrder: {id, number, status}, receivedAt, receivedBy, lines: [{id, product, lotId, lotNumber, expiryDate, quantityBase, unitCost, conforming, lotBlocked, movementId}] }`
+- **Validation:** `lotNumber` non-blank and `expiryDate` present (BR-LOT-001/BR-PURCH-005); quantity > 0 in a unit of the product; `unitCost` ≥ 0 per base unit, 4 decimals; a conforming line's expiry not past (`EXPIRED`, BR-LOT-012); with a PO: order `sent` or `partially_received`, `poLineId` of that order, product of that line (`NOT_ON_ORDER`), quantity ≤ outstanding (`RECEIPT_QUANTITY_EXCEEDS_ORDER`); `quantityBase = quantity × unit factor` computed server-side.
+- **Effects:** lot found or created (supplier set on creation), weighted-average cost (ADR-098), `purchase_receipt` movement through `StockService`, non-conforming lot blocked (ADR-095), PO progress, price history (ADR-100), number `GR-YYYY-NNNNNN`.
+- **Errors:** `VALIDATION_FAILED`, `SUPPLIER_INACTIVE`, `PRODUCT_ARCHIVED`, `INVALID_STATE_TRANSITION` (PO not receivable), `RECEIPT_QUANTITY_EXCEEDS_ORDER`, `LOT_EXPIRY_MISMATCH`, `LOT_RECALLED`, `LOT_BLOCK_CONFIRMATION_REQUIRED`, `NOT_FOUND`, `IDEMPOTENCY_CONFLICT`.
+- **Transaction:** all-or-nothing (BR-PURCH-007); lots locked in ascending id.
 
 ### 5.5 Add sales line (POS)
 - **POST `/api/sales/{id}/lines`** — **Permission:** `sale.create`.
@@ -421,4 +427,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-015 (close PO), OD-020 (pdf formats), OD-021 (backup run).
+OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-020 (pdf formats), OD-021 (backup run).

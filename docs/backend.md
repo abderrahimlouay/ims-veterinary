@@ -116,7 +116,7 @@ Detailed in `architecture.md` §5 and `workflows.md`. Rules summarised:
 4. Stock check and ledger insert happen in the same transaction as the lock; the lot balance is updated and verified (`CHECK >= 0`) in that transaction.
 5. No remote calls or PDF rendering inside stock transactions; PDF generated after commit.
 6. Auditing of a business action is written **in the same transaction** as the action (BR-AUDIT-003); a failed audit write fails the action.
-7. Numbering: `NumberingService` increments the sequence row under lock in the **same** transaction; gaps are possible only on rollback and are governed by **OD-017**.
+7. Numbering: `NumberingService` increments the sequence row under lock in the **same** transaction; a rolled-back transaction rolls the counter back too, so no gap appears (ADR-097).
 
 ## 9. Security in the backend
 
