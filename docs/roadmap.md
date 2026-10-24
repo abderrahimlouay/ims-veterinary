@@ -23,7 +23,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 2 | Catalogue | products, reference data, search | ~~OD-018~~ ADR-047/048, ~~OD-022~~ ADR-049/050, ADR-051–054 (2026-10-21) |
 | 3 | Lots & units | packaging units, barcodes, lots, status, expiry rules, FEFO allocator | ~~OD-009, OD-019, OD-025, OD-027~~ → ADR-055…068 |
 | 4 | Inventory & stock | ledger, stock levels, adjustments, opening stock, counts, reorder proposals | ~~OD-012~~, ~~OD-013~~ → ADR-072…079 |
-| 5 | Purchasing | suppliers, purchase orders, goods receipts, supplier returns, numbering | OD-007, OD-014, OD-015, OD-017, OD-029 |
+| 5 | Purchasing | suppliers, purchase orders, goods receipts, supplier returns, numbering | ~~OD-007~~, ~~OD-014~~, ~~OD-015~~, ~~OD-017~~, ~~OD-029~~ → ADR-093…105 |
 | 6 | Customers | customers, categories, prices, credit-limit data | OD-006, OD-011 |
 | 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | OD-002, OD-003, OD-004, OD-010 |
 | 8 | Returns | customer returns, credit notes, restock/discard | OD-005 |
@@ -96,13 +96,13 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 5 — Purchasing
 - **Objective:** buy goods and bring them into stock with lot and expiry.
-- **Prerequisites:** Phase 4; OD-007 (rounding/VAT), OD-014 (non-conforming goods), OD-015 (over-receipt), OD-017 (numbering), OD-029 (lot cost).
-- **Features:** suppliers and price history; purchase orders (draft → validated → sent → received/closed); goods receipts; supplier returns; reorder proposal → PO; `NumberingService`.
+- **Prerequisites:** Phase 4; decided 2026-10-24: ADR-093 (rounding, was OD-007), ADR-094 (PO prices), ADR-095 (non-conforming, was OD-014), ADR-096 (over-receipt and closing, was OD-015), ADR-097 (numbering, was OD-017), ADR-098 (lot cost, was OD-029), ADR-099…105.
+- **Features:** suppliers and price history; purchase orders (draft → validated → sent → partially received → closed, forced close, cancel); goods receipts with lots, weighted-average cost, non-conforming lots blocked and idempotent confirmation; cancelling a whole receipt (`receipt.cancel`); supplier returns (stock only); reorder proposals → draft POs with open orders subtracted; `NumberingService`; opening stock adopts the weighted-average cost.
 - **Database work:** suppliers, supplier prices, purchase orders/lines, goods receipts/lines, supplier returns, document sequences (numbering key fix, SD register).
 - **Backend work:** `purchasing`, `numbering`; atomic receipt use case; totals computation; PO PDF deferred to Phase 10.
 - **Frontend work:** supplier pages, PO editor, goods-receipt screen, supplier return.
 - **Tests:** BR-PURCH-*, BR-DOC-001, CT-03, CT-08; e2e J3.
-- **Completion criteria:** FR-PURCH-001..007 done; a receipt is all-or-nothing; numbering unique under concurrency.
+- **Completion criteria:** FR-PURCH-001..007 done; a receipt and its cancellation are all-or-nothing; numbering unique under concurrency. The close report repeats that the legal rounding rule for sales invoices must be confirmed with an accountant before Phase 7 (ADR-093).
 
 ## Phase 6 — Customers
 - **Objective:** know the customers and their commercial conditions.

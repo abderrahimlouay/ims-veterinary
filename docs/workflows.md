@@ -41,38 +41,47 @@ Supplier → Purchase Order → Goods Receipt → Lot Creation → Stock Update 
 | **Preconditions** | Supplier active (BR-PURCH-011); products active (BR-PROD-004); permissions `purchase.create`, `receipt.create`, `supplierinvoice.manage`, `payment.supplier.create` |
 
 ### 1a. Create and validate a purchase order
-1. User selects supplier; adds lines (product, unit, quantity, unit price, discount, VAT). The price may be pre-filled from `supplier_price_history`. **⚠ OD-007** (rounding).
-2. Server converts quantities to base units (BR-UNIT-002) and computes line and document totals HT/VAT/TTC (BR-PURCH-002).
-3. `Validate` → `validated`; `Send` → `sent` (printable PO, `printing`). `Cancel` allowed from draft/validated/sent.
-4. **DB:** `purchase_orders`, `purchase_order_lines`; number via `document_sequences` **⚠ OD-017** (assignment moment).
+1. User selects an active supplier; adds lines (product once per order, unit, quantity, unit price per ordered unit with 4 decimals, discount, VAT prefilled from the product). The price is prefilled from the supplier's latest `supplier_price_history` entry, else `products.purchase_price` (ADR-094, ADR-099, ADR-105). The PO number is assigned at creation (`PO-YYYY-NNNNNN`, ADR-097).
+2. Server converts quantities to base units (BR-UNIT-002) and computes line and document totals HT/VAT/TTC per line, HALF_UP (BR-PURCH-002, ADR-093).
+3. `Validate` → `validated`; `Send` → `sent` (printable PO in Phase 10). `Cancel` allowed from draft/validated/sent (audited `PO_CANCEL`). A `partially_received` order can be closed with a reason (audited `PO_CLOSE`, ADR-096).
+4. **DB:** `purchase_orders`, `purchase_order_lines`; number via `document_sequences` (ADR-097).
 5. **Validation:** BR-PURCH-001 (transitions), BR-PURCH-003 (only drafts editable).
 6. **Failure:** invalid transition → `INVALID_STATE_TRANSITION`; edit after validation → `DOCUMENT_IMMUTABLE`.
-7. **Audit:** none required by the Spec; state changes logged at INFO `[REC]`.
+7. **Audit:** `PO_CANCEL`, `PO_CLOSE` (ADR-105); other state changes logged at INFO.
 
 ### 1b. Goods receipt (lot creation and stock update) — *one transaction*
-1. User opens the receipt for a PO (or without PO **⚠ OD-015**) and, per line, enters: quantity received, **lot number**, **expiry date**, unit cost, conformity (BR-PURCH-005, BR-LOT-001, BR-LOT-012).
+1. User opens the receipt for a `sent` or `partially_received` PO, or a free receipt without PO (ADR-096), and, per line, enters: quantity received (at most the outstanding quantity, only products of the order), **lot number**, **expiry date** (date or `MM/YYYY`), unit cost per base unit, conformity (BR-PURCH-005, BR-LOT-001, BR-LOT-012). The request carries an `Idempotency-Key` (ADR-104).
 2. Server (inside the transaction):
-   1. Assigns the receipt number (`NumberingService`).
-   2. For each line: converts to base unit; **finds or creates the lot** by (product, lot number) under lock, refusing a different expiry date (BR-LOT-002, ADR-070; cost policy **⚠ OD-029**).
-   3. Inserts `stock_movements` (`purchase_receipt`, +quantity) and applies the delta to `lots.quantity_on_hand` (BR-STOCK-002); sets lot `active` (or `depleted → active`).
-   4. Updates `purchase_order_lines.received_base`; sets PO to `partially_received` or `closed` (BR-PURCH-004; over-receipt **⚠ OD-015**).
-   5. Non-conforming lines: **⚠ OD-014** (stock treatment).
-   6. Appends `supplier_price_history` when the price is confirmed (BR-PURCH-008).
-3. Response: receipt detail + PO status; reorder proposals for received products may be closed/refreshed (after commit, BR-STOCK-010).
-- **DB changes:** `goods_receipts`, `goods_receipt_lines`, `lots`, `stock_movements`, `purchase_order_lines`, `purchase_orders`, `supplier_price_history`, `document_sequences`.
+   1. Checks the idempotency key, then assigns the receipt number (`GR-YYYY-NNNNNN`, ADR-097).
+   2. For each line: converts to base unit; **finds or creates the lot** by (product, lot number) under lock (ascending lot id), refusing a different expiry date and a recalled lot; sets `supplier_id` on a new lot; the lot cost becomes the weighted average on the current balance, or the line cost when the balance is 0 (BR-LOT-002, ADR-070, ADR-098, ADR-105).
+   3. Posts `purchase_receipt` (+quantity) through `StockService` (BR-STOCK-002); a blocked lot stays blocked.
+   4. Updates `purchase_order_lines.received_base`; sets PO to `partially_received` or `closed` (BR-PURCH-004; over-receipt refused, ADR-096).
+   5. Non-conforming lines: the lot is blocked (audited `LOT_BLOCK`); if it already had stock, only with `confirmLotBlocking: true`, else `LOT_BLOCK_CONFIRMATION_REQUIRED` naming the quantity (ADR-095). An expired line is refused unless non-conforming (BR-LOT-012).
+   6. Appends `supplier_price_history` when price or discount differs from the latest entry (BR-PURCH-008, ADR-100); stores the idempotency key (ADR-104).
+3. Response: receipt detail + PO status. Reorder proposals are refreshed by the next generation (BR-STOCK-010).
+- **DB changes:** `goods_receipts`, `goods_receipt_lines`, `lots`, `stock_movements`, `purchase_order_lines`, `purchase_orders`, `supplier_price_history`, `document_sequences`, `idempotency_keys`, `audit_log` (blocking).
 - **Transaction:** atomic (BR-PURCH-007); lots locked in ascending id order.
 - **Failure cases:**
 
 | Condition | Result |
 |---|---|
 | lot number or expiry missing | `VALIDATION_FAILED` (field errors) |
-| expiry already past | `VALIDATION_FAILED` (BR-LOT-012) |
+| expiry already past (conforming line) | `VALIDATION_FAILED` `EXPIRED` (BR-LOT-012) |
 | supplier inactive / product archived | `SUPPLIER_INACTIVE` / `PRODUCT_ARCHIVED` |
-| received > ordered (if forbidden) | `RECEIPT_QUANTITY_EXCEEDS_ORDER` |
+| received > outstanding | `RECEIPT_QUANTITY_EXCEEDS_ORDER` |
+| product not on the order | `VALIDATION_FAILED` `NOT_ON_ORDER` |
 | PO not in `sent`/`partially_received` | `INVALID_STATE_TRANSITION` |
+| other expiry for an existing lot / recalled lot | `LOT_EXPIRY_MISMATCH` / `LOT_RECALLED` |
+| non-conforming line into a lot with stock, not confirmed | `LOT_BLOCK_CONFIRMATION_REQUIRED` (quantity named) |
+| same idempotency key, other body | `IDEMPOTENCY_CONFLICT` |
 | DB error / deadlock | whole receipt rolled back; client may retry |
 
-- **Audit:** stock-increasing receipts are not "sensitive" in the Spec; the movement ledger is the trace. A receipt correction (OD-004-like) would be audited `[REC]`.
+- **Audit:** the movement ledger is the trace of a receipt; lot blocking is audited `LOT_BLOCK`; a cancellation `RECEIPT_CANCEL` (W1d).
+
+### 1d. Cancel a goods receipt (ADR-103)
+1. A `receipt.cancel` holder cancels a **whole** confirmed receipt with a mandatory reason.
+2. **Refused** with `RECEIPT_NOT_CANCELLABLE` (naming the lot and the later movement) if any of its lots has a movement after the receipt's own.
+3. **One transaction:** one `receipt_cancellation` (−) movement per line through `StockService`; PO lines' received quantities and PO status rolled back; receipt `cancelled` (number kept); audited `RECEIPT_CANCEL`. A lot created by the receipt stays with a zero balance.
 
 ### 1c. Supplier invoice and payment
 1. Accountant records the supplier invoice (number, receipt link optional, dates, total TTC, credit-note flag). Due date defaults to `invoice_date + payment_terms_days` (BR-PAY-008).
@@ -106,7 +115,7 @@ Customer → Product Search → Lot Selection / FEFO → Sale → Stock Movement
 6. **Confirm** (one transaction — idempotent, BR-SALE-016):
    1. Lock lots in id order (BR-STOCK-012); re-validate status, expiry, quantity (BR-LOT-003/004, BR-SALE-015).
    2. If credit sale: lock customer, compute balance + total vs limit (BR-PAY-005 **⚠ OD-011**).
-   3. Assign number (BR-DOC-001 **⚠ OD-017**); snapshot `unit_cost` (BR-SALE-009); compute totals (BR-SALE-008).
+   3. Assign number (BR-DOC-001; format ADR-097, sales keys and assignment moment decided in Phase 7); snapshot `unit_cost` (BR-SALE-009); compute totals (BR-SALE-008).
    4. Post `sale` movements (−) and update balances; set lots `depleted` when 0 (BR-STOCK-002).
    5. Record payment/allocations/cash movement per OD-003.
    6. Mark document `confirmed`; **which document types move stock: ⚠ OD-002**.
@@ -168,11 +177,11 @@ Supplier Return → Lot Selection → Stock Reduction → Supplier Credit
 | **Actors** | Pharmacist, Accountant (credit follow-up) |
 | **Preconditions** | `return.supplier.create`; lot has quantity; reason known (defective / non-conforming — Spec) |
 
-1. User selects supplier, lots and quantities, and enters the reason (BR-PURCH-009). Blocked or recalled lots may be returned.
-2. **Confirm** (one transaction): number; `supplier_return` movements (−); balances; lot `depleted` when 0.
-3. **Supplier credit:** the Source schema has no link to the supplier credit note; the accountant records a `supplier_invoices` row with `is_credit_note` manually **⚠ OD-016 / SD-109**.
-- **DB changes:** `supplier_returns`, `supplier_return_lines`, `stock_movements`, `lots`, `document_sequences`.
-- **Failure:** quantity > lot balance → `STOCK_INSUFFICIENT`; missing reason → `VALIDATION_FAILED`.
+1. User selects supplier, lots of that supplier (or without supplier) and quantities, and enters the reason (BR-PURCH-009, ADR-101). Active, blocked, recalled and expired lots may be returned.
+2. **Confirm** (one transaction): number `SR-YYYY-NNNNNN`; `supplier_return` movements (−) through `StockService`; balances (a lot at 0 shows `depleted`); audited `RETURN_CREATE`.
+3. **Supplier credit:** not in Phase 5 (ADR-101); the link to a supplier credit note is decided in Phase 9 (OD-016, SD-109).
+- **DB changes:** `supplier_returns`, `supplier_return_lines`, `stock_movements`, `lots`, `document_sequences`, `audit_log`.
+- **Failure:** quantity > lot balance → `STOCK_INSUFFICIENT`; missing reason or lot of another supplier → `VALIDATION_FAILED` (`OTHER_SUPPLIER`).
 - **Audit:** `RETURN_CREATE` `[REC]`.
 
 ---
@@ -239,12 +248,12 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 ## 10. W10 — Reorder proposal
 
 1. **Generation** (daily at `reorder_job_time`, or *Generate now*, ADR-078): for every product not archived with `reorder_point` > 0 and sellable ≤ `reorder_point` (ADR-076), create or update its one pending proposal with `max_stock − sellable` (ADR-077, ADR-079); products without `max_stock` are reported *thresholds incomplete*, those with `max_stock` ≤ `reorder_point` *thresholds inconsistent* (no proposal for either); a dismissed product is skipped until a generation sees it above the reorder point.
-2. Pharmacist reviews proposals and **dismisses** them, or (from Phase 5, with suppliers and purchase orders) **converts** one to a draft purchase order (→ W1a). Proposal status `converted`/`dismissed`.
+2. Pharmacist reviews proposals and **dismisses** them, or (from Phase 5) selects several and **converts** them: one new draft purchase order per chosen supplier, one line per proposal (→ W1a); proposals become `converted` with their supplier (ADR-102). From Phase 5 the generation subtracts the outstanding quantity of validated, sent and partially received orders.
 
 ## 10a. W10a — Opening stock (Phase 4)
 
 1. While `opening_stock_open` is true (ADR-082), a `stock.adjust` holder enters product, lot number, expiry (date or `MM/YYYY`), quantity in a unit and unit cost (prefilled from the purchase price).
-2. **One transaction:** find-or-create the lot under lock (other expiry → `LOT_EXPIRY_MISMATCH`, other cost → `COST_MISMATCH`, recalled → `LOT_RECALLED`), `opening_stock` (+) movement, balance update, audit `OPENING_STOCK` (ADR-083, ADR-084).
+2. **One transaction:** find-or-create the lot under lock (other expiry → `LOT_EXPIRY_MISMATCH`, the lot cost becomes the weighted average (ADR-098), recalled → `LOT_RECALLED`), `opening_stock` (+) movement, balance update, audit `OPENING_STOCK` (ADR-083, ADR-084).
 3. **Failure:** period closed → `OPENING_STOCK_CLOSED`, the screen points to an inventory count.
 
 ## 11. W11 — Document conversion

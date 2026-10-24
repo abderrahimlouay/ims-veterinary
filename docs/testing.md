@@ -40,7 +40,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 
 ## 4. Backend test requirements by layer
 
-**Unit.** FEFO allocator (ordering, ties, partial lots, non-sellable skipped); unit conversion (exact decimals); price resolution (OD-006) and discount bounds; totals with rounding (OD-007); state machines (lot, PO, sales document, count, cash session, reorder); return limit calculation; balance and expected-cash formulas.
+**Unit.** FEFO allocator (ordering, ties, partial lots, non-sellable skipped); unit conversion (exact decimals); price resolution (OD-006) and discount bounds; totals with rounding (ADR-093); state machines (lot, PO, sales document, count, cash session, reorder); return limit calculation; balance and expected-cash formulas.
 
 **Repository.** Unique constraints (SKU, barcode, lot per product, one open session per cashier), CHECK constraints (non-negative balances, positive quantities, signed movement rules), trigger behaviour for append-only tables, generated columns, view parity with domain computation, `FOR UPDATE` ordering, collation behaviour for codes (ADR-024, ADR-041, ADR-051, ADR-058: lot numbers insensitive, barcodes exact), contains search and its ordering (ADR-048).
 
@@ -72,7 +72,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 |---|---|---|
 | CT-01 | N parallel sales of the last unit of a lot | exactly stock/qty succeed; others `STOCK_INSUFFICIENT`; balance ≥ 0; ledger = balance |
 | CT-02 | two sales taking lots A,B vs B,A | no deadlock (ascending lock order) or bounded retry succeeds |
-| CT-03 | parallel document numbering (1 000 allocations) | unique, gap-free on commit (policy OD-017) |
+| CT-03 | parallel document numbering (1 000 allocations) | unique, gap-free on commit (ADR-097) |
 | CT-04 | sale vs count regularisation on same lot | consistent final balance, no lost update; the sale after the watermark stays valid (ADR-072) — `CountRegularisationConcurrencyTest`, 20 repetitions |
 
 Until sales exist (Phase 7), CT-01 and CT-04 use a manual adjustment in place of a sale; Phase 7 re-runs both with real sales (roadmap Phase 7 completion criteria).
@@ -129,7 +129,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-UNIT-004 | S,A | Change factor of unit already used in document lines → UNIT_FACTOR_LOCKED (exercised from Phase 5; Phase 3 tests that an unused unit's factor can change, and with a stubbed `UnitReferences` that a used unit's factor is locked while its other fields stay editable: `ProductUnitsTest`, `ProductUnitRulesTest`) |
 | BR-UNIT-005 | S,R,A | Scan a box barcode → product, box unit, factor, price, quantity 1; scan a base-unit barcode → unit null; barcode with a unit of another product → refused by service and composite FK; codes containing `/` and `%` found (ADR-071) (`ProductBarcodesTest`, `ProductBarcodeSchemaTest`) |
 | BR-LOT-001 | S,A | Receipt line without lot number / expiry → VALIDATION_FAILED, nothing posted |
-| BR-LOT-002 | S,R | Receive same (product, lot number) twice → one lot, balance summed; another expiry → `LOT_EXPIRY_MISMATCH`, nothing written; DB rejects a duplicate (product, lot number) even with another expiry (ADR-070); OD-029 cost (Phase 4: `OpeningStockTest`, `OpeningStockConcurrencyTest`) |
+| BR-LOT-002 | S,R,C | Receive same (product, lot number) twice → one lot, balance summed; another expiry → `LOT_EXPIRY_MISMATCH`, nothing written; recalled → `LOT_RECALLED`; DB rejects a duplicate (product, lot number) even with another expiry (ADR-070); weighted-average cost (ADR-098): empty lot (entry cost replaces), existing lot, opening stock with the same rule; CT-08 two parallel receipts of one new lot → one lot, summed balance, correct cost (Phase 4: `OpeningStockTest`, `OpeningStockConcurrencyTest`) |
 | BR-LOT-003 | U,S | Lot expiring yesterday → expired; today and tomorrow → sellable (ADR-055); business date in Africa/Algiers differs from the UTC date around midnight; Phase 3 covers the rule (FEFO preview, alerts), sale confirmation from Phase 7 (`ExpiryPolicyTest`, `LotQueriesTest`) |
 | BR-LOT-004 | S | Blocked and recalled lots excluded from FEFO and rejected at confirm |
 | BR-LOT-005 | U | Allocation order by expiry then id; skips non-sellable; override without permission → FEFO_VIOLATION (Phase 3: `FefoAllocatorTest`, `FefoAndAlertsTest`; override from Phase 7) |
@@ -139,7 +139,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-LOT-009 | U,S,R | Every allowed/forbidden stored transition (table test, ADR-060); effective status priority recalled > blocked > expired > depleted > active (ADR-059); DB CHECK refuses `expired`/`depleted` as stored values; recalled lot cannot be unblocked (`LotStatusTest`, `LotSchemaTest`; `LotActionsTest`, `LotActionConcurrencyTest`) |
 | BR-LOT-010 | U,S | Days left −1 / 0 / 15 / 16 / 30 / 60 / 61 → expired / critical / critical / warning / warning / notice / none (inclusive, ADR-056); change threshold setting → levels follow; invalid values rejected (`ExpiryPolicyTest`, `LotQueriesTest`, `FefoAndAlertsTest`); each dashboard count equals the size of the list it opens (`FefoAndAlertsTest.eachAlertCountEqualsTheSizeOfItsLotList`, `ExpiryPolicyTest` windows, `LotPages.test.tsx`) |
 | BR-LOT-011 | A | No endpoint changes lot number/product/expiry (no write route exists in Phase 3) (`LotQueriesTest`) |
-| BR-LOT-012 | S | Receive already expired lot → rejected or flagged per rule |
+| BR-LOT-012 | S | Expired line refused (`EXPIRED`) unless non-conforming, then blocked lot |
 | BR-STOCK-001 | R,C | Direct CHECK violation (3819) mapped to STOCK_INSUFFICIENT; two concurrent sales of last unit → exactly one succeeds; adjustment and regularisation that would go negative refused, nothing posted (`StockServiceTest`, `StockConstraintTranslatorTest`, `StockConcurrencyTest` CT-01, `LotSchemaTest`) |
 | BR-STOCK-002 | S | Every stock-changing use case produces exactly the expected movement rows; no class other than `StockService` writes `stock_movements` or lot balances (architecture test, ADR-088); fault injection after the movement insert rolls back movement, balance and document (`StockServiceTest`, `StockAtomicityTest`, `ArchitectureTest.onlyStockServiceWritesStock`) |
 | BR-STOCK-003 | R,SEC | UPDATE/DELETE on stock_movements refused (trigger/privileges); failed tx leaves no movement; trigger refuses UPDATE/DELETE by the migration account (SQLSTATE 45000); application account gets error 1142 (ADR-087) (`StockMovementSchemaTest`, `StockMovementAppendOnlyTest`) |
@@ -153,7 +153,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-STOCK-011 | U,R | Sellable stock excludes expired/blocked/recalled/quarantined lots (sellable predicate: `ExpiryPolicyTest`; quantities from Phase 4); product sellable quantity sums only sellable lots; product stock sums only sellable lots (`StockLevelsTest`) |
 | BR-STOCK-012 | C | Parallel operations on same lots serialise; opposite lot order does not deadlock; lock wait timeout → `CONCURRENT_MODIFICATION` within 5 s (ADR-012, `LockWaitTimeoutTest`) (`StockConcurrencyTest` CT-02) |
 | BR-STOCK-013 | U,A | Status in stock / low / out and below-reorder from sellable quantity and thresholds (ADR-080) (`StockStatusTest`, `StockLevelsTest`) |
-| BR-STOCK-014 | S,A | Opening stock: setting closed → `OPENING_STOCK_CLOSED`; new lot; existing lot same expiry adds; other expiry, other cost, recalled refused; expired accepted; audited `OPENING_STOCK` (`OpeningStockTest`, `OpeningStockConcurrencyTest`, `SettingFormatTest`) |
+| BR-STOCK-014 | S,A | Opening stock: setting closed → `OPENING_STOCK_CLOSED`; new lot; existing lot same expiry adds with the weighted-average cost (ADR-098, from Phase 5; before: other cost refused); other expiry, recalled refused; expired accepted; audited `OPENING_STOCK` (`OpeningStockTest`, `OpeningStockConcurrencyTest`, `SettingFormatTest`) |
 | BR-INV-001 | U | variance = counted − theoretical, signs and zero; variance against the balance at the watermark (`CountLineTest`, `InventoryCountsTest`) |
 | BR-INV-002 | S | Regularise → one movement per variance line, reason set; none for a zero variance; found lots created; fault injection on the second line and on the audit write rolls back every movement and the created lot (`CountRegularisationTest`, `CountRegularisationAtomicityTest`) |
 | BR-INV-003 | S | Full vs cycle counts (ADR-073) produce correct lines; full: lots with stock; cycle by category and by product list (ADR-073); found lots (ADR-074) (`InventoryCountsTest`) |
@@ -162,18 +162,20 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-INV-006 | SEC,S | Regularise without inventory.validate → ACCESS_DENIED; audited (`EndpointPermissionMatrixTest`, `CountRegularisationTest`) |
 | BR-INV-007 | S | Second open full count → INVENTORY_ALREADY_OPEN (`InventoryCountsTest`, `InventorySchemaTest`) |
 | BR-INV-008 | S,C | Two edits of one line take two watermarks; regularisation posts the variance on the current balance; a variance that would go negative → `STOCK_INSUFFICIENT`, nothing posted, count open; CT-04; unsellable lots regularised (`InventoryCountsTest`, `CountRegularisationTest`, `CountRegularisationConcurrencyTest`) |
-| BR-PURCH-001 | U | PO state machine, all transitions |
-| BR-PURCH-002 | U | Line and PO totals (discount, VAT, rounding OD-007); client values ignored |
-| BR-PURCH-003 | A | Edit validated/sent PO → DOCUMENT_IMMUTABLE |
-| BR-PURCH-004 | S | Partial receipts update received qty and PO status; over-receipt per OD-015 |
-| BR-PURCH-005 | S | Receipt lines produce lot + positive movement with lot/expiry |
-| BR-PURCH-006 | S | Non-conforming line handling per OD-014 |
-| BR-PURCH-007 | S | Fault injected on line 3 → no lots, no movements, PO unchanged |
-| BR-PURCH-008 | S | Receipt/supplier price creates history entry (recommended moment) |
-| BR-PURCH-009 | S,C | Supplier return reduces lot; more than available → STOCK_INSUFFICIENT |
-| BR-PURCH-010 | S | Convert reorder proposal once; twice → INVALID_STATE_TRANSITION |
+| BR-PURCH-001 | U,S | PO state machine, all transitions; forced close with reason; cancel and forced close audited |
+| BR-PURCH-002 | U,R | Line and PO totals per line, HALF_UP (ADR-093), prices per ordered unit 4 decimals (ADR-094); generated `line_ht` equals the service (ADR-016 parity); client values ignored |
+| BR-PURCH-003 | A | Edit validated/sent PO → DOCUMENT_IMMUTABLE; same product twice → DUPLICATE |
+| BR-PURCH-004 | S | Partial receipts update received qty and PO status; over-receipt → RECEIPT_QUANTITY_EXCEEDS_ORDER; product not on the order → NOT_ON_ORDER; draft/validated/closed order not receivable; free receipt accepted |
+| BR-PURCH-005 | S | Receipt lines produce lot + positive movement with lot/expiry through `StockService`; ledger = balance |
+| BR-PURCH-006 | S | Non-conforming line → lot blocked (audited); lot with stock → LOT_BLOCK_CONFIRMATION_REQUIRED naming the quantity, accepted with `confirmLotBlocking` |
+| BR-PURCH-007 | S | Fault injected on line 3 (and on the audit / price history) → no lots, no movements, no number, PO unchanged |
+| BR-PURCH-008 | S | Receipt appends a history entry only when price or discount changes; manual entry |
+| BR-PURCH-009 | S,C | Supplier return reduces lot (any status); more than available → STOCK_INSUFFICIENT; lot of another supplier → OTHER_SUPPLIER; audited |
+| BR-PURCH-010 | S | Convert several proposals into one draft PO per supplier; twice → INVALID_STATE_TRANSITION; generation subtracts open orders (ADR-102) |
 | BR-PURCH-011 | S | PO / receipt for inactive supplier → SUPPLIER_INACTIVE |
-| BR-DOC-001 | C,R | 1000 concurrent numbers unique; format; rollback behaviour per OD-017 |
+| BR-PURCH-012 | S,C | Cancel a receipt: reversal movements, PO rolled back, audited, number kept; a later movement on one lot → RECEIPT_NOT_CANCELLABLE naming it; fault injection rolls everything back; created lot stays at 0 |
+| BR-PURCH-013 | S | Same key + same body → first receipt, nothing posted twice; same key + other body → IDEMPOTENCY_CONFLICT |
+| BR-DOC-001 | C,R | CT-03: 1000 concurrent numbers unique and gap-free on commit; format `KEY-YYYY-NNNNNN`; yearly reset; a rolled-back transaction leaves no gap (ADR-097) |
 | BR-SALE-001 | U | Document chain and allowed conversions |
 | BR-SALE-002 | S | Which documents move stock (OD-002): quote none; others per decision |
 | BR-SALE-003 | S | Confirm quote → no movement |
