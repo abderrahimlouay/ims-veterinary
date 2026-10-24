@@ -17,6 +17,7 @@ import com.imsvet.ims.inventory.application.ExpiryPolicies;
 import com.imsvet.ims.inventory.application.LotActions;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import com.imsvet.ims.users.application.UserNames;
 import java.time.Clock;
@@ -41,11 +42,12 @@ class LotActionAuditFailureTest {
         Lot lot = BeanUtils.instantiateClass(Lot.class);
         ReflectionTestUtils.setField(lot, "id", 4L);
         ReflectionTestUtils.setField(lot, "status", LotStatus.ACTIVE);
-        when(lots.findByIdForUpdate(4L)).thenReturn(Optional.of(lot));
+        LotLocks lotLocks = mock(LotLocks.class);
+        when(lotLocks.lock(4L)).thenReturn(Optional.of(lot));
         when(actors.current()).thenReturn(new Actor(7L, "198.51.100.1"));
         doThrow(new IllegalStateException("audit_log unavailable"))
                 .when(audit).record(any(), anyString(), any(), anyMap(), anyMap());
-        LotActions actions = new LotActions(lots, mock(ProductLookup.class), mock(ExpiryPolicies.class), audit, actors,
+        LotActions actions = new LotActions(lots, lotLocks, mock(ProductLookup.class), mock(ExpiryPolicies.class), audit, actors,
                 Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), mock(UserNames.class));
 
         assertThatThrownBy(() -> actions.block(4, "Damaged")).hasMessage("audit_log unavailable");

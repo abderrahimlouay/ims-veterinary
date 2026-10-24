@@ -16,6 +16,7 @@ import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.inventory.infrastructure.CountLineRepository;
 import com.imsvet.ims.inventory.infrastructure.InventoryCountRepository;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -48,6 +49,7 @@ public class CountRegularisation {
     private final InventoryCountRepository counts;
     private final CountLineRepository lines;
     private final LotRepository lots;
+    private final LotLocks lotLocks;
     private final LotIdentities identities;
     private final StockService stock;
     private final AuditRecorder audit;
@@ -56,11 +58,13 @@ public class CountRegularisation {
     private final Clock clock;
 
     public CountRegularisation(InventoryCountRepository counts, CountLineRepository lines, LotRepository lots,
+            LotLocks lotLocks,
             LotIdentities identities, StockService stock, AuditRecorder audit, CountQueries queries,
             ActorProvider actors, Clock clock) {
         this.counts = counts;
         this.lines = lines;
         this.lots = lots;
+        this.lotLocks = lotLocks;
         this.identities = identities;
         this.stock = stock;
         this.audit = audit;
@@ -178,7 +182,7 @@ public class CountRegularisation {
                 .filter(id -> id != null).distinct().sorted().toList();
         Map<Long, Lot> locked = new HashMap<>();
         if (!ids.isEmpty()) {
-            lots.findAllByIdInForUpdate(ids).forEach(lot -> locked.put(lot.id(), lot));
+            lotLocks.lockAll(ids).forEach(lot -> locked.put(lot.id(), lot));
         }
         return locked;
     }

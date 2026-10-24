@@ -74,6 +74,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 | CT-02 | two sales taking lots A,B vs B,A | no deadlock (ascending lock order) or bounded retry succeeds |
 | CT-03 | parallel document numbering (1 000 allocations) | unique, gap-free on commit (ADR-097) — `NumberingTransactionTest`, 20 repetitions |
 | CT-04 | sale vs count regularisation on same lot | consistent final balance, no lost update; the sale after the watermark stays valid (ADR-072) — `CountRegularisationConcurrencyTest`, 20 repetitions |
+| CT-04a | a lot read earlier in a transaction, then withdrawn from by another transaction, then locked and moved | the withdrawal is not lost: balance and weighted cost from the committed state, ledger = balance (`LotLockReloadTest`; supplier returns overdrawing one lot ×20 in `SupplierReturnConcurrencyTest`) |
 
 Until sales exist (Phase 7), CT-01 and CT-04 use a manual adjustment in place of a sale; Phase 7 re-runs both with real sales (roadmap Phase 7 completion criteria).
 | CT-05 | double-submit same Idempotency-Key | one document (`IdempotencyKeysTest`, 20 repetitions: the second waits on the key, then replays the first; per endpoint again in BR-PURCH-013 / BR-SALE-016) |

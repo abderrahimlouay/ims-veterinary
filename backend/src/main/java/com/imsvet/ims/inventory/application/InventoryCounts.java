@@ -16,6 +16,7 @@ import com.imsvet.ims.inventory.domain.InventoryCount;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.infrastructure.CountLineRepository;
 import com.imsvet.ims.inventory.infrastructure.InventoryCountRepository;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import com.imsvet.ims.inventory.infrastructure.MovementReadRepository;
 import java.math.BigDecimal;
@@ -57,6 +58,7 @@ public class InventoryCounts {
     private final InventoryCountRepository counts;
     private final CountLineRepository lines;
     private final LotRepository lots;
+    private final LotLocks lotLocks;
     private final MovementReadRepository movements;
     private final ProductLookup products;
     private final CountQueries queries;
@@ -64,11 +66,13 @@ public class InventoryCounts {
     private final Clock clock;
 
     public InventoryCounts(InventoryCountRepository counts, CountLineRepository lines, LotRepository lots,
+            LotLocks lotLocks,
             MovementReadRepository movements, ProductLookup products, CountQueries queries, ActorProvider actors,
             Clock clock) {
         this.counts = counts;
         this.lines = lines;
         this.lots = lots;
+        this.lotLocks = lotLocks;
         this.movements = movements;
         this.products = products;
         this.queries = queries;
@@ -141,7 +145,7 @@ public class InventoryCounts {
         }
         ProductRef product = products.find(line.productId()).orElseThrow();
         BigDecimal quantity = counted(countedQty, product.divisible(), line.lotId() == null);
-        record(line, quantity, line.lotId() == null ? null : lots.findByIdForUpdate(line.lotId()).orElseThrow());
+        record(line, quantity, line.lotId() == null ? null : lotLocks.lock(line.lotId()).orElseThrow());
         return queries.line(lines.saveAndFlush(line));
     }
 
@@ -177,7 +181,7 @@ public class InventoryCounts {
         }
         ProductRef product = products.find(lot.productId()).orElseThrow();
         BigDecimal quantity = counted(in.countedQty(), product.divisible(), false);
-        Lot locked = lots.findByIdForUpdate(lot.id()).orElseThrow();
+        Lot locked = lotLocks.lock(lot.id()).orElseThrow();
         CountLine line = CountLine.ofLot(countId, locked.productId(), locked.id(), locked.quantityOnHand());
         record(line, quantity, locked);
         return queries.line(lines.saveAndFlush(line));
