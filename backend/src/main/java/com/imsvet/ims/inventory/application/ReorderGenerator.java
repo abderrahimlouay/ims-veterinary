@@ -39,7 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
  * then, for every product not archived with a reorder point > 0 and sellable ≤ reorder point (ADR-076, found in the
  * database through the catalog port, ADR-090), creates or updates its one pending proposal with max − sellable
  * (ADR-077), or reports it thresholds incomplete (no max stock) or inconsistent (max stock at or below the reorder
- * point, user decision 2026-10-23). Idempotent; the run is recorded. Runs in the caller's transaction.
+ * point, user decision 2026-10-23). From Phase 5 what is on open orders is subtracted, and nothing is proposed when
+ * that covers the need (an existing pending proposal is then left as is, ADR-102). Idempotent; the run is recorded. Runs in the caller's transaction.
  */
 @Component
 public class ReorderGenerator {
@@ -60,15 +61,17 @@ public class ReorderGenerator {
     private final ProductStockConditions stock;
     private final ReorderProposalRepository proposals;
     private final ReorderRunRepository runs;
+    private final OpenOrders openOrders;
     private final Clock clock;
 
     public ReorderGenerator(ProductQueries productQueries, ProductLookup products, ProductStockConditions stock,
-            ReorderProposalRepository proposals, ReorderRunRepository runs, Clock clock) {
+            ReorderProposalRepository proposals, ReorderRunRepository runs, OpenOrders openOrders, Clock clock) {
         this.productQueries = productQueries;
         this.products = products;
         this.stock = stock;
         this.proposals = proposals;
         this.runs = runs;
+        this.openOrders = openOrders;
         this.clock = clock;
     }
 
@@ -92,17 +95,24 @@ public class ReorderGenerator {
                     : proposals.findByStatusAndProductIdIn(ProposalStatus.PENDING,
                             wanted.stream().map(ProductRef::id).toList()).stream()
                             .collect(Collectors.toMap(ReorderProposal::productId, Function.identity()));
+            Map<Long, BigDecimal> onOrder = wanted.isEmpty() ? Map.of()
+                    : openOrders.outstandingBase(wanted.stream().map(ProductRef::id).toList());
             for (ProductRef product : wanted) {
                 if (product.maxStock() != null && product.maxStock().compareTo(product.reorderPoint()) <= 0) {
                     inconsistent.add(new ProductBrief(product.id(), product.sku(), product.commercialName()));
                     continue;
                 }
                 BigDecimal sellable = figures.get(product.id()).sellable();
-                Optional<BigDecimal> quantity = ReorderQuantity.suggested(product.maxStock(), sellable,
-                        product.divisible());
-                if (quantity.isEmpty()) {
+                if (product.maxStock() == null) {
                     incomplete.add(new ProductBrief(product.id(), product.sku(), product.commercialName()));
-                } else if (pending.containsKey(product.id())) {
+                    continue;
+                }
+                Optional<BigDecimal> quantity = ReorderQuantity.suggested(product.maxStock(), sellable,
+                        onOrder.getOrDefault(product.id(), BigDecimal.ZERO), product.divisible());
+                if (quantity.isEmpty()) {
+                    continue;
+                }
+                if (pending.containsKey(product.id())) {
                     pending.get(product.id()).refresh(sellable, quantity.get(), now);
                     updated++;
                 } else {

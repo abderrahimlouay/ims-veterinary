@@ -41,7 +41,7 @@ public class ReorderProposals {
     /** api.md §4.5 {@code ProposalEntry}; {@code currentQty} is the sellable quantity at the last generation. */
     public record ProposalEntry(long id, ProposalProduct product, BigDecimal currentQty, BigDecimal suggestedQty,
             BigDecimal reorderPoint, BigDecimal maxStock, String status, Instant createdAt, Instant updatedAt,
-            Instant dismissedAt, UserRef dismissedBy) {
+            Instant dismissedAt, UserRef dismissedBy, Long supplierId) {
     }
 
     private final ReorderProposalRepository proposals;
@@ -99,6 +99,7 @@ public class ReorderProposals {
         return new ProposalEntry(p.id(), new ProposalProduct(product.id(), product.sku(), product.commercialName(),
                 product.baseUnit(), product.divisible()), p.currentQty(), p.suggestedQty(), product.reorderPoint(),
                 product.maxStock(), p.status().code(), p.createdAt(), p.updatedAt(), p.dismissedAt(),
-                p.dismissedBy() == null ? null : new UserRef(p.dismissedBy(), names.get(p.dismissedBy())));
+                p.dismissedBy() == null ? null : new UserRef(p.dismissedBy(), names.get(p.dismissedBy())),
+                p.supplierId());
     }
 }

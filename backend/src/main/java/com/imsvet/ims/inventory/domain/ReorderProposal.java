@@ -16,7 +16,7 @@ import java.time.Instant;
 /**
  * A reorder proposal (W10, BR-STOCK-010): at most one pending per product (unique generated column), updated in
  * place by each generation; dismissing suppresses new proposals for the product until a generation sees its
- * sellable stock above the reorder point (ADR-079).
+ * sellable stock above the reorder point (ADR-079); converting names the supplier of the new draft order (ADR-102).
  */
 @Entity
 @Table(name = "reorder_proposals")
@@ -69,6 +69,9 @@ public class ReorderProposal {
     @Column(name = "dismissed_by")
     private Long dismissedBy;
 
+    @Column(name = "supplier_id")
+    private Long supplierId;
+
     @Version
     private long version;
 
@@ -99,6 +102,16 @@ public class ReorderProposal {
         this.suppressed = true;
         this.dismissedBy = userId;
         this.dismissedAt = now;
+        this.updatedAt = now;
+    }
+
+    /** Converted into a draft purchase order for this supplier, once (BR-PURCH-010); the caller checks the status. */
+    public void convert(Long supplier, Instant now) {
+        if (status != ProposalStatus.PENDING) {
+            throw new IllegalStateException("Proposal " + id + " is " + status.code());
+        }
+        this.status = ProposalStatus.CONVERTED;
+        this.supplierId = supplier;
         this.updatedAt = now;
     }
 
@@ -146,5 +159,9 @@ public class ReorderProposal {
 
     public Long dismissedBy() {
         return dismissedBy;
+    }
+
+    public Long supplierId() {
+        return supplierId;
     }
 }
