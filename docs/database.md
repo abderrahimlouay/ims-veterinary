@@ -216,7 +216,7 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 
 **supplier_returns** — `id`, `number VARCHAR(30) UQ` (service, `SR`, ADR-097), `supplier_id FK`, `reason TEXT NOT NULL`, `created_by FK`, `created_at`. **supplier_return_lines** — `id`, `return_id FK CASCADE`, `lot_id FK`, `product_id` with composite FK to lots (SD-103), `quantity_base CK > 0`, `movement_id FK→stock_movements`. Only lots of that supplier or without supplier (ADR-101).
 
-**idempotency_keys** (ADR-104, SD-128) — `id BIGINT AI PK`, `user_id FK→users`, `endpoint VARCHAR(80)`, `idem_key CHAR(36)`, `request_hash CHAR(64)` (SHA-256 of the body), `resource_type VARCHAR(40)`, `resource_id BIGINT`, `created_at`; `UQ(user_id, endpoint, idem_key)`. Written in the transaction of the document it protects.
+**idempotency_keys** (ADR-104, SD-128) — `id BIGINT AI PK`, `user_id FK→users`, `endpoint VARCHAR(80)`, `idem_key CHAR(36)`, `request_hash CHAR(64)` (SHA-256 of the body), `resource_type VARCHAR(40) NOT NULL`, `resource_id BIGINT NULL`, `created_at`; `UQ(user_id, endpoint, idem_key)`. Owned by `common` (`IdempotencyKeys`, `V05_007`). Claimed in the transaction of the document it protects **before** the document exists (`INSERT … ON DUPLICATE KEY UPDATE`, then `SELECT … FOR UPDATE`), so a parallel request with the same key waits on the unique key and then replays the first result; completed with `resource_id` in that same transaction (a committed row always has it); a rollback removes it. The hash is SHA-256 of the JSON of the parsed request object (formatting and field order of the body do not matter). Keys are kept (no purge until a retention is decided, ADR-104).
 
 ### 3.6 Sales / POS (module 5)
 
@@ -288,7 +288,7 @@ Rule (ADR-014): views are read models for listings/reports; decisions inside tra
 
 ## 7. Transaction requirements
 
-All rows below are **one database transaction** (`@Transactional`, READ COMMITTED, ADR-013). Lock order: `document_sequences` row → lots by ascending `id` → customer row (credit check) → other rows. A failure rolls back everything, including the numbering counter.
+All rows below are **one database transaction** (`@Transactional`, READ COMMITTED, ADR-013). Lock order: `idempotency_keys` row (ADR-104) → `document_sequences` row → lots by ascending `id` → customer row (credit check) → other rows. A failure rolls back everything, including the numbering counter.
 
 | Operation | Writes | Locks / checks |
 |---|---|---|
