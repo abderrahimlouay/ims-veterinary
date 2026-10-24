@@ -12,6 +12,7 @@ import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.inventory.domain.StockMovement;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import com.imsvet.ims.inventory.infrastructure.MovementReadRepository;
 import java.math.BigDecimal;
@@ -78,15 +79,17 @@ public class StockEntries {
     }
 
     private final LotRepository lots;
+    private final LotLocks lotLocks;
     private final LotIdentities identities;
     private final StockService stock;
     private final MovementReadRepository movements;
     private final LotStatusChanges statusChanges;
     private final Clock clock;
 
-    public StockEntries(LotRepository lots, LotIdentities identities, StockService stock,
+    public StockEntries(LotRepository lots, LotLocks lotLocks, LotIdentities identities, StockService stock,
             MovementReadRepository movements, AuditRecorder audit, ActorProvider actors, Clock clock) {
         this.lots = lots;
+        this.lotLocks = lotLocks;
         this.identities = identities;
         this.stock = stock;
         this.movements = movements;
@@ -163,8 +166,7 @@ public class StockEntries {
     @Transactional(propagation = Propagation.MANDATORY)
     public List<Long> reverseReceipt(ReceiptReversal receipt, List<Reversal> reversals) {
         Map<Long, Lot> locked = new HashMap<>();
-        lots.findAllByIdInForUpdate(reversals.stream().map(Reversal::lotId).distinct().sorted().toList())
-                .forEach(l -> locked.put(l.id(), l));
+        lotLocks.lockAll(reversals.stream().map(Reversal::lotId).toList()).forEach(l -> locked.put(l.id(), l));
         for (Reversal r : reversals) {
             List<StockMovement> later = movements.after(r.lotId(), r.movementId(), PageRequest.of(0, 1));
             if (!later.isEmpty()) {

@@ -18,6 +18,7 @@ import com.imsvet.ims.inventory.application.LotIdentities;
 import com.imsvet.ims.inventory.application.StockService;
 import com.imsvet.ims.inventory.infrastructure.CountLineRepository;
 import com.imsvet.ims.inventory.infrastructure.InventoryCountRepository;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import com.imsvet.ims.inventory.infrastructure.StockMovementRepository;
 import com.imsvet.ims.support.StockAssertions;
@@ -67,6 +68,9 @@ class CountRegularisationAtomicityTest {
 
     @Autowired
     private LotRepository lots;
+
+    @Autowired
+    private LotLocks lotLocks;
 
     @Autowired
     private LotIdentities identities;
@@ -124,7 +128,7 @@ class CountRegularisationAtomicityTest {
     @Test
     void aFailureOnTheSecondLineRollsBackTheFirstAndTheCreatedLot() {
         AtomicInteger posts = new AtomicInteger();
-        StockService failingOnSecond = new StockService(lots, movements, actors, clock) {
+        StockService failingOnSecond = new StockService(lots, lotLocks, movements, actors, clock) {
             @Override
             public List<Long> post(List<Movement> requests) {
                 if (posts.incrementAndGet() == 2) {
@@ -158,7 +162,7 @@ class CountRegularisationAtomicityTest {
     }
 
     private CountRegularisation service(StockService stockService, AuditRecorder auditRecorder) {
-        return new CountRegularisation(countRepository, lineRepository, lots, identities, stockService,
+        return new CountRegularisation(countRepository, lineRepository, lots, lotLocks, identities, stockService,
                 auditRecorder, queries, actors, clock);
     }
 

@@ -9,6 +9,7 @@ import com.imsvet.ims.common.security.InternalService;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.inventory.domain.StockMovement;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import com.imsvet.ims.inventory.infrastructure.StockMovementRepository;
 import java.math.BigDecimal;
@@ -46,12 +47,15 @@ public class StockService {
     private static final int QUANTITY_SCALE = 3;
 
     private final LotRepository lots;
+    private final LotLocks lotLocks;
     private final StockMovementRepository movements;
     private final ActorProvider actors;
     private final Clock clock;
 
-    public StockService(LotRepository lots, StockMovementRepository movements, ActorProvider actors, Clock clock) {
+    public StockService(LotRepository lots,
+            LotLocks lotLocks, StockMovementRepository movements, ActorProvider actors, Clock clock) {
         this.lots = lots;
+        this.lotLocks = lotLocks;
         this.movements = movements;
         this.actors = actors;
         this.clock = clock;
@@ -102,7 +106,7 @@ public class StockService {
 
     private Map<Long, Lot> lock(List<Movement> requests) {
         List<Long> ids = requests.stream().map(Movement::lotId).distinct().sorted().toList();
-        Map<Long, Lot> locked = lots.findAllByIdInForUpdate(ids).stream()
+        Map<Long, Lot> locked = lotLocks.lockAll(ids).stream()
                 .collect(Collectors.toMap(Lot::id, Function.identity()));
         for (Long id : ids) {
             if (!locked.containsKey(id)) {

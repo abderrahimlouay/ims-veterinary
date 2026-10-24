@@ -2,7 +2,6 @@ package com.imsvet.ims.inventory.infrastructure;
 
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
-import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -11,27 +10,19 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
-/** Lots are read, locked and created here (find-or-create, BR-LOT-002); never deleted, identity never edited (BR-LOT-011). */
+/**
+ * Lots are read and created here (find-or-create, BR-LOT-002) and locked through {@link LotLocks}; never deleted,
+ * identity never edited (BR-LOT-011).
+ */
 public interface LotRepository extends Repository<Lot, Long> {
 
     Optional<Lot> findById(Long id);
 
-    /** Locking read ({@code SELECT … FOR UPDATE}) for every change of a lot (ADR-012). */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT l FROM Lot l WHERE l.id = :id")
-    Optional<Lot> findByIdForUpdate(long id);
-
     void flush();
-
-    /** Locking read of several lots in ascending id order, so concurrent use cases never deadlock (ADR-012). */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT l FROM Lot l WHERE l.id IN :ids ORDER BY l.id")
-    List<Lot> findAllByIdInForUpdate(Collection<Long> ids);
 
     List<Lot> findAllByIdIn(Collection<Long> ids);
 
@@ -67,11 +58,6 @@ public interface LotRepository extends Repository<Lot, Long> {
                             THEN l.expiryDate END)
             FROM Lot l WHERE l.productId IN :productIds GROUP BY l.productId""")
     List<Object[]> stockFigures(Collection<Long> productIds, LotStatus active, LocalDate businessDate);
-
-    /** Locking read by identity (ADR-012, ADR-070). */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT l FROM Lot l WHERE l.productId = :productId AND l.lotNumber = :lotNumber")
-    Optional<Lot> findByIdentityForUpdate(long productId, String lotNumber);
 
     /**
      * Every filter optional. {@code stored}, {@code expired} and {@code withStock} together express an effective

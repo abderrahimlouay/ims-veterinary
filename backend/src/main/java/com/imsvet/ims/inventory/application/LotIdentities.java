@@ -3,6 +3,7 @@ package com.imsvet.ims.inventory.application;
 import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
 import com.imsvet.ims.inventory.domain.Lot;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -28,10 +29,12 @@ public class LotIdentities {
     }
 
     private final LotRepository lots;
+    private final LotLocks lotLocks;
     private final Clock clock;
 
-    public LotIdentities(LotRepository lots, Clock clock) {
+    public LotIdentities(LotRepository lots, LotLocks lotLocks, Clock clock) {
         this.lots = lots;
+        this.lotLocks = lotLocks;
         this.clock = clock;
     }
 
@@ -50,7 +53,7 @@ public class LotIdentities {
         lots.resetLastInsertId();
         lots.insertIfAbsent(productId, lotNumber, expiryDate, unitCost, clock.instant());
         boolean created = lots.lastInsertId() != 0;
-        Lot lot = lots.findByIdentityForUpdate(productId, lotNumber).orElseThrow();
+        Lot lot = lotLocks.lock(lots.findByIdentity(productId, lotNumber).orElseThrow().id()).orElseThrow();
         if (!lot.expiryDate().equals(expiryDate)) {
             throw new BusinessException(ErrorCode.LOT_EXPIRY_MISMATCH,
                     "This lot number already exists with another expiry date.",

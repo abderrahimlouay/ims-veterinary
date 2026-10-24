@@ -11,6 +11,7 @@ import com.imsvet.ims.inventory.application.LotViews.RecallReport;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.LotStatus;
 import com.imsvet.ims.inventory.domain.LotStatus.Action;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import com.imsvet.ims.users.application.UserNames;
 import java.time.Clock;
@@ -28,14 +29,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class LotActions {
 
     private final LotRepository lots;
+    private final LotLocks lotLocks;
     private final ProductLookup products;
     private final ExpiryPolicies policies;
     private final LotStatusChanges statusChanges;
     private final UserNames userNames;
 
-    public LotActions(LotRepository lots, ProductLookup products, ExpiryPolicies policies, AuditRecorder audit,
+    public LotActions(LotRepository lots,
+            LotLocks lotLocks, ProductLookup products, ExpiryPolicies policies, AuditRecorder audit,
             ActorProvider actors, Clock clock, UserNames userNames) {
         this.lots = lots;
+        this.lotLocks = lotLocks;
         this.products = products;
         this.policies = policies;
         this.statusChanges = new LotStatusChanges(lots, audit, actors, clock);
@@ -81,7 +85,7 @@ public class LotActions {
     }
 
     private Lot locked(long id) {
-        return lots.findByIdForUpdate(id).orElseThrow(() -> notFound(id));
+        return lotLocks.lock(id).orElseThrow(() -> notFound(id));
     }
 
     private LotDetail detail(Lot lot) {

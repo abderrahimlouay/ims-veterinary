@@ -13,6 +13,7 @@ import com.imsvet.ims.inventory.application.StockService.Movement;
 import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.inventory.domain.StockMovement;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import com.imsvet.ims.inventory.infrastructure.MovementReadRepository;
 import com.imsvet.ims.users.application.UserNames;
@@ -43,15 +44,17 @@ public class StockAdjustments {
     private static final int QUANTITY_SCALE = 3;
 
     private final LotRepository lots;
+    private final LotLocks lotLocks;
     private final StockService stock;
     private final MovementReadRepository movements;
     private final ProductLookup products;
     private final UserNames userNames;
     private final AuditRecorder audit;
 
-    public StockAdjustments(LotRepository lots, StockService stock, MovementReadRepository movements,
+    public StockAdjustments(LotRepository lots, LotLocks lotLocks, StockService stock, MovementReadRepository movements,
             ProductLookup products, UserNames userNames, AuditRecorder audit) {
         this.lots = lots;
+        this.lotLocks = lotLocks;
         this.stock = stock;
         this.movements = movements;
         this.products = products;
@@ -63,7 +66,7 @@ public class StockAdjustments {
     @Transactional
     public MovementEntry adjust(AdjustmentInput in) {
         MovementType type = manualType(in.type());
-        Lot lot = lots.findByIdForUpdate(in.lotId()).orElseThrow(
+        Lot lot = lotLocks.lock(in.lotId()).orElseThrow(
                 () -> new BusinessException(ErrorCode.NOT_FOUND, "Lot not found.", Map.of("id", in.lotId())));
         ProductRef product = products.find(lot.productId()).orElseThrow();
         BigDecimal quantity = quantity(in.quantity(), product.divisible());
