@@ -19,8 +19,8 @@ export default defineConfig({
   // J8 creates the first lots, so it runs after the journeys that expect none yet (J2's empty lot screens).
   projects: [
     { name: 'j1', testMatch: /j1-.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
-    { name: 'chromium', testIgnore: /(j1|j8)-.*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
-    { name: 'stock', testMatch: /j8-.*\.spec\.ts/, dependencies: ['chromium'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', testIgnore: /(j1|j3|j8)-.*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'stock', testMatch: /(j3|j8)-.*\.spec\.ts/, dependencies: ['chromium'], use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: [
     {

@@ -18,7 +18,9 @@
     "counts": "Inventaires",
     "reorder": "Réapprovisionnement",
     "suppliers": "Fournisseurs",
-    "purchaseOrders": "Bons de commande"
+    "purchaseOrders": "Bons de commande",
+    "goodsReceipts": "Réceptions",
+    "supplierReturns": "Retours fournisseurs"
   },
   "language": {
     "label": "Langue",
@@ -103,7 +105,11 @@
     "INVENTORY_LINE_ALREADY_REGULARIZED": "Cette ligne est déjà régularisée.",
     "CONCURRENT_MODIFICATION": "Quelqu'un d'autre vient de modifier ces données : réessayez.",
     "SUPPLIER_INACTIVE": "Ce fournisseur est désactivé : on ne peut ni lui commander ni recevoir de lui.",
-    "DOCUMENT_IMMUTABLE": "Ce document n'est plus modifiable."
+    "DOCUMENT_IMMUTABLE": "Ce document n'est plus modifiable.",
+    "LOT_BLOCK_CONFIRMATION_REQUIRED": "Des lots déjà en stock seraient bloqués en entier : confirmez pour les bloquer.",
+    "RECEIPT_QUANTITY_EXCEEDS_ORDER": "Plus que la quantité restant à recevoir sur la commande.",
+    "IDEMPOTENCY_CONFLICT": "Cette réception a déjà été envoyée avec un autre contenu : rechargez la page.",
+    "RECEIPT_NOT_CANCELLABLE": "Un lot de cette réception a bougé depuis : elle ne peut plus être annulée."
   },
   "pager": {
     "label": "Pagination",
@@ -370,9 +376,13 @@
     "POSITIVE": "La valeur doit être supérieure à zéro.",
     "FORMAT": "Ce code ne correspond pas au type choisi.",
     "CHECK_DIGIT": "Le chiffre de contrôle EAN-13 est incorrect.",
-    "COST_MISMATCH": "Ce lot existe déjà avec un autre coût unitaire.",
     "OUT_OF_SCOPE": "Ce produit n'est pas dans le périmètre de l'inventaire.",
-    "NOT_COUNTED": "Seules les lignes comptées peuvent être régularisées."
+    "NOT_COUNTED": "Seules les lignes comptées peuvent être régularisées.",
+    "EXPIRED": "Ce lot est périmé : recevez-le seulement comme non conforme.",
+    "NOT_ON_ORDER": "Ce produit n'est pas sur cette ligne de la commande.",
+    "NOT_ORDER_SUPPLIER": "Le fournisseur d'une réception est celui de sa commande.",
+    "OTHER_SUPPLIER": "Ce lot a été reçu d'un autre fournisseur.",
+    "PATTERN": "Le format n'est pas valide."
   },
   "lots": {
     "title": "Lots",
@@ -496,7 +506,8 @@
       "adjustment_theft": "Vol",
       "adjustment_internal_use": "Usage interne",
       "adjustment_inventory": "Inventaire",
-      "opening_stock": "Stock d'ouverture"
+      "opening_stock": "Stock d'ouverture",
+      "receipt_cancellation": "Annulation de réception"
     },
     "adjustment": {
       "new": "Nouvel ajustement",
@@ -654,7 +665,12 @@
     "widget": {
       "title": "Réapprovisionnement",
       "pending": "Propositions en attente : {{count}}"
-    }
+    },
+    "converted": "Brouillons créés :",
+    "supplier": "Fournisseur de la commande",
+    "convert": "Créer le brouillon ({{n}} sélectionnée(s))",
+    "select": "Sélection",
+    "selectFor": "Sélectionner {{name}}"
   },
   "purchasing": {
     "save": "Enregistrer",
@@ -755,13 +771,56 @@
         "sent": "Envoyé",
         "cancelled": "Annulé par {{by}}",
         "closed": "Clôturé"
-      }
+      },
+      "receive": "Réceptionner"
     },
     "receipts": {
       "statuses": {
         "confirmed": "Confirmée",
         "cancelled": "Annulée"
-      }
+      },
+      "title": "Réceptions",
+      "newFree": "Nouvelle réception sans commande",
+      "newFor": "Réception de {{number}}",
+      "notReceivable": "Seule une commande envoyée ou reçue en partie peut être réceptionnée.",
+      "empty": "Aucune réception.",
+      "order": "Commande",
+      "free": "Sans commande",
+      "receivedAt": "Reçue le",
+      "receivedBy": "le {{at}} par {{by}}",
+      "docRef": "N° du bon de livraison",
+      "noLines": "Aucune ligne : ajoutez un produit.",
+      "fromSupplier": "Fournisseur : {{name}}",
+      "outstanding": "reste {{quantity}}",
+      "lotNumber": "N° de lot",
+      "expiry": "Date de péremption",
+      "expiryHint": "JJ/MM/AAAA ou MM/AAAA",
+      "expired": "Ce lot est déjà périmé.",
+      "unitCost": "Coût par unité de base",
+      "conforming": "Conforme",
+      "nonConforming": "Non conforme",
+      "lotBlocked": "lot bloqué",
+      "conformity": "Conformité",
+      "addLot": "Autre lot",
+      "confirm": "Confirmer la réception",
+      "blockWarning": "Ces lots ont déjà du stock et seraient bloqués en entier :",
+      "blockLot": "{{lotNumber}} : {{quantity}} déjà en stock",
+      "blockConfirm": "Bloquer ces lots et confirmer",
+      "cancel": "Annuler la réception",
+      "cancelledBy": "Annulée par {{by}} le {{at}} : {{reason}}",
+      "notCancellable": "Le lot {{lotNumber}} a bougé depuis ({{movement}} du {{at}}) : la réception ne peut plus être annulée."
+    },
+    "returns": {
+      "title": "Retours fournisseurs",
+      "new": "Nouveau retour fournisseur",
+      "empty": "Aucun retour.",
+      "createdAt": "Créé le",
+      "lotLine": "{{name}} — lot {{lotNumber}} ({{quantity}} en stock)",
+      "quantity": "Quantité ({{unit}})",
+      "findLot": "Rechercher un lot par son numéro",
+      "pickLot": "Choisir le lot {{lotNumber}}",
+      "confirm": "Confirmer le retour",
+      "summary": "{{supplier}} — par {{by}} le {{at}} — {{reason}}"
     }
   }
 }

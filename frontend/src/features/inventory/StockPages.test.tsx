@@ -223,7 +223,7 @@ describe('opening stock (ADR-082…084)', () => {
     serveProduct()
     server.use(
       http.post('/api/inventory/opening-stock', () =>
-        problem(400, 'VALIDATION_FAILED', { errors: [{ field: 'unitCost', code: 'COST_MISMATCH', message: 'x' }] }),
+        problem(400, 'VALIDATION_FAILED', { errors: [{ field: 'unitCost', code: 'SCALE', message: 'x' }] }),
       ),
     )
     renderApp('/stock/opening-stock/new')
@@ -238,7 +238,7 @@ describe('opening stock (ADR-082…084)', () => {
 
     await waitFor(() =>
       expect(screen.getByLabelText('Coût unitaire (tablet)')).toHaveAccessibleDescription(
-        "Prérempli avec le prix d'achat du produit. Ce lot existe déjà avec un autre coût unitaire.",
+        "Prérempli avec le prix d'achat du produit. Trop de décimales.",
       ),
     )
   })

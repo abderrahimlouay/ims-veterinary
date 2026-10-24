@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { ApiError } from '../../api/client'
@@ -8,13 +9,15 @@ import { SelectField } from '../../components/SelectField'
 import { problemMessage } from '../../lib/errors'
 import { formatDateTime, formatQuantity } from '../../lib/format'
 import { hasPermission, useCurrentUser } from '../auth'
-import { PROPOSAL_STATUSES, useDismissProposal, useGenerateProposals, useProposals } from './reorderApi'
+import { useSuppliers } from '../purchasing/supplierApi'
+import { PROPOSAL_STATUSES, useConvertProposals, useDismissProposal, useGenerateProposals, useProposals } from './reorderApi'
 
 /**
  * `/reorder` (frontend.md §4.3, W10): proposals by status (pending by default); "Generate now" runs the daily
  * generation at once and lists the products whose thresholds are incomplete (no max stock, ADR-077) or inconsistent
  * (max stock at or below the reorder point), apart (ADR-078); "Dismiss" holds
- * the product back until its stock recovers (ADR-079). Conversion to a purchase order arrives in Phase 5.
+ * the product back until its stock recovers (ADR-079). Selected pending proposals become one new draft purchase
+ * order for the supplier chosen (`reorder.manage` and `purchase.create`, ADR-102); repeat per supplier.
  */
 export function ReorderPage() {
   const { t } = useTranslation()
@@ -26,6 +29,11 @@ export function ReorderPage() {
   const generate = useGenerateProposals()
   const dismiss = useDismissProposal()
   const manage = hasPermission(current, 'reorder.manage')
+  const convertible = manage && hasPermission(current, 'purchase.create')
+  const convert = useConvertProposals()
+  const suppliers = useSuppliers('', 'true', 0, 100, convertible)
+  const [selected, setSelected] = useState<number[]>([])
+  const [supplierId, setSupplierId] = useState('')
 
   return (
     <section className="flex flex-col gap-4">
@@ -46,6 +54,35 @@ export function ReorderPage() {
       )}
       {generate.error instanceof ApiError && <Alert tone="danger">{problemMessage(generate.error.problem, t)}</Alert>}
       {dismiss.error instanceof ApiError && <Alert tone="danger">{problemMessage(dismiss.error.problem, t)}</Alert>}
+      {convert.error instanceof ApiError && <Alert tone="danger">{problemMessage(convert.error.problem, t)}</Alert>}
+      {convert.data && (
+        <Alert tone="ok">
+          {t('reorder.converted')}{' '}
+          {convert.data.map((o) => (
+            <Link key={o.id} to={`/purchase-orders/${o.id}`} className="underline">
+              {o.number}
+            </Link>
+          ))}
+        </Alert>
+      )}
+      {convertible && status === 'pending' && (
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-72">
+            <SelectField
+              label={t('reorder.supplier')}
+              value={supplierId}
+              onChange={(e) => setSupplierId(e.target.value)}
+              options={[{ value: '', label: '—' }, ...(suppliers.data?.content ?? []).map((s) => ({ value: String(s.id), label: s.name }))]}
+            />
+          </div>
+          <Button
+            disabled={selected.length === 0 || supplierId === '' || convert.isPending}
+            onClick={() => convert.mutate({ supplierId: Number(supplierId), proposalIds: selected }, { onSuccess: () => setSelected([]) })}
+          >
+            {t('reorder.convert', { n: selected.length })}
+          </Button>
+        </div>
+      )}
       <div className="max-w-xs">
         <SelectField
           label={t('reorder.statusFilter')}
@@ -67,6 +104,7 @@ export function ReorderPage() {
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-line">
+                {convertible && <th className="w-8"><span className="sr-only">{t('reorder.select')}</span></th>}
                 <th className="text-start py-2">{t('catalog.products.name')}</th>
                 <th className="text-end">{t('reorder.current')}</th>
                 <th className="text-end">{t('reorder.suggested')}</th>
@@ -80,6 +118,18 @@ export function ReorderPage() {
             <tbody>
               {proposals.data.content.map((p) => (
                 <tr key={p.id} className="border-b border-line">
+                  {convertible && (
+                    <td>
+                      {p.status === 'pending' && (
+                        <input
+                          type="checkbox"
+                          aria-label={t('reorder.selectFor', { name: p.product.commercialName })}
+                          checked={selected.includes(p.id)}
+                          onChange={(e) => setSelected((s) => (e.target.checked ? [...s, p.id] : s.filter((id) => id !== p.id)))}
+                        />
+                      )}
+                    </td>
+                  )}
                   <td className="py-2">
                     <Link to={`/products/${p.product.id}`} className="text-brand underline underline-offset-4">
                       {p.product.commercialName}

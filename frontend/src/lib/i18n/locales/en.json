@@ -18,7 +18,9 @@
     "counts": "Inventory counts",
     "reorder": "Reorder",
     "suppliers": "Suppliers",
-    "purchaseOrders": "Purchase orders"
+    "purchaseOrders": "Purchase orders",
+    "goodsReceipts": "Goods receipts",
+    "supplierReturns": "Supplier returns"
   },
   "language": {
     "label": "Language",
@@ -103,7 +105,11 @@
     "INVENTORY_LINE_ALREADY_REGULARIZED": "This line is already regularised.",
     "CONCURRENT_MODIFICATION": "Someone else just changed this data: try again.",
     "SUPPLIER_INACTIVE": "This supplier is deactivated: nothing can be ordered from or received from it.",
-    "DOCUMENT_IMMUTABLE": "This document can no longer be changed."
+    "DOCUMENT_IMMUTABLE": "This document can no longer be changed.",
+    "LOT_BLOCK_CONFIRMATION_REQUIRED": "Lots already in stock would be blocked as a whole: confirm to block them.",
+    "RECEIPT_QUANTITY_EXCEEDS_ORDER": "More than the quantity still outstanding on the order.",
+    "IDEMPOTENCY_CONFLICT": "This receipt was already sent with other content: reload the page.",
+    "RECEIPT_NOT_CANCELLABLE": "A lot of this receipt has moved since: it can no longer be cancelled."
   },
   "pager": {
     "label": "Pagination",
@@ -370,9 +376,13 @@
     "POSITIVE": "The value must be greater than zero.",
     "FORMAT": "This code does not match the chosen type.",
     "CHECK_DIGIT": "The EAN-13 check digit is wrong.",
-    "COST_MISMATCH": "This lot already exists with another unit cost.",
     "OUT_OF_SCOPE": "This product is not in the count's scope.",
-    "NOT_COUNTED": "Only counted lines can be regularised."
+    "NOT_COUNTED": "Only counted lines can be regularised.",
+    "EXPIRED": "This lot has expired: receive it only as non-conforming.",
+    "NOT_ON_ORDER": "This product is not on this line of the order.",
+    "NOT_ORDER_SUPPLIER": "The supplier of a receipt is the supplier of its order.",
+    "OTHER_SUPPLIER": "This lot was received from another supplier.",
+    "PATTERN": "The format is not valid."
   },
   "lots": {
     "title": "Lots",
@@ -496,7 +506,8 @@
       "adjustment_theft": "Theft",
       "adjustment_internal_use": "Internal use",
       "adjustment_inventory": "Inventory count",
-      "opening_stock": "Opening stock"
+      "opening_stock": "Opening stock",
+      "receipt_cancellation": "Receipt cancellation"
     },
     "adjustment": {
       "new": "New adjustment",
@@ -654,7 +665,12 @@
     "widget": {
       "title": "Reorder",
       "pending": "Pending proposals: {{count}}"
-    }
+    },
+    "converted": "Drafts created:",
+    "supplier": "Supplier of the order",
+    "convert": "Create the draft ({{n}} selected)",
+    "select": "Selection",
+    "selectFor": "Select {{name}}"
   },
   "purchasing": {
     "save": "Save",
@@ -755,13 +771,56 @@
         "sent": "Sent",
         "cancelled": "Cancelled by {{by}}",
         "closed": "Closed"
-      }
+      },
+      "receive": "Receive"
     },
     "receipts": {
       "statuses": {
         "confirmed": "Confirmed",
         "cancelled": "Cancelled"
-      }
+      },
+      "title": "Goods receipts",
+      "newFree": "New receipt without order",
+      "newFor": "Receipt of {{number}}",
+      "notReceivable": "Only a sent or partially received order can be received.",
+      "empty": "No receipt.",
+      "order": "Order",
+      "free": "Without order",
+      "receivedAt": "Received",
+      "receivedBy": "on {{at}} by {{by}}",
+      "docRef": "Delivery note no.",
+      "noLines": "No line yet: add a product.",
+      "fromSupplier": "Supplier: {{name}}",
+      "outstanding": "{{quantity}} outstanding",
+      "lotNumber": "Lot number",
+      "expiry": "Expiry date",
+      "expiryHint": "DD/MM/YYYY or MM/YYYY",
+      "expired": "This lot has already expired.",
+      "unitCost": "Cost per base unit",
+      "conforming": "Conforming",
+      "nonConforming": "Non-conforming",
+      "lotBlocked": "lot blocked",
+      "conformity": "Conformity",
+      "addLot": "Another lot",
+      "confirm": "Confirm the receipt",
+      "blockWarning": "These lots already have stock and would be blocked as a whole:",
+      "blockLot": "{{lotNumber}}: {{quantity}} already in stock",
+      "blockConfirm": "Block these lots and confirm",
+      "cancel": "Cancel the receipt",
+      "cancelledBy": "Cancelled by {{by}} on {{at}}: {{reason}}",
+      "notCancellable": "Lot {{lotNumber}} has moved since ({{movement}} on {{at}}): the receipt can no longer be cancelled."
+    },
+    "returns": {
+      "title": "Supplier returns",
+      "new": "New supplier return",
+      "empty": "No return.",
+      "createdAt": "Created",
+      "lotLine": "{{name}} — lot {{lotNumber}} ({{quantity}} in stock)",
+      "quantity": "Quantity ({{unit}})",
+      "findLot": "Search a lot by its number",
+      "pickLot": "Choose lot {{lotNumber}}",
+      "confirm": "Confirm the return",
+      "summary": "{{supplier}} — by {{by}} on {{at}} — {{reason}}"
     }
   }
 }
