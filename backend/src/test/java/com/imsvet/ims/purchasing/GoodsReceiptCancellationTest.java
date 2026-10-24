@@ -208,6 +208,25 @@ class GoodsReceiptCancellationTest {
                 ORDER BY entity_id""", Long.class)).containsExactlyInAnyOrder(untouched, stocked);
     }
 
+    /** ADR-106: a lot the receipt did not block, blocked or recalled by a person since, keeps that status. */
+    @Test
+    void aLotBlockedOrRecalledByAPersonAfterTheReceiptKeepsThatStatus() throws Exception {
+        long blocked = lotOf(receive(free(line(null, "P-BLK", "3", "0.3", true))));
+        long recalled = lotOf(receive(free(line(null, "P-RCL", "3", "0.3", true))));
+        clock.advance(Duration.ofMinutes(1));
+        lotAction(blocked, "block", "Leaking vials");
+        lotAction(recalled, "recall", "Manufacturer notice");
+
+        cancel(receiptOf(blocked), "Cancelled").andExpect(status().isOk());
+        cancel(receiptOf(recalled), "Cancelled").andExpect(status().isOk());
+
+        assertThat(statusAndReason(blocked)).containsExactly("blocked", "Leaking vials");
+        assertThat(statusAndReason(recalled)).containsExactly("recalled", "Manufacturer notice");
+        assertThat(jdbc.queryForObject("""
+                SELECT COUNT(*) FROM audit_log WHERE action = 'LOT_UNBLOCK' AND entity_id IN (?, ?)""", Integer.class,
+                blocked, recalled)).isZero();
+    }
+
     /** ADR-106, SD-132: the receipt's price entry stays, marked cancelled, and the prefill no longer uses it. */
     @Test
     void theReceiptsPriceEntryIsMarkedCancelledAndIgnoredByThePrefill() throws Exception {

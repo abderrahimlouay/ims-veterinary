@@ -103,6 +103,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** supplier pages, PO editor, goods-receipt screen, supplier return.
 - **Tests:** BR-PURCH-*, BR-DOC-001, CT-03, CT-08; e2e J3.
 - **Completion criteria:** FR-PURCH-001..007 done; a receipt and its cancellation are all-or-nothing; numbering unique under concurrency. The close report repeats that the legal rounding rule for sales invoices must be confirmed with an accountant before Phase 7 (ADR-093).
+- **Delivered (2026-10-24; awaiting approval of the close):** decisions PRs #57 (ADR-093…105) and #58 (ADR-106), then PRs #59–#69 (slices suppliers, numbering, purchase orders, idempotency keys, goods receipts, receipt cancellation, the lot-lock reload fix #65, supplier returns, reorder conversion, frontend suppliers and orders, frontend receipts and returns) and the close PR; migrations V05_001…016; SD-126…132; no OD opened. e2e J3 added (runs with J8 after the journeys that expect no lot, known debt for Phase 12). Not delivered here, by plan: supplier invoices, payments and payables on the supplier page (Phase 9, OD-016); the supplier credit note of a return (Phase 9, OD-016); the purchase-order PDF (Phase 10). The close report repeats that an accountant must confirm the legal rounding rule for sales invoices (per line or per VAT rate) before Phase 7 (ADR-093).
 
 ## Phase 6 — Customers
 - **Objective:** know the customers and their commercial conditions.

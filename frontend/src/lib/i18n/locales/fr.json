@@ -670,7 +670,9 @@
     "supplier": "Fournisseur de la commande",
     "convert": "Créer le brouillon ({{n}} sélectionnée(s))",
     "select": "Sélection",
-    "selectFor": "Sélectionner {{name}}"
+    "selectFor": "Sélectionner {{name}}",
+    "supplierColumn": "Fournisseur",
+    "supplierId": "Fournisseur n° {{id}}"
   },
   "purchasing": {
     "save": "Enregistrer",
@@ -808,7 +810,8 @@
       "blockConfirm": "Bloquer ces lots et confirmer",
       "cancel": "Annuler la réception",
       "cancelledBy": "Annulée par {{by}} le {{at}} : {{reason}}",
-      "notCancellable": "Le lot {{lotNumber}} a bougé depuis ({{movement}} du {{at}}) : la réception ne peut plus être annulée."
+      "notCancellable": "Le lot {{lotNumber}} a bougé depuis ({{movement}} du {{at}}) : la réception ne peut plus être annulée.",
+      "duplicateLot": "Ce lot est déjà sur une autre ligne : additionnez les quantités sur une seule ligne."
     },
     "returns": {
       "title": "Retours fournisseurs",

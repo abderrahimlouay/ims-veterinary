@@ -188,4 +188,18 @@ describe('supplier returns and reorder conversion (frontend.md §4.5)', () => {
     expect(await screen.findByRole('link', { name: 'PO-2026-000042' })).toHaveAttribute('href', '/purchase-orders/42')
     expect(sent).toEqual({ groups: [{ supplierId: 3, proposalIds: [11] }] })
   })
+
+  it('names the supplier of converted proposals, or shows its id when the name cannot be read', async () => {
+    serveMe(aUser({ permissions: ['reorder.read', 'supplier.read'] }))
+    const converted = (id: number, supplierId: number) => ({ id, product: { ...PRODUCT, id: id + 100, commercialName: `Product ${id}`, divisible: false }, currentQty: '2.000', suggestedQty: '48.000', reorderPoint: '10.000', maxStock: '50.000', status: 'converted', createdAt: '2026-10-20T08:00:00Z', updatedAt: '2026-10-20T08:00:00Z', dismissedAt: null, dismissedBy: null, supplierId })
+    server.use(
+      http.get('/api/inventory/reorder-proposals', () => HttpResponse.json(page([converted(11, 3), converted(12, 77)]))),
+      http.get('/api/suppliers/3', () => HttpResponse.json({ ...SUPPLIER, kind: 'wholesaler', taxId: null, phone: null, email: null, address: null, paymentTermsDays: 30, createdAt: '', updatedAt: '', version: 0 })),
+      http.get('/api/suppliers/77', () => problem(404, 'NOT_FOUND')),
+    )
+    renderApp('/reorder?status=converted')
+
+    expect(await screen.findByRole('cell', { name: 'Biopharm' })).toBeInTheDocument()
+    expect(await screen.findByRole('cell', { name: 'Fournisseur n° 77' })).toBeInTheDocument()
+  })
 })

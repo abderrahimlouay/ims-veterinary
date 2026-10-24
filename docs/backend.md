@@ -111,7 +111,7 @@ Enforcement location of each business rule is in `business-rules.md` (column *En
 
 Detailed in `architecture.md` §5 and `workflows.md`. Rules summarised:
 1. **One use case = one transaction** at the application service. Controllers and repositories are not transactional boundaries.
-2. Isolation **READ COMMITTED** with explicit `SELECT … FOR UPDATE` (pessimistic) on lots in ascending id order (ADR-012/013) for any operation that moves stock. Lots are locked only through `LotLocks`, which locks in ascending id **and reloads** each lot: a locking query would return a lot already read in the transaction as it was read, losing a movement committed in between (`LotLockReloadTest`); the same holds for an order a receipt progresses (`OrderLocks`).
+2. Isolation **READ COMMITTED** with explicit `SELECT … FOR UPDATE` (pessimistic) on lots in ascending id order (ADR-012/013) for any operation that moves stock. Lots are locked only through `LotLocks`, which locks in ascending id **and reloads** each lot: a locking query would return a lot already read in the transaction as it was read, losing a movement committed in between (`LotLockReloadTest`; no other lot lock is possible, `LotLockingRuleTest`); the same holds for an order a receipt progresses (`OrderLocks`).
 3. Optimistic `@Version` for editable master/draft data.
 4. Stock check and ledger insert happen in the same transaction as the lock; the lot balance is updated and verified (`CHECK >= 0`) in that transaction.
 5. No remote calls or PDF rendering inside stock transactions; PDF generated after commit.

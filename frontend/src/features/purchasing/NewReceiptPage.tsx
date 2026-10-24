@@ -167,7 +167,9 @@ function ReceiptForm({ order }: { order?: PurchaseOrderDetail }) {
             setToBlock((error.problem.context.lots as PendingLot[] | undefined) ?? [])
             return
           }
-          const placed = Object.fromEntries(error.problem.errors.map((e) => [e.field, t(`fieldErrors.${e.code}`)]))
+          const placed = Object.fromEntries(
+            error.problem.errors.map((e) => [e.field, t(e.code === 'DUPLICATE' && e.field.endsWith('.lotNumber') ? 'purchasing.receipts.duplicateLot' : `fieldErrors.${e.code}`)]),
+          )
           setErrors(placed)
           if (Object.keys(placed).length === 0) {
             setProblem(error.problem)

@@ -11,6 +11,9 @@ import com.imsvet.ims.inventory.application.StockAdjustments.AdjustmentInput;
 import com.imsvet.ims.purchasing.application.GoodsReceipts;
 import com.imsvet.ims.purchasing.application.GoodsReceipts.ReceiptInput;
 import com.imsvet.ims.purchasing.application.GoodsReceipts.ReceivedLine;
+import com.imsvet.ims.purchasing.application.SupplierReturns;
+import com.imsvet.ims.purchasing.application.SupplierReturns.ReturnInput;
+import com.imsvet.ims.purchasing.application.SupplierReturns.ReturnedLine;
 import com.imsvet.ims.support.StockAssertions;
 import com.imsvet.ims.support.TestActor;
 import com.imsvet.ims.support.TestLots;
@@ -37,7 +40,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * Receipt cancellations racing on committed data, 20 times each (BR-PURCH-012, ADR-103): two cancellations of one
  * receipt — one cancels, the other is refused as already cancelled; a cancellation and a withdrawal from the same
  * lot — whichever goes first, the ledger equals the balance, no balance is negative, and either the receipt is
- * cancelled (the withdrawal then finding no stock) or it is refused as no longer cancellable.
+ * cancelled (the withdrawal then finding no stock) or it is refused as no longer cancellable; the same with a
+ * supplier return of that lot, which also checks that the lock-order exception never deadlocks.
  */
 @SpringBootTest
 @Import({ TestcontainersConfiguration.class, CommittedDataDatabase.class })
@@ -52,7 +56,11 @@ class GoodsReceiptCancellationConcurrencyTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private SupplierReturns returns;
+
     private long operator;
+    private long supplier;
     private long receipt;
     private long lot;
 
@@ -62,7 +70,7 @@ class GoodsReceiptCancellationConcurrencyTest {
         String key = UUID.randomUUID().toString().substring(0, 8);
         jdbc.update("INSERT INTO suppliers (name, created_at, updated_at) VALUES (?, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))",
                 "Race " + key);
-        long supplier = jdbc.queryForObject("SELECT id FROM suppliers WHERE name = ?", Long.class, "Race " + key);
+        supplier = jdbc.queryForObject("SELECT id FROM suppliers WHERE name = ?", Long.class, "Race " + key);
         long product = lots.product("RACE-" + key, "Cancel race");
         operator = lots.fixtureUser();
         TestActor.signIn(operator, "receipt.create");
@@ -108,6 +116,26 @@ class GoodsReceiptCancellationConcurrencyTest {
         StockAssertions.assertLedgerMatchesBalances(jdbc, List.of(lot));
     }
 
+    /**
+     * The lock-order exception of database.md §7 (a cancellation locks its receipt row, then the lots) against a
+     * supplier return (SR counter row, then the lots) on the same lot: never a deadlock; either the receipt is
+     * cancelled and the return finds no stock, or the return goes first and the receipt is no longer cancellable.
+     */
+    @RepeatedTest(20)
+    void aCancellationRacingASupplierReturnOfTheSameLotNeverDeadlocks() throws Exception {
+        List<Object> outcomes = race(() -> receipts.cancel(receipt, "Wrong delivery"),
+                () -> returns.create(new ReturnInput(supplier, "Damaged", List.of(new ReturnedLine(lot,
+                        new BigDecimal("2"), null)))));
+
+        String status = jdbc.queryForObject("SELECT status FROM goods_receipts WHERE id = ?", String.class, receipt);
+        if (status.equals("cancelled")) {
+            assertThat(outcomes).containsExactly(null, ErrorCode.STOCK_INSUFFICIENT);
+        } else {
+            assertThat(outcomes).containsExactly(ErrorCode.RECEIPT_NOT_CANCELLABLE, null);
+        }
+        StockAssertions.assertLedgerMatchesBalances(jdbc, List.of(lot));
+    }
+
     /** Runs both at once; per task, {@code null} when it succeeded, else the refusal's code. */
     private List<Object> race(Callable<?> first, Callable<?> second) throws Exception {
         CountDownLatch start = new CountDownLatch(1);
@@ -116,7 +144,7 @@ class GoodsReceiptCancellationConcurrencyTest {
             List<Future<Object>> futures = new ArrayList<>();
             for (Callable<?> task : List.of(first, second)) {
                 futures.add(pool.submit(() -> {
-                    TestActor.signIn(operator, "receipt.cancel", "stock.adjust");
+                    TestActor.signIn(operator, "receipt.cancel", "stock.adjust", "return.supplier.create");
                     try {
                         start.await();
                         task.call();

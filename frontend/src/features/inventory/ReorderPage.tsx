@@ -9,7 +9,7 @@ import { SelectField } from '../../components/SelectField'
 import { problemMessage } from '../../lib/errors'
 import { formatDateTime, formatQuantity } from '../../lib/format'
 import { hasPermission, useCurrentUser } from '../auth'
-import { useSuppliers } from '../purchasing/supplierApi'
+import { useSupplierNames, useSuppliers } from '../purchasing/supplierApi'
 import { PROPOSAL_STATUSES, useConvertProposals, useDismissProposal, useGenerateProposals, useProposals } from './reorderApi'
 
 /**
@@ -34,6 +34,10 @@ export function ReorderPage() {
   const suppliers = useSuppliers('', 'true', 0, 100, convertible)
   const [selected, setSelected] = useState<number[]>([])
   const [supplierId, setSupplierId] = useState('')
+  const supplierNames = useSupplierNames(
+    (proposals.data?.content ?? []).flatMap((p) => (p.supplierId === null ? [] : [p.supplierId])),
+    hasPermission(current, 'supplier.read'),
+  )
 
   return (
     <section className="flex flex-col gap-4">
@@ -112,6 +116,7 @@ export function ReorderPage() {
                 <th className="text-end">{t('catalog.products.maxStock')}</th>
                 <th className="text-start ps-4">{t('reorder.updatedAt')}</th>
                 <th className="text-start">{t('reorder.statusFilter')}</th>
+                <th className="text-start">{t('reorder.supplierColumn')}</th>
                 {manage && <th className="text-end">{t('reorder.actions')}</th>}
               </tr>
             </thead>
@@ -146,6 +151,7 @@ export function ReorderPage() {
                       ? t('reorder.dismissedBy', { by: p.dismissedBy.fullName })
                       : t(`reorder.status.${p.status}`)}
                   </td>
+                  <td>{p.supplierId === null ? '' : supplierNames.get(p.supplierId) ?? t('reorder.supplierId', { id: p.supplierId })}</td>
                   {manage && (
                     <td className="text-end">
                       {p.status === 'pending' && (

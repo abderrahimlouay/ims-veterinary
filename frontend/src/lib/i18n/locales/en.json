@@ -670,7 +670,9 @@
     "supplier": "Supplier of the order",
     "convert": "Create the draft ({{n}} selected)",
     "select": "Selection",
-    "selectFor": "Select {{name}}"
+    "selectFor": "Select {{name}}",
+    "supplierColumn": "Supplier",
+    "supplierId": "Supplier no. {{id}}"
   },
   "purchasing": {
     "save": "Save",
@@ -808,7 +810,8 @@
       "blockConfirm": "Block these lots and confirm",
       "cancel": "Cancel the receipt",
       "cancelledBy": "Cancelled by {{by}} on {{at}}: {{reason}}",
-      "notCancellable": "Lot {{lotNumber}} has moved since ({{movement}} on {{at}}): the receipt can no longer be cancelled."
+      "notCancellable": "Lot {{lotNumber}} has moved since ({{movement}} on {{at}}): the receipt can no longer be cancelled.",
+      "duplicateLot": "This lot is already on another line: add the quantities on one line."
     },
     "returns": {
       "title": "Supplier returns",

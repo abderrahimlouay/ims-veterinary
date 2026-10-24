@@ -320,7 +320,7 @@ public class GoodsReceipts {
             ValidLine line = line(lines.get(i), order, "lines[" + i + "].");
             if (!lots.add(LotIdentities.key(line.product().id(), line.lotNumber()))) {
                 throw OrderLineValidator.invalid("lines[" + i + "].lotNumber", "DUPLICATE",
-                        "A lot appears once per receipt.");
+                        "This lot is already on another line of this receipt: add the quantities on one line.");
             }
             valid.add(line);
         }

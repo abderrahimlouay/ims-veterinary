@@ -59,6 +59,7 @@ Supplier → Purchase Order → Goods Receipt → Lot Creation → Stock Update 
    5. Non-conforming lines: the lot is blocked (audited `LOT_BLOCK`); if it already had stock, only with `confirmLotBlocking: true`, else `LOT_BLOCK_CONFIRMATION_REQUIRED` naming the quantity (ADR-095). An expired line is refused unless non-conforming (BR-LOT-012).
    6. Appends `supplier_price_history` when price or discount differs from the latest entry (BR-PURCH-008, ADR-100); stores the idempotency key (ADR-104).
 3. Response: receipt detail + PO status. Reorder proposals are refreshed by the next generation (BR-STOCK-010).
+- **One line per lot** (decided at the Phase 5 close): a lot is (product, lot number), so the same number for two products is two lots and both lines are received; the same lot twice in one receipt is refused on the second line with `DUPLICATE` and the message "add the quantities on one line". Two order lines never share a product (ADR-105 (e)), so two order lines cannot both claim one lot; one order line may be received in several lots.
 - **DB changes:** `goods_receipts`, `goods_receipt_lines`, `lots`, `stock_movements`, `purchase_order_lines`, `purchase_orders`, `supplier_price_history`, `document_sequences`, `idempotency_keys`, `audit_log` (blocking).
 - **Transaction:** atomic (BR-PURCH-007); lots locked in ascending id order.
 - **Failure cases:**
