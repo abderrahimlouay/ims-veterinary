@@ -129,6 +129,9 @@
                 <configuration>
                     <systemPropertyVariables>
                         <user.timezone>UTC</user.timezone> <!-- ADR-010 -->
+                        <!-- Scheduled jobs off: tests call the ticks with the test clock. A system property, because a
+                             DynamicPropertyRegistrar is applied after @ConditionalOnBooleanProperty is evaluated. -->
+                        <ims.jobs.enabled>false</ims.jobs.enabled>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

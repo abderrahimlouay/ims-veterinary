@@ -13,6 +13,7 @@ import com.imsvet.ims.purchasing.infrastructure.SupplierRepository;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -112,6 +113,10 @@ public class SupplierDirectory {
         } catch (DataIntegrityViolationException e) {
             throw duplicate();
         }
+    }
+
+    Optional<Supplier> findOptional(long id) {
+        return suppliers.findById(id);
     }
 
     Supplier find(long id) {

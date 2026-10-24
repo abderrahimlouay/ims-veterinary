@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,9 +34,18 @@ class IntegrityCheckJobTest {
     @Autowired
     private IntegrityCheckJob job;
 
+    @Autowired
+    private ApplicationContext context;
+
     @BeforeEach
     void before() {
         clock.reset();
+    }
+
+    /** A real tick while a test has moved the shared clock would commit a run into the shared database. */
+    @Test
+    void theSchedulerIsOffInTests() {
+        assertThat(context.containsBean("inventoryScheduling")).isFalse();
     }
 
     @Test
