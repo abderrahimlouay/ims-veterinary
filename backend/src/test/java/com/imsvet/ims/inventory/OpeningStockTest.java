@@ -114,12 +114,11 @@ class OpeningStockTest {
     }
 
     @Test
-    void anotherExpiryOrCostOrARecalledLotIsRefused() throws Exception {
+    void anotherExpiryOrARecalledLotIsRefused() throws Exception {
         long lot = idOfLot(open("L-1", "2027-03-31", "10", null, "0.02"));
 
         open("L-1", "2027-04-30", "1", null, "0.02").andExpect(status().is(422))
                 .andExpect(jsonPath("$.code").value("LOT_EXPIRY_MISMATCH"));
-        assertFieldError(open("L-1", "2027-03-31", "1", null, "0.03"), "unitCost", "COST_MISMATCH");
         jdbc.update("UPDATE lots SET status = 'recalled' WHERE id = ?", lot);
         entityManager.clear();
         open("L-1", "2027-03-31", "1", null, "0.02").andExpect(status().is(422))
@@ -127,6 +126,32 @@ class OpeningStockTest {
 
         assertThat(jdbc.queryForObject("SELECT quantity_on_hand FROM lots WHERE id = ?", String.class, lot))
                 .isEqualTo("10.000");
+    }
+
+    /** ADR-098 (ADR-084 amended): another cost is averaged on the current balance, 4 decimals HALF_UP. */
+    @Test
+    void anotherCostBecomesTheWeightedAverage() throws Exception {
+        long lot = idOfLot(open("L-AVG", "2027-03-31", "10", null, "0.02"));
+
+        open("L-AVG", "2027-03-31", "1", null, "0.03").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.lot.quantityOnHand").value("11.000"))
+                .andExpect(jsonPath("$.lot.unitCost").value("0.0209"));
+
+        assertThat(jdbc.queryForObject("SELECT unit_cost FROM lots WHERE id = ?", String.class, lot))
+                .isEqualTo("0.0209");
+        StockAssertions.assertLedgerMatchesBalances(jdbc, List.of(lot));
+    }
+
+    /** ADR-098: on an empty lot the entry cost replaces the old one (no division by zero). */
+    @Test
+    void anEmptyLotTakesTheEntryCost() throws Exception {
+        long lot = lots.lot(solution, "L-EMPTY", TODAY.plusDays(300), "0");
+
+        open("L-EMPTY", TODAY.plusDays(300).toString(), "4", null, "0.0375").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.lot.unitCost").value("0.0375"));
+
+        assertThat(jdbc.queryForObject("SELECT unit_cost FROM lots WHERE id = ?", String.class, lot))
+                .isEqualTo("0.0375");
     }
 
     @Test

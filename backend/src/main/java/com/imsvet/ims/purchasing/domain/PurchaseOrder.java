@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A purchase order (FR-PURCH-003/004): numbered at creation (ADR-097), supplier and lines editable only while draft
@@ -193,6 +194,30 @@ public class PurchaseOrder {
             }
         }
         this.status = next;
+        this.updatedAt = now;
+    }
+
+    /**
+     * A receipt of base quantities per line id (BR-PURCH-004): the order becomes partially received, or closed (by
+     * full reception, no reason) when nothing is outstanding. The caller checks the status and the quantities.
+     */
+    public void receive(Map<Long, BigDecimal> quantitiesByLine, Long userId, Instant now) {
+        if (!status.receivable()) {
+            throw new IllegalStateException("Order " + number + " is " + status.code());
+        }
+        for (PurchaseOrderLine line : lines) {
+            BigDecimal quantity = quantitiesByLine.get(line.id());
+            if (quantity != null) {
+                line.receive(quantity);
+            }
+        }
+        if (lines.stream().allMatch(l -> l.outstandingBase().signum() == 0)) {
+            this.status = OrderStatus.CLOSED;
+            this.closedBy = userId;
+            this.closedAt = now;
+        } else {
+            this.status = OrderStatus.PARTIALLY_RECEIVED;
+        }
         this.updatedAt = now;
     }
 

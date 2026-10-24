@@ -6,7 +6,9 @@ import com.imsvet.ims.inventory.domain.Lot;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.text.Normalizer;
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -31,6 +33,15 @@ public class LotIdentities {
     public LotIdentities(LotRepository lots, Clock clock) {
         this.lots = lots;
         this.clock = clock;
+    }
+
+    /**
+     * The identity of a lot as the unique key sees it (lot number ignoring case and accents, ADR-058): two entries
+     * with the same key are the same lot.
+     */
+    public static String key(long productId, String lotNumber) {
+        String folded = Normalizer.normalize(lotNumber.trim(), Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return productId + "/" + folded.toUpperCase(Locale.ROOT);
     }
 
     /** MANDATORY: LAST_INSERT_ID is per connection, so reset, insert and read must share the caller's transaction. */

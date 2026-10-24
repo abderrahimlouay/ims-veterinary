@@ -15,8 +15,8 @@ import java.time.LocalDate;
 
 /**
  * A received batch of one product (database.md §2.2/§3.4). Identity (product, lot number, expiry) is immutable
- * (BR-LOT-011); the balance changes only through stock movements ({@link #applyDelta}, ADR-028); lots are never created in
- * Phase 3 (ADR-064); the stored status changes only through {@link #apply}. The product is referenced by id: catalog tables are read through {@code ProductLookup}.
+ * (BR-LOT-011); the balance changes only through stock movements ({@link #applyDelta}, ADR-028); the cost is the
+ * weighted average of what entered ({@link #enterCost}, ADR-098); the stored status changes only through {@link #apply}. The product is referenced by id: catalog tables are read through {@code ProductLookup}.
  */
 @Entity
 @Table(name = "lots")
@@ -75,6 +75,9 @@ public class Lot {
     @Column(name = "received_at", nullable = false, updatable = false)
     private Instant receivedAt;
 
+    @Column(name = "supplier_id")
+    private Long supplierId;
+
     protected Lot() {
     }
 
@@ -100,6 +103,21 @@ public class Lot {
             this.blockedReason = reason;
             this.blockedBy = userId;
             this.blockedAt = now;
+        }
+    }
+
+    /**
+     * Stock entering the lot (receipt or opening stock): the cost becomes the weighted average on the current
+     * balance ({@link LotCost}, ADR-098). Called under the lot lock, before the entry's movement is posted.
+     */
+    public void enterCost(BigDecimal quantity, BigDecimal entryCost) {
+        this.unitCost = LotCost.weightedAverage(quantityOnHand, unitCost, quantity, entryCost);
+    }
+
+    /** Set by the first receipt and kept (ADR-105); opening-stock and found lots have none. */
+    public void assignSupplier(Long supplier) {
+        if (this.supplierId == null) {
+            this.supplierId = supplier;
         }
     }
 
@@ -145,5 +163,9 @@ public class Lot {
 
     public Instant receivedAt() {
         return receivedAt;
+    }
+
+    public Long supplierId() {
+        return supplierId;
     }
 }

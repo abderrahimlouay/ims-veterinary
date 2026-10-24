@@ -288,7 +288,7 @@ Rule (ADR-014): views are read models for listings/reports; decisions inside tra
 
 ## 7. Transaction requirements
 
-All rows below are **one database transaction** (`@Transactional`, READ COMMITTED, ADR-013). Lock order: `idempotency_keys` row (ADR-104) → `document_sequences` row → lots by ascending `id` → customer row (credit check) → other rows. A failure rolls back everything, including the numbering counter.
+All rows below are **one database transaction** (`@Transactional`, READ COMMITTED, ADR-013). Lock order: `idempotency_keys` row (ADR-104) → `document_sequences` row → lots by ascending `id` (when stock enters lots by identity, `StockEntries`: existing lots in ascending id, then new lots in a fixed key order) → customer row (credit check) → other rows (e.g. the purchase order a receipt progresses, locked and re-read after the lots). A failure rolls back everything, including the numbering counter.
 
 | Operation | Writes | Locks / checks |
 |---|---|---|

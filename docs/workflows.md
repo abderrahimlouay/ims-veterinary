@@ -52,10 +52,10 @@ Supplier → Purchase Order → Goods Receipt → Lot Creation → Stock Update 
 ### 1b. Goods receipt (lot creation and stock update) — *one transaction*
 1. User opens the receipt for a `sent` or `partially_received` PO, or a free receipt without PO (ADR-096), and, per line, enters: quantity received (at most the outstanding quantity, only products of the order), **lot number**, **expiry date** (date or `MM/YYYY`), unit cost per base unit, conformity (BR-PURCH-005, BR-LOT-001, BR-LOT-012). The request carries an `Idempotency-Key` (ADR-104).
 2. Server (inside the transaction):
-   1. Checks the idempotency key, then assigns the receipt number (`GR-YYYY-NNNNNN`, ADR-097).
+   1. Checks the idempotency key (a repeat returns the first receipt), validates everything that needs no lock (supplier, order and its lines, products, lot numbers and expiry, quantities, costs, one line per lot), then assigns the receipt number (`GR-YYYY-NNNNNN`, ADR-097).
    2. For each line: converts to base unit; **finds or creates the lot** by (product, lot number) under lock (ascending lot id), refusing a different expiry date and a recalled lot; sets `supplier_id` on a new lot; the lot cost becomes the weighted average on the current balance, or the line cost when the balance is 0 (BR-LOT-002, ADR-070, ADR-098, ADR-105).
    3. Posts `purchase_receipt` (+quantity) through `StockService` (BR-STOCK-002); a blocked lot stays blocked.
-   4. Updates `purchase_order_lines.received_base`; sets PO to `partially_received` or `closed` (BR-PURCH-004; over-receipt refused, ADR-096).
+   4. Locks the PO (after the lots, database.md §7), checks again what is outstanding, updates `purchase_order_lines.received_base`; sets PO to `partially_received` or `closed` (BR-PURCH-004; over-receipt refused, ADR-096).
    5. Non-conforming lines: the lot is blocked (audited `LOT_BLOCK`); if it already had stock, only with `confirmLotBlocking: true`, else `LOT_BLOCK_CONFIRMATION_REQUIRED` naming the quantity (ADR-095). An expired line is refused unless non-conforming (BR-LOT-012).
    6. Appends `supplier_price_history` when price or discount differs from the latest entry (BR-PURCH-008, ADR-100); stores the idempotency key (ADR-104).
 3. Response: receipt detail + PO status. Reorder proposals are refreshed by the next generation (BR-STOCK-010).

@@ -21,12 +21,13 @@ public interface SupplierPriceRepository extends Repository<SupplierPrice, Long>
     Page<SupplierPrice> history(long supplierId, Long productId, Pageable pageable);
 
     /**
-     * Entries in force on {@code day}, newest first: the first is the "latest price" (ADR-099). Entries of a
-     * cancelled receipt are excluded here once SD-132 adds their flag (ADR-106, slice 6).
+     * Entries in force on {@code day}, newest first, without those of a cancelled receipt (ADR-106): the first is the
+     * "latest price" used by the prefill (ADR-099) and by a receipt to decide whether to append (ADR-100).
      */
     @Query("""
             SELECT p FROM SupplierPrice p
             WHERE p.supplierId = :supplierId AND p.productId = :productId AND p.validFrom <= :day
+              AND p.cancelled = false
             ORDER BY p.validFrom DESC, p.id DESC""")
     List<SupplierPrice> inForce(long supplierId, long productId, LocalDate day, Pageable first);
 }

@@ -53,7 +53,7 @@ public class PurchaseOrders {
     }
 
     private final PurchaseOrderRepository orders;
-    private final SupplierDirectory suppliers;
+    private final ActiveSuppliers suppliers;
     private final OrderLineValidator validator;
     private final OrderViewer viewer;
     private final ProductLookup products;
@@ -63,7 +63,7 @@ public class PurchaseOrders {
     private final BusinessCalendar calendar;
     private final Clock clock;
 
-    public PurchaseOrders(PurchaseOrderRepository orders, SupplierDirectory suppliers, OrderLineValidator validator,
+    public PurchaseOrders(PurchaseOrderRepository orders, ActiveSuppliers suppliers, OrderLineValidator validator,
             OrderViewer viewer, ProductLookup products, NumberingService numbering, AuditRecorder audit,
             ActorProvider actors, BusinessCalendar calendar, Clock clock) {
         this.orders = orders;
@@ -99,7 +99,7 @@ public class PurchaseOrders {
     @PreAuthorize("hasAuthority('purchase.create')")
     @Transactional
     public PurchaseOrderDetail create(OrderInput in) {
-        Supplier supplier = activeSupplier(in.supplierId());
+        Supplier supplier = suppliers.require(in.supplierId());
         List<LineInput> lines = validator.validate(in.lines());
         PurchaseOrder order = new PurchaseOrder(numbering.next(DocumentKey.PO), supplier.id(), calendar.today(),
                 in.expectedDate(), actors.current().userId(), clock.instant());
@@ -119,7 +119,7 @@ public class PurchaseOrders {
         if (order.version() != version) {
             throw new ObjectOptimisticLockingFailureException(PurchaseOrder.class, id);
         }
-        Supplier supplier = activeSupplier(in.supplierId());
+        Supplier supplier = suppliers.require(in.supplierId());
         List<LineInput> lines = validator.validate(in.lines());
         order.clearLines(supplier.id(), in.expectedDate(), clock.instant());
         orders.flush();
@@ -133,7 +133,7 @@ public class PurchaseOrders {
     public PurchaseOrderDetail validate(long id) {
         PurchaseOrder order = find(id);
         if (order.status() == OrderStatus.DRAFT) {
-            activeSupplier(order.supplierId());
+            suppliers.require(order.supplierId());
             for (PurchaseOrderLine line : order.lines()) {
                 if (products.find(line.productId()).orElseThrow().archived()) {
                     throw new BusinessException(ErrorCode.PRODUCT_ARCHIVED, "This product is archived.",
@@ -180,19 +180,6 @@ public class PurchaseOrders {
                     "purchase_orders", order.id(), Map.of("status", before.code()), newValues);
         }
         return viewer.detail(orders.saveAndFlush(order));
-    }
-
-    private Supplier activeSupplier(Long supplierId) {
-        if (supplierId == null) {
-            throw OrderLineValidator.invalid("supplierId", "REQUIRED", "The supplier is required.");
-        }
-        Supplier supplier = suppliers.findOptional(supplierId)
-                .orElseThrow(() -> OrderLineValidator.invalid("supplierId", "UNKNOWN", "Unknown supplier."));
-        if (!supplier.active()) {
-            throw new BusinessException(ErrorCode.SUPPLIER_INACTIVE, "This supplier is inactive.",
-                    Map.of("supplierId", supplierId));
-        }
-        return supplier;
     }
 
     private static String required(String reason) {

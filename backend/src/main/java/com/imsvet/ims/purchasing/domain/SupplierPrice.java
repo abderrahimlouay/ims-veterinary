@@ -12,7 +12,8 @@ import java.time.LocalDate;
 
 /**
  * One entry of a supplier's price history for a product (FR-PURCH-002, BR-PURCH-008): price per base unit with
- * 4 decimals (ADR-049, ADR-094), discount 0–100. Never edited.
+ * 4 decimals (ADR-049, ADR-094), discount 0–100; manual or appended by a receipt. Never edited; an entry of a
+ * cancelled receipt is only marked cancelled (ADR-106).
  */
 @Entity
 @Table(name = "supplier_price_history")
@@ -43,6 +44,12 @@ public class SupplierPrice {
     @Column(name = "created_by", nullable = false, updatable = false)
     private Long createdBy;
 
+    @Column(name = "receipt_id", updatable = false)
+    private Long receiptId;
+
+    @Column(nullable = false)
+    private boolean cancelled;
+
     protected SupplierPrice() {
     }
 
@@ -55,6 +62,15 @@ public class SupplierPrice {
         this.validFrom = validFrom;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
+    }
+
+    /** An entry appended by a goods receipt (BR-PURCH-008, ADR-100). */
+    public static SupplierPrice fromReceipt(Long supplierId, Long productId, BigDecimal unitPrice,
+            BigDecimal discountPct, LocalDate validFrom, Long createdBy, Instant createdAt, long receiptId) {
+        SupplierPrice price = new SupplierPrice(supplierId, productId, unitPrice, discountPct, validFrom, createdBy,
+                createdAt);
+        price.receiptId = receiptId;
+        return price;
     }
 
     public Long id() {
@@ -87,5 +103,14 @@ public class SupplierPrice {
 
     public Long createdBy() {
         return createdBy;
+    }
+
+    public Long receiptId() {
+        return receiptId;
+    }
+
+    /** Set when the receipt that appended it is cancelled (ADR-106, SD-132). */
+    public boolean cancelled() {
+        return cancelled;
     }
 }
