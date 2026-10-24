@@ -47,7 +47,7 @@ numbering -> common
 settings -> common, audit            (setting changes are audited, BR-AUDIT-001)
 audit -> common
 inventory -> catalog, numbering?, settings, audit, users (user-name read port only, ADR-089)
-purchasing -> catalog, inventory, numbering, settings, audit
+purchasing -> catalog, inventory, numbering, settings, audit, users (user-name read port only, ADR-089)
 sales -> catalog, inventory, numbering, settings, audit, [CreditLimitPort]
 finance -> sales(read ports), purchasing(read ports), numbering, audit, settings   (implements CreditLimitPort)
 reporting -> read-only views over all

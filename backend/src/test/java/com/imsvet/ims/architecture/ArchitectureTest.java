@@ -59,7 +59,7 @@ class ArchitectureTest {
             .whereLayer("audit").mayOnlyAccessLayers("common")
             .whereLayer("inventory").mayOnlyAccessLayers("common", "catalog", "numbering", "settings", "audit", "users")
             .whereLayer("purchasing").mayOnlyAccessLayers(
-                    "common", "catalog", "inventory", "numbering", "settings", "audit")
+                    "common", "catalog", "inventory", "numbering", "settings", "audit", "users")
             .whereLayer("sales").mayOnlyAccessLayers(
                     "common", "catalog", "inventory", "numbering", "settings", "audit")
             .whereLayer("finance").mayOnlyAccessLayers(
@@ -67,10 +67,13 @@ class ArchitectureTest {
             .whereLayer("printing").mayOnlyAccessLayers("common", "purchasing", "sales", "finance")
             .whereLayer("backup").mayOnlyAccessLayers("common", "settings", "audit");
 
-    /** ADR-089: {@code inventory} reads user names through {@code UserNames} only, nothing else of {@code users}. */
+    /**
+     * ADR-089: {@code inventory} and {@code purchasing} read user names through {@code UserNames} only, nothing else
+     * of {@code users}.
+     */
     @ArchTest
     static final ArchRule inventoryUsesOnlyTheUserNamesPort = noClasses()
-            .that().resideInAPackage(ROOT + "inventory..")
+            .that().resideInAnyPackage(ROOT + "inventory..", ROOT + "purchasing..")
             .should().dependOnClassesThat(resideInAPackage(ROOT + "users..")
                     .and(not(simpleName("UserNames"))));
 
