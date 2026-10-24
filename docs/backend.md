@@ -116,7 +116,7 @@ Detailed in `architecture.md` §5 and `workflows.md`. Rules summarised:
 4. Stock check and ledger insert happen in the same transaction as the lock; the lot balance is updated and verified (`CHECK >= 0`) in that transaction.
 5. No remote calls or PDF rendering inside stock transactions; PDF generated after commit.
 6. Auditing of a business action is written **in the same transaction** as the action (BR-AUDIT-003); a failed audit write fails the action.
-7. Numbering: `NumberingService` increments the sequence row under lock in the **same** transaction; a rolled-back transaction rolls the counter back too, so no gap appears (ADR-097).
+7. Numbering: `NumberingService` runs only inside the caller's transaction (propagation `MANDATORY`; without one it fails) and increments the `(key, business year)` row under lock (`SELECT … FOR UPDATE`); the lock lives until the caller commits, and a rolled-back transaction rolls the counter back too, so no gap appears (ADR-011, ADR-097). The year is that of the business date in the business time zone (Africa/Algiers), from the injected clock. **Lock order** (`database.md` §7): the counter row first, then lots in ascending id, then the customer — so a use case that takes a number and locks lots validates everything that needs no lock first, then allocates the number, then locks lots and writes; the counter row is held from that point to the commit. The row serialises the documents of one key (one receipt at a time, one supplier return at a time); this is accepted at the scale of one pharmacy or wholesaler (a few documents per minute), and CT-03 (1,000 parallel allocations, 20 times) runs in about 4 s each.
 
 ## 9. Security in the backend
 
