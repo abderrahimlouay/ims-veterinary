@@ -146,6 +146,8 @@ class EndpointPermissionMatrixTest {
                     "{\"supplierId\":999999,\"lines\":[]}"),
             new Endpoint(HttpMethod.POST, "/api/goods-receipts/999999/cancel", "receipt.cancel",
                     "{\"reason\":\"Matrix\"}"),
+            new Endpoint(HttpMethod.POST, "/api/inventory/reorder-proposals/convert", "reorder.manage",
+                    "{\"groups\":[{\"supplierId\":999999,\"proposalIds\":[999999]}]}"),
             new Endpoint(HttpMethod.GET, "/api/returns/supplier", "return.read"),
             new Endpoint(HttpMethod.GET, "/api/returns/supplier/999999", "return.read"),
             new Endpoint(HttpMethod.POST, "/api/returns/supplier", "return.supplier.create",
