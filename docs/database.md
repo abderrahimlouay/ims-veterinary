@@ -182,7 +182,7 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 | id | BIGINT AI | PK | |
 | lot_id | BIGINT | NOT NULL FK→lots | |
 | product_id | BIGINT | NOT NULL FK→products | composite `FK (lot_id, product_id) → lots(id, product_id)` (SD-103, ADR-062) |
-| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock) — all ten from Phase 4 (ADR-081), plus `receipt_cancellation` from Phase 5 (ADR-103, SD-127); no `unit_conversion` (ADR-061, SD-118); cancellation/discard only after OD-004/005 (SD-107) |
+| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock, receipt_cancellation — V05_012) — all ten from Phase 4 (ADR-081), plus `receipt_cancellation` from Phase 5 (ADR-103, SD-127); no `unit_conversion` (ADR-061, SD-118); cancellation/discard only after OD-004/005 (SD-107) |
 | quantity | DECIMAL(14,3) | NOT NULL, **CK ≠ 0** | signed, base unit; CK sign per type (BR-STOCK-005): receipts, customer returns and opening stock > 0, sales, supplier returns, receipt cancellations and the four manual adjustments < 0, `adjustment_inventory` either |
 | reference_type | VARCHAR(40) | NULL | e.g. `sales_document`, `goods_receipt`, `inventory` |
 | reference_id | BIGINT | NULL | |
@@ -288,7 +288,7 @@ Rule (ADR-014): views are read models for listings/reports; decisions inside tra
 
 ## 7. Transaction requirements
 
-All rows below are **one database transaction** (`@Transactional`, READ COMMITTED, ADR-013). Lock order: `idempotency_keys` row (ADR-104) → `document_sequences` row → lots by ascending `id` (when stock enters lots by identity, `StockEntries`: existing lots in ascending id, then new lots in a fixed key order) → customer row (credit check) → other rows (e.g. the purchase order a receipt progresses, locked and re-read after the lots). A failure rolls back everything, including the numbering counter.
+All rows below are **one database transaction** (`@Transactional`, READ COMMITTED, ADR-013). Lock order: `idempotency_keys` row (ADR-104) → `document_sequences` row → lots by ascending `id` (when stock enters lots by identity, `StockEntries`: existing lots in ascending id, then new lots in a fixed key order) → customer row (credit check) → other rows (e.g. the purchase order a receipt progresses, locked and re-read after the lots). Exception: a receipt cancellation locks its `goods_receipts` row first — no other use case locks receipt rows, so this adds no cycle — and a second cancellation of the same receipt waits, then is refused (ADR-103). A failure rolls back everything, including the numbering counter.
 
 | Operation | Writes | Locks / checks |
 |---|---|---|

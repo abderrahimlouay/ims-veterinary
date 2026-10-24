@@ -109,6 +109,17 @@ public class GoodsReceipt {
         }
     }
 
+    /** Cancelled as a whole, keeping its number (ADR-103); the caller checks the status and the reason. */
+    public void cancel(String reason, Long userId, Instant now) {
+        if (status != ReceiptStatus.CONFIRMED) {
+            throw new IllegalStateException("Receipt " + number + " is " + status.code());
+        }
+        this.status = ReceiptStatus.CANCELLED;
+        this.cancelReason = reason;
+        this.cancelledBy = userId;
+        this.cancelledAt = now;
+    }
+
     public Long id() {
         return id;
     }

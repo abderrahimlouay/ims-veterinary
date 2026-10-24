@@ -88,6 +88,14 @@ public class PurchaseOrderLine {
         this.receivedBase = receivedBase.add(quantityBase).setScale(3);
     }
 
+    /** A cancelled receipt gives its quantity back to what is outstanding (ADR-106). */
+    void unreceive(BigDecimal quantityBase) {
+        if (quantityBase.compareTo(receivedBase) > 0) {
+            throw new IllegalArgumentException("More than the received quantity");
+        }
+        this.receivedBase = receivedBase.subtract(quantityBase).setScale(3);
+    }
+
     public Long id() {
         return id;
     }

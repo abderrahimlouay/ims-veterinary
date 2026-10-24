@@ -114,6 +114,16 @@ public class Lot {
         this.unitCost = LotCost.weightedAverage(quantityOnHand, unitCost, quantity, entryCost);
     }
 
+    /** A cancelled receipt gives the lot back the cost it had before (ADR-106). */
+    public void restoreCost(BigDecimal cost) {
+        this.unitCost = cost;
+    }
+
+    /** A cancelled receipt that created the lot takes its supplier away (ADR-106). */
+    public void clearSupplier() {
+        this.supplierId = null;
+    }
+
     /** Set by the first receipt and kept (ADR-105); opening-stock and found lots have none. */
     public void assignSupplier(Long supplier) {
         if (this.supplierId == null) {

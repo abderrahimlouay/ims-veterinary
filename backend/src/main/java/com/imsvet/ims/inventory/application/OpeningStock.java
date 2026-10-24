@@ -88,7 +88,7 @@ public class OpeningStock {
         String lotNumber = validate(in);
         BigDecimal quantity = toBase(in, product);
         BigDecimal unitCost = in.unitCost().setScale(COST_SCALE);
-        Entered entered = entries.enter(new Batch(MovementType.OPENING_STOCK, "opening_stock", null, null, null, false),
+        Entered entered = entries.enter(new Batch(MovementType.OPENING_STOCK, "opening_stock", null, null, null, false, null),
                 List.of(new Entry(product.id(), lotNumber, in.expiryDate(), quantity, unitCost, false))).getFirst();
         Lot lot = lots.findById(entered.lotId()).orElseThrow();
         long movementId = entered.movementId();

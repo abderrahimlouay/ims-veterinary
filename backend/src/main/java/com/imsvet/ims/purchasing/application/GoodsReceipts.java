@@ -1,5 +1,7 @@
 package com.imsvet.ims.purchasing.application;
 
+import com.imsvet.ims.audit.application.AuditRecorder;
+import com.imsvet.ims.audit.domain.AuditAction;
 import com.imsvet.ims.catalog.application.ProductLookup;
 import com.imsvet.ims.catalog.application.ProductLookup.ProductRef;
 import com.imsvet.ims.catalog.application.ProductLookup.UnitRef;
@@ -19,12 +21,15 @@ import com.imsvet.ims.inventory.application.StockEntries;
 import com.imsvet.ims.inventory.application.StockEntries.Batch;
 import com.imsvet.ims.inventory.application.StockEntries.Entered;
 import com.imsvet.ims.inventory.application.StockEntries.Entry;
+import com.imsvet.ims.inventory.application.StockEntries.ReceiptReversal;
+import com.imsvet.ims.inventory.application.StockEntries.Reversal;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.numbering.application.NumberingService;
 import com.imsvet.ims.numbering.domain.DocumentKey;
 import com.imsvet.ims.purchasing.application.ReceiptViews.ReceiptDetail;
 import com.imsvet.ims.purchasing.application.ReceiptViews.ReceiptSummary;
 import com.imsvet.ims.purchasing.domain.GoodsReceipt;
+import com.imsvet.ims.purchasing.domain.GoodsReceiptLine;
 import com.imsvet.ims.purchasing.domain.PurchaseOrder;
 import com.imsvet.ims.purchasing.domain.PurchaseOrderLine;
 import com.imsvet.ims.purchasing.domain.ReceiptStatus;
@@ -94,6 +99,7 @@ public class GoodsReceipts {
     private final NumberingService numbering;
     private final IdempotencyKeys keys;
     private final ReceiptViewer viewer;
+    private final AuditRecorder audit;
     private final ActorProvider actors;
     private final BusinessCalendar calendar;
     private final BusinessSettings business;
@@ -101,8 +107,8 @@ public class GoodsReceipts {
 
     public GoodsReceipts(GoodsReceiptRepository receipts, PurchaseOrderRepository orders, OrderLocks orderLocks,
             SupplierPriceRepository prices, ActiveSuppliers suppliers, ProductLookup products, StockEntries entries,
-            NumberingService numbering, IdempotencyKeys keys, ReceiptViewer viewer, ActorProvider actors,
-            BusinessCalendar calendar, BusinessSettings business, Clock clock) {
+            NumberingService numbering, IdempotencyKeys keys, ReceiptViewer viewer, AuditRecorder audit,
+            ActorProvider actors, BusinessCalendar calendar, BusinessSettings business, Clock clock) {
         this.receipts = receipts;
         this.orders = orders;
         this.orderLocks = orderLocks;
@@ -113,6 +119,7 @@ public class GoodsReceipts {
         this.numbering = numbering;
         this.keys = keys;
         this.viewer = viewer;
+        this.audit = audit;
         this.actors = actors;
         this.calendar = calendar;
         this.business = business;
@@ -160,7 +167,7 @@ public class GoodsReceipts {
                 supplier.id(), docRef, blankToNull(in.notes()), userId, now));
         List<Entered> entered = entries.enter(
                 new Batch(MovementType.PURCHASE_RECEIPT, "goods_receipt", receipt.id(), supplier.id(),
-                        "Non-conforming at receipt " + number, in.confirmLotBlocking()),
+                        blockReason(number), in.confirmLotBlocking(), now),
                 lines.stream().map(l -> new Entry(l.product().id(), l.lotNumber(), l.expiryDate(), l.quantityBase(),
                         l.unitCost(), !l.conforming())).toList());
         if (order != null) {
@@ -189,6 +196,60 @@ public class GoodsReceipts {
         appendPrices(receipt, lines, userId, now);
         claim.complete(receipt.id());
         return viewer.detail(receipt);
+    }
+
+    /**
+     * Cancels a whole confirmed receipt with a reason (ADR-103, ADR-106, W1d), one transaction: the receipt row is
+     * locked first (no other use case locks receipts, so a second cancellation waits and is refused), audited
+     * {@code RECEIPT_CANCEL}; inventory reverses its lots ({@code RECEIPT_NOT_CANCELLABLE} when one has moved since,
+     * costs, supplier and blocking restored); the order, locked after the lots, gets the quantities back (a forced
+     * close stays closed); the receipt keeps its number; its price-history entries are marked cancelled.
+     */
+    @PreAuthorize("hasAuthority('receipt.cancel')")
+    @Transactional
+    public ReceiptDetail cancel(long id, String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw OrderLineValidator.invalid("reason", "REQUIRED", "A reason is required.");
+        }
+        String why = reason.trim();
+        GoodsReceipt receipt = receipts.findByIdForUpdate(id).orElseThrow(
+                () -> new BusinessException(ErrorCode.NOT_FOUND, "Goods receipt not found.", Map.of("id", id)));
+        if (receipt.status() != ReceiptStatus.CONFIRMED) {
+            throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, "This receipt is already cancelled.",
+                    Map.of("status", receipt.status().code(), "action", "cancel"));
+        }
+        Map<String, Object> newValues = new LinkedHashMap<>();
+        newValues.put("status", ReceiptStatus.CANCELLED.code());
+        newValues.put("reason", why);
+        newValues.put("number", receipt.number());
+        audit.record(AuditAction.RECEIPT_CANCEL, "goods_receipts", receipt.id(),
+                Map.of("status", receipt.status().code()), newValues);
+        List<GoodsReceiptLine> lines = receipt.lines();
+        entries.reverseReceipt(new ReceiptReversal("goods_receipt", receipt.id(), blockReason(receipt.number()),
+                receipt.receivedBy(), receipt.receivedAt(), "Receipt " + receipt.number() + " cancelled: " + why),
+                lines.stream().map(l -> new Reversal(l.lotId(), l.productId(), l.quantityBase(), l.movementId(),
+                        l.lotCreated(), l.lotCostBefore(), l.lotBlocked())).toList());
+        Instant now = clock.instant();
+        if (receipt.purchaseOrderId() != null) {
+            PurchaseOrder order = orders.findById(receipt.purchaseOrderId()).orElseThrow();
+            orderLocks.lockAndRefresh(order);
+            Map<Long, BigDecimal> back = new LinkedHashMap<>();
+            for (GoodsReceiptLine l : lines) {
+                back.merge(l.poLineId(), l.quantityBase(), BigDecimal::add);
+            }
+            order.unreceive(back, now);
+            orders.flush();
+        }
+        receipt.cancel(why, actors.current().userId(), now);
+        receipts.flush();
+        prices.findByReceiptId(receipt.id()).forEach(SupplierPrice::cancel);
+        receipts.flush();
+        return viewer.detail(receipt);
+    }
+
+    /** ADR-095: the reason written on a lot a receipt blocks, which a cancellation recognises (ADR-106). */
+    private static String blockReason(String number) {
+        return "Non-conforming at receipt " + number;
     }
 
     /** BR-PURCH-008, ADR-100: an entry per line whose price or discount differs from the latest entry in force. */

@@ -221,6 +221,28 @@ public class PurchaseOrder {
         this.updatedAt = now;
     }
 
+    /**
+     * A cancelled receipt's quantities go back to outstanding (ADR-106): an order closed by full reception goes back
+     * to partially received, or to sent when nothing remains received; an order closed by a forced close (with a
+     * reason) stays closed.
+     */
+    public void unreceive(Map<Long, BigDecimal> quantitiesByLine, Instant now) {
+        for (PurchaseOrderLine line : lines) {
+            BigDecimal quantity = quantitiesByLine.get(line.id());
+            if (quantity != null) {
+                line.unreceive(quantity);
+            }
+        }
+        boolean forcedClose = status == OrderStatus.CLOSED && closedReason != null;
+        if (!forcedClose && (status == OrderStatus.CLOSED || status == OrderStatus.PARTIALLY_RECEIVED)) {
+            boolean anyReceived = lines.stream().anyMatch(l -> l.receivedBase().signum() > 0);
+            this.status = anyReceived ? OrderStatus.PARTIALLY_RECEIVED : OrderStatus.SENT;
+            this.closedBy = null;
+            this.closedAt = null;
+        }
+        this.updatedAt = now;
+    }
+
     public Long id() {
         return id;
     }

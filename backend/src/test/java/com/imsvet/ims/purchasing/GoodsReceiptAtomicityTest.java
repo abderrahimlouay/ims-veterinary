@@ -32,7 +32,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * BR-PURCH-007 on committed data: a receipt commits whole or not at all. A refusal on the third line (a recalled
  * lot, found after the first two lots were created), and separately a failed audit write while blocking a
  * non-conforming lot (a trigger refusing the {@code LOT_BLOCK} row), leave no lot, no movement, no receipt, no
- * price entry, no number consumed, no idempotency key, the order and the lots' status as they were.
+ * price entry, no number consumed, no idempotency key, the order and the lots' status as they were. A cancellation
+ * whose {@code LOT_UNBLOCK} audit fails leaves the receipt, the lots, the order and the price entries as they were.
  */
 @SpringBootTest
 @Import({ TestcontainersConfiguration.class, CommittedDataDatabase.class })
@@ -111,6 +112,42 @@ class GoodsReceiptAtomicityTest {
         }
 
         assertNothingChanged(counter, idem);
+    }
+
+    /** BR-PURCH-012: a cancellation whose LOT_UNBLOCK audit fails changes nothing either. */
+    @Test
+    void aFailedAuditWhileCancellingRollsEverythingBack() {
+        long receipt = receipts.confirm(input(line("N1-" + key, false), line("N2-" + key, true)), null).id();
+        Long blocked = jdbc.queryForObject("SELECT id FROM lots WHERE lot_number = ?", Long.class, "N1-" + key);
+        migration.jdbc().execute("""
+                CREATE TRIGGER trg_test_audit_log_refuse_lot_unblock BEFORE INSERT ON audit_log FOR EACH ROW
+                BEGIN
+                    IF NEW.action = 'LOT_UNBLOCK' THEN
+                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'audit_log unavailable';
+                    END IF;
+                END""");
+        TestActor.signIn(new TestLots(jdbc).fixtureUser(), "receipt.cancel");
+        try {
+            assertThatThrownBy(() -> receipts.cancel(receipt, "Wrong delivery"))
+                    .hasStackTraceContaining("audit_log unavailable");
+        } finally {
+            migration.jdbc().execute("DROP TRIGGER trg_test_audit_log_refuse_lot_unblock");
+        }
+
+        assertThat(jdbc.queryForObject("SELECT status FROM goods_receipts WHERE id = ?", String.class, receipt))
+                .isEqualTo("confirmed");
+        assertThat(jdbc.queryForObject("SELECT status FROM lots WHERE id = ?", String.class, blocked))
+                .isEqualTo("blocked");
+        assertThat(jdbc.queryForList("SELECT CAST(quantity_on_hand AS CHAR) FROM lots WHERE product_id = ? "
+                + "AND lot_number <> ?", String.class, product, "R-" + key)).containsOnly("3.000");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM stock_movements WHERE product_id = ? "
+                + "AND movement_type = 'receipt_cancellation'", Integer.class, product)).isZero();
+        assertThat(jdbc.queryForObject("SELECT CAST(received_base AS CHAR) FROM purchase_order_lines WHERE id = ?",
+                String.class, poLine)).isEqualTo("6.000");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM supplier_price_history WHERE receipt_id = ? AND cancelled",
+                Integer.class, receipt)).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action = 'RECEIPT_CANCEL' "
+                + "AND entity_id = ?", Integer.class, receipt)).isZero();
     }
 
     private void assertNothingChanged(int counter, String idem) {

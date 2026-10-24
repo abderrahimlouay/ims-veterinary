@@ -3,6 +3,7 @@ package com.imsvet.ims.inventory.infrastructure;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.inventory.domain.StockMovement;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,10 @@ public interface MovementReadRepository extends Repository<StockMovement, Long> 
     /** The lot's last movement id (a count line's watermark, ADR-072), or null when it has none. */
     @Query("SELECT MAX(m.id) FROM StockMovement m WHERE m.lotId = :lotId")
     Long lastIdOfLot(long lotId);
+
+    /** Movements of the lot after the given one, oldest first: what makes a receipt not cancellable (ADR-103). */
+    @Query("SELECT m FROM StockMovement m WHERE m.lotId = :lotId AND m.id > :movementId ORDER BY m.id")
+    List<StockMovement> after(long lotId, long movementId, Pageable first);
 
     /** {@code from} inclusive, {@code to} exclusive. */
     @Query("""

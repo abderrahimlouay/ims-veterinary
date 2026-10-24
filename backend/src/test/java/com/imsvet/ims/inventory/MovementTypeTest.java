@@ -17,7 +17,7 @@ class MovementTypeTest {
             assertThat(type.allows(BigDecimal.ONE.negate())).as(type.code()).isFalse();
         }
         for (MovementType type : new MovementType[] { MovementType.SALE, MovementType.SUPPLIER_RETURN,
-                MovementType.ADJUSTMENT_BREAKAGE, MovementType.ADJUSTMENT_EXPIRY, MovementType.ADJUSTMENT_THEFT,
+                MovementType.RECEIPT_CANCELLATION, MovementType.ADJUSTMENT_BREAKAGE, MovementType.ADJUSTMENT_EXPIRY, MovementType.ADJUSTMENT_THEFT,
                 MovementType.ADJUSTMENT_INTERNAL_USE }) {
             assertThat(type.allows(BigDecimal.ONE.negate())).as(type.code()).isTrue();
             assertThat(type.allows(BigDecimal.ONE)).as(type.code()).isFalse();
@@ -31,7 +31,9 @@ class MovementTypeTest {
 
     @Test
     void codesAreTheDatabaseValuesAndAdjustmentsNeedAReason() {
-        assertThat(MovementType.values()).hasSize(10);
+        assertThat(MovementType.values()).hasSize(11);
+        assertThat(MovementType.RECEIPT_CANCELLATION.code()).isEqualTo("receipt_cancellation");
+        assertThat(MovementType.RECEIPT_CANCELLATION.needsReason()).isFalse();
         assertThat(MovementType.fromCode("adjustment_internal_use")).isEqualTo(MovementType.ADJUSTMENT_INTERNAL_USE);
         assertThat(MovementType.OPENING_STOCK.code()).isEqualTo("opening_stock");
         assertThat(MovementType.ADJUSTMENT_INVENTORY.needsReason()).isTrue();

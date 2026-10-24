@@ -53,7 +53,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 
 ## 3. Error code catalogue
 
-Codes decided for Phase 5 and added to this table (and to `ErrorCode`) by the slice that implements them, since the table must equal the enum (ErrorCatalogueTest): `RECEIPT_NOT_CANCELLABLE` (409, a lot of the receipt has a later movement; context: lot and movement, ADR-103). Phase 5 field codes: `EXPIRED`, `NOT_ON_ORDER`, `NOT_ORDER_SUPPLIER`, `OTHER_SUPPLIER`, `DUPLICATE`.
+Phase 5 field codes: `EXPIRED`, `NOT_ON_ORDER`, `NOT_ORDER_SUPPLIER`, `OTHER_SUPPLIER`, `DUPLICATE`.
 
 | Code | HTTP | Meaning | Related rules |
 |---|---|---|---|
@@ -75,6 +75,7 @@ Codes decided for Phase 5 and added to this table (and to `ErrorCode`) by the sl
 | `DOCUMENT_IMMUTABLE` | 409 | document/record can no longer be edited | BR-PURCH-003, BR-SALE-004, BR-PAY-003, BR-LOT-011 |
 | `RESOURCE_IN_USE` | 409 | cannot delete: referenced | BR-CUST-003 |
 | `IDEMPOTENCY_CONFLICT` | 409 | key reused with different request | BR-SALE-016, BR-PURCH-013 |
+| `RECEIPT_NOT_CANCELLABLE` | 409 | a lot of the receipt has a movement after the receipt's own; `context`: `lotId`, `lotNumber`, `movementId`, `movementType`, `movementAt` (ADR-103) | BR-PURCH-012 |
 | `LOT_BLOCK_CONFIRMATION_REQUIRED` | 409 | a non-conforming receipt line would block a lot that already has stock; `context.lots[]`: `lotId`, `lotNumber`, `productId`, `quantityInStock` (ADR-095) | BR-PURCH-006 |
 | `INVENTORY_NOT_OPEN` | 409 | count is closed/cancelled | BR-INV-004 |
 | `OPENING_STOCK_CLOSED` | 409 | the opening-stock period is closed (setting `opening_stock_open`); use an inventory count | BR-STOCK-014, ADR-082 |

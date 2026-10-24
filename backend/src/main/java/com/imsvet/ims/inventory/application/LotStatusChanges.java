@@ -11,6 +11,7 @@ import com.imsvet.ims.inventory.domain.LotStatus.Action;
 import com.imsvet.ims.inventory.domain.LotStatus.IllegalLotTransitionException;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -34,6 +35,11 @@ final class LotStatusChanges {
     }
 
     Lot change(Lot lot, Action action, AuditAction auditAction, String reason) {
+        return change(lot, action, auditAction, reason, clock.instant());
+    }
+
+    /** {@code at}: the time recorded on the lot, e.g. the receipt's that blocks it (ADR-106 compares it). */
+    Lot change(Lot lot, Action action, AuditAction auditAction, String reason, Instant at) {
         LotStatus next;
         try {
             next = lot.status().after(action);
@@ -45,7 +51,7 @@ final class LotStatusChanges {
         newValues.put("status", next.code());
         newValues.put("reason", reason);
         audit.record(auditAction, "lots", lot.id(), Map.of("status", lot.status().code()), newValues);
-        lot.apply(action, reason, actors.current().userId(), clock.instant());
+        lot.apply(action, reason, actors.current().userId(), at);
         lots.flush();
         return lot;
     }
