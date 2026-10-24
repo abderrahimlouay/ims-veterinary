@@ -12,11 +12,13 @@ Status values: *Open* (nothing decided), *Proposed* (resolution recommended, awa
 | Severity | Count |
 |---|---|
 | Critical | 3 |
-| High | 11 |
-| Medium | 15 |
-| Low | 4 |
+| High | 12 |
+| Medium | 16 |
+| Low | 5 |
 | Open Decision (not tied to a defect) | 2 |
-| **Total** | **35** |
+| **Total** | **38** |
+
+The counts are those of the register rows below (DR-001…DR-038); recount when a row is added.
 
 Gate for implementation: **Critical and High items marked for Phase 0–1 must be reviewed by the user before Phase 0 starts**; later items must be resolved before their phase (column *Needed by*).
 
@@ -48,7 +50,7 @@ Gate for implementation: **Critical and High items marked for Phase 0–1 must b
 | DR-022 | Lot cost on repeated receipt | High | business-rules.md (BR-LOT-002), database.md | Receiving the same lot again at a different cost: overwrite, weighted average, or separate lot? Affects margin and valuation. | **Resolved 2026-10-24** by ADR-098 (weighted average). | Phase 5 · OD-029 |
 | DR-023 | Non-conforming goods and over-receipt | Medium | business-rules.md (BR-PURCH-004/006) | No quarantine state or tolerance for over-receipt in the schema/Spec. | **Resolved 2026-10-24** by ADR-095 and ADR-096. | Phase 5 |
 | DR-024 | Case/accent-insensitive collation changes uniqueness | High | database-migration.md, decisions.md (ADR-024) | MySQL default collation makes `SKU`, `lot_number`, usernames case- and accent-insensitive unlike PostgreSQL. | OD-025; tests documenting behaviour (ADR-024). Usernames (ADR-041) and SKUs (ADR-051) decided: insensitive; lot numbers (insensitive) and barcodes (`utf8mb4_bin`) **resolved 2026-10-22** by ADR-058. | Phase 3 · ADR-058 |
-| DR-025 | Credit-limit semantics | High | business-rules.md (BR-PAY-005), workflows.md | Whether the limit includes the current sale, unconfirmed drafts, or only overdue amounts is not specified. | OD-011. | Phase 6 |
+| DR-025 | Credit-limit semantics | High | business-rules.md (BR-PAY-005), workflows.md | Whether the limit includes the current sale, unconfirmed drafts, or only overdue amounts is not specified. | **Resolved 2026-10-24** by ADR-108 (nullable limit, balance + new sale ≤ limit under the customer lock, overdue blocking by setting). | Phase 6 |
 | DR-026 | Inventory count vs live sales | High | workflows.md (W5), business-rules.md (BR-INV-005) | Frozen theoretical quantity vs live adjustment; scope of cycle counts unspecified. | **Resolved 2026-10-22** by ADR-072 (watermark per counted line), ADR-073…075. | Phase 4 |
 | DR-027 | Reorder algorithm unspecified | Medium | business-rules.md (BR-STOCK-010), workflows.md (W10) | Spec gives thresholds but not the proposed quantity or supplier choice. | **Resolved 2026-10-22** by ADR-076…079 (supplier and open orders in Phase 5). | Phase 4 |
 | DR-028 | Refund treatment of returns | Medium | workflows.md (W3), api.md §5.8 | Cash refund vs credit on account vs discard write-off unspecified. | OD-005. | Phase 8 |
@@ -58,8 +60,8 @@ Gate for implementation: **Critical and High items marked for Phase 0–1 must b
 | DR-032 | Backend module list differs between ADR-006 and backend.md/architecture.md | Medium | decisions.md (ADR-006), backend.md §2, architecture.md §2.2/§3 | ADR-006 lists 18 modules (`product`, `user`, `supplier`, `customer`, `returns`, `payment`…); the other documents and the dependency rules use 14 (`catalog`, `users`, suppliers in `purchasing`, customers/returns in `sales`, payments in `finance`). | **Resolved 2026-10-20 by ADR-034** (user decision: backend.md list). | Phase 0 · ADR-034 |
 | DR-033 | Flyway file-name convention differs | Low | decisions.md (ADR-018), development-workflow.md §6 | ADR-018 shows `V001__…`; the workflow prescribes `V<phase>_<seq>__…`. | **Resolved 2026-10-20** (user decision: `V<phase>_<seq>__`, ADR-018 amended). | Phase 0 · ADR-018 |
 | DR-034 | Test container granularity worded as "per test class" | Low | testing.md §1 (principle 7) and §3, decisions.md (ADR-030) | `testing.md` speaks of containers "reused per test class" and "container-per-class" cleanup; with Spring's context cache a container actually lives per test-context configuration (classes sharing a configuration share it). | **Resolved 2026-10-20 by ADR-035** (user decision: one container per test-context configuration); `testing.md` reworded. | Phase 0 · ADR-035 |
-| DR-036 | Lot identity included the expiry date | High | business-rules.md (BR-LOT-002), requirements.md, domain-model.md (LotIdentity), database.md §2.2/§3.4, database-migration.md §7, decisions.md (ADR-058, OD-029), testing.md §9 | The Source Schema key `(product_id, lot_number, expiry_date)` let one lot number exist twice with different expiries, while `testing.md` expected one lot per (product, lot number). | **Resolved 2026-10-22 by ADR-070** (user decision: `UQ(product_id, lot_number)`; a different expiry is refused with `LOT_EXPIRY_MISMATCH`). | Phase 3 · ADR-070 |
 | DR-035 | Module rules forbade audited and settings-driven modules | Medium | architecture.md §3, ArchitectureTest | `users` and `settings` must write audit entries (BR-AUDIT-001: user, role and setting changes) and `auth` must read the throttling settings (ADR-038), but §3 allowed `auth/users -> common` and `settings -> common` only. | **Resolved 2026-10-21** (Phase 1 login slice): `auth -> users, settings`, `users -> audit`, `settings -> audit`, and (2026-10-21, Phase 2) `catalog -> audit` for BR-PROD-006; acyclic, since `audit` and `settings` depend only on `common` (and `settings -> audit`). | Phase 1 · architecture.md §3 |
+| DR-036 | Lot identity included the expiry date | High | business-rules.md (BR-LOT-002), requirements.md, domain-model.md (LotIdentity), database.md §2.2/§3.4, database-migration.md §7, decisions.md (ADR-058, OD-029), testing.md §9 | The Source Schema key `(product_id, lot_number, expiry_date)` let one lot number exist twice with different expiries, while `testing.md` expected one lot per (product, lot number). | **Resolved 2026-10-22 by ADR-070** (user decision: `UQ(product_id, lot_number)`; a different expiry is refused with `LOT_EXPIRY_MISMATCH`). | Phase 3 · ADR-070 |
 | DR-037 | Lot locking rule did not say that a locked lot must be reloaded | High | backend.md §locking, architecture.md §3 | A lot read earlier in a transaction and then locked with a locking query kept its stale balance and cost; a movement committed in between was overwritten (found by `SupplierReturnConcurrencyTest`, Phase 5). | **Resolved 2026-10-24** by PR #65: `LotLocks` locks in ascending id and reloads; the only way to lock a lot (`LotLockingRuleTest`); backend.md states the rule. | Phase 5 · BR-STOCK-001/002, ADR-012 |
 | DR-038 | Scheduled jobs were not really off in tests | Medium | testing.md §1 | The jobs flag was set by a `DynamicPropertyRegistrar`, applied after the condition that reads it, so the inventory scheduler ticked in every test context and could commit runs while a test had moved the shared clock (flaky integrity-check tests on CI). | **Resolved 2026-10-24** (PR #61): surefire system property `ims.jobs.enabled=false`, guarded by `IntegrityCheckJobTest`; testing.md §1 says to set it in an IDE too. | Phase 5 · ADR-086 |
 

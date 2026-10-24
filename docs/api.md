@@ -261,7 +261,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/customers` | search: `q`, `type`, `wilaya`, `commune`, `active` | `customer.read` | page of `CustomerSummary` |
 | POST | `/api/customers` | create | `customer.manage` | `{name, customerType, categoryId?, farmingType?, wilaya?, commune?, address?, phone?, veterinarianId?}` |
 | GET/PUT | `/api/customers/{id}` | view / update (credit limit excluded) | `customer.read` / `customer.manage` | with `version` |
-| PUT | `/api/customers/{id}/credit-limit` | change credit limit (audited) | `customer.credit.manage` | `{creditLimit}` — semantics OD-011 |
+| PUT | `/api/customers/{id}/credit-limit` | change credit limit (audited) | `customer.credit.manage` | `{creditLimit}` (`null` = no limit, `"0.00"` = cash only, ADR-108) |
 | POST | `/api/customers/{id}/deactivate` · `/activate` | toggle | `customer.manage` | |
 | GET | `/api/customers/{id}/balance` | balance, limit, available credit | `customer.read` | definition **[OPEN OD-003]** |
 | GET | `/api/customers/{id}/statement` | account statement `?from&to` (+ `format=pdf`) | `statement.read` | chronological lines + running balance |
@@ -438,4 +438,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-011 (credit-limit semantics), OD-020 (pdf formats), OD-021 (backup run).
+OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-020 (pdf formats), OD-021 (backup run).

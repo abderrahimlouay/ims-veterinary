@@ -711,6 +711,18 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** BR-PURCH-008, BR-PURCH-012, W1d, `database.md` goods_receipt_lines and supplier_price_history, SD-131, SD-132, `api.md` §4.6/§4.8, `frontend.md` §4.5; tests: cost restored, status restored, and block/unblock/recall between the receipt and its cancellation leave the status untouched; cancelled history entry ignored by the prefill.
 ---
 
+## ADR-107 — Price precedence on a sales line (resolves OD-006)
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 close; option A).
+- **Decision:** The **most specific price wins; prices never stack.** The unit price of a sales line is, in this order, the first that exists: (1) a manual line price (permission `price.edit`, audited `PRICE_CHANGE`); (2) the customer's own price for the product (`customer_product_prices`, per base unit × the unit factor); (3) the unit's sale price (`product_units.sale_price`); (4) the product price per base unit × the unit factor (ADR-049, ADR-064). The **customer-category discount** (`customer_categories.discount_pct`) applies only when the customer has no own price for the product. A **manual discount** is added on top, up to the user's entitlement; beyond it needs `sale.discount` (BR-SALE-007, audited `DISCOUNT_OVERRIDE`).
+- **Alternatives:** stack base price, category discount and manual discount multiplicatively (B); the lowest applicable price wins (C).
+- **Consequences:** BR-SALE-006, BR-SALE-007, `domain-model.md` PriceResolver, `database.md` customer_product_prices, W2 step 3, testing.md (BR-SALE-006 unit tests of each level and of "no stacking"); customer prices and categories are stored in Phase 6, the resolution runs from Phase 7.
+
+## ADR-108 — Credit-limit semantics (resolves OD-011, DR-025)
+- **Status:** Accepted (user decision, 2026-10-24, Phase 5 close; option C).
+- **Decision:** `customers.credit_limit` becomes **nullable**: `NULL` = no limit, `0` = cash only (no credit sale), a positive amount = the limit (SD-133). A credit sale is allowed only if **balance + the new sale's TTC ≤ limit**, where the balance is the customer's confirmed invoices minus payments (drafts not counted), evaluated **under the customer-row lock** (database.md §7 lock order: after the lots). Overdue invoices block a new credit sale **only when** the new setting `credit_overdue_block_days` is on (default off; when on, an invoice overdue by more than that many days blocks). **Phase 6** stores the limit (`customer.credit.manage`) and audits its changes (`CREDIT_LIMIT_CHANGE`); the **check lands with sales** (Phase 7, through `CreditLimitPort`), and Phase 9 brings payments into the balance.
+- **Alternatives:** 0 = no credit, overdue always blocks (A); 0 = unlimited, overdue only warns (B).
+- **Consequences:** BR-CUST-002, BR-PAY-005, CT-06, `database.md` customers, `api.md` §4.9 credit-limit endpoint (`null` allowed), settings seed (Phase 6 or 7 migration), W2 step 6. **Open point for Phase 7 (roadmap):** whether credit sales are enabled before Phase 9 exists, since without recorded payments the balance only grows.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -746,6 +758,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 8. **Related:** BR-RET-002…006.
 
 ## OD-006 — Price resolution precedence
+- **Status:** Resolved 2026-10-24 → **ADR-107**.
 - **Question:** When several prices apply (product price per base unit, per-unit `product_units.sale_price`, `customer_product_prices`, `customer_categories.discount_pct`, manual line discount), what is the precedence and can they combine?
 - **Blocks:** Phase 6/7. **Related:** BR-SALE-006, BR-SALE-007.
 
@@ -770,8 +783,9 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 7. **Related:** BR-LOT-005.
 
 ## OD-011 — Credit-limit semantics
+- **Status:** Resolved 2026-10-24 → **ADR-108** (Phase 6 stores and audits the limit; the check comes with sales in Phase 7; payments enter the balance in Phase 9).
 - **Question:** `credit_limit DEFAULT 0` — does 0 mean *no credit allowed* or *unlimited*? Are overdue invoices (`due_date`) a blocking condition? Is the limit checked against *balance + new invoice*?
-- **Blocks:** Phase 9. **Related:** BR-PAY-005, BR-CUST-002.
+- **Blocks:** Phase 6 (stored meaning of the limit), Phase 7 (the check) and Phase 9 (payments in the balance). **Related:** BR-PAY-005, BR-CUST-002.
 
 ## OD-012 — Inventory Count concurrency and scope
 - **Status:** Resolved 2026-10-22 → **ADR-072** (concurrency, refined by the user), **ADR-073** (scope), **ADR-074** (found lots), **ADR-075** (closing).
@@ -908,10 +922,10 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 3 Lots & Units | ~~OD-009~~ → ADR-055/056, ~~OD-019~~ → ADR-057, ~~OD-025~~ → ADR-058, ~~OD-027~~ → ADR-059/060; ADR-061…068 (all 2026-10-22) |
 | 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091, ADR-077 amendment, ~~OD-034~~ → ADR-092 (2026-10-23) |
 | 5 Purchasing | ~~OD-007~~ → ADR-093, ~~OD-014~~ → ADR-095, ~~OD-015~~ → ADR-096, ~~OD-017~~ → ADR-097 (ADR-011 accepted), ~~OD-029~~ → ADR-098; ADR-094, ADR-099…106 (all 2026-10-24) |
-| 6 Customers | OD-006, OD-011 |
-| 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, OD-006, ~~OD-033~~ → ADR-071 |
+| 6 Customers | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (both 2026-10-24) |
+| 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (the credit check), ~~OD-033~~ → ADR-071 |
 | 8 Returns | OD-005 |
-| 9 Payments / Finance | OD-003, OD-011, OD-016 |
+| 9 Payments / Finance | OD-003, OD-016; ~~OD-011~~ → ADR-108 (payments in the balance) |
 | 10 Documents & Printing | OD-020, OD-026, OD-028, OD-008 |
 | 11 Reports & Audit | OD-021 (backup), OD-002 (margin scope), OD-003 |
 | 12 Testing, Security, Deployment | OD-021, ADR-036 hardening review |
