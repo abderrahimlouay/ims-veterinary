@@ -13,7 +13,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 3. **Test the failure path as much as the happy path:** every error code in `api.md` §3 is produced by at least one test.
 4. **Atomicity is tested by fault injection:** force a failure mid-use-case and assert nothing persisted.
 5. **Open decisions are not guessed in tests.** Tests for behaviour under an `OPEN DECISION` are written only after the decision is recorded; until then they are marked `@Disabled("OD-nnn")` with the reason, and the roadmap phase does not complete with silent gaps.
-6. **Deterministic:** fixed `Clock` bean in tests; no sleeps; no dependency on the current date (expiry boundary tests inject the date).
+6. **Deterministic:** fixed `Clock` bean in tests; no sleeps; no dependency on the current date (expiry boundary tests inject the date). The scheduled jobs are off in tests (`ims.jobs.enabled=false`, a surefire system property; set it too when running tests from an IDE): tests call the job ticks directly, so no background tick can commit a run while a test has moved the shared clock (guarded by `IntegrityCheckJobTest`).
 7. **Fast feedback:** unit tests < seconds; integration suite parallelisable per module; one MySQL container per Spring test-context configuration, shared by the classes that use that configuration (ADR-035) — reuse the existing configurations instead of adding per-class variations.
 
 ## 2. Test pyramid and levels

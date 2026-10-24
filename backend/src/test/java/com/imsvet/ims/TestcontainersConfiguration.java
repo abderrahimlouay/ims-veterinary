@@ -4,10 +4,10 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.test.context.DynamicPropertyRegistrar;
 
 /**
- * The configuration every integration test imports: real MySQL plus the settable test clock. Importing
+ * The configuration every integration test imports: real MySQL plus the settable test clock (the scheduled jobs
+ * are off through the surefire system property {@code ims.jobs.enabled=false}). Importing
  * exactly this keeps all tests in one context and one container (ADR-035). Not used by
  * {@link TestImsApplication}, whose local run keeps the real clock.
  */
@@ -19,11 +19,5 @@ public class TestcontainersConfiguration {
     @Primary
     TestClock testClock() {
         return new TestClock();
-    }
-
-    /** Scheduled jobs off: tests call the job ticks directly with the test clock. */
-    @Bean
-    DynamicPropertyRegistrar jobsOff() {
-        return registry -> registry.add("ims.jobs.enabled", () -> "false");
     }
 }
