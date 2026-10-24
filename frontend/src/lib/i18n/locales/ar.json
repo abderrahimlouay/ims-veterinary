@@ -16,7 +16,9 @@
     "lots": "الحصص",
     "stock": "المخزون",
     "counts": "الجرد",
-    "reorder": "إعادة الطلب"
+    "reorder": "إعادة الطلب",
+    "suppliers": "الموردون",
+    "purchaseOrders": "أوامر الشراء"
   },
   "language": {
     "label": "اللغة",
@@ -99,7 +101,9 @@
     "INVENTORY_NOT_OPEN": "هذا الجرد لم يعد مفتوحًا.",
     "INVENTORY_ALREADY_OPEN": "يوجد جرد كامل مفتوح بالفعل.",
     "INVENTORY_LINE_ALREADY_REGULARIZED": "تمت تسوية هذا السطر بالفعل.",
-    "CONCURRENT_MODIFICATION": "قام شخص آخر بتعديل هذه البيانات للتو: أعد المحاولة."
+    "CONCURRENT_MODIFICATION": "قام شخص آخر بتعديل هذه البيانات للتو: أعد المحاولة.",
+    "SUPPLIER_INACTIVE": "هذا المورد معطل: لا يمكن الطلب منه ولا الاستلام منه.",
+    "DOCUMENT_IMMUTABLE": "لم يعد بالإمكان تعديل هذه الوثيقة."
   },
   "pager": {
     "label": "ترقيم الصفحات",
@@ -650,6 +654,114 @@
     "widget": {
       "title": "إعادة الطلب",
       "pending": "مقترحات قيد الانتظار: {{count}}"
+    }
+  },
+  "purchasing": {
+    "save": "حفظ",
+    "reason": "السبب",
+    "confirm": "تأكيد",
+    "close": "إغلاق",
+    "findProduct": "البحث عن منتج",
+    "pickProduct": "اختيار {{name}}",
+    "changeProduct": "تغيير المنتج",
+    "suppliers": {
+      "title": "الموردون",
+      "new": "مورد جديد",
+      "search": "البحث عن مورد",
+      "activeFilter": "الحالة",
+      "activeOnly": "النشطون",
+      "inactiveOnly": "المعطلون",
+      "empty": "لا يوجد مورد.",
+      "name": "الاسم",
+      "kind": "النوع",
+      "kinds": {
+        "laboratory": "مختبر",
+        "wholesaler": "تاجر جملة"
+      },
+      "taxId": "المعرف الجبائي",
+      "phone": "الهاتف",
+      "email": "البريد الإلكتروني",
+      "address": "العنوان",
+      "paymentTermsDays": "أجل الدفع (أيام)",
+      "state": "الحالة",
+      "active": "نشط",
+      "inactive": "معطل",
+      "activate": "إعادة التفعيل",
+      "deactivate": "تعطيل",
+      "saved": "تم حفظ المورد."
+    },
+    "prices": {
+      "title": "سجل الأسعار",
+      "empty": "لا يوجد سعر مسجل.",
+      "unitPrice": "سعر الوحدة (الوحدة الأساسية)",
+      "discountPct": "التخفيض (%)",
+      "validFrom": "ساري منذ",
+      "origin": "المصدر",
+      "manual": "إدخال يدوي",
+      "receipt": "استلام",
+      "cancelledReceipt": "استلام ملغى",
+      "add": "إضافة سعر",
+      "addButton": "إضافة"
+    },
+    "orders": {
+      "title": "أوامر الشراء",
+      "new": "أمر شراء جديد",
+      "edit": "تعديل {{number}}",
+      "editButton": "تعديل",
+      "empty": "لا يوجد أمر شراء.",
+      "number": "الرقم",
+      "supplier": "المورد",
+      "orderDate": "التاريخ",
+      "expectedDate": "التسليم المتوقع",
+      "status": "الحالة",
+      "totalTtc": "المجموع مع الرسوم",
+      "lines": "الأسطر",
+      "noLines": "لا توجد أسطر: أضف منتجا.",
+      "supplierFirst": "اختر المورد أولا لاقتراح الأسعار.",
+      "addProduct": "إضافة منتج",
+      "duplicateProduct": "{{name}} موجود بالفعل في هذا الأمر.",
+      "unit": "الوحدة",
+      "quantity": "الكمية",
+      "unitPrice": "سعر الوحدة",
+      "discountPct": "التخفيض (%)",
+      "vatRate": "الرسم على القيمة المضافة (%)",
+      "remove": "حذف",
+      "removeLine": "حذف {{name}}",
+      "saveDraft": "حفظ المسودة",
+      "lineHt": "المبلغ دون رسوم",
+      "lineVat": "الرسم",
+      "received": "المستلم",
+      "outstanding": "المتبقي",
+      "totals": "المجاميع",
+      "totalTtcValue": "مع الرسوم {{amount}}",
+      "receipts": "الاستلامات",
+      "statuses": {
+        "draft": "مسودة",
+        "validated": "مصادق عليه",
+        "sent": "مرسل",
+        "partially_received": "مستلم جزئيا",
+        "closed": "مغلق",
+        "cancelled": "ملغى"
+      },
+      "actions": {
+        "validate": "مصادقة",
+        "send": "تعليم كمرسل",
+        "cancel": "إلغاء الأمر",
+        "close": "إغلاق الأمر"
+      },
+      "timeline": {
+        "created": "أنشأه {{by}}",
+        "validated": "تمت المصادقة",
+        "sent": "أرسل",
+        "cancelled": "ألغاه {{by}}",
+        "closed": "أغلق"
+      }
+    },
+    "receipts": {
+      "statuses": {
+        "confirmed": "مؤكد",
+        "cancelled": "ملغى"
+      }
     }
   }
 }

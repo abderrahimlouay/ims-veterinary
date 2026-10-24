@@ -15,6 +15,15 @@ import {
   StockPage,
 } from '../features/inventory'
 import { AccountPage, LoginPage } from '../features/auth'
+import {
+  EditOrderPage,
+  NewOrderPage,
+  NewSupplierPage,
+  OrderDetailPage,
+  PurchaseOrdersPage,
+  SupplierPage,
+  SuppliersPage,
+} from '../features/purchasing'
 import { RequireAuth, RequirePermission } from './guards'
 import { AppLayout } from './layouts/AppLayout'
 import { AuthLayout } from './layouts/AuthLayout'
@@ -49,6 +58,13 @@ export const routes: RouteObject[] = [
       { path: 'inventory-counts/new', element: <RequirePermission code="inventory.count"><NewCountPage /></RequirePermission> },
       { path: 'inventory-counts/:id', element: <RequirePermission code="inventory.count"><CountPage /></RequirePermission> },
       { path: 'reorder', element: <RequirePermission code="reorder.read"><ReorderPage /></RequirePermission> },
+      { path: 'suppliers', element: <RequirePermission code="supplier.read"><SuppliersPage /></RequirePermission> },
+      { path: 'suppliers/new', element: <RequirePermission code="supplier.manage"><NewSupplierPage /></RequirePermission> },
+      { path: 'suppliers/:id', element: <RequirePermission code="supplier.read"><SupplierPage /></RequirePermission> },
+      { path: 'purchase-orders', element: <RequirePermission code="purchase.read"><PurchaseOrdersPage /></RequirePermission> },
+      { path: 'purchase-orders/new', element: <RequirePermission code="purchase.create"><NewOrderPage /></RequirePermission> },
+      { path: 'purchase-orders/:id', element: <RequirePermission code="purchase.read"><OrderDetailPage /></RequirePermission> },
+      { path: 'purchase-orders/:id/edit', element: <RequirePermission code="purchase.create"><EditOrderPage /></RequirePermission> },
       { path: 'catalog/references', element: <RequirePermission code="product.read"><ReferencesPage /></RequirePermission> },
       { path: 'admin/users', element: <RequirePermission code="user.read"><UsersPage /></RequirePermission> },
       { path: 'admin/users/new', element: <RequirePermission code="user.manage"><NewUserPage /></RequirePermission> },
