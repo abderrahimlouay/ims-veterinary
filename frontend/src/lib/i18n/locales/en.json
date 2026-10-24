@@ -16,7 +16,9 @@
     "lots": "Lots",
     "stock": "Stock",
     "counts": "Inventory counts",
-    "reorder": "Reorder"
+    "reorder": "Reorder",
+    "suppliers": "Suppliers",
+    "purchaseOrders": "Purchase orders"
   },
   "language": {
     "label": "Language",
@@ -99,7 +101,9 @@
     "INVENTORY_NOT_OPEN": "This count is no longer open.",
     "INVENTORY_ALREADY_OPEN": "A full count is already open.",
     "INVENTORY_LINE_ALREADY_REGULARIZED": "This line is already regularised.",
-    "CONCURRENT_MODIFICATION": "Someone else just changed this data: try again."
+    "CONCURRENT_MODIFICATION": "Someone else just changed this data: try again.",
+    "SUPPLIER_INACTIVE": "This supplier is deactivated: nothing can be ordered from or received from it.",
+    "DOCUMENT_IMMUTABLE": "This document can no longer be changed."
   },
   "pager": {
     "label": "Pagination",
@@ -650,6 +654,114 @@
     "widget": {
       "title": "Reorder",
       "pending": "Pending proposals: {{count}}"
+    }
+  },
+  "purchasing": {
+    "save": "Save",
+    "reason": "Reason",
+    "confirm": "Confirm",
+    "close": "Close",
+    "findProduct": "Search a product",
+    "pickProduct": "Choose {{name}}",
+    "changeProduct": "Change product",
+    "suppliers": {
+      "title": "Suppliers",
+      "new": "New supplier",
+      "search": "Search a supplier",
+      "activeFilter": "State",
+      "activeOnly": "Active",
+      "inactiveOnly": "Deactivated",
+      "empty": "No supplier.",
+      "name": "Name",
+      "kind": "Kind",
+      "kinds": {
+        "laboratory": "Laboratory",
+        "wholesaler": "Wholesaler"
+      },
+      "taxId": "Tax id",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "paymentTermsDays": "Payment terms (days)",
+      "state": "State",
+      "active": "Active",
+      "inactive": "Deactivated",
+      "activate": "Reactivate",
+      "deactivate": "Deactivate",
+      "saved": "Supplier saved."
+    },
+    "prices": {
+      "title": "Price history",
+      "empty": "No price recorded.",
+      "unitPrice": "Unit price (base unit)",
+      "discountPct": "Discount (%)",
+      "validFrom": "Valid from",
+      "origin": "Origin",
+      "manual": "Manual entry",
+      "receipt": "Receipt",
+      "cancelledReceipt": "Cancelled receipt",
+      "add": "Add a price",
+      "addButton": "Add"
+    },
+    "orders": {
+      "title": "Purchase orders",
+      "new": "New purchase order",
+      "edit": "Edit {{number}}",
+      "editButton": "Edit",
+      "empty": "No purchase order.",
+      "number": "Number",
+      "supplier": "Supplier",
+      "orderDate": "Date",
+      "expectedDate": "Expected delivery",
+      "status": "Status",
+      "totalTtc": "Total incl. VAT",
+      "lines": "Lines",
+      "noLines": "No line yet: add a product.",
+      "supplierFirst": "Choose the supplier first, to prefill the prices.",
+      "addProduct": "Add a product",
+      "duplicateProduct": "{{name}} is already on this order.",
+      "unit": "Unit",
+      "quantity": "Quantity",
+      "unitPrice": "Unit price",
+      "discountPct": "Discount (%)",
+      "vatRate": "VAT (%)",
+      "remove": "Remove",
+      "removeLine": "Remove {{name}}",
+      "saveDraft": "Save draft",
+      "lineHt": "Amount excl. VAT",
+      "lineVat": "VAT",
+      "received": "Received",
+      "outstanding": "Outstanding",
+      "totals": "Totals",
+      "totalTtcValue": "Incl. VAT {{amount}}",
+      "receipts": "Receipts",
+      "statuses": {
+        "draft": "Draft",
+        "validated": "Validated",
+        "sent": "Sent",
+        "partially_received": "Partially received",
+        "closed": "Closed",
+        "cancelled": "Cancelled"
+      },
+      "actions": {
+        "validate": "Validate",
+        "send": "Mark as sent",
+        "cancel": "Cancel order",
+        "close": "Close"
+      },
+      "timeline": {
+        "created": "Created by {{by}}",
+        "validated": "Validated",
+        "sent": "Sent",
+        "cancelled": "Cancelled by {{by}}",
+        "closed": "Closed"
+      }
+    },
+    "receipts": {
+      "statuses": {
+        "confirmed": "Confirmed",
+        "cancelled": "Cancelled"
+      }
     }
   }
 }

@@ -16,7 +16,9 @@
     "lots": "Lots",
     "stock": "Stock",
     "counts": "Inventaires",
-    "reorder": "Réapprovisionnement"
+    "reorder": "Réapprovisionnement",
+    "suppliers": "Fournisseurs",
+    "purchaseOrders": "Bons de commande"
   },
   "language": {
     "label": "Langue",
@@ -99,7 +101,9 @@
     "INVENTORY_NOT_OPEN": "Cet inventaire n'est plus ouvert.",
     "INVENTORY_ALREADY_OPEN": "Un inventaire complet est déjà ouvert.",
     "INVENTORY_LINE_ALREADY_REGULARIZED": "Cette ligne est déjà régularisée.",
-    "CONCURRENT_MODIFICATION": "Quelqu'un d'autre vient de modifier ces données : réessayez."
+    "CONCURRENT_MODIFICATION": "Quelqu'un d'autre vient de modifier ces données : réessayez.",
+    "SUPPLIER_INACTIVE": "Ce fournisseur est désactivé : on ne peut ni lui commander ni recevoir de lui.",
+    "DOCUMENT_IMMUTABLE": "Ce document n'est plus modifiable."
   },
   "pager": {
     "label": "Pagination",
@@ -650,6 +654,114 @@
     "widget": {
       "title": "Réapprovisionnement",
       "pending": "Propositions en attente : {{count}}"
+    }
+  },
+  "purchasing": {
+    "save": "Enregistrer",
+    "reason": "Motif",
+    "confirm": "Confirmer",
+    "close": "Fermer",
+    "findProduct": "Rechercher un produit",
+    "pickProduct": "Choisir {{name}}",
+    "changeProduct": "Changer de produit",
+    "suppliers": {
+      "title": "Fournisseurs",
+      "new": "Nouveau fournisseur",
+      "search": "Rechercher un fournisseur",
+      "activeFilter": "État",
+      "activeOnly": "Actifs",
+      "inactiveOnly": "Désactivés",
+      "empty": "Aucun fournisseur.",
+      "name": "Nom",
+      "kind": "Type",
+      "kinds": {
+        "laboratory": "Laboratoire",
+        "wholesaler": "Grossiste"
+      },
+      "taxId": "Identifiant fiscal",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "address": "Adresse",
+      "paymentTermsDays": "Délai de paiement (jours)",
+      "state": "État",
+      "active": "Actif",
+      "inactive": "Désactivé",
+      "activate": "Réactiver",
+      "deactivate": "Désactiver",
+      "saved": "Fournisseur enregistré."
+    },
+    "prices": {
+      "title": "Historique des prix",
+      "empty": "Aucun prix enregistré.",
+      "unitPrice": "Prix unitaire (unité de base)",
+      "discountPct": "Remise (%)",
+      "validFrom": "Valable depuis",
+      "origin": "Origine",
+      "manual": "Saisie manuelle",
+      "receipt": "Réception",
+      "cancelledReceipt": "Réception annulée",
+      "add": "Ajouter un prix",
+      "addButton": "Ajouter"
+    },
+    "orders": {
+      "title": "Bons de commande",
+      "new": "Nouveau bon de commande",
+      "edit": "Modifier {{number}}",
+      "editButton": "Modifier",
+      "empty": "Aucun bon de commande.",
+      "number": "Numéro",
+      "supplier": "Fournisseur",
+      "orderDate": "Date",
+      "expectedDate": "Livraison prévue",
+      "status": "Statut",
+      "totalTtc": "Total TTC",
+      "lines": "Lignes",
+      "noLines": "Aucune ligne : ajoutez un produit.",
+      "supplierFirst": "Choisissez d'abord le fournisseur pour proposer les prix.",
+      "addProduct": "Ajouter un produit",
+      "duplicateProduct": "{{name}} est déjà sur ce bon de commande.",
+      "unit": "Unité",
+      "quantity": "Quantité",
+      "unitPrice": "Prix unitaire",
+      "discountPct": "Remise (%)",
+      "vatRate": "TVA (%)",
+      "remove": "Retirer",
+      "removeLine": "Retirer {{name}}",
+      "saveDraft": "Enregistrer le brouillon",
+      "lineHt": "Montant HT",
+      "lineVat": "TVA",
+      "received": "Reçu",
+      "outstanding": "Reste à recevoir",
+      "totals": "Totaux",
+      "totalTtcValue": "TTC {{amount}}",
+      "receipts": "Réceptions",
+      "statuses": {
+        "draft": "Brouillon",
+        "validated": "Validé",
+        "sent": "Envoyé",
+        "partially_received": "Reçu en partie",
+        "closed": "Clôturé",
+        "cancelled": "Annulé"
+      },
+      "actions": {
+        "validate": "Valider",
+        "send": "Marquer envoyé",
+        "cancel": "Annuler le bon",
+        "close": "Clôturer"
+      },
+      "timeline": {
+        "created": "Créé par {{by}}",
+        "validated": "Validé",
+        "sent": "Envoyé",
+        "cancelled": "Annulé par {{by}}",
+        "closed": "Clôturé"
+      }
+    },
+    "receipts": {
+      "statuses": {
+        "confirmed": "Confirmée",
+        "cancelled": "Annulée"
+      }
     }
   }
 }
