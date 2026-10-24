@@ -60,7 +60,7 @@ Rules:
 2. A module accesses another module's data **only** through its public application ports or a `reporting` view — never its repositories or tables. **Documented exception (ADR-090):** `inventory`'s `ProductStockConditions`, implementing the catalog port `ProductStock`, returns constant JPQL conditions over its own `Lot` and the product alias (`p.minStock`, `p.reorderPoint`) that the catalog appends to its searches, with bind parameters only; `ModuleSqlBoundaryTest` allows catalog names in no other inventory class and inventory names in no catalog class.
 3. Only `inventory` writes `stock_movements` and `lots.quantity_on_hand` (BR-STOCK-003), through `StockService` (ADR-088); `purchasing`, `sales`, `returns` call `StockService`.
 4. Only `finance` writes payments, allocations and cash movements.
-5. Only `numbering` allocates document numbers.
+5. Only `numbering` allocates document numbers. Only `common`'s `IdempotencyKeys` writes `idempotency_keys` (ADR-104; used by the modules that create numbered documents).
 6. Dependencies are enforced by an architecture test (ArchUnit-style) from Phase 0 (`testing.md` §10).
 
 ## 4. Request flow

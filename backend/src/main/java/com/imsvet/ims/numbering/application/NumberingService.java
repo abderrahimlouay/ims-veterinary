@@ -13,8 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
  * The only issuer of document numbers (BR-DOC-001, ADR-011, ADR-097): {@code KEY-YYYY-NNNNNN}, one counter per key
  * and business year (the year of the business date in the business time zone, never the UTC date). Runs only in
  * the caller's transaction: the counter row stays locked until it commits, so documents of one key are serialised
- * and a rollback gives the number back (no gap). Lock order (database.md §7): this row first, then lots in
- * ascending id, then the customer; callers allocate after their validation and before locking anything else.
+ * and a rollback gives the number back (no gap). Lock order (database.md §7): the idempotency key if any, this row,
+ * then lots in ascending id, then the customer; callers allocate after their validation and before locking lots.
  */
 @Service
 @InternalService
