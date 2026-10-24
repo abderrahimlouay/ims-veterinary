@@ -169,10 +169,10 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PURCH-005 | S | Receipt lines produce lot + positive movement with lot/expiry through `StockService`; ledger = balance |
 | BR-PURCH-006 | S | Non-conforming line → lot blocked (audited); lot with stock → LOT_BLOCK_CONFIRMATION_REQUIRED naming the quantity, accepted with `confirmLotBlocking` |
 | BR-PURCH-007 | S | Fault injected on line 3 (and on the audit / price history) → no lots, no movements, no number, PO unchanged |
-| BR-PURCH-008 | S | Receipt appends a history entry only when price or discount changes; manual entry |
+| BR-PURCH-008 | S | Receipt appends a history entry only when price or discount changes; manual entry (`SuppliersTest`, slice 1) |
 | BR-PURCH-009 | S,C | Supplier return reduces lot (any status); more than available → STOCK_INSUFFICIENT; lot of another supplier → OTHER_SUPPLIER; audited |
 | BR-PURCH-010 | S | Convert several proposals into one draft PO per supplier; twice → INVALID_STATE_TRANSITION; generation subtracts open orders (ADR-102) |
-| BR-PURCH-011 | S | PO / receipt for inactive supplier → SUPPLIER_INACTIVE |
+| BR-PURCH-011 | S | PO / receipt for inactive supplier → SUPPLIER_INACTIVE; deactivate and reactivate (`SuppliersTest`); name unique ignoring case and accents (`SupplierSchemaTest`) |
 | BR-PURCH-012 | S,C | Cancel a receipt: reversal movements, PO rolled back, audited, number kept; a later movement on one lot → RECEIPT_NOT_CANCELLABLE naming it; fault injection rolls everything back; created lot stays at 0 without supplier; cost restored; status restored only if unchanged — block/unblock/recall between receipt and cancellation leave it; forced-closed order stays closed; price-history entry marked cancelled and ignored by the prefill (ADR-106) |
 | BR-PURCH-013 | S | Same key + same body → first receipt, nothing posted twice; same key + other body → IDEMPOTENCY_CONFLICT |
 | BR-DOC-001 | C,R | CT-03: 1000 concurrent numbers unique and gap-free on commit; format `KEY-YYYY-NNNNNN`; yearly reset; a rolled-back transaction leaves no gap (ADR-097) |

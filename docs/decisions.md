@@ -603,6 +603,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** Phase 4 includes the items deferred to it by the Phase 2/3 scope splits: stock columns (sellable quantity, status, nearest expiry) and the `inStockOnly` filter on the product list, stock-aware substitutes, a low-stock dashboard widget, and the name of the user who blocked or recalled a lot (a read port of the `users` module for user names).
 - **Alternatives:** stock pages only (B).
 - **Consequences:** `roadmap.md` Phase 4, `api.md` §4.3, `frontend.md` §3.1/§4.1/§4.2, `architecture.md` §3 (module rule `inventory → users` for the name port only).
+- **Extension (2026-10-24, Phase 5 slice 1):** `purchasing` uses the same `UserNames` port (who created a price entry, a receipt, a return), with the same architecture rule.
 
 ## ADR-090 — Stock conditions cross the catalog/inventory boundary as constant query text (option A)
 - **Status:** Accepted (user decision, 2026-10-23, Phase 4 slice 6; option A with conditions)
