@@ -150,9 +150,9 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 
 **customer_categories** — `id INT AI PK`, `name VARCHAR(80) NOT NULL UQ`, `discount_pct DECIMAL(5,2) NOT NULL DEFAULT 0 CK 0–100`.
 
-**customers** — `id BIGINT AI PK`, `name VARCHAR(150) NOT NULL`, `customer_type VARCHAR(30) NOT NULL DEFAULT 'breeder'` (breeder | veterinarian | other), `category_id INT NULL FK→customer_categories`, `farming_type VARCHAR(100) NULL`, `wilaya VARCHAR(60)`, `commune VARCHAR(80)`, `address TEXT`, `phone VARCHAR(40)`, `veterinarian_id BIGINT NULL FK→customers` (self; must reference a customer of type `veterinarian` — application rule BR-CUST-001), `credit_limit DECIMAL(14,2) NOT NULL DEFAULT 0 CK ≥ 0` (semantics of 0: OD-011), `is_active`, `created_at`, `version`. Indexes: `idx_customers_name`, `idx_customers_zone(wilaya, commune)`.
+**customers** — `id BIGINT AI PK`, `name VARCHAR(150) NOT NULL`, `customer_type VARCHAR(30) NOT NULL DEFAULT 'breeder'` (breeder | veterinarian | other), `category_id INT NULL FK→customer_categories`, `farming_type VARCHAR(100) NULL`, `wilaya VARCHAR(60)`, `commune VARCHAR(80)`, `address TEXT`, `phone VARCHAR(40)`, `veterinarian_id BIGINT NULL FK→customers` (self; must reference a customer of type `veterinarian` — application rule BR-CUST-001), `credit_limit DECIMAL(14,2) NULL CK NULL or ≥ 0` (NULL = no limit, 0 = cash only, ADR-108, SD-133), `is_active`, `created_at`, `version`. Indexes: `idx_customers_name`, `idx_customers_zone(wilaya, commune)`.
 
-**customer_product_prices** — `customer_id FK CASCADE`, `product_id FK CASCADE`, `unit_price DECIMAL(14,4) NOT NULL CK ≥ 0` (per base unit, ADR-049; precedence OD-006), `PK(customer_id, product_id)`.
+**customer_product_prices** — `customer_id FK CASCADE`, `product_id FK CASCADE`, `unit_price DECIMAL(14,4) NOT NULL CK ≥ 0` (per base unit, ADR-049; precedence ADR-107), `PK(customer_id, product_id)`.
 
 ### 3.4 Lots & stock (modules 2 and 3)
 

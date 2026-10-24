@@ -239,6 +239,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-130 | `purchase_orders.closed_reason`, `closed_by/at`, `cancel_reason`, `cancelled_by/at`, `validated_by/at`, `sent_by/at`, `updated_at` | ADR-096, ADR-105 | Accepted 2026-10-24 (cancel reason required by the user, slice 3) |
 | SD-131 | `goods_receipt_lines.lot_created`, `lot_cost_before`, `lot_status_before`, `lot_blocked` (state restored by a cancellation) | ADR-106 | Accepted 2026-10-24 |
 | SD-132 | `supplier_price_history.receipt_id` and `cancelled` | ADR-106 | Accepted 2026-10-24 |
+| SD-133 | `customers.credit_limit` nullable: NULL = no limit, 0 = cash only (the Source Schema has `NOT NULL DEFAULT 0`) | ADR-108 | Accepted 2026-10-24 |
 
 ## 9. Operational requirements for MySQL
 

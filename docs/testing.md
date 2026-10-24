@@ -40,7 +40,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 
 ## 4. Backend test requirements by layer
 
-**Unit.** FEFO allocator (ordering, ties, partial lots, non-sellable skipped); unit conversion (exact decimals); price resolution (OD-006) and discount bounds; totals with rounding (ADR-093); state machines (lot, PO, sales document, count, cash session, reorder); return limit calculation; balance and expected-cash formulas.
+**Unit.** FEFO allocator (ordering, ties, partial lots, non-sellable skipped); unit conversion (exact decimals); price resolution (ADR-107: each level and no stacking) and discount bounds; totals with rounding (ADR-093); state machines (lot, PO, sales document, count, cash session, reorder); return limit calculation; balance and expected-cash formulas.
 
 **Repository.** Unique constraints (SKU, barcode, lot per product, one open session per cashier), CHECK constraints (non-negative balances, positive quantities, signed movement rules), trigger behaviour for append-only tables, generated columns, view parity with domain computation, `FOR UPDATE` ordering, collation behaviour for codes (ADR-024, ADR-041, ADR-051, ADR-058: lot numbers insensitive, barcodes exact), contains search and its ordering (ADR-048).
 
@@ -78,7 +78,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 
 Until sales exist (Phase 7), CT-01 and CT-04 use a manual adjustment in place of a sale; Phase 7 re-runs both with real sales (roadmap Phase 7 completion criteria).
 | CT-05 | double-submit same Idempotency-Key | one document (`IdempotencyKeysTest`, 20 repetitions: the second waits on the key, then replays the first; per endpoint again in BR-PURCH-013 / BR-SALE-016) |
-| CT-06 | two credit sales for same customer near limit | limit not exceeded (OD-011) |
+| CT-06 | two credit sales for same customer near limit | limit not exceeded (ADR-108) |
 | CT-07 | simultaneous edit of same product (`@Version`) | second gets `CONCURRENT_MODIFICATION` |
 | CT-08 | parallel goods receipts of same new lot number | one lot, summed balance, weighted-average cost, ledger = balance (`GoodsReceiptConcurrencyTest`, 20 repetitions; with two receipts beyond one order line's outstanding quantity: one refused) |
 | CT-09 | two cash sessions opened concurrently by same cashier | one succeeds |
@@ -184,7 +184,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SALE-003 | S | Confirm quote → no movement |
 | BR-SALE-004 | A | Edit confirmed document → DOCUMENT_IMMUTABLE |
 | BR-SALE-005 | S | Lots assigned and verified at confirmation |
-| BR-SALE-006 | U | Price precedence customer > category > list (OD-006); unit conversion |
+| BR-SALE-006 | U | Price precedence (ADR-107): manual > customer's own price > unit price > product × factor; category discount only without a customer price; manual discount on top within the entitlement; unit conversion |
 | BR-SALE-007 | U,SEC | Discount above entitlement needs sale.discount |
 | BR-SALE-008 | U | Server totals identical for same input; client totals ignored |
 | BR-SALE-009 | S | Line stores unit cost snapshot equal to lot cost |
@@ -209,7 +209,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PAY-002 | S | Allocation > payment or > outstanding → PAYMENT_ALLOCATION_EXCEEDED |
 | BR-PAY-003 | SEC,A | Payment update/delete refused; reversal creates counter entry |
 | BR-PAY-004 | S,R | Balance = sales − credit notes − allocated payments (OD-003); view parity test |
-| BR-PAY-005 | S,C | Credit above limit → CREDIT_LIMIT_EXCEEDED; concurrent sales respect limit (OD-011) |
+| BR-PAY-005 | S,C | Credit above limit → CREDIT_LIMIT_EXCEEDED; concurrent sales respect limit; NULL = no limit, 0 = cash only; overdue blocks only with `credit_overdue_block_days` (ADR-108) |
 | BR-PAY-006 | S | Cash payment with no open session → CASH_SESSION_REQUIRED |
 | BR-PAY-007 | S | Statement lines and running balance over a period |
 | BR-PAY-008 | R,A | Duplicate (supplier, invoice number) → DUPLICATE_RESOURCE |
@@ -264,4 +264,4 @@ See `database-migration.md` §10 checklist. Every migration runs on an empty dat
 
 ## 13. Open testing items
 
-OD-006/007 (price and rounding fixtures), OD-002/003/004/005 (sales/payment/cancellation/return expectations), OD-011/012/013/015/017.
+ADR-107 and ADR-093 (price and rounding fixtures), OD-002/003/004/005 (sales/payment/cancellation/return expectations), OD-012/013/015/017 (resolved), ADR-108.

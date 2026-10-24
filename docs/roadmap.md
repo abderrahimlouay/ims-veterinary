@@ -24,10 +24,10 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 3 | Lots & units | packaging units, barcodes, lots, status, expiry rules, FEFO allocator | ~~OD-009, OD-019, OD-025, OD-027~~ → ADR-055…068 |
 | 4 | Inventory & stock | ledger, stock levels, adjustments, opening stock, counts, reorder proposals | ~~OD-012~~, ~~OD-013~~ → ADR-072…079 |
 | 5 | Purchasing | suppliers, purchase orders, goods receipts, supplier returns, numbering | ~~OD-007~~, ~~OD-014~~, ~~OD-015~~, ~~OD-017~~, ~~OD-029~~ → ADR-093…105 |
-| 6 | Customers | customers, categories, prices, credit-limit data | OD-006, OD-011 |
+| 6 | Customers | customers, categories, prices, credit-limit data | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 |
 | 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | OD-002, OD-003, OD-004, OD-010 |
 | 8 | Returns | customer returns, credit notes, restock/discard | OD-005 |
-| 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | OD-003, OD-011, OD-016 |
+| 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | OD-003, OD-016 (ADR-108: payments enter the credit balance) |
 | 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | OD-020, OD-026, OD-028 |
 | 11 | Reports & audit | reports, exports, backup | OD-021 |
 | 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | OD-021, ADR-036 hardening |
@@ -103,11 +103,11 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** supplier pages, PO editor, goods-receipt screen, supplier return.
 - **Tests:** BR-PURCH-*, BR-DOC-001, CT-03, CT-08; e2e J3.
 - **Completion criteria:** FR-PURCH-001..007 done; a receipt and its cancellation are all-or-nothing; numbering unique under concurrency. The close report repeats that the legal rounding rule for sales invoices must be confirmed with an accountant before Phase 7 (ADR-093).
-- **Delivered (2026-10-24; awaiting approval of the close):** decisions PRs #57 (ADR-093…105) and #58 (ADR-106), then PRs #59–#69 (slices suppliers, numbering, purchase orders, idempotency keys, goods receipts, receipt cancellation, the lot-lock reload fix #65, supplier returns, reorder conversion, frontend suppliers and orders, frontend receipts and returns) and the close PR; migrations V05_001…016; SD-126…132; no OD opened. e2e J3 added (runs with J8 after the journeys that expect no lot, known debt for Phase 12). Not delivered here, by plan: supplier invoices, payments and payables on the supplier page (Phase 9, OD-016); the supplier credit note of a return (Phase 9, OD-016); the purchase-order PDF (Phase 10). The close report repeats that an accountant must confirm the legal rounding rule for sales invoices (per line or per VAT rate) before Phase 7 (ADR-093).
+- **Delivered (2026-10-24; approved and tagged `phase-5-done` on `0c3ff3f`):** decisions PRs #57 (ADR-093…105) and #58 (ADR-106), then PRs #59–#69 (slices suppliers, numbering, purchase orders, idempotency keys, goods receipts, receipt cancellation, the lot-lock reload fix #65, supplier returns, reorder conversion, frontend suppliers and orders, frontend receipts and returns) and the close PR; migrations V05_001…016; SD-126…132; no OD opened. e2e J3 added (runs with J8 after the journeys that expect no lot, known debt for Phase 12). Not delivered here, by plan: supplier invoices, payments and payables on the supplier page (Phase 9, OD-016); the supplier credit note of a return (Phase 9, OD-016); the purchase-order PDF (Phase 10). The close report repeats that an accountant must confirm the legal rounding rule for sales invoices (per line or per VAT rate) before Phase 7 (ADR-093).
 
 ## Phase 6 — Customers
 - **Objective:** know the customers and their commercial conditions.
-- **Prerequisites:** Phase 2; OD-006 (price precedence), OD-011 (credit-limit semantics).
+- **Prerequisites:** Phase 2; ~~OD-006~~ → ADR-107 (price precedence), ~~OD-011~~ → ADR-108 (credit-limit semantics: Phase 6 stores the nullable limit and audits changes; the check comes with sales).
 - **Features:** customers (types, farming, location, veterinarian link); customer categories and discounts; per-customer prices; credit-limit data; deactivation.
 - **Database work:** customers, customer_categories, customer_product_prices, constraints.
 - **Backend work:** `sales` customer sub-package; `PriceResolver` domain service (used by Phase 7).
@@ -118,6 +118,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 ## Phase 7 — Sales / POS
 - **Objective:** a fast, correct counter sale and document chain.
 - **Prerequisites:** Phases 3–6; OD-002, OD-003, OD-004, OD-010 decided; DR-003 option chosen.
+- **To settle at the start of Phase 7 (ADR-108):** whether credit sales are enabled before Phase 9 (payments) exists — without recorded payments a customer's balance only grows, so the limit check would eventually refuse every credit sale.
 - **Features:** quote, delivery note, invoice; conversions; POS screen with scan and FEFO lot proposal; discounts; withdrawal warnings (in-app); credit sale (uses `CreditLimitPort`); idempotent confirmation; cancellation per OD-004; **minimal counter-payment/cash-session slice** (DR-003 option a).
 - **Database work:** sales documents/lines (cost snapshot, lot per line), idempotency store, cash session minimal tables if not yet created.
 - **Backend work:** `sales` use cases; stock consumption through `StockService`; recall buyers report completed; confirm transaction (`architecture.md` §5).
@@ -137,7 +138,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 9 — Payments & finance
 - **Objective:** know who owes what, and what is in the till.
-- **Prerequisites:** Phases 7–8; OD-003, OD-011, OD-016.
+- **Prerequisites:** Phases 7–8; OD-003, OD-016; ADR-108 (payments enter the credit balance).
 - **Features:** customer payments with allocations and reversal; balance and statement; credit-limit enforcement; supplier invoices, payments, advances, credit notes; cash sessions, movements, variance.
 - **Database work:** payments, allocations, supplier invoices, cash sessions/movements, corrected balance view/query (DR-006), unique open-session constraint (ADR-015).
 - **Backend work:** `finance` module implementing `CreditLimitPort`, `BalanceQuery`; reversal; session close.
