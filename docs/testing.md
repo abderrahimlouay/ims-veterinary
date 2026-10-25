@@ -201,7 +201,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-CUST-004 | S | Sale to inactive customer → CUSTOMER_INACTIVE |
 | BR-CUST-005 | U,S,R,C | Phone and tax-id normalisation unit tests; same name + phone or same tax id → DUPLICATE_RESOURCE with ids and field only; same name or phone alone → similar-customers warning; two parallel creations of a duplicate → one refused (unique keys) |
 | BR-CUST-006 | S | Set, change, remove a customer price; audited PRICE_CHANGE old/new; archived product refused; scale and sign |
-| BR-CUST-007 | S | Category name unique ignoring case and accents; discount bounds; discount change audited |
+| BR-CUST-007 | S | Category name unique ignoring case and accents; discount bounds and scale; discount change audited old/new, not a rename nor the initial discount; stale version → CONCURRENT_MODIFICATION; no delete (405) (`CustomerCategoriesTest`) |
 | BR-RET-001 | S | Return > sold − already returned → RETURN_QUANTITY_EXCEEDED |
 | BR-RET-002 | S | Opened/non-sealed item cannot be restocked (OD-005) |
 | BR-RET-003 | S | Restock movement targets original lot; discard path per OD-005 |
