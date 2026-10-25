@@ -194,7 +194,7 @@ Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → 
 | **StockService** | Application service (inventory) | The only component that changes `quantity_on_hand` and writes movements (BR-STOCK-002, ADR-088) |
 | **FefoAllocator** | Domain service | Splits a requested quantity over sellable lots in FEFO order (BR-LOT-005) |
 | **NumberingService** | Domain service | Locks and increments sequences (ADR-011) |
-| **PriceResolver** | Domain service | Applies price precedence (OD-006) |
+| **PriceResolver** | Domain service | Applies price precedence (ADR-107) |
 | **CreditPolicy** | Domain service (port) | Customer balance + limit check (BR-PAY-005) |
 | **LotRecallService** | Domain service | Recall + buyers list (BR-LOT-008) |
 | **ReorderPlanner** | Domain service | Creates proposals (BR-STOCK-010) |

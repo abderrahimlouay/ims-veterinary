@@ -108,14 +108,14 @@ Customer → Product Search → Lot Selection / FEFO → Sale → Stock Movement
 ### Steps
 1. **Customer** (optional): select a customer (by name/phone) or continue anonymous. Customer data supplies category discount, preferential prices, credit limit, type.
 2. **Product search** (NFR-002 < 1 s): scan barcode (keyboard-wedge, `Enter` ends) or search by name/DCI/category/species. Out-of-stock products offer **substitutes** with the same active ingredient (FR-PROD-004).
-3. **Add line:** product, unit (box/bottle/dose…), quantity, target species (for breeders). Server returns the resolved unit price and discount (BR-SALE-006 **⚠ OD-006**), the proposed lot(s) (FEFO, BR-LOT-005 **⚠ OD-010**) and warnings (nearly expired lot, withdrawal period).
+3. **Add line:** product, unit (box/bottle/dose…), quantity, target species (for breeders). Server returns the resolved unit price and discount (BR-SALE-006, ADR-107), the proposed lot(s) (FEFO, BR-LOT-005 **⚠ OD-010**) and warnings (nearly expired lot, withdrawal period).
    - A quantity that spans several lots is split into several lines (BR-LOT-006).
    - Expired / blocked / recalled lots are never proposed (BR-LOT-003/004).
 4. **Review / discount:** manual discount beyond entitlement needs `sale.discount` (BR-SALE-007).
 5. **Payment choice:** cash/cheque/transfer now, or **credit** (customer required, BR-SALE-012). **⚠ OD-003** (how immediate payments are recorded).
 6. **Confirm** (one transaction — idempotent, BR-SALE-016):
    1. Lock lots in id order (BR-STOCK-012); re-validate status, expiry, quantity (BR-LOT-003/004, BR-SALE-015).
-   2. If credit sale: lock customer, compute balance + total vs limit (BR-PAY-005 **⚠ OD-011**).
+   2. If credit sale: lock customer, compute balance + total vs limit (BR-PAY-005, ADR-108; NULL limit = no check, 0 = refused).
    3. Assign number (BR-DOC-001; format ADR-097, sales keys and assignment moment decided in Phase 7); snapshot `unit_cost` (BR-SALE-009); compute totals (BR-SALE-008).
    4. Post `sale` movements (−) and update balances; set lots `depleted` when 0 (BR-STOCK-002).
    5. Record payment/allocations/cash movement per OD-003.
