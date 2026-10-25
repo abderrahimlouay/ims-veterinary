@@ -195,11 +195,11 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SALE-014 | S | Cancellation per OD-004: allowed states, reversal movements, audit |
 | BR-SALE-015 | C | Confirm with insufficient stock → STOCK_INSUFFICIENT, atomic rollback |
 | BR-SALE-016 | S,A | Double submit with same Idempotency-Key → one document; different body → IDEMPOTENCY_CONFLICT |
-| BR-CUST-001 | U,A | Veterinarian link: an active customer of type veterinarian, not itself; a referenced veterinarian's type cannot change |
+| BR-CUST-001 | A | Veterinarian link: an active customer of type veterinarian (`NOT_VETERINARIAN`), not itself (`SELF`); a referenced veterinarian's type cannot change (`RESOURCE_IN_USE`); deactivating it keeps the links (`CustomersTest`) |
 | BR-CUST-002 | S,A | New customer at 0; negative limit rejected; NULL accepted; only with `customer.credit.manage`; audited with old and new value, a failed audit rolls the change back |
-| BR-CUST-003 | A | `DELETE /api/customers/{id}` → 405; deactivate and reactivate |
+| BR-CUST-003 | A | `DELETE /api/customers/{id}` → 405; deactivate and reactivate; edit with the version (`CustomersTest`) |
 | BR-CUST-004 | S | Sale to inactive customer → CUSTOMER_INACTIVE |
-| BR-CUST-005 | U,S,R,C | Phone and tax-id normalisation unit tests; same name + phone or same tax id → DUPLICATE_RESOURCE with ids and field only; same name or phone alone → similar-customers warning; two parallel creations of a duplicate → one refused (unique keys) |
+| BR-CUST-005 | U,S,R,C | Phone and tax-id normalisation unit tests; same name + phone or same tax id → DUPLICATE_RESOURCE with ids and field only; same name or phone alone → similar-customers warning; two parallel creations of a duplicate → one refused (unique keys) (`CustomerKeysTest`, `CustomersTest`, `CustomerConcurrencyTest` 2×20); personal data never in logs, no audit entry for customer edits (`CustomersTest.customerPersonalDataNeverReachesTheLogs`, ADR-114) |
 | BR-CUST-006 | S | Set, change, remove a customer price; audited PRICE_CHANGE old/new; archived product refused; scale and sign |
 | BR-CUST-007 | S | Category name unique ignoring case and accents; discount bounds and scale; discount change audited old/new, not a rename nor the initial discount; stale version → CONCURRENT_MODIFICATION; no delete (405) (`CustomerCategoriesTest`) |
 | BR-RET-001 | S | Return > sold − already returned → RETURN_QUANTITY_EXCEEDED |

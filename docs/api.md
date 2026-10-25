@@ -62,6 +62,9 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 | `NOT_ORDER_SUPPLIER` | `supplierId` (receipt) | the receipt names another supplier than its order's (accepted 2026-10-24) | same test |
 | `OTHER_SUPPLIER` | `lines[i].lotId` (supplier return) | lot received from another supplier (ADR-101) | `SupplierReturnsTest.moreThanTheBalanceOrALotOfAnotherSupplierIsRefused` |
 | `DUPLICATE` | `lines[i].productId` (order), `lines[i].lotNumber` (receipt: "add the quantities on one line"), `lines[i].lotId` (return), `groups[i].supplierId` / `proposalIds` (conversion) | the same product, lot, supplier group or proposal twice | `PurchaseOrdersTest`, `GoodsReceiptsTest.aLotIsReceivedOnOneLineButTheSameNumberOfAnotherProductIsAnotherLot`, `SupplierReturnsTest`, `ReorderConversionTest` |
+| `SELF` | `veterinarianId` (customer) | a customer cannot be its own follow-up veterinarian (ADR-109) | `CustomersTest` |
+| `NOT_VETERINARIAN` | `veterinarianId` (customer) | not an active customer of type veterinarian (BR-CUST-001) | `CustomersTest` |
+| `FORMAT` | `phone` (customer) | more than 15 digits once normalised (ADR-110) | `CustomersTest` |
 | `PATTERN` | `Idempotency-Key` | the key is not a UUID (ADR-104) | `IdempotencyKeysTest`, `GoodsReceiptsTest.theSameIdempotencyKeyReturnsTheFirstReceipt` |
 
 | Code | HTTP | Meaning | Related rules |
@@ -262,7 +265,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/customers/similar` | before saving: `name`, `phone`, `taxId`, `excludeId?` → possible duplicates (ADR-110) | `customer.read` | `[{customerId, field}]` (`field`: `name`, `phone`, `taxId`) — ids and fields only |
 | POST | `/api/customers` | create (credit limit 0, ADR-109) | `customer.manage` | `{name, customerType, categoryId?, farmingType?, wilaya?, commune?, address?, phone?, email?, taxId?, paymentTermsDays?, veterinarianId?}`; `DUPLICATE_RESOURCE` (`context: {field, customerId}`), `VALIDATION_FAILED` |
 | DELETE | `/api/customers/{id}` | not offered: customers are never deleted (ADR-109) | — | 405 |
-| GET/PUT | `/api/customers/{id}` | view / update (credit limit excluded) | `customer.read` / `customer.manage` | with `version` |
+| GET/PUT | `/api/customers/{id}` | view / update (credit limit excluded) | `customer.read` / `customer.manage` | with `version`; `CustomerDetail {id, name, customerType, category: {id, name, discountPct}, farmingType, wilaya, commune, address, phone, email, taxId (normalised), paymentTermsDays, veterinarian: {id, name}, creditLimit, active, createdAt, updatedAt, version}`; `CustomerSummary {id, name, customerType, category, wilaya, commune, phone, active}`; `RESOURCE_IN_USE` (a referenced veterinarian's type), `DUPLICATE_RESOURCE`, `VALIDATION_FAILED` (`name` `REQUIRED`, `customerType` / `categoryId` `UNKNOWN`, `paymentTermsDays` `RANGE`, `email` `EMAIL`, `phone` `FORMAT`, `veterinarianId` `SELF` / `NOT_VETERINARIAN`) |
 | PUT | `/api/customers/{id}/credit-limit` | change credit limit (audited) | `customer.credit.manage` | `{creditLimit}` (`null` = no limit, `"0.00"` = cash only, ADR-108) |
 | POST | `/api/customers/{id}/deactivate` · `/activate` | toggle | `customer.manage` | |
 | GET | `/api/customers/{id}/balance` | balance, limit, available credit | `customer.read` | definition **[OPEN OD-003]** |
