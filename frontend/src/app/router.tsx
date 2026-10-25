@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router'
 import { AuditPage, NewUserPage, RolesPage, SettingsPage, UserDetailPage, UsersPage } from '../features/admin'
 import { NewProductPage, ProductDetailPage, ProductsPage, ReferencesPage } from '../features/catalog'
+import { CustomerCategoriesPage, CustomerPage, CustomersPage, NewCustomerPage } from '../features/customers'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import {
   AdjustmentPage,
@@ -77,6 +78,10 @@ export const routes: RouteObject[] = [
       { path: 'supplier-returns', element: <RequirePermission code="return.read"><SupplierReturnsPage /></RequirePermission> },
       { path: 'supplier-returns/new', element: <RequirePermission code="return.supplier.create"><NewSupplierReturnPage /></RequirePermission> },
       { path: 'supplier-returns/:id', element: <RequirePermission code="return.read"><SupplierReturnPage /></RequirePermission> },
+      { path: 'customers', element: <RequirePermission code="customer.read"><CustomersPage /></RequirePermission> },
+      { path: 'customers/new', element: <RequirePermission code="customer.manage"><NewCustomerPage /></RequirePermission> },
+      { path: 'customers/:id', element: <RequirePermission code="customer.read"><CustomerPage /></RequirePermission> },
+      { path: 'customer-categories', element: <RequirePermission code="customer.read"><CustomerCategoriesPage /></RequirePermission> },
       { path: 'catalog/references', element: <RequirePermission code="product.read"><ReferencesPage /></RequirePermission> },
       { path: 'admin/users', element: <RequirePermission code="user.read"><UsersPage /></RequirePermission> },
       { path: 'admin/users/new', element: <RequirePermission code="user.manage"><NewUserPage /></RequirePermission> },

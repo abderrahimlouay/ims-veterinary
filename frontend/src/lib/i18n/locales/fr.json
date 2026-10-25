@@ -20,7 +20,9 @@
     "suppliers": "Fournisseurs",
     "purchaseOrders": "Bons de commande",
     "goodsReceipts": "Réceptions",
-    "supplierReturns": "Retours fournisseurs"
+    "supplierReturns": "Retours fournisseurs",
+    "customers": "Clients",
+    "customerCategories": "Catégories de clients"
   },
   "language": {
     "label": "Langue",
@@ -824,6 +826,112 @@
       "pickLot": "Choisir le lot {{lotNumber}}",
       "confirm": "Confirmer le retour",
       "summary": "{{supplier}} — par {{by}} le {{at}} — {{reason}}"
+    }
+  },
+  "customers": {
+    "title": "Clients",
+    "new": "Nouveau client",
+    "search": "Nom, téléphone ou NIF",
+    "empty": "Aucun client.",
+    "activeFilter": "État",
+    "activeOnly": "Actifs",
+    "inactiveOnly": "Désactivés",
+    "name": "Nom",
+    "type": "Type",
+    "types": {
+      "breeder": "Éleveur",
+      "veterinarian": "Vétérinaire",
+      "other": "Autre"
+    },
+    "category": "Catégorie",
+    "noCategory": "Sans catégorie",
+    "farmingType": "Type d'élevage",
+    "place": "Lieu",
+    "wilaya": "Wilaya",
+    "commune": "Commune",
+    "address": "Adresse",
+    "phone": "Téléphone",
+    "email": "E-mail",
+    "taxId": "NIF",
+    "paymentTermsDays": "Délai de paiement (jours)",
+    "veterinarian": "Vétérinaire de suivi",
+    "noVeterinarian": "Aucun",
+    "state": "État",
+    "active": "Actif",
+    "inactive": "Désactivé",
+    "activate": "Réactiver",
+    "deactivate": "Désactiver",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "saved": "Client enregistré.",
+    "startsCashOnly": "Un nouveau client commence en « Comptant uniquement » ; le plafond de crédit se change ensuite, avec sa propre permission.",
+    "tabs": {
+      "overview": "Aperçu",
+      "prices": "Prix"
+    },
+    "errors": {
+      "phoneFormat": "Un numéro de téléphone compte au plus 15 chiffres.",
+      "self": "Un client ne peut pas être son propre vétérinaire.",
+      "notVeterinarian": "Choisissez un client actif de type vétérinaire.",
+      "duplicate": "Un autre client a déjà cette valeur."
+    },
+    "similar": {
+      "title": "Doublons possibles",
+      "name": "Même nom que le",
+      "phone": "Même téléphone que le",
+      "taxId": "Même NIF que le",
+      "open": "client n° {{id}}",
+      "confirm": "Vérifiez-les avant d'enregistrer. Enregistrez quand même s'il s'agit d'un autre client.",
+      "saveAnyway": "Enregistrer quand même"
+    },
+    "credit": {
+      "label": "Plafond de crédit",
+      "title": "Plafond de crédit",
+      "change": "Modifier le plafond",
+      "current": "Actuellement :",
+      "choose": "Que peut acheter ce client à crédit ?",
+      "none": "Aucun plafond",
+      "cash": "Comptant uniquement",
+      "limitOf": "Plafond : {{amount}}",
+      "amount": "Montant du plafond",
+      "option": {
+        "none": "Aucun plafond",
+        "cash": "Comptant uniquement",
+        "limit": "Plafond"
+      },
+      "explain": {
+        "none": "Les ventes à crédit ne sont jamais refusées pour leur montant.",
+        "cash": "Aucune vente à crédit : chaque vente est payée tout de suite.",
+        "limit": "Ventes à crédit jusqu'à cet encours."
+      },
+      "amountFormat": "Un montant avec au plus 2 décimales.",
+      "zeroIsCash": "Un plafond de zéro, c'est « Comptant uniquement » : choisissez cette option.",
+      "save": "Enregistrer le plafond"
+    },
+    "prices": {
+      "explain": "Prix propres par unité de base. Un prix propre remplace la remise de catégorie pour ce produit.",
+      "empty": "Aucun prix propre.",
+      "unitPrice": "Prix par unité de base",
+      "actions": "Actions",
+      "archived": "(archivé)",
+      "change": "Modifier",
+      "changeOf": "Modifier le prix de {{name}}",
+      "remove": "Supprimer",
+      "removeOf": "Supprimer le prix de {{name}}",
+      "add": "Ajouter un prix",
+      "findProduct": "Chercher un produit",
+      "save": "Enregistrer le prix"
+    },
+    "categories": {
+      "title": "Catégories de clients",
+      "explain": "La remise d'une catégorie s'applique aux ventes de ses clients quand ils n'ont pas de prix propre pour le produit. Les documents déjà émis gardent leur remise.",
+      "empty": "Aucune catégorie.",
+      "name": "Nom",
+      "discountPct": "Remise (%)",
+      "discountOf": "remise {{pct}} %",
+      "edit": "Modifier",
+      "editOf": "Modifier {{name}}",
+      "add": "Nouvelle catégorie"
     }
   }
 }
