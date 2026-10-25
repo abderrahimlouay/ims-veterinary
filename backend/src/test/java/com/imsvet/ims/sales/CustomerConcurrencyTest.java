@@ -26,7 +26,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * BR-CUST-005 on committed data, 20 times each: two parallel creations of the same customer (same name and phone in
- * other formats; same tax id) — the unique keys let one through and the other is refused DUPLICATE_RESOURCE.
+ * other formats; same tax id) — the unique keys let one through and the other is refused DUPLICATE_RESOURCE; the
+ * same name without a phone — both are accepted (a missing phone never conflicts).
  */
 @SpringBootTest
 @Import({ TestcontainersConfiguration.class, CommittedDataDatabase.class })
@@ -58,6 +59,17 @@ class CustomerConcurrencyTest {
 
         assertThat(outcomes).filteredOn(o -> o == null).hasSize(1);
         assertThat(outcomes).filteredOn(o -> o != null).containsExactly(ErrorCode.DUPLICATE_RESOURCE);
+    }
+
+    /** ADR-110: without a phone the same name never conflicts, also in parallel. */
+    @RepeatedTest(20)
+    void twoParallelCreationsWithTheSameNameAndNoPhoneAreBothAccepted() throws Exception {
+        String key = UUID.randomUUID().toString().substring(0, 8);
+        List<Object> outcomes = race(input("Ferme Démo " + key, null, null), input("ferme demo " + key, " ", null));
+
+        assertThat(outcomes).containsExactly(null, null);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM customers WHERE name = ?", Integer.class,
+                "Ferme Démo " + key)).isEqualTo(2);
     }
 
     private static CustomerInput input(String name, String phone, String taxId) {

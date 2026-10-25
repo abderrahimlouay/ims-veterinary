@@ -117,6 +117,12 @@ public class Customer {
         this.updatedAt = now;
     }
 
+    /** Only through the credit-limit use case (ADR-108); {@code null} = no limit, 0 = cash only. */
+    public void changeCreditLimit(BigDecimal limit, Instant now) {
+        this.creditLimit = limit;
+        this.updatedAt = now;
+    }
+
     public void setActive(boolean active, Instant now) {
         this.active = active;
         this.updatedAt = now;

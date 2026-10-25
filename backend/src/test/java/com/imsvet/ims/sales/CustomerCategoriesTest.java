@@ -115,7 +115,7 @@ class CustomerCategoriesTest {
     }
 
     @Test
-    void sellersReadButCannotManageCategories() throws Exception {
+    void sellersReadButCannotManageCategoriesNorTheirDiscount() throws Exception {
         long id = id(create("{\"name\":\"Tous\"}"));
         TestUser seller = new TestUsers(jdbc, encoder).create("Seller");
         ApiClient client = ApiClient.create(context, "198.51.100.250");
@@ -124,6 +124,11 @@ class CustomerCategoriesTest {
         client.get("/api/customer-categories").andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].name", hasItem("Tous")));
         client.post("/api/customer-categories", "{\"name\":\"Nope\"}").andExpect(status().isForbidden());
+        client.perform(MockMvcRequestBuilders.put("/api/customer-categories/" + id).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Tous\",\"discountPct\":\"50\",\"version\":0}"), true)
+                .andExpect(status().isForbidden());
+        assertThat(jdbc.queryForObject("SELECT CAST(discount_pct AS CHAR) FROM customer_categories WHERE id = ?",
+                String.class, id)).isEqualTo("0.00");
         client.perform(MockMvcRequestBuilders.delete("/api/customer-categories/" + id), true)
                 .andExpect(status().isMethodNotAllowed());
     }

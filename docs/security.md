@@ -179,7 +179,7 @@ Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD
 - Triggers + privileges + `@Immutable` mapping protect the ledger (ADR-008).
 - Database not exposed beyond the application host/network segment.
 - Personal data stored (customer name, phone, address; user names/emails) is limited to business needs; applicable data-protection law and retention periods are **not specified by the Spec** (OD-021 covers retention).
-- **Customer personal data (ADR-114):** a customer's name, phone, email, address and tax id are never written to application logs, security events or audit entries — these carry ids, amounts and codes only; a duplicate refusal or the similar-customers check answers with ids and the matching field only (ADR-110). Tests and demo data use fictional names and fake-range phone numbers only. A test creates and edits a customer and checks that the captured log output contains none of those values.
+- **Customer personal data (ADR-114):** a customer's name, phone, email, address and tax id are never written to application logs, security events or audit entries — these carry ids, amounts and codes only; a duplicate refusal or the similar-customers check answers with ids and the matching field only (ADR-110). Tests and demo data use fictional names and fake-range phone numbers only. A test creates and edits a customer, searches by name, phone and tax id and runs the similar-customers check, then checks that the captured log output contains none of those values. Request paths only are ever logged (the access-denied security event and the problem `instance` use the path, never the query string; there is no access log), and the similar-customers check is a POST with a body.
 
 ## 10. Secrets and configuration
 

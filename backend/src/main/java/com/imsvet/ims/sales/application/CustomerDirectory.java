@@ -210,7 +210,7 @@ public class CustomerDirectory {
         }
     }
 
-    private CustomerDetail detail(Customer c) {
+    CustomerDetail detail(Customer c) {
         CategoryRef category = c.categoryId() == null ? null
                 : categoryRef(categories.findById(c.categoryId()).orElseThrow());
         CustomerRef vet = c.veterinarianId() == null ? null : customers.findById(c.veterinarianId())

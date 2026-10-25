@@ -140,8 +140,8 @@ class CustomersTest {
         id(create("{\"name\":\"Ferme Démo Theta\"}"));
         id(create("{\"name\":\"Ferme Démo Iota\"}"));
 
-        JsonNode similar = JSON.readTree(seller.get("/api/customers/similar?name=FERME DEMO ZETA"
-                + "&phone=00213 555 00 00 02&excludeId=" + samePhone).andExpect(status().isOk())
+        JsonNode similar = JSON.readTree(seller.post("/api/customers/similar", "{\"name\":\"FERME DEMO ZETA\","
+                + "\"phone\":\"00213 555 00 00 02\",\"excludeId\":" + samePhone + "}").andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString());
         assertThat(similar.size()).isEqualTo(2);
         java.util.Map<Long, String> fields = new java.util.HashMap<>();
@@ -179,6 +179,41 @@ class CustomersTest {
         client.post("/api/customers", "{\"name\":\"Nope\"}").andExpect(status().isForbidden());
     }
 
+    /** A credit limit sent with a customer is ignored: only customer.credit.manage changes it (ADR-108, ADR-109). */
+    @Test
+    void aCreditLimitSentWithTheCustomerIsIgnored() throws Exception {
+        long id = id(create("{\"name\":\"Ferme Démo Mu\",\"creditLimit\":\"50000.00\"}")
+                .andExpect(jsonPath("$.creditLimit").value("0.00")));
+
+        long version = JSON.readTree(update(id, "{\"name\":\"Ferme Démo Mu bis\",\"creditLimit\":null,\"version\":0}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.creditLimit").value("0.00")).andReturn().getResponse()
+                .getContentAsString()).get("version").asLong();
+        version = JSON.readTree(update(id, "{\"name\":\"Ferme Démo Mu ter\",\"creditLimit\":\"9999\",\"version\":"
+                + version + "}").andExpect(status().isOk()).andExpect(jsonPath("$.creditLimit").value("0.00"))
+                .andReturn().getResponse().getContentAsString()).get("version").asLong();
+        seller.perform(MockMvcRequestBuilders.put("/api/customers/" + id + "/credit-limit")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"creditLimit\":\"100\",\"version\":" + version
+                        + "}"), true)
+                .andExpect(status().isForbidden());
+        assertThat(jdbc.queryForObject("SELECT CAST(credit_limit AS CHAR) FROM customers WHERE id = ?", String.class, id))
+                .isEqualTo("0.00");
+    }
+
+    /** ADR-110: without a phone the same name is only a warning; with the same phone it is refused. */
+    @Test
+    void theSameNameWithoutPhoneIsOnlyAWarning() throws Exception {
+        long first = id(create("{\"name\":\"Ferme Démo Nu\"}"));
+        long second = id(create("{\"name\":\"ferme demo nu\"}"));
+        long phoned = id(create("{\"name\":\"Ferme Démo Nu\",\"phone\":\"0555 00 00 09\"}"));
+
+        create("{\"name\":\"FERME DÉMO NU\",\"phone\":\"+213555000009\"}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.context.customerId").value(phoned));
+        JsonNode similar = JSON.readTree(seller.post("/api/customers/similar", "{\"name\":\"Ferme Demo Nu\"}")
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(similar.findValues("customerId").stream().map(JsonNode::asLong).toList())
+                .containsExactlyInAnyOrder(first, second, phoned);
+    }
+
     /** ADR-114: name, phone, email, address and tax id never reach the logs. */
     @Test
     void customerPersonalDataNeverReachesTheLogs(CapturedOutput output) throws Exception {
@@ -194,7 +229,11 @@ class CustomersTest {
                 + "\",\"address\":\"" + address + "-2\",\"taxId\":\"" + taxId + "\",\"version\":0}")
                 .andExpect(status().isOk());
         create("{\"name\":\"" + name + "-2\",\"phone\":\"" + phone + "\"}").andExpect(status().isConflict());
-        seller.get("/api/customers/similar?name=" + name + "&phone=" + phone.replace(" ", "")).andExpect(status().isOk());
+        seller.post("/api/customers/similar", "{\"name\":\"" + name + "\",\"phone\":\"" + phone + "\"}")
+                .andExpect(status().isOk());
+        seller.get("/api/customers?q=" + name).andExpect(status().isOk());
+        seller.get("/api/customers?q=" + phone).andExpect(status().isOk());
+        seller.get("/api/customers?q=" + taxId).andExpect(status().isOk());
 
         assertThat(output.getAll()).doesNotContain(name).doesNotContain(phone).doesNotContain(phone.replace(" ", ""))
                 .doesNotContain(email).doesNotContain(address).doesNotContain(taxId);
