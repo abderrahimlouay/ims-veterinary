@@ -107,7 +107,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 6 — Customers
 - **Objective:** know the customers and their commercial conditions.
-- **Prerequisites:** Phase 2; ~~OD-006~~ → ADR-107 (price precedence), ~~OD-011~~ → ADR-108 (credit-limit semantics: Phase 6 stores the nullable limit and audits changes; the check comes with sales).
+- **Prerequisites:** Phase 2; ~~OD-006~~ → ADR-107 (price precedence), ~~OD-011~~ → ADR-108 (credit-limit semantics: Phase 6 stores the nullable limit and audits changes; the check comes with sales); ADR-109…114 (customer record, duplicates, customer prices, categories, discount entitlement, personal data; 2026-10-25).
 - **Features:** customers (types, farming, location, veterinarian link); customer categories and discounts; per-customer prices; credit-limit data; deactivation.
 - **Database work:** customers, customer_categories, customer_product_prices, constraints.
 - **Backend work:** `sales` customer sub-package; `PriceResolver` domain service (used by Phase 7).

@@ -723,6 +723,42 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** 0 = no credit, overdue always blocks (A); 0 = unlimited, overdue only warns (B).
 - **Consequences:** BR-CUST-002, BR-PAY-005, CT-06, `database.md` customers, `api.md` §4.9 credit-limit endpoint (`null` allowed), settings seed (Phase 6 or 7 migration), W2 step 6. **Open point for Phase 7 (roadmap):** whether credit sales are enabled before Phase 9 exists, since without recorded payments the balance only grows.
 
+## ADR-109 — The customer record
+- **Status:** Accepted (user decision, 2026-10-25, Phase 6 preflight; D1 B, D2 B, D7 A, D8 A, D11 A, D12).
+- **Decision:** Besides the documented fields, a customer has an optional `tax_id` (free text, like suppliers, ADR-100), an optional `email` and `payment_terms_days ≥ 0` (default 0; prefills an invoice's due date from Phase 7) (SD-134). A new customer's credit limit is **0 (cash only)**: granting credit is a separate, audited act (`customer.credit.manage`, ADR-108). `veterinarian_id` references an **active** customer of type `veterinarian`, never the customer itself; changing the type of a veterinarian who is referenced is refused (`RESOURCE_IN_USE`); deactivating a referenced veterinarian is allowed and the links stay. Wilaya, commune and farming type are free text (searched ignoring case and accents); reference lists may come with zone reports (Phase 11). Customers are **never deleted**: there is no delete endpoint (`DELETE` answers 405), only deactivation. Changing the credit limit locks the customer row (`SELECT … FOR UPDATE`), the lock Phase 7's credit check takes (database.md §7 order unchanged).
+- **Alternatives:** no extra fields; structured NIF / NIS / RC / AI (to revisit with Phase 10 invoice legal mentions, DR-021); a new customer without limit; reference lists for the location now.
+- **Consequences:** BR-CUST-001…003, SD-134, `database.md` customers, `api.md` §4.9.
+
+## ADR-110 — Duplicate customers
+- **Status:** Accepted (user decision, 2026-10-25, Phase 6 preflight; D3 B, additions 1 and 2).
+- **Decision:** Refused with `DUPLICATE_RESOURCE`: the same name (ignoring case and accents) **and** the same phone after normalisation, or the same tax id after normalisation. Only warned: the same name alone or the same phone alone, through `GET /api/customers/similar` (`customer.read`), which the form calls before saving. **Normalisation:** phone — spaces, dots, dashes and parentheses removed, `+213`, `00213` and a leading `0` equivalent (stored as a key of the national number); tax id — trimmed, upper-cased, spaces removed; a missing phone or tax id never conflicts. The database enforces both refusals with unique keys (name + phone key; normalised tax id), so parallel creations cannot both pass. The refusal and the similar-customers answer carry **ids and the matching field only** (`context: {field, customerId}`), never another customer's data, in a response, an error message or a log line. Each normalisation is unit-tested.
+- **Alternatives:** no detection; refuse the same name.
+- **Consequences:** BR-CUST-005, SD-134, `api.md` §4.9.
+
+## ADR-111 — Customer prices
+- **Status:** Accepted (user decision, 2026-10-25, Phase 6 preflight; D4 A, D5 B, D13 B).
+- **Decision:** One price per customer × product, **per base unit** (ADR-049); the price for a unit is that price × the unit factor (ADR-107); no validity dates: the history is the `PRICE_CHANGE` audit (old and new value, same transaction, BR-PROD-006). Managed one at a time with `customer.price.manage`: `PUT /api/customers/{id}/prices/{productId}` (set or change) and `DELETE …/{productId}` (remove), each audited; a price for an archived product is refused (`PRODUCT_ARCHIVED`), existing ones are kept. The foreign keys are `RESTRICT` (customers and products are never deleted, SD-134).
+- **Alternatives:** a price per unit; validity periods without overlap; replacing the whole list at once.
+- **Consequences:** BR-CUST-006, `database.md` customer_product_prices, `api.md` §4.9.
+
+## ADR-112 — Customer categories
+- **Status:** Accepted (user decision, 2026-10-25, Phase 6 preflight; D10 A, addition 5).
+- **Decision:** Category names are unique ignoring case and accents; a category can be renamed but not deleted (no endpoint). A change of its discount is audited (`PRICE_CHANGE` on `customer_categories`, old and new value) and **never rewrites existing documents**: from Phase 7 a sales line stores the price and discount it applied.
+- **Alternatives:** no audit of the discount.
+- **Consequences:** BR-CUST-007, `api.md` §4.9.
+
+## ADR-113 — Discount entitlement on a sales line (clarifies ADR-107)
+- **Status:** Accepted (user decision, 2026-10-25, Phase 6 preflight; D6 A, consequence confirmed).
+- **Decision:** The line discount starts at the customer's category discount (only when the customer has no own price for the product, ADR-107). Any discount up to that **entitlement** is allowed; above it needs `sale.discount` (BR-SALE-007). Manual and category discounts are **not added**. Consequence: on a product with the customer's own price the entitlement is 0, so any manual discount there needs `sale.discount`.
+- **Alternatives:** additive category + manual discount.
+- **Consequences:** BR-SALE-006/007, the `PriceResolver` precedence table (Phase 6), Phase 7 lines.
+
+## ADR-114 — Customer personal data in logs, events, audit and fixtures
+- **Status:** Accepted (user decision, 2026-10-25, Phase 6 preflight; D9 A, additions 3 and 4).
+- **Decision:** A customer's **name, phone, email, address and tax id** are never written to application logs, security events or audit entries; those carry ids, amounts and codes only. Customer creation and edits are therefore not audited (the audit log is append-only and could never be purged); credit-limit and price changes are, with ids and amounts. Tests and demo data use fictional names and phone numbers from a reserved fake range only. A test creates and edits a customer and asserts that the captured log output contains none of those values. Retention and erasure stay with OD-021.
+- **Alternatives:** audit every customer change (`CUSTOMER_UPDATE`).
+- **Consequences:** `security.md` §9, `testing.md`, the demo seeder (Phase 6 slice 7).
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -922,7 +958,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 3 Lots & Units | ~~OD-009~~ → ADR-055/056, ~~OD-019~~ → ADR-057, ~~OD-025~~ → ADR-058, ~~OD-027~~ → ADR-059/060; ADR-061…068 (all 2026-10-22) |
 | 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091, ADR-077 amendment, ~~OD-034~~ → ADR-092 (2026-10-23) |
 | 5 Purchasing | ~~OD-007~~ → ADR-093, ~~OD-014~~ → ADR-095, ~~OD-015~~ → ADR-096, ~~OD-017~~ → ADR-097 (ADR-011 accepted), ~~OD-029~~ → ADR-098; ADR-094, ADR-099…106 (all 2026-10-24) |
-| 6 Customers | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (both 2026-10-24) |
+| 6 Customers | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (both 2026-10-24); ADR-109…114 (2026-10-25) |
 | 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (the credit check), ~~OD-033~~ → ADR-071 |
 | 8 Returns | OD-005 |
 | 9 Payments / Finance | OD-003, OD-016; ~~OD-011~~ → ADR-108 (payments in the balance) |

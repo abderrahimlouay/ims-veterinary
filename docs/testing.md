@@ -33,7 +33,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 ## 3. Test data
 
 - Builders/fixtures per aggregate with sensible defaults; one canonical **seed scenario** (products with units and barcodes, lots with varied expiries and statuses, customers of each type, one supplier, open and closed cash sessions).
-- Never reuse production data; no personal data in fixtures.
+- Never reuse production data; no personal data in fixtures. Customer name, phone, email, address and tax id never appear in captured logs (ADR-114 test).
 - Time-dependent fixtures use relative dates from the test `Clock`.
 - Database cleanup by transactional rollback (or a fresh container for a new test-context configuration, ADR-035) — classes sharing a configuration share one database, so tests must not depend on data left by another class; concurrency tests use committed data and explicit cleanup. Rows of the append-only ledgers (`stock_movements`, `audit_log`) can never be deleted, so tests that commit them import `CommittedDataDatabase`, which gives them their own context and MySQL container; the shared database stays clean for the others.
 - Lots created by the `TestLots` fixture with stock come with their `opening_stock` movement, so ledger = balance (BR-STOCK-007) holds in every test; `StockAssertions.assertLedgerMatchesBalances` checks it.
@@ -195,10 +195,13 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SALE-014 | S | Cancellation per OD-004: allowed states, reversal movements, audit |
 | BR-SALE-015 | C | Confirm with insufficient stock → STOCK_INSUFFICIENT, atomic rollback |
 | BR-SALE-016 | S,A | Double submit with same Idempotency-Key → one document; different body → IDEMPOTENCY_CONFLICT |
-| BR-CUST-001 | U,A | Customer type vs veterinarian link validation |
-| BR-CUST-002 | U,A | Negative credit limit rejected |
-| BR-CUST-003 | S | Delete customer with documents → RESOURCE_IN_USE (deactivate only) |
+| BR-CUST-001 | U,A | Veterinarian link: an active customer of type veterinarian, not itself; a referenced veterinarian's type cannot change |
+| BR-CUST-002 | S,A | New customer at 0; negative limit rejected; NULL accepted; only with `customer.credit.manage`; audited with old and new value, a failed audit rolls the change back |
+| BR-CUST-003 | A | `DELETE /api/customers/{id}` → 405; deactivate and reactivate |
 | BR-CUST-004 | S | Sale to inactive customer → CUSTOMER_INACTIVE |
+| BR-CUST-005 | U,S,R,C | Phone and tax-id normalisation unit tests; same name + phone or same tax id → DUPLICATE_RESOURCE with ids and field only; same name or phone alone → similar-customers warning; two parallel creations of a duplicate → one refused (unique keys) |
+| BR-CUST-006 | S | Set, change, remove a customer price; audited PRICE_CHANGE old/new; archived product refused; scale and sign |
+| BR-CUST-007 | S | Category name unique ignoring case and accents; discount bounds; discount change audited |
 | BR-RET-001 | S | Return > sold − already returned → RETURN_QUANTITY_EXCEEDED |
 | BR-RET-002 | S | Opened/non-sealed item cannot be restocked (OD-005) |
 | BR-RET-003 | S | Restock movement targets original lot; discard path per OD-005 |
