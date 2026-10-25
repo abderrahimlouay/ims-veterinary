@@ -26,11 +26,14 @@ public class ProductLookup {
     /** What other modules need to show and handle a product. */
     public record ProductRef(long id, String sku, String commercialName, String baseUnit, boolean divisible,
             boolean archived, BigDecimal minStock, BigDecimal maxStock, BigDecimal reorderPoint, BigDecimal vatRate,
-            BigDecimal purchasePrice) {
+            BigDecimal purchasePrice, BigDecimal salePrice) {
     }
 
-    /** A packaging unit of a product (FR-PROD-006/007). */
-    public record UnitRef(long id, String name, BigDecimal factorToBase, boolean sellable) {
+    /**
+     * A packaging unit of a product (FR-PROD-006/007); {@code salePrice} is the unit's own price, {@code null} when
+     * derived from the product price (ADR-064).
+     */
+    public record UnitRef(long id, String name, BigDecimal factorToBase, boolean sellable, BigDecimal salePrice) {
     }
 
     private final ProductRepository products;
@@ -64,7 +67,7 @@ public class ProductLookup {
     @Transactional(readOnly = true)
     public Optional<UnitRef> unit(long productId, long unitId) {
         return units.findByIdAndProductId(unitId, productId)
-                .map(u -> new UnitRef(u.id(), u.name(), u.factorToBase(), u.sellable()));
+                .map(u -> new UnitRef(u.id(), u.name(), u.factorToBase(), u.sellable(), u.salePrice()));
     }
 
     @Transactional(readOnly = true)
@@ -80,6 +83,6 @@ public class ProductLookup {
 
     static ProductRef ref(Product p) {
         return new ProductRef(p.id(), p.sku(), p.commercialName(), p.baseUnit(), p.divisible(), p.archived(),
-                p.minStock(), p.maxStock(), p.reorderPoint(), p.vatRate(), p.purchasePrice());
+                p.minStock(), p.maxStock(), p.reorderPoint(), p.vatRate(), p.purchasePrice(), p.salePrice());
     }
 }

@@ -184,8 +184,8 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SALE-003 | S | Confirm quote → no movement |
 | BR-SALE-004 | A | Edit confirmed document → DOCUMENT_IMMUTABLE |
 | BR-SALE-005 | S | Lots assigned and verified at confirmation |
-| BR-SALE-006 | U | Price precedence (ADR-107): manual > customer's own price > unit price > product × factor; category discount only without a customer price; manual discount on top within the entitlement; unit conversion |
-| BR-SALE-007 | U,SEC | Discount above entitlement needs sale.discount |
+| BR-SALE-006 | U,I | Price precedence (ADR-107): manual > customer's own price > unit price > product × factor; category discount only without a customer price; manual discount on top within the entitlement; unit conversion; customer without category; archived product; no rounding — `PriceResolverTest` (table), `CustomerPricingTest` (stored facts) |
+| BR-SALE-007 | U,SEC | Discount above entitlement needs sale.discount; no stacking (ADR-113); a manual price needs price.edit; the rights come from the signed-in user — `PriceResolverTest`, `CustomerPricingTest` |
 | BR-SALE-008 | U | Server totals identical for same input; client totals ignored |
 | BR-SALE-009 | S | Line stores unit cost snapshot equal to lot cost |
 | BR-SALE-010 | S | Warnings for meat/milk/eggs days by species; none when no data (OD-028) |
