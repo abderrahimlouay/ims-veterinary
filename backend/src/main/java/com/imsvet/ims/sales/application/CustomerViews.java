@@ -26,6 +26,13 @@ public final class CustomerViews {
             Instant updatedAt, long version) {
     }
 
+    public record PriceProduct(long id, String sku, String commercialName, String baseUnit, boolean archived) {
+    }
+
+    /** A customer's own price, per base unit (ADR-111). */
+    public record CustomerPriceView(PriceProduct product, BigDecimal unitPrice, Instant updatedAt, long version) {
+    }
+
     /** A possible duplicate (ADR-110): the other customer's id and the matching field only. */
     public record SimilarCustomer(long customerId, String field) {
     }

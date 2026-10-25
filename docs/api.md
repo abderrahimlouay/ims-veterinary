@@ -272,8 +272,9 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/customers/{id}/statement` | account statement `?from&to` (+ `format=pdf`) | `statement.read` | chronological lines + running balance |
 | GET | `/api/customers/{id}/open-invoices` | invoices with outstanding amount (for allocation) | `payment.read` | |
 | GET | `/api/customers/{id}/sales` | sales history | `sale.read` | |
-| GET | `/api/customers/{id}/prices` | the customer's prices | `customer.read` | `[{product: {id, sku, commercialName, baseUnit}, unitPrice, updatedAt}]` (per base unit) |
-| PUT / DELETE | `/api/customers/{id}/prices/{productId}` | set or change / remove one price (ADR-111), audited `PRICE_CHANGE` | `customer.price.manage` | `{unitPrice}` (≥ 0, 4 decimals); `PRODUCT_ARCHIVED`, `NOT_FOUND` |
+| GET | `/api/customers/{id}/prices` | the customer's prices, by product name | `customer.read` | `[CustomerPriceView {product: {id, sku, commercialName, baseUnit, archived}, unitPrice, updatedAt, version}]` (per base unit) |
+| PUT | `/api/customers/{id}/prices/{productId}` | set (`version` null) or change (current `version`) one price (ADR-111), audited `PRICE_CHANGE` (old and new value) | `customer.price.manage` | `{unitPrice, version}` — `unitPrice` > 0, 4 decimals → `CustomerPriceView`; `VALIDATION_FAILED` (`unitPrice` `REQUIRED` / `POSITIVE` / `SCALE` / `RANGE`), `PRODUCT_ARCHIVED` (no price is set for an archived product; existing ones are kept), `CONCURRENT_MODIFICATION` (stale or missing version, or a parallel creation of the same price), `NOT_FOUND`. An **inactive customer's prices can still be edited** |
+| DELETE | `/api/customers/{id}/prices/{productId}?version=` | remove one price, audited `PRICE_CHANGE` (new value `null`) | `customer.price.manage` | 204; `CONCURRENT_MODIFICATION`, `NOT_FOUND` |
 | GET/POST/PUT | `/api/customer-categories` | categories with default discount; no delete (ADR-112) | `customer.read` / `customer.price.manage` | `{name, discountPct}` (+ `version` on PUT); `DUPLICATE_RESOURCE` (name ignoring case and accents); a discount change is audited `PRICE_CHANGE` |
 
 ### 4.10 `/api/sales`

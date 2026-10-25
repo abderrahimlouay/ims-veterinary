@@ -3,16 +3,20 @@ package com.imsvet.ims.sales.api;
 import com.imsvet.ims.common.paging.PageResponse;
 import com.imsvet.ims.sales.application.CustomerCredit;
 import com.imsvet.ims.sales.application.CustomerDirectory;
+import com.imsvet.ims.sales.application.CustomerPrices;
 import com.imsvet.ims.sales.application.CustomerViews.CustomerDetail;
+import com.imsvet.ims.sales.application.CustomerViews.CustomerPriceView;
 import com.imsvet.ims.sales.application.CustomerViews.CustomerSummary;
 import com.imsvet.ims.sales.application.CustomerViews.SimilarCustomer;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,12 +51,18 @@ class CustomerController {
     record SimilarRequest(String name, String phone, String taxId, Long excludeId) {
     }
 
+    /** {@code version} null to create a price, the current version to change it (ADR-111). */
+    record PriceRequest(BigDecimal unitPrice, Long version) {
+    }
+
     private final CustomerDirectory directory;
     private final CustomerCredit credit;
+    private final CustomerPrices prices;
 
-    CustomerController(CustomerDirectory directory, CustomerCredit credit) {
+    CustomerController(CustomerDirectory directory, CustomerCredit credit, CustomerPrices prices) {
         this.directory = directory;
         this.credit = credit;
+        this.prices = prices;
     }
 
     @GetMapping
@@ -94,6 +104,23 @@ class CustomerController {
     @PutMapping("/{id}")
     CustomerDetail update(@PathVariable long id, @Valid @RequestBody CustomerRequest body) {
         return directory.update(id, body.input(), body.version() == null ? -1 : body.version());
+    }
+
+    @GetMapping("/{id}/prices")
+    List<CustomerPriceView> prices(@PathVariable long id) {
+        return prices.list(id);
+    }
+
+    @PutMapping("/{id}/prices/{productId}")
+    CustomerPriceView setPrice(@PathVariable long id, @PathVariable long productId, @RequestBody PriceRequest body) {
+        return prices.set(id, productId, body.unitPrice(), body.version());
+    }
+
+    @DeleteMapping("/{id}/prices/{productId}")
+    ResponseEntity<Void> removePrice(@PathVariable long id, @PathVariable long productId,
+            @RequestParam(required = false) Long version) {
+        prices.remove(id, productId, version);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/deactivate")
