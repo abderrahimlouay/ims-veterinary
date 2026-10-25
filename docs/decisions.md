@@ -757,7 +757,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Status:** Accepted (user decision, 2026-10-25, Phase 6 preflight; D9 A, additions 3 and 4).
 - **Decision:** A customer's **name, phone, email, address and tax id** are never written to application logs, security events or audit entries; those carry ids, amounts and codes only. Customer creation and edits are therefore not audited (the audit log is append-only and could never be purged); credit-limit and price changes are, with ids and amounts. Tests and demo data use fictional names and phone numbers from a reserved fake range only. A test creates and edits a customer and asserts that the captured log output contains none of those values. Retention and erasure stay with OD-021.
 - **Alternatives:** audit every customer change (`CUSTOMER_UPDATE`).
-- **Consequences:** `security.md` §9, `testing.md`, the demo seeder (Phase 6 slice 7).
+- **Consequences:** `security.md` §9, `testing.md`, the demo seeder (Phase 6 slice 7). The reserved fake range is `0100 00 xx xx` (testing.md §3, DR-039).
 
 # Part B — Open Decisions
 
