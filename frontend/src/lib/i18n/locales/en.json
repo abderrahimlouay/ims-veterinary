@@ -20,7 +20,9 @@
     "suppliers": "Suppliers",
     "purchaseOrders": "Purchase orders",
     "goodsReceipts": "Goods receipts",
-    "supplierReturns": "Supplier returns"
+    "supplierReturns": "Supplier returns",
+    "customers": "Customers",
+    "customerCategories": "Customer categories"
   },
   "language": {
     "label": "Language",
@@ -824,6 +826,112 @@
       "pickLot": "Choose lot {{lotNumber}}",
       "confirm": "Confirm the return",
       "summary": "{{supplier}} — by {{by}} on {{at}} — {{reason}}"
+    }
+  },
+  "customers": {
+    "title": "Customers",
+    "new": "New customer",
+    "search": "Name, phone or tax id",
+    "empty": "No customer.",
+    "activeFilter": "State",
+    "activeOnly": "Active",
+    "inactiveOnly": "Deactivated",
+    "name": "Name",
+    "type": "Type",
+    "types": {
+      "breeder": "Breeder",
+      "veterinarian": "Veterinarian",
+      "other": "Other"
+    },
+    "category": "Category",
+    "noCategory": "No category",
+    "farmingType": "Farming type",
+    "place": "Place",
+    "wilaya": "Wilaya",
+    "commune": "Commune",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email",
+    "taxId": "Tax id",
+    "paymentTermsDays": "Payment terms (days)",
+    "veterinarian": "Follow-up veterinarian",
+    "noVeterinarian": "None",
+    "state": "State",
+    "active": "Active",
+    "inactive": "Deactivated",
+    "activate": "Reactivate",
+    "deactivate": "Deactivate",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Customer saved.",
+    "startsCashOnly": "A new customer starts at \"Cash only\"; the credit limit is changed afterwards, with its own permission.",
+    "tabs": {
+      "overview": "Overview",
+      "prices": "Prices"
+    },
+    "errors": {
+      "phoneFormat": "A phone number has at most 15 digits.",
+      "self": "A customer cannot be their own veterinarian.",
+      "notVeterinarian": "Choose an active customer of type veterinarian.",
+      "duplicate": "Another customer already has this value."
+    },
+    "similar": {
+      "title": "Possible duplicates",
+      "name": "Same name as",
+      "phone": "Same phone as",
+      "taxId": "Same tax id as",
+      "open": "customer no. {{id}}",
+      "confirm": "Check them before saving. Save anyway if this is a different customer.",
+      "saveAnyway": "Save anyway"
+    },
+    "credit": {
+      "label": "Credit limit",
+      "title": "Credit limit",
+      "change": "Change the credit limit",
+      "current": "Now:",
+      "choose": "What may this customer buy on credit?",
+      "none": "No limit",
+      "cash": "Cash only",
+      "limitOf": "Limit: {{amount}}",
+      "amount": "Amount of the limit",
+      "option": {
+        "none": "No limit",
+        "cash": "Cash only",
+        "limit": "Limit"
+      },
+      "explain": {
+        "none": "Credit sales are never refused for their amount.",
+        "cash": "No credit sale: every sale is paid at once.",
+        "limit": "Credit sales up to this outstanding amount."
+      },
+      "amountFormat": "An amount with at most 2 decimals.",
+      "zeroIsCash": "A zero limit is \"Cash only\": choose that option.",
+      "save": "Save the limit"
+    },
+    "prices": {
+      "explain": "Own prices per base unit. An own price replaces the category discount for that product.",
+      "empty": "No own price.",
+      "unitPrice": "Price per base unit",
+      "actions": "Actions",
+      "archived": "(archived)",
+      "change": "Change",
+      "changeOf": "Change the price of {{name}}",
+      "remove": "Remove",
+      "removeOf": "Remove the price of {{name}}",
+      "add": "Add a price",
+      "findProduct": "Find a product",
+      "save": "Save the price"
+    },
+    "categories": {
+      "title": "Customer categories",
+      "explain": "The discount of a category applies to its customers' sales when they have no own price for the product. Documents already issued keep their discount.",
+      "empty": "No category.",
+      "name": "Name",
+      "discountPct": "Discount (%)",
+      "discountOf": "discount {{pct}} %",
+      "edit": "Edit",
+      "editOf": "Edit {{name}}",
+      "add": "New category"
     }
   }
 }
