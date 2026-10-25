@@ -51,6 +51,19 @@ class LotLockingRuleTest {
                 .check(MAIN);
     }
 
+    /**
+     * The other lock helpers are allowed by class name for their own rows only (customers, proposals, orders): none
+     * of them may even refer to a lot, so a lock or a query on lots from them fails here.
+     */
+    @Test
+    void theOtherLockHelpersNeverReferToLots() {
+        noClasses().that().haveSimpleNameEndingWith("Locks").and().doNotHaveSimpleName("LotLocks")
+                .should().dependOnClassesThat().haveFullyQualifiedName(ROOT + ".inventory.domain.Lot")
+                .orShould().dependOnClassesThat().haveSimpleName("LotRepository")
+                .because("only LotLocks locks lots (PR #65)")
+                .check(MAIN);
+    }
+
     @Test
     void noRepositoryMethodLocksALot() {
         List<String> offending = new ArrayList<>();
