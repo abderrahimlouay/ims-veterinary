@@ -930,3 +930,9 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 11 Reports & Audit | OD-021 (backup), OD-002 (margin scope), OD-003 |
 | 12 Testing, Security, Deployment | OD-021, ADR-036 hardening review |
 | 13 Dark theme | ADR-069 (decided 2026-10-22) |
+
+**Backlog items (not open decisions yet; each waits for a question to the client):**
+
+| Item | Raised | Linked to | Status |
+|---|---|---|---|
+| Prescription-only status for products: whether some products may only be sold on a veterinary prescription, and what the sale must then record or check | 2026-10-25, demo data (the model has no such attribute; nothing was invented) | Phase 7 — confirmation of a sale (BR-SALE-*, W2 step 6) | Question to the client pending; becomes an OD (and then an ADR) before Phase 7 starts |
