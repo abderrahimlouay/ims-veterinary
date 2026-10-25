@@ -41,6 +41,14 @@ import com.imsvet.ims.purchasing.application.SupplierPrices.PriceInput;
 import com.imsvet.ims.purchasing.application.SupplierReturns;
 import com.imsvet.ims.purchasing.application.SupplierReturns.ReturnInput;
 import com.imsvet.ims.purchasing.application.SupplierReturns.ReturnedLine;
+import com.imsvet.ims.sales.application.CustomerCategories;
+import com.imsvet.ims.sales.application.CustomerCategories.CategoryInput;
+import com.imsvet.ims.sales.application.CustomerCredit;
+import com.imsvet.ims.sales.application.CustomerCredit.CreditLimitInput;
+import com.imsvet.ims.sales.application.CustomerDirectory;
+import com.imsvet.ims.sales.application.CustomerDirectory.CustomerInput;
+import com.imsvet.ims.sales.application.CustomerPrices;
+import com.imsvet.ims.sales.application.CustomerViews.CustomerDetail;
 import com.imsvet.ims.users.application.UserAdministration;
 import com.imsvet.ims.users.application.UserAdministration.NewUser;
 import java.math.BigDecimal;
@@ -67,7 +75,10 @@ import org.springframework.stereotype.Component;
  * ledger, balances, audit and document numbers are consistent: 5 users, 20 products in 6 categories, 4 suppliers
  * with price history, about 40 lots (healthy, expiring in 15/30/60 days, 2 expired, 1 blocked, 1 recalled), 6 orders,
  * 4 receipts (one cancelled, one with a non-conforming line), a supplier return, an inventory count, adjustments,
- * an opening-stock entry and a pending reorder proposal. Every name is fictional. Dates are relative to today (the
+ * an opening-stock entry, a pending reorder proposal, 3 customer categories and 12 customers (veterinarians, breeders
+ * and others; own prices; limits "cash only", "no limit" and amounts; one inactive; an Arabic and an accented name).
+ * Every name is fictional and every phone number is in the reserved fake range {@code 0100 00 xx xx} (testing.md
+ * §3, ADR-114). Dates are relative to today (the
  * {@link DemoClock} is pinned to each moment); quantities that vary come from a fixed seed. Runs once: a database
  * that already holds the demo data is left as is (reset = a new database, README).
  */
@@ -107,6 +118,10 @@ class DemoDataSeeder {
     private final LotActions lotActions;
     private final ReorderProposals reorder;
     private final IntegrityChecks integrity;
+    private final CustomerCategories customerCategories;
+    private final CustomerDirectory customers;
+    private final CustomerCredit credit;
+    private final CustomerPrices customerPrices;
 
     private final Random random = new Random(20261024L);
     private final LocalDate today;
@@ -120,7 +135,8 @@ class DemoDataSeeder {
             ProductSpecies species, SupplierDirectory suppliers, SupplierPrices prices, PurchaseOrders orders,
             GoodsReceipts receipts, SupplierReturns returns, OpeningStock openingStock, StockAdjustments adjustments,
             InventoryCounts counts, CountRegularisation regularisation, LotActions lotActions,
-            ReorderProposals reorder, IntegrityChecks integrity) {
+            ReorderProposals reorder, IntegrityChecks integrity, CustomerCategories customerCategories,
+            CustomerDirectory customers, CustomerCredit credit, CustomerPrices customerPrices) {
         this.environment = environment;
         this.jdbc = jdbc;
         this.clock = clock;
@@ -142,6 +158,10 @@ class DemoDataSeeder {
         this.lotActions = lotActions;
         this.reorder = reorder;
         this.integrity = integrity;
+        this.customerCategories = customerCategories;
+        this.customers = customers;
+        this.credit = credit;
+        this.customerPrices = customerPrices;
         this.today = LocalDate.now(BUSINESS);
     }
 
@@ -184,6 +204,8 @@ class DemoDataSeeder {
                 new BigDecimal("1000"), null, new BigDecimal("0.0110"))).lot().id());
         purchasing();
         stockActivity();
+        at(-2, 9, 0);
+        createCustomers();
         at(-1, 6, 0);
         reorder.generateNow();
         clock.release();
@@ -440,6 +462,68 @@ class DemoDataSeeder {
         at(-3, 17, 0);
         adjustments.adjust(new AdjustmentInput(lots.get("CHX-2405"), "adjustment_internal_use", new BigDecimal("100"),
                 "Désinfection de la réserve"));
+    }
+
+    /**
+     * Categories, then customers through the directory (a new customer is cash only, ADR-109), then their limits and
+     * own prices through their own use cases, so the audit trail shows them.
+     */
+    private void createCustomers() {
+        int ovins = customerCategories.create(new CategoryInput("Éleveurs ovins", new BigDecimal("5.00"))).id();
+        int grands = customerCategories.create(new CategoryInput("Grands élevages", new BigDecimal("8.00"))).id();
+        int cabinets = customerCategories.create(new CategoryInput("Cabinets vétérinaires", new BigDecimal("10.00")))
+                .id();
+
+        CustomerDetail vetKaci = customer(new CustomerInput("Dr Démo Kaci", "veterinarian", cabinets, null,
+                "Tizi Ouzou", "Azazga", "Adresse fictive de démonstration", "0100 00 01 01", null, "DEMO-NIF-0001", 30,
+                null), "200000.00");
+        CustomerDetail vetPlateaux = customer(new CustomerInput("Cabinet vétérinaire Démo des Hauts-Plateaux",
+                "veterinarian", cabinets, null, "Sétif", "El Eulma", null, "0100 00 01 02", null, "DEMO-NIF-0002", 45,
+                null), null);
+        CustomerDetail belkacem = customer(new CustomerInput("Élevage Démo Belkacem", "breeder", ovins, "Ovin",
+                "Djelfa", "Hassi Bahbah", null, "0100 00 01 03", null, null, 30, vetPlateaux.id()), "50000.00");
+        CustomerDetail merabet = customer(new CustomerInput("Ferme Démo Aït Mérabet", "breeder", ovins, "Ovin et caprin",
+                "Tizi Ouzou", "Larbaâ Nath Irathen", null, "0100 00 01 04", null, null, 15, vetKaci.id()), "30000.00");
+        CustomerDetail nakhil = customer(new CustomerInput("مزرعة النخيل التجريبية", "breeder", grands, "Bovin laitier",
+                "Biskra", "Tolga", null, "+213 100 00 01 05", null, "DEMO-NIF-0005", 60, null), "150000.00");
+        CustomerDetail avicole = customer(new CustomerInput("Grand élevage avicole Démo", "breeder", grands, "Avicole",
+                "Bordj Bou Arréridj", "Ras El Oued", null, "0100 00 01 06", null, "DEMO-NIF-0006", 30, null),
+                "300000.00");
+        customer(new CustomerInput("Élevage bovin Démo de la Mitidja", "breeder", null, "Bovin laitier", "Blida",
+                "Boufarik", null, "0100.00.01.07", null, null, 0, vetPlateaux.id()), "20000.00");
+        customer(new CustomerInput("Particulier Démo", "other", null, null, "Alger", "Kouba", null, "0100 00 01 08",
+                null, null, 0, null), "0.00");
+        customer(new CustomerInput("Animalerie Démo du Centre", "other", null, null, "Alger", "Bab Ezzouar", null,
+                "0100 00 01 09", null, null, 15, null), "10000.00");
+        CustomerDetail caprin = customer(new CustomerInput("Élevage caprin Démo (cessé)", "breeder", ovins, "Caprin",
+                "Médéa", "Berrouaghia", null, "0100 00 01 10", null, null, 30, null), "0.00");
+        customer(new CustomerInput("Rucher Démo des Babors", "breeder", null, "Apiculture", "Béjaïa", "Kherrata", null,
+                null, null, null, 0, null), "0.00");
+        customer(new CustomerInput("Élevage Démo Ouled Naïl", "breeder", ovins, "Ovin", "Djelfa", "Messaad", null,
+                "0100 00 01 12", null, null, 30, vetKaci.id()), "40000.00");
+
+        ownPrice(belkacem, "amox", "0.1300");
+        ownPrice(belkacem, "iver", "0.0580");
+        ownPrice(merabet, "alben", "0.0250");
+        ownPrice(nakhil, "oxy", "0.0800");
+        ownPrice(nakhil, "tylo", "0.0950");
+        ownPrice(avicole, "enro", "0.0520");
+        ownPrice(avicole, "newcastle", "0.0042");
+        ownPrice(vetKaci, "melox", "0.1550");
+        customers.setActive(caprin.id(), false);
+    }
+
+    /** {@code limit}: {@code null} = no limit, "0.00" = cash only (kept from creation), else the amount. */
+    private CustomerDetail customer(CustomerInput input, String limit) {
+        CustomerDetail created = customers.create(input);
+        if (limit != null && new BigDecimal(limit).signum() == 0) {
+            return created;
+        }
+        return credit.change(created.id(), new CreditLimitInput(true, limit, created.version()));
+    }
+
+    private void ownPrice(CustomerDetail customer, String product, String unitPrice) {
+        customerPrices.set(customer.id(), products.get(product), new BigDecimal(unitPrice), null);
     }
 
     /** Pins the clock to {@code days} from today at hour:minute, business time. */

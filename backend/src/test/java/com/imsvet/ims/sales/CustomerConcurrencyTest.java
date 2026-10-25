@@ -42,8 +42,8 @@ class CustomerConcurrencyTest {
     @RepeatedTest(20)
     void twoParallelCreationsWithTheSameNameAndPhoneLeaveOne() throws Exception {
         String key = UUID.randomUUID().toString().substring(0, 8);
-        List<Object> outcomes = race(input("Ferme Démo " + key, "0555 01 02 03", null),
-                input("FERME DEMO " + key, "+213 555-01-02-03", null));
+        List<Object> outcomes = race(input("Ferme Démo " + key, "0100 01 02 03", null),
+                input("FERME DEMO " + key, "+213 100-01-02-03", null));
 
         assertThat(outcomes).filteredOn(o -> o == null).hasSize(1);
         assertThat(outcomes).filteredOn(o -> o != null).containsExactly(ErrorCode.DUPLICATE_RESOURCE);
