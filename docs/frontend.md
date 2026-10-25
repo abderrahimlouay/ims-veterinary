@@ -123,7 +123,7 @@ For each: purpose → main elements → key behaviours → states.
 - **Reorder:** select pending proposals, choose a supplier per group, convert to draft orders (ADR-102).
 - **Supplier invoice & payment:** Phase 9.
 ### 4.6 Customers
-- List + create/edit; detail page tabs: Overview (balance, limit, available credit), Statement (date range, print), Prices, Invoices & payments, History. Credit-limit editing requires `customer.credit.manage`; balance definition per OD-003.
+- List + create/edit; detail page tabs: Overview (balance, limit, available credit), Statement (date range, print), Prices, Invoices & payments, History. Credit-limit editing requires `customer.credit.manage`; balance definition per OD-003. **Phase 6** delivers the list, create/edit (with the similar-customers warning before saving, ADR-110), the Overview without balance, the Prices tab (one price at a time, ADR-111), the categories page and the credit-limit dialog; Statement, Invoices & payments and the balance come with Phases 7 and 9.
 
 ### 4.7 Point of sale (`/pos`)
 Layout: left = product search + scan field + quick results; centre = cart lines (lot + expiry visible, warnings inline); right = customer, totals, payment, actions.

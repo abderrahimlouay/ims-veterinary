@@ -258,8 +258,10 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET | `/api/customers` | search: `q`, `type`, `wilaya`, `commune`, `active` | `customer.read` | page of `CustomerSummary` |
-| POST | `/api/customers` | create | `customer.manage` | `{name, customerType, categoryId?, farmingType?, wilaya?, commune?, address?, phone?, veterinarianId?}` |
+| GET | `/api/customers` | search: `q` (name, phone, tax id), `type`, `wilaya`, `commune`, `categoryId`, `active` | `customer.read` | page of `CustomerSummary` |
+| GET | `/api/customers/similar` | before saving: `name`, `phone`, `taxId`, `excludeId?` → possible duplicates (ADR-110) | `customer.read` | `[{customerId, field}]` (`field`: `name`, `phone`, `taxId`) — ids and fields only |
+| POST | `/api/customers` | create (credit limit 0, ADR-109) | `customer.manage` | `{name, customerType, categoryId?, farmingType?, wilaya?, commune?, address?, phone?, email?, taxId?, paymentTermsDays?, veterinarianId?}`; `DUPLICATE_RESOURCE` (`context: {field, customerId}`), `VALIDATION_FAILED` |
+| DELETE | `/api/customers/{id}` | not offered: customers are never deleted (ADR-109) | — | 405 |
 | GET/PUT | `/api/customers/{id}` | view / update (credit limit excluded) | `customer.read` / `customer.manage` | with `version` |
 | PUT | `/api/customers/{id}/credit-limit` | change credit limit (audited) | `customer.credit.manage` | `{creditLimit}` (`null` = no limit, `"0.00"` = cash only, ADR-108) |
 | POST | `/api/customers/{id}/deactivate` · `/activate` | toggle | `customer.manage` | |
@@ -267,8 +269,9 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/customers/{id}/statement` | account statement `?from&to` (+ `format=pdf`) | `statement.read` | chronological lines + running balance |
 | GET | `/api/customers/{id}/open-invoices` | invoices with outstanding amount (for allocation) | `payment.read` | |
 | GET | `/api/customers/{id}/sales` | sales history | `sale.read` | |
-| GET/PUT | `/api/customers/{id}/prices` | per-product prices | `customer.read` / `customer.price.manage` | `[{productId, unitPrice}]` — per base unit; audited |
-| GET/POST/PUT | `/api/customer-categories` | categories with default discount | `customer.read` / `customer.price.manage` | `{name, discountPct}` |
+| GET | `/api/customers/{id}/prices` | the customer's prices | `customer.read` | `[{product: {id, sku, commercialName, baseUnit}, unitPrice, updatedAt}]` (per base unit) |
+| PUT / DELETE | `/api/customers/{id}/prices/{productId}` | set or change / remove one price (ADR-111), audited `PRICE_CHANGE` | `customer.price.manage` | `{unitPrice}` (≥ 0, 4 decimals); `PRODUCT_ARCHIVED`, `NOT_FOUND` |
+| GET/POST/PUT | `/api/customer-categories` | categories with default discount; no delete (ADR-112) | `customer.read` / `customer.price.manage` | `{name, discountPct}` (+ `version` on PUT); `DUPLICATE_RESOURCE` (name ignoring case and accents); a discount change is audited `PRICE_CHANGE` |
 
 ### 4.10 `/api/sales`
 
