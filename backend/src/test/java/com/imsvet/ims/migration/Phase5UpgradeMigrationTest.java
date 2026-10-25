@@ -23,7 +23,7 @@ import org.testcontainers.mysql.MySQLContainer;
  * Migration test (M) on a seeded database (database-migration.md §9; the empty-database case is
  * {@link BaselineMigrationTest}): a separate schema is migrated to the end of Phase 4 (V04_009), filled with Phase 4
  * data — users, a product, lots with their ledger, a pending reorder proposal — then upgraded with every Phase 5
- * migration. Nothing fails, the data stay as they were (balances equal the ledger), the new nullable columns are
+ * migration (to V05_016; later phases have their own upgrade checks). Nothing fails, the data stay as they were (balances equal the ledger), the new nullable columns are
  * empty, and the new constraints apply (receipt_cancellation negative only, receipt.cancel granted).
  */
 @SpringBootTest
@@ -81,12 +81,12 @@ class Phase5UpgradeMigrationTest {
                 INSERT INTO reorder_proposals (product_id, current_qty, suggested_qty, status, created_at, updated_at)
                 VALUES (?, 8, 42, 'pending', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))""", product);
 
-        flyway(null).migrate();
+        flyway("05.016").migrate();
 
-        MigrationInfo[] applied = flyway(null).info().applied();
+        MigrationInfo[] applied = flyway("05.016").info().applied();
         assertThat(applied).allSatisfy(m -> assertThat(m.getState()).isEqualTo(MigrationState.SUCCESS));
         assertThat(applied[applied.length - 1].getVersion().getVersion()).isEqualTo("05.016");
-        assertThat(flyway(null).info().pending()).isEmpty();
+        assertThat(flyway("05.016").info().pending()).isEmpty();
         assertThat(db.queryForList("""
                 SELECT CONCAT(l.lot_number, ' ', CAST(l.quantity_on_hand AS CHAR), ' ', l.status, ' ',
                               COALESCE(l.supplier_id, 'none'), ' ', CAST(COALESCE(SUM(m.quantity), 0) AS CHAR))
@@ -108,12 +108,7 @@ class Phase5UpgradeMigrationTest {
                 String.class)).containsExactly("Administrator", "Pharmacist");
     }
 
-    /** {@code target} null: every migration. */
     private Flyway flyway(String target) {
-        var config = Flyway.configure().dataSource(upgraded).locations("classpath:db/migration");
-        if (target != null) {
-            config.target(target);
-        }
-        return config.load();
+        return Flyway.configure().dataSource(upgraded).locations("classpath:db/migration").target(target).load();
     }
 }
