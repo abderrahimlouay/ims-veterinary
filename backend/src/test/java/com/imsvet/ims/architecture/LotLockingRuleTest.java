@@ -43,7 +43,7 @@ class LotLockingRuleTest {
     @Test
     void onlyTheLockHelpersCallTheEntityManagerWithALockMode() {
         noClasses().that().doNotHaveSimpleName("LotLocks").and().doNotHaveSimpleName("ProposalLocks")
-                .and().doNotHaveSimpleName("OrderLocks")
+                .and().doNotHaveSimpleName("OrderLocks").and().doNotHaveSimpleName("CustomerLocks")
                 .should().callMethod(EntityManager.class, "refresh", Object.class, LockModeType.class)
                 .orShould().callMethod(EntityManager.class, "lock", Object.class, LockModeType.class)
                 .orShould().callMethod(EntityManager.class, "find", Class.class, Object.class, LockModeType.class)

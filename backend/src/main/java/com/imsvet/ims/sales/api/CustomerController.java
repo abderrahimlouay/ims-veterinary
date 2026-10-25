@@ -1,6 +1,7 @@
 package com.imsvet.ims.sales.api;
 
 import com.imsvet.ims.common.paging.PageResponse;
+import com.imsvet.ims.sales.application.CustomerCredit;
 import com.imsvet.ims.sales.application.CustomerDirectory;
 import com.imsvet.ims.sales.application.CustomerViews.CustomerDetail;
 import com.imsvet.ims.sales.application.CustomerViews.CustomerSummary;
@@ -20,10 +21,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.JsonNode;
 
 /**
- * api.md §4.9 {@code /api/customers}; permissions on the service. No delete (405, ADR-109); the credit limit has
- * its own endpoint (ADR-108).
+ * api.md §4.9 {@code /api/customers}; permissions on the services. No delete (405, ADR-109). The credit limit has
+ * its own endpoint (ADR-108): a {@code creditLimit} sent to create or update is not part of the request and is
+ * ignored (a new customer starts at 0).
  */
 @RestController
 @RequestMapping("/api/customers")
@@ -41,10 +44,15 @@ class CustomerController {
         }
     }
 
-    private final CustomerDirectory directory;
+    record SimilarRequest(String name, String phone, String taxId, Long excludeId) {
+    }
 
-    CustomerController(CustomerDirectory directory) {
+    private final CustomerDirectory directory;
+    private final CustomerCredit credit;
+
+    CustomerController(CustomerDirectory directory, CustomerCredit credit) {
         this.directory = directory;
+        this.credit = credit;
     }
 
     @GetMapping
@@ -56,11 +64,20 @@ class CustomerController {
         return directory.search(q, type, wilaya, commune, categoryId, active, page, size);
     }
 
-    @GetMapping("/similar")
-    List<SimilarCustomer> similar(@RequestParam(required = false) String name,
-            @RequestParam(required = false) String phone, @RequestParam(required = false) String taxId,
-            @RequestParam(required = false) Long excludeId) {
-        return directory.similar(name, phone, taxId, excludeId);
+    /** A POST so that names and phones never travel in a URL (ADR-114). */
+    @PostMapping("/similar")
+    List<SimilarCustomer> similar(@RequestBody SimilarRequest body) {
+        return directory.similar(body.name(), body.phone(), body.taxId(), body.excludeId());
+    }
+
+    /** {@code creditLimit} must be present: {@code null} = no limit (ADR-108); a missing field is refused. */
+    @PutMapping("/{id}/credit-limit")
+    CustomerDetail changeCreditLimit(@PathVariable long id, @RequestBody JsonNode body) {
+        JsonNode limit = body.get("creditLimit");
+        JsonNode version = body.get("version");
+        return credit.change(id, new CustomerCredit.CreditLimitInput(limit != null,
+                limit == null || limit.isNull() ? null : limit.asString(),
+                version == null || version.isNull() ? null : version.asLong()));
     }
 
     @PostMapping
