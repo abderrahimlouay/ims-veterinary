@@ -263,7 +263,7 @@ A module/phase is complete only when:
 
 ## 12. Migration-specific tests (PostgreSQL → MySQL)
 
-See `database-migration.md` §10 checklist. Every migration runs on an empty database (`BaselineMigrationTest`) and, for Phase 5, on a database holding Phase 4 data migrated to V04_009 first (`Phase5UpgradeMigrationTest`: balances equal the ledger after the upgrade, new columns empty, new constraints in force). Automated: schema snapshot equals expected; enum CHECK sets match the application enums; view outputs equal a reference calculation on a fixture; collation behaviour documented by tests; trigger tests for append-only and sign rules; generated-column values; seed data present.
+See `database-migration.md` §10 checklist. Every migration runs on an empty database (`BaselineMigrationTest`) and, for Phase 5, on a database holding Phase 4 data migrated to V04_009 first (`Phase5UpgradeMigrationTest`: balances equal the ledger after the upgrade, new columns empty, new constraints in force); for Phase 6, on Phase 5 data migrated to V05_016 (`Phase6UpgradeMigrationTest`: balances equal the ledger, the document sequence keeps its number, the customer tables start empty, a new customer is cash only, the credit-limit, price and discount CHECKs and the product RESTRICT apply). Automated: schema snapshot equals expected; enum CHECK sets match the application enums; view outputs equal a reference calculation on a fixture; collation behaviour documented by tests; trigger tests for append-only and sign rules; generated-column values; seed data present.
 
 ## 13. Open testing items
 

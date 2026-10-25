@@ -19,6 +19,7 @@
 | Blocked (lot) | Lot bloqué | Lot temporarily not sellable. |
 | Cash session | Session de caisse | Period during which a cashier handles the till, from opening to counted closing. |
 | Cash variance | Écart de caisse | Counted amount minus expected amount at closing. |
+| Discount entitlement | Remise accordée | The discount a customer gets without `sale.discount`: the category discount, or 0 when the customer has an own price for the product (ADR-113); a manual discount replaces it, never adds to it. |
 | Credit limit | Plafond de crédit | Maximum customer debt allowed; empty = no limit, 0 = cash only (ADR-108). |
 | Credit note (customer) | Avoir | Document reducing what a customer owes, created by a return. |
 | Credit note (supplier) | Avoir fournisseur | Document received from a supplier reducing a payable. |
