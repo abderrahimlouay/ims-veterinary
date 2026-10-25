@@ -69,7 +69,7 @@ class CustomersTest {
     void aNewCustomerIsABreederPayingCashAndIsFoundByNamePhoneOrTaxId() throws Exception {
         int category = category("Éleveurs test");
         long id = id(create("{\"name\":\"Ferme Démo Alpha\",\"categoryId\":" + category + ",\"wilaya\":\"Wilaya Démo\","
-                + "\"commune\":\"Commune Démo\",\"phone\":\"0555 00 00 01\",\"taxId\":\"nif 0001 demo\","
+                + "\"commune\":\"Commune Démo\",\"phone\":\"0100 00 00 01\",\"taxId\":\"nif 0001 demo\","
                 + "\"paymentTermsDays\":30,\"farmingType\":\"Bovins laitiers\"}")
                 .andExpect(jsonPath("$.customerType").value("breeder"))
                 .andExpect(jsonPath("$.creditLimit").value("0.00"))
@@ -78,7 +78,7 @@ class CustomersTest {
                 .andExpect(jsonPath("$.category.name").value("Éleveurs test"))
                 .andExpect(jsonPath("$.paymentTermsDays").value(30)));
 
-        for (String q : List.of("alpha", "FERME DEMO", "+213 555 000 001", "00213-555-00-00-01", "NIF 0001 DEMO")) {
+        for (String q : List.of("alpha", "FERME DEMO", "+213 100 000 001", "00213-100-00-00-01", "NIF 0001 DEMO")) {
             seller.get("/api/customers?q=" + q)
                     .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(id));
         }
@@ -96,7 +96,7 @@ class CustomersTest {
         assertFieldError(create("{\"name\":\"X\",\"categoryId\":999999}"), "categoryId", "UNKNOWN");
         assertFieldError(create("{\"name\":\"X\",\"paymentTermsDays\":-1}"), "paymentTermsDays", "RANGE");
         assertFieldError(create("{\"name\":\"X\",\"email\":\"not-an-email\"}"), "email", "EMAIL");
-        assertFieldError(create("{\"name\":\"X\",\"phone\":\"0555 0000 0000 0000 01\"}"), "phone", "FORMAT");
+        assertFieldError(create("{\"name\":\"X\",\"phone\":\"0100 0000 0000 0000 01\"}"), "phone", "FORMAT");
     }
 
     @Test
@@ -123,25 +123,25 @@ class CustomersTest {
 
     @Test
     void theSameNameAndPhoneOrTheSameTaxIdIsRefusedWithIdsAndTheFieldOnly() throws Exception {
-        long first = id(create("{\"name\":\"Ferme Démo Zeta\",\"phone\":\"0555 00 00 02\",\"taxId\":\"NIF-DEMO-2\"}"));
+        long first = id(create("{\"name\":\"Ferme Démo Zeta\",\"phone\":\"0100 00 00 02\",\"taxId\":\"NIF-DEMO-2\"}"));
 
-        String body = create("{\"name\":\"ferme demo zeta\",\"phone\":\"+213 555.00.00.02\"}")
+        String body = create("{\"name\":\"ferme demo zeta\",\"phone\":\"+213 100.00.00.02\"}")
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("DUPLICATE_RESOURCE"))
                 .andExpect(jsonPath("$.context.field").value("phone"))
                 .andExpect(jsonPath("$.context.customerId").value(first))
                 .andReturn().getResponse().getContentAsString();
-        assertThat(body).doesNotContain("0555").doesNotContain("Zeta").doesNotContain("NIF");
+        assertThat(body).doesNotContain("0100").doesNotContain("Zeta").doesNotContain("NIF");
         create("{\"name\":\"Autre Démo\",\"taxId\":\" nif-demo-2 \"}").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.context.field").value("taxId"))
                 .andExpect(jsonPath("$.context.customerId").value(first));
 
-        long sameName = id(create("{\"name\":\"Ferme Démo Zeta\",\"phone\":\"0555 00 00 03\"}"));
-        long samePhone = id(create("{\"name\":\"Ferme Démo Eta\",\"phone\":\"0555000002\"}"));
+        long sameName = id(create("{\"name\":\"Ferme Démo Zeta\",\"phone\":\"0100 00 00 03\"}"));
+        long samePhone = id(create("{\"name\":\"Ferme Démo Eta\",\"phone\":\"0100000002\"}"));
         id(create("{\"name\":\"Ferme Démo Theta\"}"));
         id(create("{\"name\":\"Ferme Démo Iota\"}"));
 
         JsonNode similar = JSON.readTree(seller.post("/api/customers/similar", "{\"name\":\"FERME DEMO ZETA\","
-                + "\"phone\":\"00213 555 00 00 02\",\"excludeId\":" + samePhone + "}").andExpect(status().isOk())
+                + "\"phone\":\"00213 100 00 00 02\",\"excludeId\":" + samePhone + "}").andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString());
         assertThat(similar.size()).isEqualTo(2);
         java.util.Map<Long, String> fields = new java.util.HashMap<>();
@@ -204,9 +204,9 @@ class CustomersTest {
     void theSameNameWithoutPhoneIsOnlyAWarning() throws Exception {
         long first = id(create("{\"name\":\"Ferme Démo Nu\"}"));
         long second = id(create("{\"name\":\"ferme demo nu\"}"));
-        long phoned = id(create("{\"name\":\"Ferme Démo Nu\",\"phone\":\"0555 00 00 09\"}"));
+        long phoned = id(create("{\"name\":\"Ferme Démo Nu\",\"phone\":\"0100 00 00 09\"}"));
 
-        create("{\"name\":\"FERME DÉMO NU\",\"phone\":\"+213555000009\"}").andExpect(status().isConflict())
+        create("{\"name\":\"FERME DÉMO NU\",\"phone\":\"+213100000009\"}").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.context.customerId").value(phoned));
         JsonNode similar = JSON.readTree(seller.post("/api/customers/similar", "{\"name\":\"Ferme Demo Nu\"}")
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
@@ -219,7 +219,7 @@ class CustomersTest {
     void customerPersonalDataNeverReachesTheLogs(CapturedOutput output) throws Exception {
         String marker = UUID.randomUUID().toString().substring(0, 8);
         String name = "Nom-" + marker;
-        String phone = "0555 77 " + marker.substring(0, 2).replaceAll("\\D", "1") + " 99";
+        String phone = "0100 77 " + marker.substring(0, 2).replaceAll("\\D", "1") + " 99";
         String email = "courriel-" + marker + "@client.example";
         String address = "Adresse-" + marker;
         String taxId = "TAX" + marker.toUpperCase();
