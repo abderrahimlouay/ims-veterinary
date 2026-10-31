@@ -316,7 +316,10 @@ export function PosPage() {
   )
 }
 
-/** Scan (Enter, exact code) or search; a scanned unit is kept (BR-UNIT-005). */
+/**
+ * Scan (Enter, exact code; a scanned unit is kept, BR-UNIT-005) or search by name, SKU or active ingredient, category and
+ * species (FR-SALE-002). The species also drives the withdrawal warnings of the lines added (ADR-121).
+ */
 function ItemEntry({
   disabled,
   speciesId,
@@ -335,8 +338,10 @@ function ItemEntry({
   const [quantity, setQuantity] = useState('1')
   const [unknownCode, setUnknownCode] = useState<string | null>(null)
   const scan = useRef<HTMLInputElement>(null)
+  const [categoryId, setCategoryId] = useState('')
   const species = useReferenceList('animal-species')
-  const products = useProducts({ q, categoryId: '', manufacturerId: '', ingredientId: '', speciesId: '', includeArchived: false, inStockOnly: false, page: 0 }, 10)
+  const categories = useReferenceList('categories')
+  const products = useProducts({ q, categoryId, manufacturerId: '', ingredientId: '', speciesId, includeArchived: false, inStockOnly: false, page: 0 }, 10)
 
   const added = () => {
     setQ('')
@@ -383,9 +388,18 @@ function ItemEntry({
           ...(species.data ?? []).map((s) => ({ value: String(s.id), label: referenceLabel(s, 'species', t) })),
         ]}
       />
+      <SelectField
+        label={t('pos.category')}
+        value={categoryId}
+        onChange={(e) => setCategoryId(e.target.value)}
+        options={[
+          { value: '', label: t('pos.anyCategory') },
+          ...(categories.data ?? []).map((c) => ({ value: String(c.id), label: referenceLabel(c, 'categories', t) })),
+        ]}
+      />
       {disabled && <p className="text-sm text-mute">{t('pos.chooseCustomerFirst')}</p>}
       {unknownCode !== null && <p className="text-sm text-mute">{t('pos.unknownCode', { code: unknownCode })}</p>}
-      {q.trim() !== '' && products.data && (
+      {(q.trim() !== '' || categoryId !== '' || speciesId !== '') && products.data && (
         <ul className="flex flex-col gap-2">
           {products.data.content.map((p) => (
             <li key={p.id}>

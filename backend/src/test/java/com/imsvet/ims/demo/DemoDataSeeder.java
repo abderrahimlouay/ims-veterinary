@@ -12,6 +12,7 @@ import com.imsvet.ims.catalog.application.ProductViews.UnitView;
 import com.imsvet.ims.catalog.application.ReferenceItemView;
 import com.imsvet.ims.catalog.application.ReferenceLists;
 import com.imsvet.ims.catalog.domain.ReferenceList;
+import com.imsvet.ims.finance.application.CashSessions;
 import com.imsvet.ims.inventory.application.CountRegularisation;
 import com.imsvet.ims.inventory.application.CountViews.CountDetail;
 import com.imsvet.ims.inventory.application.CountViews.Line;
@@ -49,6 +50,15 @@ import com.imsvet.ims.sales.application.CustomerDirectory;
 import com.imsvet.ims.sales.application.CustomerDirectory.CustomerInput;
 import com.imsvet.ims.sales.application.CustomerPrices;
 import com.imsvet.ims.sales.application.CustomerViews.CustomerDetail;
+import com.imsvet.ims.sales.application.PaymentRecorder.Tender;
+import com.imsvet.ims.sales.application.SaleCancellation;
+import com.imsvet.ims.sales.application.SaleConfirmation;
+import com.imsvet.ims.sales.application.SaleConversion;
+import com.imsvet.ims.sales.application.SaleLines;
+import com.imsvet.ims.sales.application.SaleLines.LineInput;
+import com.imsvet.ims.sales.application.SalesDocuments;
+import com.imsvet.ims.sales.application.SalesDocuments.DraftInput;
+import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.users.application.UserAdministration;
 import com.imsvet.ims.users.application.UserAdministration.NewUser;
 import java.math.BigDecimal;
@@ -76,7 +86,8 @@ import org.springframework.stereotype.Component;
  * with price history, about 40 lots (healthy, expiring in 15/30/60 days, 2 expired, 1 blocked, 1 recalled), 6 orders,
  * 4 receipts (one cancelled, one with a non-conforming line), a supplier return, an inventory count, adjustments,
  * an opening-stock entry, a pending reorder proposal, 3 customer categories and 12 customers (veterinarians, breeders
- * and others; own prices; limits "cash only", "no limit" and amounts; one inactive; an Arabic and an accented name).
+ * and others; own prices; limits "cash only", "no limit" and amounts; one inactive; an Arabic and an accented name);
+ * sales documents of every kind with a closed cash session, a cancelled sale, a draft, and a recalled lot with buyers.
  * Every name is fictional and every phone number is in the reserved fake range {@code 0100 00 xx xx} (testing.md
  * §3, ADR-114). Dates are relative to today (the
  * {@link DemoClock} is pinned to each moment); quantities that vary come from a fixed seed. Runs once: a database
@@ -122,6 +133,12 @@ class DemoDataSeeder {
     private final CustomerDirectory customers;
     private final CustomerCredit credit;
     private final CustomerPrices customerPrices;
+    private final SalesDocuments documents;
+    private final SaleLines lines;
+    private final SaleConfirmation confirmation;
+    private final SaleConversion conversion;
+    private final SaleCancellation cancellation;
+    private final CashSessions sessions;
 
     private final Random random = new Random(20261024L);
     private final LocalDate today;
@@ -136,7 +153,9 @@ class DemoDataSeeder {
             GoodsReceipts receipts, SupplierReturns returns, OpeningStock openingStock, StockAdjustments adjustments,
             InventoryCounts counts, CountRegularisation regularisation, LotActions lotActions,
             ReorderProposals reorder, IntegrityChecks integrity, CustomerCategories customerCategories,
-            CustomerDirectory customers, CustomerCredit credit, CustomerPrices customerPrices) {
+            CustomerDirectory customers, CustomerCredit credit, CustomerPrices customerPrices, SalesDocuments documents,
+            SaleLines lines, SaleConfirmation confirmation, SaleConversion conversion, SaleCancellation cancellation,
+            CashSessions sessions) {
         this.environment = environment;
         this.jdbc = jdbc;
         this.clock = clock;
@@ -162,6 +181,12 @@ class DemoDataSeeder {
         this.customers = customers;
         this.credit = credit;
         this.customerPrices = customerPrices;
+        this.documents = documents;
+        this.lines = lines;
+        this.confirmation = confirmation;
+        this.conversion = conversion;
+        this.cancellation = cancellation;
+        this.sessions = sessions;
         this.today = LocalDate.now(BUSINESS);
     }
 
@@ -208,6 +233,7 @@ class DemoDataSeeder {
         createCustomers();
         at(-1, 6, 0);
         reorder.generateNow();
+        sales();
         clock.release();
         integrity.runNow();
     }
@@ -429,6 +455,74 @@ class DemoDataSeeder {
         ReceiptDetail receipt = receipts.confirm(new ReceiptInput(null, order.id(), "BL-" + order.number().substring(3),
                 null, confirmBlocking, onOrder), UUID.nameUUIDFromBytes(order.number().getBytes()).toString());
         receipt.lines().forEach(l -> lots.put(l.lotNumber(), l.lotId()));
+    }
+
+    /** After the reorder run, so it proposes from the stock before these sales; the session ends closed. */
+    private void sales() {
+        long kaci = customerId("Dr Démo Kaci");
+        at(-1, 8, 0);
+        var session = sessions.open(new BigDecimal("5000.00"));
+        at(-1, 9, 0);
+        pay(sale("receipt", null, false, "amox", "melox"));
+        SaleDetail cancelled = sale("receipt", null, false, "amox");
+        pay(cancelled);
+        at(-1, 9, 30);
+        cancellation.cancel(cancelled.id(), "Erreur de saisie à la caisse (démonstration)");
+
+        at(-1, 10, 0);
+        confirmation.confirm(sale("invoice", kaci, true, "oxy", "iver").id(), List.of(), null);
+        SaleDetail recalledBuyer = saleOfLot("delivery_note", kaci, "IOD-2309", "iode");
+        confirmation.confirm(recalledBuyer.id(), List.of(), null);
+        at(-1, 11, 0);
+        SaleDetail anonymous = saleOfLot("receipt", null, "IOD-2309", "iode");
+        pay(anonymous);
+
+        at(-1, 12, 0);
+        SaleDetail note = sale("delivery_note", kaci, true, "melox");
+        confirmation.confirm(note.id(), List.of(), null);
+        confirmation.confirm(conversion.convert(note.id(), "invoice").id(), List.of(), null);
+
+        at(-1, 14, 0);
+        SaleDetail quote = quote(kaci);
+        confirmation.confirm(quote.id(), List.of(), null);
+        quote(kaci);
+
+        at(-1, 16, 0);
+        lotActions.recall(lots.get("IOD-2309"), "Rappel du fabricant (avis de démonstration n° 13)");
+        at(-1, 18, 0);
+        sessions.close(session.id(), sessions.current().orElseThrow().expectedAmount().subtract(new BigDecimal("10.00")));
+    }
+
+    private SaleDetail quote(long customer) {
+        SaleDetail quote = documents.create(new DraftInput("quote", customer, false, null, "Devis de démonstration"));
+        return lines.add(quote.id(), line("alben"));
+    }
+
+    private SaleDetail sale(String type, Long customer, boolean credit, String... keys) {
+        SaleDetail draft = documents.create(new DraftInput(type, customer, credit, null, null));
+        for (String key : keys) {
+            draft = lines.add(draft.id(), line(key));
+        }
+        return draft;
+    }
+
+    /** The lot is named, with the FEFO override and its reason, so that the recalled lot has buyers. */
+    private SaleDetail saleOfLot(String type, Long customer, String lot, String key) {
+        SaleDetail draft = documents.create(new DraftInput(type, customer, customer != null, null, null));
+        return lines.add(draft.id(), new LineInput(products.get(key), null, new BigDecimal("50"), null, lots.get(lot),
+                "Lot demandé par le client (démonstration)", null, null));
+    }
+
+    private LineInput line(String key) {
+        return new LineInput(products.get(key), null, new BigDecimal("10"), null, null, null, null, null);
+    }
+
+    private void pay(SaleDetail draft) {
+        confirmation.confirm(draft.id(), List.of(new Tender("cash", draft.totals().ttc(), null)), null);
+    }
+
+    private long customerId(String name) {
+        return jdbc.queryForObject("SELECT id FROM customers WHERE name = ?", Long.class, name);
     }
 
     private void stockActivity() {
