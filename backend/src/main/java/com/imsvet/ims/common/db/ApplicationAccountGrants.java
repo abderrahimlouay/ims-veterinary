@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 public class ApplicationAccountGrants implements Callback {
 
     /** Ledgers whose rows are never changed or removed (ADR-017, BR-STOCK-003, BR-AUDIT-002). */
-    static final Set<String> APPEND_ONLY = Set.of("audit_log", "stock_movements");
+    static final Set<String> APPEND_ONLY = Set.of("audit_log", "cash_movements", "stock_movements");
 
     private static final Pattern ACCOUNT_PART = Pattern.compile("[A-Za-z0-9_.%-]{1,64}");
 

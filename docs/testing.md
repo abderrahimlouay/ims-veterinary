@@ -219,10 +219,10 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PAY-009 | S | Supplier payment > remaining → PAYMENT_ALLOCATION_EXCEEDED |
 | BR-PAY-010 | S | Advance recorded and later allocated |
 | BR-PAY-011 | S | Supplier credit note reduces payable |
-| BR-CASH-001 | R,S | Second open session for same cashier → CASH_SESSION_ALREADY_OPEN (unique via generated column) |
-| BR-CASH-002 | S | Close: variance = counted − expected |
+| BR-CASH-001 | R,S | Second open session for same cashier → CASH_SESSION_ALREADY_OPEN (unique via generated column) (`CashSessionsTest`, CT-09 `CashSessionConcurrencyTest`) |
+| BR-CASH-002 | S | Close: variance = counted − expected, generated column equal (`CashSessionsTest`, `CashAmountsTest`) |
 | BR-CASH-003 | U,S | Expected = opening + cash in − cash out (cash only); a cash sale with change posts the sale total, never the amount tendered (ADR-118) |
-| BR-CASH-004 | A | Modify closed session → CASH_SESSION_CLOSED |
+| BR-CASH-004 | A | Modify closed session → CASH_SESSION_CLOSED; movements append-only (`CashSessionsTest`, `CashMovementAppendOnlyTest`) |
 | BR-CASH-005 | S | Movement amount ≤ 0 / wrong direction rejected |
 | BR-SEC-001 | SEC | Every endpoint (enumerated) without credential → 401 |
 | BR-SEC-002 | SEC | Permission matrix test: each endpoint × role → expected 200/403 |

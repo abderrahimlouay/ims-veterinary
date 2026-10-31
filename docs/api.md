@@ -316,11 +316,11 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/payments/suppliers` · `/{id}` | list / detail | `payment.read` | |
 | POST | `/api/payments/suppliers/{id}/reverse` | reverse | `payment.reverse` | |
 | POST | `/api/cash-sessions/open` | open own session | `cash.open` | `{openingAmount}` → 201; `CASH_SESSION_ALREADY_OPEN` |
-| GET | `/api/cash-sessions/current` | own open session with running expected amount | `cash.open` | |
+| GET | `/api/cash-sessions/current` | own open session with running expected amount | `cash.open` | 204 when there is none |
 | POST | `/api/cash-sessions/{id}/close` ● | close with counted amount | `cash.open` (own) / `cash.manage` | `{countedAmount}` → `CashSessionDetail` (variance) |
 | GET | `/api/cash-sessions` · `/{id}` | all sessions | `cash.manage` | |
-| POST | `/api/cash-sessions/{id}/movements` | manual cash in/out | `cash.manage` | `{direction, method, amount, label}`; `CASH_SESSION_CLOSED` |
-| GET | `/api/cash-sessions/{id}/report` | session report (`format=pdf`) | `cash.manage` | |
+| POST | `/api/cash-sessions/{id}/movements` | manual cash in/out, Phase 9 (ADR-118) | `cash.manage` | `{direction, method, amount, label}`; `CASH_SESSION_CLOSED` |
+| GET | `/api/cash-sessions/{id}/report` | session report (`format=pdf`), Phase 9 (ADR-118) | `cash.manage` | |
 
 ### 4.13 `/api/reports` (read-only; `?format=json\|csv\|pdf`)
 

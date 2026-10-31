@@ -112,7 +112,7 @@ The Spec names four roles with "restricted rights" but gives no matrix. The cata
 | `payment.supplier.create` | record supplier payments | ● | – | – | ● |
 | `payment.reverse` | reverse a payment | ● | – | – | ● |
 | `supplierinvoice.manage` | supplier invoices | ● | – | – | ● |
-| `cash.open` | open/close **own** cash session | ● | – | ● | ● |
+| `cash.open` | open/close **own** cash session (Pharmacist: ADR-126) | ● | ● | ● | ● |
 | `cash.manage` | all sessions, manual cash movements | ● | – | – | ● |
 | `report.sales` / `report.stock` | sales and stock reports | ● | ● | – | ● |
 | `report.finance` | receivables/payables/cash reports | ● | – | – | ● |
@@ -155,6 +155,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `SETTING_CHANGE` | alert thresholds, VAT default, company data | REC |
 | `BACKUP_RUN`, `BACKUP_DOWNLOAD` | backup operations | REC |
 | `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (ADR-120, BR-SALE-007) |
+| `CASH_VARIANCE` | a cash session closed with a non-zero variance | REC (W9) |
 
 Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD-102, BR-SEC-006). Passwords, tokens and hashes are never written to audit values.
 
