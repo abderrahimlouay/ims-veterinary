@@ -12,13 +12,13 @@ Status values: *Open* (nothing decided), *Proposed* (resolution recommended, awa
 | Severity | Count |
 |---|---|
 | Critical | 3 |
-| High | 13 |
+| High | 14 |
 | Medium | 17 |
 | Low | 5 |
 | Open Decision (not tied to a defect) | 2 |
-| **Total** | **40** |
+| **Total** | **41** |
 
-The counts are those of the register rows below (DR-001…DR-040); recount when a row is added.
+The counts are those of the register rows below (DR-001…DR-041); recount when a row is added.
 
 Gate for implementation: **Critical and High items marked for Phase 0–1 must be reviewed by the user before Phase 0 starts**; later items must be resolved before their phase (column *Needed by*).
 
@@ -66,6 +66,7 @@ Gate for implementation: **Critical and High items marked for Phase 0–1 must b
 | DR-038 | Scheduled jobs were not really off in tests | Medium | testing.md §1 | The jobs flag was set by a `DynamicPropertyRegistrar`, applied after the condition that reads it, so the inventory scheduler ticked in every test context and could commit runs while a test had moved the shared clock (flaky integrity-check tests on CI). | **Resolved 2026-10-24** (PR #61): surefire system property `ims.jobs.enabled=false`, guarded by `IntegrityCheckJobTest`; testing.md §1 says to set it in an IDE too. | Phase 5 · ADR-086 |
 | DR-039 | "Reserved fake range" for phone numbers was never defined | Medium | decisions.md (ADR-114), testing.md §3, demo data | ADR-114 required fixtures and demo data to use phone numbers "from a reserved fake range only", but no range was named, and the first customer tests used `0555…` (a real mobile prefix) and `021…` (an Algiers landline format). | **Resolved 2026-10-25** (Phase 6, PRs #79 and #80): range `0100 00 xx xx` (prefix 01 allocated to no Algerian operator or area) documented in testing.md §3; backend tests, frontend tests, e2e J12 and the demo seeder use it. | Phase 6 · ADR-114 |
 | DR-040 | Legal rounding rule for sales invoices not confirmed | High | decisions.md (ADR-093, ADR-115), business-rules.md (BR-SALE-008) | Sales invoices round per line, but no accountant has confirmed that this is the legal rule. | **Go-live blocker, not a Phase 7 blocker** (user decision, 2026-10-31): to be cleared with the accountant before go-live; another rule means a new ADR. | Go-live · ADR-115 |
+| DR-041 | Prescription-only products not answered by the client | High | decisions.md (ADR-124), domain-model.md | The model has no prescription attribute, and the client has not said whether some products may be sold only on a veterinary prescription. | **Go-live blocker** (user decision, 2026-10-31): Phase 7 is built without it; if the client requires it, a new ADR and a migration add it. | Go-live · ADR-124 |
 
 ## 3. Automated consistency audit (executed 2026-10-18)
 
@@ -127,4 +128,4 @@ Same checks, scripted over every `.md` file plus the code where the docs name it
 
 ## 5. Items the user should decide first
 
-For Phase 0: OD-024 (versions) and OD-008 (language/currency/locale) — both decided 2026-10-20 (ADR-032, ADR-033). For Phase 1: OD-001 (authentication) and OD-023 (permission matrix) — decided 2026-10-20 (ADR-036, ADR-037). The group OD-002/OD-003/OD-004 (stock-moving documents, payment capture, cancellation) was decided 2026-10-31 (ADR-117…119). Open before Phase 7 code: OD-037, OD-038, OD-039. Before go-live: DR-040.
+For Phase 0: OD-024 (versions) and OD-008 (language/currency/locale) — both decided 2026-10-20 (ADR-032, ADR-033). For Phase 1: OD-001 (authentication) and OD-023 (permission matrix) — decided 2026-10-20 (ADR-036, ADR-037). The group OD-002/OD-003/OD-004 (stock-moving documents, payment capture, cancellation) was decided 2026-10-31 (ADR-117…119). Before go-live: DR-040, DR-041.

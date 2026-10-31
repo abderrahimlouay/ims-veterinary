@@ -396,7 +396,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ### 5.6 Confirm sale
 - **POST `/api/sales/{id}/confirm`** — **Permission:** `sale.create`. **Header:** `Idempotency-Key` (recommended, enforced for POS).
-- **Request:** `{ "payments": [ {"method": "cash", "amount": "45.00", "reference": null} ] }` — an immediate sale must be paid in full, Σ `amount` = TTC, several methods allowed; a cash part needs an open session; a credit sale has no `payments` (ADR-118).
+- **Request:** `{ "payments": [ {"method": "cash", "amount": "45.00", "reference": null} ] }` — an immediate sale must be paid in full, Σ `amount` = TTC, several methods allowed; a cash part needs an open session; a credit sale has no `payments` (ADR-118). `amount` is the amount kept; no tendered amount is sent, the screen computes the change.
 - **Response 200:** `{ id, number, status: "confirmed", totals: {ht, discount, vat, ttc}, lines[…], payments[…], customerBalance?, documents: { pdfA4: "/api/sales/{id}/pdf?format=a4", ticket: "…" } }`
 - **Server steps (one transaction):** lock lots (id order) → re-validate → credit check → number → post movements → payment records → `confirmed`.
 - **Validation:** document is a draft; at least one line; every line has a lot; totals recomputed server-side.
@@ -447,4 +447,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-005 (refund), OD-020 (pdf formats), OD-021 (backup run), OD-038 (delivery-note commercial rules).
+OD-005 (refund), OD-020 (pdf formats), OD-021 (backup run).

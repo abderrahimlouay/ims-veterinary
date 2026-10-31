@@ -119,7 +119,7 @@ Customer → Product Search → Lot Selection / FEFO → Sale → Stock Movement
    3. Assign number (BR-DOC-001; format ADR-097, keys and numbering at confirmation ADR-122); snapshot `unit_cost` (BR-SALE-009); compute totals (BR-SALE-008).
    4. Post `sale` movements (−) and update balances; set lots `depleted` when 0 (BR-STOCK-002).
    5. Record payment and allocations, and a cash movement for the cash part (ADR-118).
-   6. Mark document `confirmed`. Delivery notes, receipts and invoices not derived from a delivery note post movements; an invoice from a delivery note reuses its lots and posts none (ADR-117; commercial rules **⚠ OD-038**).
+   6. Mark document `confirmed`. Delivery notes, receipts and invoices not derived from a delivery note post movements; an invoice from a delivery note reuses its lots and posts none (ADR-117; commercial rules ADR-125).
 7. **Output:** thermal ticket (receipt) or A4 invoice/delivery note PDF with withdrawal-period warnings for breeders (BR-SALE-010 **⚠ OD-028**, Phase 10).
 - **DB changes:** `sales_documents`, `sales_document_lines`, `lots`, `stock_movements`, `document_sequences`, `customer_payments`/`payment_allocations`/`cash_movements` (ADR-118).
 - **Failure cases:**
@@ -259,7 +259,7 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 ## 11. W11 — Document conversion
 
-`Quote → Delivery note → Invoice`, and `Invoice/Receipt → Credit note` (BR-SALE-001). Conversion copies lines into a new draft with `parent_id`; an invoice from a confirmed delivery note posts no second movement (ADR-117; commercial rules **⚠ OD-038**). A quote converts only while `confirmed` or `draft` per policy `[REC]`; its price validity period is not specified by the Spec.
+`Quote → Delivery note → Invoice`, and `Invoice/Receipt → Credit note` (BR-SALE-001). Conversion copies lines into a new draft with `parent_id`; an invoice from a confirmed delivery note posts no second movement (ADR-117; commercial rules ADR-125). A quote converts only while `confirmed` or `draft` per policy `[REC]`; its price validity period is not specified by the Spec.
 
 ## 12. W12 — Expiry alerting
 

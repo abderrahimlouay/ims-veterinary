@@ -180,7 +180,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PURCH-013 | S | Same key + same body → first receipt, nothing posted twice; same key + other body → IDEMPOTENCY_CONFLICT (`GoodsReceiptsTest.theSameIdempotencyKeyReturnsTheFirstReceipt`, CT-05 in `IdempotencyKeysTest`) |
 | BR-DOC-001 | C,R | CT-03: 1000 concurrent numbers unique and gap-free on commit, 20 times; format `KEY-YYYY-NNNNNN`; yearly reset on the Algiers business year (31 Dec 23:30 UTC = next year); no number without a transaction; a rolled-back transaction leaves no gap; the counter stays locked until commit; number then lots in opposite orders never deadlock, 20 times (`NumberingServiceTest`, `NumberingTransactionTest`) |
 | BR-SALE-001 | U | Document chain and allowed conversions |
-| BR-SALE-002 | S | Quote posts none; delivery note, receipt and direct invoice post `sale`; invoice from a delivery note reuses its lots and posts no second movement (ADR-117) |
+| BR-SALE-002 | S | Quote posts none; delivery note, receipt and direct invoice post `sale`; invoice from a delivery note reuses its lots and posts no second movement (ADR-117); one delivery note gives one invoice, no second limit check, cancelling that invoice posts no movement (ADR-125) |
 | BR-SALE-003 | S | Confirm quote → no movement |
 | BR-SALE-004 | A | Edit confirmed document → DOCUMENT_IMMUTABLE |
 | BR-SALE-005 | S | Lots assigned and verified at confirmation |
@@ -221,7 +221,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PAY-011 | S | Supplier credit note reduces payable |
 | BR-CASH-001 | R,S | Second open session for same cashier → CASH_SESSION_ALREADY_OPEN (unique via generated column) |
 | BR-CASH-002 | S | Close: variance = counted − expected |
-| BR-CASH-003 | U | Expected = opening + cash in − cash out (cash only) |
+| BR-CASH-003 | U,S | Expected = opening + cash in − cash out (cash only); a cash sale with change posts the sale total, never the amount tendered (ADR-118) |
 | BR-CASH-004 | A | Modify closed session → CASH_SESSION_CLOSED |
 | BR-CASH-005 | S | Movement amount ≤ 0 / wrong direction rejected |
 | BR-SEC-001 | SEC | Every endpoint (enumerated) without credential → 401 |

@@ -775,7 +775,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D3 B and its follow-up).
 - **Decision:** Confirming a **delivery note**, a **receipt** or an **invoice not derived from a delivery note** posts `sale` (−) movements. A quote never does (BR-SALE-003). An **invoice made from a confirmed delivery note reuses its lots and posts no second movement**. The recall buyers list covers every confirmed document that posted movements, including anonymous receipts and delivery notes not yet invoiced. **Uninvoiced credit delivery notes count in the credit-limit check but not in the balance:** the check is `balance + uninvoiced credit delivery notes + the new document's TTC ≤ limit`.
 - **Alternatives:** only invoices and receipts move stock, the delivery note is informational (A): delivered goods would stay in stock on paper and a recall would miss them.
-- **Consequences:** BR-SALE-002, BR-PAY-005, BR-LOT-008, W2, W6, `database.md`, ADR-108 (the check is widened; the balance is unchanged), `v_sales_margin` scope (DR-007, Phase 11). The commercial rules of a delivery note are **OD-038**.
+- **Consequences:** BR-SALE-002, BR-PAY-005, BR-LOT-008, W2, W6, `database.md`, ADR-108 (the check is widened; the balance is unchanged), `v_sales_margin` scope (DR-007, Phase 11). The commercial rules of a delivery note: ADR-125.
 
 ## ADR-118 — Every immediate sale creates a payment; balance definition (resolves OD-003, DR-003, DR-005)
 - **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D4 A, DR-003 option a).
@@ -786,9 +786,10 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
   4. A credit sale takes **no payment at confirmation**.
   5. **Balance** (derived, never stored) = confirmed credit invoices − their credit notes − account payments, allocated or not. Counter payments of immediate sales never count. Anything received on account beyond the invoices lowers the balance as an advance; its handling on screen is Phase 9.
   6. As ADR-017 provided once this was confirmed, `customer_payments`, `payment_allocations` and `cash_movements` get the append-only triggers (SD-102); errors are reversed (BR-PAY-003).
-  7. **DR-003 option (a):** Phase 7 delivers a minimal slice: opening and closing a session (with variance) and the cash movements of sales. Manual cash movements and the session report stay in Phase 9.
+  7. **Amount kept (user check, 2026-10-31):** the payment, the cash movement and the session's expected amount use the amount kept, which is the sale total, never the amount tendered. The API takes no tendered amount; the screen computes the change. A test covers a cash sale with change.
+  8. **DR-003 option (a):** Phase 7 delivers a minimal slice: opening and closing a session (with variance) and the cash movements of sales. Manual cash movements and the session report stay in Phase 9.
 - **Alternatives:** payment method stored on the document, `customer_payments` only for account settlements (B): no split payment and two payment paths.
-- **Consequences:** BR-SALE-013, BR-PAY-004, BR-PAY-006, W2, W9, `api.md` §5.6 and the cash-session endpoints, `database.md`, DR-006 (the balance query follows this definition in Phase 9), `database-migration.md` SD-102/SD-108. Who may take cash at the counter: **OD-039**.
+- **Consequences:** BR-SALE-013, BR-PAY-004, BR-PAY-006, W2, W9, `api.md` §5.6 and the cash-session endpoints, `database.md`, DR-006 (the balance query follows this definition in Phase 9), `database-migration.md` SD-102/SD-108. Who may take cash at the counter: ADR-126.
 
 ## ADR-119 — Restricted cancellation of confirmed sales documents (resolves OD-004, DR-029)
 - **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D5 C).
@@ -819,6 +820,24 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** `sales_document_lines.unit_price` is `DECIMAL(14,4)`, per **sold unit** (the line's unit, base unit when none), as purchase-order lines (ADR-094, SD-137). Line amounts and totals stay 2 decimals (ADR-115).
 - **Alternatives:** keep 2 decimals (B): a price like 0.1234 per ml would be rounded before the line total is computed.
 - **Consequences:** `database.md` sales_document_lines, `api.md` §5.5, ADR-016 parity test, ADR-107.
+
+## ADR-124 — Phase 7 has no prescription flag; the client's answer is a go-live blocker (resolves OD-037)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; option A).
+- **Decision:** Phase 7 is built without any prescription attribute or check. Whether some products may be sold only on a veterinary prescription remains a question to the client, and its answer is a **go-live blocker** (DR-041). If the client requires it, it is added by a new ADR and a migration; confirmed documents are not changed.
+- **Alternatives:** a product flag that refuses the sale without a prescription reference (B); a product flag with a warning only (C).
+- **Consequences:** `documentation-review.md` DR-041, `roadmap.md`.
+
+## ADR-125 — Commercial rules of a delivery note (resolves OD-038)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; option A).
+- **Decision:** A delivery note takes **no payment**. One whole delivery note gives **exactly one invoice**, with lines, lots and prices frozen; there is no partial invoicing and no grouping. The invoice inherits the credit status: a non-credit invoice is paid in full at its confirmation (ADR-118), a credit invoice takes no payment. Confirming that invoice makes **no new limit check**, since the amount is already counted and the goods have left. Cancelling it (ADR-119) posts no stock movement and makes the delivery note invoiceable again; a delivery note with a non-cancelled invoice cannot be cancelled.
+- **Alternatives:** partial invoicing, tracked per line (B); several delivery notes on one invoice, which needs a link table (C).
+- **Consequences:** BR-SALE-001, BR-SALE-002, BR-PAY-005, W2, `api.md` convert endpoint, `testing.md` BR-SALE-002.
+
+## ADR-126 — The Pharmacist may open a cash session (resolves OD-039; amends ADR-037)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; option A).
+- **Decision:** The Pharmacist role receives `cash.open`, by a migration in the cash-session slice, so that the role can take cash sales from its own session. `cash.manage` is unchanged.
+- **Alternatives:** keep the matrix, so Pharmacists make only credit, cheque and transfer sales (B).
+- **Consequences:** `security.md` §4 changes **with that migration**, because `PermissionMatrixSeedTest` requires the matrix to equal the seeded grants.
 
 # Part B — Open Decisions
 
@@ -1023,18 +1042,21 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 7. **Related:** ADR-049, ADR-094.
 
 ## OD-037 — Prescription-only products
+- **Status:** Resolved 2026-10-31 → **ADR-124** (option A); the client's answer is a go-live blocker (DR-041).
 - **Question:** May some products be sold only on a veterinary prescription, and what must the sale then record or check? The model has no such attribute and the Spec is silent (raised 2026-10-25 with the demo data; question to the client still pending).
 - **Options:** (A) deliver Phase 7 without it, keep the question as a **go-live blocker**, and add it later by a migration if the client requires it; (B) add a product flag now and refuse the sale without a prescription reference; (C) add a product flag now with a warning only.
 - **Leaning:** `[REC]` (A): (B) and (C) would invent a requirement before the client answers, and adding it later does not change confirmed documents.
 - **Blocks:** Phase 7 (decision on how to proceed), go-live (the client's answer). **Related:** BR-SALE-*, W2 step 6.
 
 ## OD-038 — Commercial rules of a delivery note
+- **Status:** Resolved 2026-10-31 → **ADR-125** (option A).
 - **Question:** ADR-117 makes a delivery note move stock and ADR-118 takes payment on an immediate sale, but neither says: (1) when a non-credit delivery note is paid; (2) whether an invoice can cover part of a delivery note, or several; (3) whether invoicing a delivery note is checked against the limit again; (4) what cancelling such an invoice does.
 - **Options:** (A) a delivery note takes no payment; the invoice inherits its credit status, and is paid in full at its confirmation when non-credit; one whole delivery note gives exactly one invoice, with lines, lots and prices frozen; no new limit check (the amount is already counted and the goods have left); cancelling the invoice posts no stock movement and makes the delivery note invoiceable again. (B) as (A), but partial invoicing is allowed, tracked per line. (C) as (A), but several delivery notes may be grouped into one invoice, which needs a link table because `parent_id` holds one parent.
 - **Leaning:** `[REC]` (A): simplest, and it fits the single `parent_id`. Partial or grouped invoicing can be added later.
 - **Blocks:** Phase 7. **Related:** ADR-117, ADR-118, ADR-119, BR-SALE-001, BR-SALE-002.
 
 ## OD-039 — The Pharmacist sells but cannot take cash
+- **Status:** Resolved 2026-10-31 → **ADR-126** (option A).
 - **Question:** The matrix (ADR-037) gives the Pharmacist `sale.create` but not `cash.open`. Since a cash payment needs the cashier's own open session (ADR-118), a Pharmacist could never take a cash sale. Is that intended?
 - **Options:** (A) grant `cash.open` to the Pharmacist, by a migration; (B) keep the matrix: a Pharmacist only makes credit, cheque and transfer sales (`CASH_SESSION_REQUIRED` on cash).
 - **Leaning:** `[REC]` (A): the Pharmacist is a named actor of the counter workflow (W2).
@@ -1053,7 +1075,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091, ADR-077 amendment, ~~OD-034~~ → ADR-092 (2026-10-23) |
 | 5 Purchasing | ~~OD-007~~ → ADR-093, ~~OD-014~~ → ADR-095, ~~OD-015~~ → ADR-096, ~~OD-017~~ → ADR-097 (ADR-011 accepted), ~~OD-029~~ → ADR-098; ADR-094, ADR-099…106 (all 2026-10-24) |
 | 6 Customers | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (both 2026-10-24); ADR-109…114 (2026-10-25) |
-| 7 Sales / POS | ~~OD-002~~ → ADR-117, ~~OD-003~~ → ADR-118, ~~OD-004~~ → ADR-119, ~~OD-010~~ → ADR-120, ~~OD-028 (screen)~~ → ADR-121, ~~OD-035~~ → ADR-122, ~~OD-036~~ → ADR-123, ADR-115, ADR-116 (all 2026-10-31); ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (the credit check), ~~OD-033~~ → ADR-071; **open:** OD-037, OD-038, OD-039 |
+| 7 Sales / POS | ~~OD-002~~ → ADR-117, ~~OD-003~~ → ADR-118, ~~OD-004~~ → ADR-119, ~~OD-010~~ → ADR-120, ~~OD-028 (screen)~~ → ADR-121, ~~OD-035~~ → ADR-122, ~~OD-036~~ → ADR-123, ~~OD-037~~ → ADR-124, ~~OD-038~~ → ADR-125, ~~OD-039~~ → ADR-126, ADR-115, ADR-116 (all 2026-10-31); ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (the credit check), ~~OD-033~~ → ADR-071 |
 | 8 Returns | OD-005 |
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, OD-016; ~~OD-011~~ → ADR-108 (payments in the balance) |
 | 10 Documents & Printing | OD-020, OD-026, OD-028, OD-008 |
@@ -1065,4 +1087,4 @@ Each Open Decision lists the question, the options, an optional author's leaning
 
 | Item | Raised | Linked to | Status |
 |---|---|---|---|
-| Prescription-only status for products: whether some products may only be sold on a veterinary prescription, and what the sale must then record or check | 2026-10-25, demo data (the model has no such attribute; nothing was invented) | Phase 7 — confirmation of a sale (BR-SALE-*, W2 step 6) | Registered as **OD-037** on 2026-10-31; question to the client still pending |
+| Prescription-only status for products: whether some products may only be sold on a veterinary prescription, and what the sale must then record or check | 2026-10-25, demo data (the model has no such attribute; nothing was invented) | Phase 7 — confirmation of a sale (BR-SALE-*, W2 step 6) | ~~OD-037~~ → ADR-124: Phase 7 is built without it; the client's answer is a go-live blocker (DR-041) |

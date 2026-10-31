@@ -247,4 +247,4 @@ Component tests for primitives and forms (RTL), API-mocked page tests (MSW) incl
 
 ## 17. Open frontend items
 
-OD-020 (print formats), OD-038 (invoice from a delivery note); DR-014 (theme switch, Phase 13), DR-015 (hard-coded thresholds).
+OD-020 (print formats); DR-014 (theme switch, Phase 13), DR-015 (hard-coded thresholds).

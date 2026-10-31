@@ -25,7 +25,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 4 | Inventory & stock | ledger, stock levels, adjustments, opening stock, counts, reorder proposals | ~~OD-012~~, ~~OD-013~~ → ADR-072…079 |
 | 5 | Purchasing | suppliers, purchase orders, goods receipts, supplier returns, numbering | ~~OD-007~~, ~~OD-014~~, ~~OD-015~~, ~~OD-017~~, ~~OD-029~~ → ADR-093…105 |
 | 6 | Customers | customers, categories, prices, credit-limit data | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 |
-| 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | ~~OD-002, OD-003, OD-004, OD-010~~ → ADR-117…120, ADR-115/116/121…123; **open:** OD-037, OD-038, OD-039 |
+| 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | ~~OD-002, OD-003, OD-004, OD-010~~ → ADR-117…120, ADR-115/116/121…126 |
 | 8 | Returns | customer returns, credit notes, restock/discard | OD-005 |
 | 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | ~~OD-003~~ → ADR-118, OD-016 (ADR-108: payments enter the credit balance) |
 | 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | OD-020, OD-026, OD-028 |
@@ -118,8 +118,9 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 7 — Sales / POS
 - **Objective:** a fast, correct counter sale and document chain.
-- **Prerequisites:** Phases 3–6; ~~OD-002, OD-003, OD-004, OD-010~~ → ADR-117…120; ADR-115, ADR-116, ADR-121…123 (2026-10-31); DR-003 option (a); OD-037, OD-038, OD-039 to decide.
+- **Prerequisites:** Phases 3–6; ~~OD-002, OD-003, OD-004, OD-010~~ → ADR-117…120; ADR-115, ADR-116, ADR-121…126 (2026-10-31); DR-003 option (a).
 - **Credit sales (ADR-116):** enabled from Phase 7 with the limit enforced; until Phase 9 a balance only grows, so demo and test customers will hit their limit and raising it is the workaround.
+- **Slice order (user rule, 2026-10-31):** confirmation first handles immediate sales only; a credit sale is refused with a clear error until the next slice adds `CreditLimitPort`, so no credit sale is ever confirmed without the limit check.
 - **Features:** quote, delivery note, invoice; conversions; POS screen with scan and FEFO lot proposal; discounts; withdrawal warnings (in-app); credit sale (uses `CreditLimitPort`); idempotent confirmation; restricted cancellation (ADR-119); **minimal counter-payment/cash-session slice** (DR-003 option a).
 - **Database work:** sales documents/lines (cost snapshot, lot per line), idempotency store, cash session minimal tables if not yet created.
 - **Backend work:** `sales` use cases; stock consumption through `StockService`; recall buyers report completed; confirm transaction (`architecture.md` §5).
@@ -233,4 +234,4 @@ Every requirement of `requirements.md` appears below with the phase in which it 
 
 ## 4. Risks to the plan
 
-1. Go-live blockers: the accountant's confirmation of invoice rounding (DR-040) and the client's answer on prescription-only products (OD-037). 2. Printer variability (Phase 10). 3. Large volumes affecting search (Phase 2/12). 4. Schema deltas discovered late — mitigated by `database-migration.md` and small migrations.
+1. Go-live blockers: the accountant's confirmation of invoice rounding (DR-040) and the client's answer on prescription-only products (DR-041). 2. Printer variability (Phase 10). 3. Large volumes affecting search (Phase 2/12). 4. Schema deltas discovered late — mitigated by `database-migration.md` and small migrations.
