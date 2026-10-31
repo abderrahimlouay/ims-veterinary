@@ -47,14 +47,16 @@ public class SalesDocuments {
 
     private final SalesDocumentRepository documents;
     private final CustomerRepository customers;
+    private final SaleViewer viewer;
     private final ActorProvider actors;
     private final BusinessCalendar calendar;
     private final Clock clock;
 
-    public SalesDocuments(SalesDocumentRepository documents, CustomerRepository customers, ActorProvider actors,
-            BusinessCalendar calendar, Clock clock) {
+    public SalesDocuments(SalesDocumentRepository documents, CustomerRepository customers, SaleViewer viewer,
+            ActorProvider actors, BusinessCalendar calendar, Clock clock) {
         this.documents = documents;
         this.customers = customers;
+        this.viewer = viewer;
         this.actors = actors;
         this.calendar = calendar;
         this.clock = clock;
@@ -80,7 +82,7 @@ public class SalesDocuments {
     @PreAuthorize("hasAuthority('sale.read')")
     @Transactional(readOnly = true)
     public SaleDetail get(long id) {
-        return detail(find(id));
+        return viewer.detail(find(id));
     }
 
     @PreAuthorize("hasAuthority('sale.create')")
@@ -92,7 +94,7 @@ public class SalesDocuments {
         }
         boolean credit = Boolean.TRUE.equals(in.creditSale());
         requireParties(type, in.customerId(), credit);
-        return detail(documents.saveAndFlush(new SalesDocument(type, in.customerId(), credit, dueDate(in, credit),
+        return viewer.detail(documents.saveAndFlush(new SalesDocument(type, in.customerId(), credit, dueDate(in, credit),
                 notes(in.notes()), actors.current().userId(), clock.instant())));
     }
 
@@ -107,7 +109,7 @@ public class SalesDocuments {
         boolean credit = Boolean.TRUE.equals(in.creditSale());
         requireParties(document.docType(), in.customerId(), credit);
         document.updateHeader(in.customerId(), credit, dueDate(in, credit), notes(in.notes()), clock.instant());
-        return detail(documents.saveAndFlush(document));
+        return viewer.detail(documents.saveAndFlush(document));
     }
 
     /** Abandons a draft: it stays cancelled and without a number (ADR-122). */
@@ -175,12 +177,6 @@ public class SalesDocuments {
     private SalesDocument find(long id) {
         return documents.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND,
                 "Sales document not found.", Map.of("id", id)));
-    }
-
-    private SaleDetail detail(SalesDocument document) {
-        CustomerRef customer = document.customerId() == null ? null : customers.findById(document.customerId())
-                .map(c -> new CustomerRef(c.id(), c.name())).orElseThrow();
-        return SalesViews.detail(document, customer);
     }
 
     private Map<Long, CustomerRef> customerRefs(List<SalesDocument> found) {

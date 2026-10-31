@@ -294,7 +294,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | POST | `/api/sales/{id}/cancel` | cancel a whole confirmed document (ADR-119) | `sale.cancel` | `{reason}`; `SALE_NOT_CANCELLABLE` |
 | POST | `/api/sales/{id}/convert` | derive quote→DN→invoice | `sale.create` | `{targetType}` → new draft with `parentId` |
 | GET | `/api/sales/{id}/pdf` | `?format=a4\|ticket` | `sale.read` | `application/pdf` (OD-020) |
-| GET | `/api/sales/{id}/withdrawal-warnings` | warnings printed on the document | `sale.read` | per BR-SALE-010 |
+| GET | `/api/sales/{id}/withdrawal-warnings` | withdrawal warnings of the document, once per product and species | `sale.read` | on screen: ADR-121; printing: BR-SALE-010, Phase 10 |
 
 ### 4.11 `/api/returns`
 
@@ -390,7 +390,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 ### 5.5 Add sales line (POS)
 - **POST `/api/sales/{id}/lines`** — **Permission:** `sale.create`.
 - **Request:** `{ "productId": 12, "unitId": 7, "quantity": "3", "targetSpeciesId": 1, "lotId": null, "fefoOverrideReason": null, "manualDiscountPct": null, "manualUnitPrice": null }` (`lotId` other than the FEFO proposal needs `sale.override_fefo` and `fefoOverrideReason`, ADR-120; manual price needs `price.edit`; manual discount above entitlement needs `sale.discount`).
-- **Response 200:** the document with recomputed lines and totals; each line `{id, productId, lotId, lotNumber, expiryDate, unitId, quantity, quantityBase, unitPrice, discountPct, vatRate, lineHt, lineTtc, warnings[]}`; a multi-lot quantity yields several lines.
+- **Response 200:** the document with recomputed lines and totals; each line `{id, productId, lotId, lotNumber, expiryDate, unitId, quantity, quantityBase, unitPrice, discountPct, vatRate, lineHt, lineTtc, warnings[]}`; a multi-lot quantity yields several lines, in the sold unit; a part that unit cannot express exactly is refused (`VALIDATION_FAILED`, `SPLIT_INEXACT`), the quantity then being sold in the base unit. FEFO counts what the draft already holds. A quote has no lot and checks no stock (`lotId` refused). PUT on a line takes the same body and may split again.
 - **Warnings (non-blocking):** `LOT_NEAR_EXPIRY`, `WITHDRAWAL_PERIOD` (meat/milk/eggs days, for any customer; every species when none is given, ADR-121), `LOW_STOCK_AFTER_SALE`.
 - **Errors:** `DOCUMENT_IMMUTABLE`, `PRODUCT_ARCHIVED`, `UNIT_NOT_SELLABLE`, `STOCK_INSUFFICIENT`, `LOT_EXPIRED`, `LOT_BLOCKED`, `LOT_RECALLED`, `FEFO_VIOLATION`, `ACCESS_DENIED`.
 

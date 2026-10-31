@@ -134,6 +134,15 @@ public class SalesDocument {
         this.updatedAt = now;
     }
 
+    /** BR-SALE-008: from the server's rounded lines. */
+    public void applyTotals(BigDecimal ht, BigDecimal discount, BigDecimal vat, BigDecimal ttc, Instant now) {
+        this.totalHt = ht;
+        this.totalDiscount = discount;
+        this.totalVat = vat;
+        this.totalTtc = ttc;
+        this.updatedAt = now;
+    }
+
     public void abandon(Long by, Instant now) {
         this.status = SalesDocStatus.CANCELLED;
         this.cancelledBy = by;
