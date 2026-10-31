@@ -65,7 +65,8 @@ class DatabaseAccountsTest {
             List<String> privileges = app.queryForList("""
                     SELECT privilege_type FROM information_schema.table_privileges
                     WHERE table_schema = DATABASE() AND table_name = ? AND grantee = ?""", String.class, table, grantee);
-            if (List.of("audit_log", "cash_movements", "stock_movements").contains(table)) {
+            if (List.of("audit_log", "cash_movements", "customer_payments", "payment_allocations", "stock_movements")
+                    .contains(table)) {
                 assertThat(privileges).as(table).containsExactlyInAnyOrder("SELECT", "INSERT");
             } else {
                 assertThat(privileges).as(table).containsExactlyInAnyOrder("SELECT", "INSERT", "UPDATE", "DELETE");

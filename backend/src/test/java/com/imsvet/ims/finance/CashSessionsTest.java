@@ -105,10 +105,10 @@ class CashSessionsTest {
         TestActor.signIn(sellerUser.id());
         long session = ledger.lockCurrentSession();
         assertThat(session).isEqualTo(id);
-        ledger.post(session, CashDirection.IN, PaymentMethod.CASH, new BigDecimal("45.50"), "vente");
-        ledger.post(session, CashDirection.OUT, PaymentMethod.CASH, new BigDecimal("20.00"), "sortie");
-        ledger.post(session, CashDirection.IN, PaymentMethod.CHEQUE, new BigDecimal("300.00"), "chèque");
-        ledger.post(session, CashDirection.IN, PaymentMethod.BANK_TRANSFER, new BigDecimal("50.00"), "virement");
+        ledger.post(session, CashDirection.IN, PaymentMethod.CASH, new BigDecimal("45.50"), "vente", null);
+        ledger.post(session, CashDirection.OUT, PaymentMethod.CASH, new BigDecimal("20.00"), "sortie", null);
+        ledger.post(session, CashDirection.IN, PaymentMethod.CHEQUE, new BigDecimal("300.00"), "chèque", null);
+        ledger.post(session, CashDirection.IN, PaymentMethod.BANK_TRANSFER, new BigDecimal("50.00"), "virement", null);
         TestActor.signOut();
         seller.get("/api/cash-sessions/current").andExpect(jsonPath("$.expectedAmount").value("125.50"));
         close(seller, id, "120").andExpect(status().isOk())
@@ -132,7 +132,7 @@ class CashSessionsTest {
         close(seller, id, "11").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CASH_SESSION_CLOSED"));
         TestActor.signIn(sellerUser.id());
-        assertThatThrownBy(() -> ledger.post(id, CashDirection.IN, PaymentMethod.CASH, BigDecimal.ONE, "tard"))
+        assertThatThrownBy(() -> ledger.post(id, CashDirection.IN, PaymentMethod.CASH, BigDecimal.ONE, "tard", null))
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.code()).isEqualTo(ErrorCode.CASH_SESSION_CLOSED));
         assertThatThrownBy(ledger::lockCurrentSession).isInstanceOfSatisfying(BusinessException.class,

@@ -244,6 +244,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-135 | Movement type `sale_cancellation` (+) added to the CHECKs; `sales_documents.cancel_reason` | ADR-119 | Accepted 2026-10-31 |
 | SD-136 | `sales_documents.number` nullable; CHECKs: required when confirmed, absent on a draft; an abandoned draft has none | ADR-122 | Accepted 2026-10-31 |
 | SD-137 | `sales_document_lines.unit_price DECIMAL(14,4)` per sold unit | ADR-123 | Accepted 2026-10-31 |
+| SD-138 | `customer_payments.reverses_payment_id` (unique) and `reversal_reason`: a reversal is a new row with a positive amount; `cash_movements.customer_payment_id` | ADR-118, BR-PAY-003 | Accepted 2026-10-31 |
 
 ## 9. Operational requirements for MySQL
 

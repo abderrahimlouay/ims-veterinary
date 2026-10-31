@@ -208,12 +208,12 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-RET-004 | S | Credit note created with return, number issued, amounts match |
 | BR-RET-005 | S | Fault after movement → everything rolled back |
 | BR-RET-006 | S | Refund/settlement per OD-005 |
-| BR-PAY-001 | U,A | Amount ≤ 0; missing reference for cheque/transfer → VALIDATION_FAILED |
+| BR-PAY-001 | U,A | Amount ≤ 0; missing reference for cheque/transfer → VALIDATION_FAILED (`CounterPaymentsTest`) |
 | BR-PAY-002 | S | Allocation > payment or > outstanding → PAYMENT_ALLOCATION_EXCEEDED |
-| BR-PAY-003 | SEC,A | Payment update/delete refused; reversal creates counter entry |
+| BR-PAY-003 | SEC,A | Payment update/delete refused; reversal creates counter entry (`PaymentLedgerAppendOnlyTest`, `CounterPaymentsTest`) |
 | BR-PAY-004 | S,R | Balance = credit invoices − their credit notes − account payments; counter payments never count (ADR-118); view parity test |
 | BR-PAY-005 | S,C | Credit above limit → CREDIT_LIMIT_EXCEEDED; concurrent sales respect limit; NULL = no limit, 0 = cash only; overdue blocks only with `credit_overdue_block_days` (ADR-108); uninvoiced credit delivery notes count in the check, not in the balance (ADR-117) |
-| BR-PAY-006 | S | Cash payment with no open session → CASH_SESSION_REQUIRED |
+| BR-PAY-006 | S | Cash payment with no open session → CASH_SESSION_REQUIRED, nothing written (`CounterPaymentsTest`) |
 | BR-PAY-007 | S | Statement lines and running balance over a period |
 | BR-PAY-008 | R,A | Duplicate (supplier, invoice number) → DUPLICATE_RESOURCE |
 | BR-PAY-009 | S | Supplier payment > remaining → PAYMENT_ALLOCATION_EXCEEDED |

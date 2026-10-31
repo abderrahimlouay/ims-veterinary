@@ -56,13 +56,13 @@ public class CashLedger {
 
     @Transactional
     public CashMovement post(long sessionId, CashDirection direction, PaymentMethod method, BigDecimal amount,
-            String label) {
+            String label, Long customerPaymentId) {
         CashSession session = locks.lock(sessionId).orElseThrow();
         if (!session.open()) {
             throw new BusinessException(ErrorCode.CASH_SESSION_CLOSED, "This cash session is closed.",
                     Map.of("id", sessionId));
         }
-        return movements.saveAndFlush(new CashMovement(sessionId, direction, method, amount, label,
+        return movements.saveAndFlush(new CashMovement(sessionId, direction, method, amount, label, customerPaymentId,
                 actors.current().userId(), clock.instant()));
     }
 
