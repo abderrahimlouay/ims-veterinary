@@ -1040,7 +1040,10 @@
       "title": "Vente confirmée",
       "number": "Document {{number}}",
       "next": "Nouvelle vente"
-    }
+    },
+    "category": "Catégorie thérapeutique",
+    "anyCategory": "Toutes catégories",
+    "addCode": "Ajouter par code"
   },
   "sales": {
     "title": "Documents de vente",
