@@ -96,6 +96,8 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 | `CASH_SESSION_ALREADY_OPEN` | 409 | cashier has an open session | BR-CASH-001 |
 | `CASH_SESSION_REQUIRED` | 409 | operation needs an open session | BR-SALE-013, BR-PAY-006 |
 | `CASH_SESSION_CLOSED` | 409 | session closed | BR-CASH-004 |
+| `PAYMENT_TOTAL_MISMATCH` | 422 | payments of an immediate sale do not equal its TTC, or a credit sale has payments | ADR-118 |
+| `CREDIT_SALE_UNAVAILABLE` | 409 | a credit sale cannot be confirmed yet; removed when `CreditLimitPort` arrives (user rule, roadmap Phase 7) | BR-PAY-005 |
 | `PRODUCT_ARCHIVED` | 422 | product archived | BR-PROD-004, BR-SALE-011 |
 | `UNIT_NOT_SELLABLE` | 422 | unit not sellable | BR-UNIT-003 |
 | `UNIT_FACTOR_LOCKED` | 422 | unit factor in use | BR-UNIT-004 |
@@ -122,7 +124,7 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 
 Status policy: **400** malformed input · **401/403** identity/permission · **404** missing · **409** conflict with current state/uniqueness/concurrency · **422** syntactically valid request that violates a business rule · **429** throttled · **500** defect.
 
-Phase 7 adds, with the slices that implement them (this table matches `ErrorCode`, checked by `ErrorCatalogueTest`): `SALE_NOT_CANCELLABLE` (409; a return, credit note or derived document exists, or the cash session is closed; `context` names the item; BR-SALE-014) and `PAYMENT_TOTAL_MISMATCH` (422; the payments of an immediate sale do not equal its TTC, or a credit sale has payments; ADR-118).
+Phase 7 adds, with the slices that implement them (this table matches `ErrorCode`, checked by `ErrorCatalogueTest`): `SALE_NOT_CANCELLABLE` (409; a return, credit note or derived document exists, or the cash session is closed; `context` names the item; BR-SALE-014).
 
 ## 4. Endpoint catalogue
 
@@ -398,9 +400,9 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 - **POST `/api/sales/{id}/confirm`** — **Permission:** `sale.create`. **Header:** `Idempotency-Key` (recommended, enforced for POS).
 - **Request:** `{ "payments": [ {"method": "cash", "amount": "45.00", "reference": null} ] }` — an immediate sale must be paid in full, Σ `amount` = TTC, several methods allowed; a cash part needs an open session; a credit sale has no `payments` (ADR-118). `amount` is the amount kept; no tendered amount is sent, the screen computes the change.
 - **Response 200:** `{ id, number, status: "confirmed", totals: {ht, discount, vat, ttc}, lines[…], payments[…], customerBalance?, documents: { pdfA4: "/api/sales/{id}/pdf?format=a4", ticket: "…" } }`
-- **Server steps (one transaction):** lock lots (id order) → re-validate → credit check → number → post movements → payment records → `confirmed`.
+- **Server steps (one transaction, lock order of `database.md` §7):** idempotency key → document row → number → lots (id order) and re-validation → credit check → post movements → payment records → `confirmed`.
 - **Validation:** document is a draft; at least one line; every line has a lot; totals recomputed server-side.
-- **Errors:** `STOCK_INSUFFICIENT`, `LOT_EXPIRED`, `LOT_BLOCKED`, `LOT_RECALLED`, `LOT_REQUIRED`, `CREDIT_LIMIT_EXCEEDED`, `CUSTOMER_REQUIRED_FOR_CREDIT`, `CUSTOMER_INACTIVE`, `CASH_SESSION_REQUIRED`, `PAYMENT_TOTAL_MISMATCH`, `INVALID_STATE_TRANSITION`, `IDEMPOTENCY_CONFLICT`, `CONCURRENT_MODIFICATION`.
+- **Errors:** `STOCK_INSUFFICIENT`, `LOT_EXPIRED`, `LOT_BLOCKED`, `LOT_RECALLED`, `LOT_REQUIRED`, `CREDIT_LIMIT_EXCEEDED`, `CUSTOMER_REQUIRED_FOR_CREDIT`, `CUSTOMER_INACTIVE`, `CASH_SESSION_REQUIRED`, `PAYMENT_TOTAL_MISMATCH`, `CREDIT_SALE_UNAVAILABLE`, `INVALID_STATE_TRANSITION`, `IDEMPOTENCY_CONFLICT`, `CONCURRENT_MODIFICATION`.
 
 ### 5.7 Recall a lot
 - **POST `/api/lots/{id}/recall`** — **Permission:** `lot.recall`.

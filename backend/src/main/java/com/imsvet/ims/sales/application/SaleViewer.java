@@ -9,6 +9,7 @@ import com.imsvet.ims.inventory.application.SaleLots.LotInfo;
 import com.imsvet.ims.sales.application.SalesViews.CustomerRef;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.sales.application.SalesViews.SaleLine;
+import com.imsvet.ims.sales.application.SalesViews.SalePayment;
 import com.imsvet.ims.sales.application.SalesViews.SaleWarning;
 import com.imsvet.ims.sales.domain.SalesDocStatus;
 import com.imsvet.ims.sales.domain.SalesDocument;
@@ -35,14 +36,16 @@ class SaleViewer {
     private final ProductLookup products;
     private final ProductWithdrawals withdrawals;
     private final SaleLots lots;
+    private final PaymentRecorder payments;
 
     SaleViewer(SalesDocumentLineRepository lines, CustomerRepository customers, ProductLookup products,
-            ProductWithdrawals withdrawals, SaleLots lots) {
+            ProductWithdrawals withdrawals, SaleLots lots, PaymentRecorder payments) {
         this.lines = lines;
         this.customers = customers;
         this.products = products;
         this.withdrawals = withdrawals;
         this.lots = lots;
+        this.payments = payments;
     }
 
     SaleDetail detail(SalesDocument document) {
@@ -59,7 +62,8 @@ class SaleViewer {
                     : products.unit(l.productId(), l.unitId()).orElseThrow().name();
             return SalesViews.line(l, product.commercialName(), unit, lot,
                     warnings(l, product, lot, draft, heldPerProduct.get(l.productId())));
-        }).toList());
+        }).toList(), payments.inForceOn(document.id()).stream()
+                .map(p -> new SalePayment(p.id(), p.method(), p.amount(), p.reference())).toList());
     }
 
     /** The withdrawal warnings of all lines, once per product and species. */

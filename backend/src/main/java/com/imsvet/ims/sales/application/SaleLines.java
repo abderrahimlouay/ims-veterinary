@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -249,14 +248,8 @@ public class SaleLines {
 
     private SaleDetail saved(SalesDocument document) {
         List<SalesDocumentLine> all = lines.findByDocumentIdOrderByIdAsc(document.id());
-        document.applyTotals(sum(all, SalesDocumentLine::lineHt), sum(all, SalesDocumentLine::lineDiscount),
-                sum(all, SalesDocumentLine::lineVat), sum(all, SalesDocumentLine::lineTtc), clock.instant());
+        SaleTotals.apply(document, all, clock.instant());
         return viewer.detail(documents.saveAndFlush(document));
-    }
-
-    private static BigDecimal sum(List<SalesDocumentLine> all,
-            Function<SalesDocumentLine, BigDecimal> amount) {
-        return all.stream().map(amount).reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add);
     }
 
     private SalesDocument draft(long id) {

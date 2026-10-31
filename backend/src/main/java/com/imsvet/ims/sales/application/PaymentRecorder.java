@@ -17,11 +17,17 @@ public interface PaymentRecorder {
     record RecordedPayments(Long cashSessionId, List<Long> paymentIds) {
     }
 
+    public record PaymentInForce(long id, String method, BigDecimal amount, String reference) {
+    }
+
     /**
      * Pays a document with {@code tenders}, at most {@code documentTtc}; a cash part needs the user's open session.
      * {@code customerId} {@code null} on an anonymous sale.
      */
     RecordedPayments record(long documentId, Long customerId, BigDecimal documentTtc, List<Tender> tenders);
+
+    /** What is still in force on a document, oldest first. */
+    List<PaymentInForce> inForceOn(long documentId);
 
     /** Reverses what is still in force on a document, cash going out of the same session; returns the reversals. */
     List<Long> reverseAll(long documentId, String reason);

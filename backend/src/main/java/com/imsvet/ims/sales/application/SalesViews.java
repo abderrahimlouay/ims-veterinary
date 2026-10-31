@@ -43,13 +43,17 @@ public final class SalesViews {
             BigDecimal lineHt, BigDecimal lineVat, BigDecimal lineTtc, List<SaleWarning> warnings) {
     }
 
+    public record SalePayment(long id, String method, BigDecimal amount, String reference) {
+    }
+
     public record SaleSummary(long id, String docType, String number, String status, CustomerRef customer,
             boolean creditSale, Instant issuedAt, Instant createdAt, BigDecimal totalTtc, long version) {
     }
 
     public record SaleDetail(long id, String docType, String number, String status, CustomerRef customer, Long parentId,
             boolean creditSale, LocalDate dueDate, Instant issuedAt, Instant createdAt, Instant cancelledAt,
-            String notes, Totals totals, List<SaleLine> lines, long version) {
+            String notes, Totals totals, List<SaleLine> lines, List<SalePayment> payments, Long cashSessionId,
+            long version) {
     }
 
     private SalesViews() {
@@ -60,10 +64,12 @@ public final class SalesViews {
                 d.issuedAt(), d.createdAt(), d.totalTtc(), d.version());
     }
 
-    static SaleDetail detail(SalesDocument d, CustomerRef customer, List<SaleLine> lines) {
+    static SaleDetail detail(SalesDocument d, CustomerRef customer, List<SaleLine> lines,
+            List<SalePayment> payments) {
         return new SaleDetail(d.id(), d.docType().code(), d.number(), d.status().code(), customer, d.parentId(),
                 d.creditSale(), d.dueDate(), d.issuedAt(), d.createdAt(), d.cancelledAt(), d.notes(),
-                new Totals(d.totalHt(), d.totalDiscount(), d.totalVat(), d.totalTtc()), lines, d.version());
+                new Totals(d.totalHt(), d.totalDiscount(), d.totalVat(), d.totalTtc()), lines, payments, d.cashSessionId(),
+                d.version());
     }
 
     static SaleLine line(SalesDocumentLine l, String productName, String unitName, LotInfo lot,

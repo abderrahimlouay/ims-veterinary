@@ -75,6 +75,9 @@ public class SalesDocument {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
+    @Column(name = "cash_session_id")
+    private Long cashSessionId;
+
     @Column(name = "issued_at")
     private Instant issuedAt;
 
@@ -143,6 +146,15 @@ public class SalesDocument {
         this.updatedAt = now;
     }
 
+    /** Numbered and issued here (ADR-122); {@code cashSessionId} {@code null} without a cash part (ADR-118). */
+    public void confirm(String number, Long cashSessionId, Instant now) {
+        this.number = number;
+        this.cashSessionId = cashSessionId;
+        this.status = SalesDocStatus.CONFIRMED;
+        this.issuedAt = now;
+        this.updatedAt = now;
+    }
+
     public void abandon(Long by, Instant now) {
         this.status = SalesDocStatus.CANCELLED;
         this.cancelledBy = by;
@@ -180,6 +192,10 @@ public class SalesDocument {
 
     public LocalDate dueDate() {
         return dueDate;
+    }
+
+    public Long cashSessionId() {
+        return cashSessionId;
     }
 
     public Instant issuedAt() {
