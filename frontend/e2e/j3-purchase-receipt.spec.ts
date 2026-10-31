@@ -30,7 +30,11 @@ test('J3: purchase order, goods receipt, lot in stock, receipt cancelled', async
 
   await nav.getByRole('link', { name: 'Bons de commande' }).click()
   await page.getByRole('link', { name: 'Nouveau bon de commande' }).click()
-  await page.getByLabel('Fournisseur').selectOption({ label: 'E2E Biolab' })
+  // A choice made in the instant after the page opens can be lost (seen on main too); the picker only shows once it holds.
+  await expect(async () => {
+    await page.getByLabel('Fournisseur').selectOption({ label: 'E2E Biolab' })
+    await expect(page.getByLabel('Ajouter un produit')).toBeVisible({ timeout: 1000 })
+  }).toPass()
   await page.getByLabel('Ajouter un produit').fill('E2E Purchaseval')
   await page.getByRole('button', { name: 'Choisir E2E Purchaseval' }).click()
   // The price is prefilled from the product (purchase price 0): wait for it before typing ours.

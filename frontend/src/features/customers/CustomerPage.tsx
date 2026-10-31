@@ -10,6 +10,7 @@ import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { hasPermission, useCurrentUser } from '../auth'
 import { CreditLimitDialog, CreditLimitLabel } from './CreditLimitDialog'
+import { CustomerBalance, CustomerSalesPanel } from '../sales'
 import { CustomerPricesPanel } from './CustomerPricesPanel'
 import {
   CUSTOMER_TYPES,
@@ -47,10 +48,10 @@ export function NewCustomerPage() {
   )
 }
 
-type Tab = 'overview' | 'prices'
+type Tab = 'overview' | 'prices' | 'history'
 
 /**
- * `/customers/:id` (frontend.md §4.6): Overview (record, credit limit, deactivate) and Prices tabs. Each control
+ * `/customers/:id` (frontend.md §4.6): Overview (record, balance, credit limit, deactivate), Prices and History tabs. Each control
  * appears only with its permission; the server refuses anyway (BR-SEC-002).
  */
 export function CustomerPage() {
@@ -89,7 +90,7 @@ export function CustomerPage() {
       </div>
       {setActive.error instanceof ApiError && <Alert tone="danger">{problemMessage(setActive.error.problem, t)}</Alert>}
       <div role="tablist" aria-label={data.name} className="flex gap-2 border-b border-line">
-        {(['overview', 'prices'] as const).map((k) => (
+        {(hasPermission(current, 'sale.read') ? (['overview', 'prices', 'history'] as const) : (['overview', 'prices'] as const)).map((k) => (
           <button
             key={k}
             type="button"
@@ -115,8 +116,13 @@ export function CustomerPage() {
               </Button>
             )}
           </div>
+          <CustomerBalance customerId={id} />
           {creditOpen && <CreditLimitDialog customer={data} onClose={() => setCreditOpen(false)} />}
           {manage ? <CustomerForm key={data.version} customer={data} onSaved={() => undefined} /> : <CustomerFacts customer={data} />}
+        </div>
+      ) : tab === 'history' ? (
+        <div role="tabpanel">
+          <CustomerSalesPanel customerId={id} />
         </div>
       ) : (
         <div role="tabpanel">

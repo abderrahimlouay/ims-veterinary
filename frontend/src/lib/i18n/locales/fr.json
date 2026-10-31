@@ -23,7 +23,8 @@
     "supplierReturns": "Retours fournisseurs",
     "customers": "Clients",
     "customerCategories": "Catégories de clients",
-    "pos": "Caisse"
+    "pos": "Caisse",
+    "sales": "Documents de vente"
   },
   "language": {
     "label": "Langue",
@@ -886,7 +887,8 @@
     "startsCashOnly": "Un nouveau client commence en « Comptant uniquement » ; le plafond de crédit se change ensuite, avec sa propre permission.",
     "tabs": {
       "overview": "Aperçu",
-      "prices": "Prix"
+      "prices": "Prix",
+      "history": "Historique"
     },
     "errors": {
       "phoneFormat": "Un numéro de téléphone compte au plus 15 chiffres.",
@@ -1038,6 +1040,40 @@
       "title": "Vente confirmée",
       "number": "Document {{number}}",
       "next": "Nouvelle vente"
+    }
+  },
+  "sales": {
+    "title": "Documents de vente",
+    "type": "Type",
+    "status": "Statut",
+    "number": "Numéro",
+    "customer": "Client",
+    "date": "Date",
+    "total": "Total",
+    "empty": "Aucun document.",
+    "draftOf": "Brouillon {{id}}",
+    "onCredit": "à crédit",
+    "anonymous": "Anonyme",
+    "dueDate": "Date d'échéance",
+    "parent": "Issu de",
+    "parentLink": "Le document d'origine",
+    "cancelReason": "Motif d'annulation",
+    "product": "Produit",
+    "lot": "Lot",
+    "unitPrice": "Prix unitaire",
+    "resume": "Terminer en caisse",
+    "convertTo": "Convertir en : {{type}}",
+    "cancel": "Annuler le document",
+    "cancelTitle": "Annuler ce document",
+    "statuses": {
+      "draft": "Brouillon",
+      "confirmed": "Confirmé",
+      "cancelled": "Annulé"
+    },
+    "balance": {
+      "balance": "Solde",
+      "uninvoiced": "Bons de livraison à crédit non facturés",
+      "available": "Crédit disponible"
     }
   }
 }

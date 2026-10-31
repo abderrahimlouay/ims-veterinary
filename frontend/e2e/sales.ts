@@ -28,6 +28,15 @@ export async function aLot(page: Page, name: string, lot: string, expiry: string
   await expect(page.getByText(new RegExp(`Lot ${lot} enregistré`))).toBeVisible()
 }
 
+/** Pays what is in the cart by cheque, which needs no cash session, and returns the document number. */
+export async function payByCheque(page: Page): Promise<string> {
+  await page.getByLabel('Mode').selectOption('cheque')
+  await page.getByLabel('Référence').fill('CHQ-E2E')
+  await page.getByRole('button', { name: 'Confirmer la vente' }).click()
+  const number = await page.getByText(/^Document /).textContent()
+  return (number ?? '').replace('Document ', '')
+}
+
 export async function addToCart(page: Page, name: string, quantity: string) {
   await page.getByLabel('Quantité', { exact: true }).fill(quantity)
   await page.getByLabel('Scanner ou chercher un produit').fill(name)
