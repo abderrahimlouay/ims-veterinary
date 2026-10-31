@@ -3,6 +3,7 @@ package com.imsvet.ims.sales.api;
 import com.imsvet.ims.common.idempotency.IdempotencyKeys;
 import com.imsvet.ims.common.paging.PageResponse;
 import com.imsvet.ims.sales.application.PaymentRecorder;
+import com.imsvet.ims.sales.application.SaleCancellation;
 import com.imsvet.ims.sales.application.SaleConfirmation;
 import com.imsvet.ims.sales.application.SaleConversion;
 import com.imsvet.ims.sales.application.SaleLines;
@@ -66,17 +67,22 @@ class SalesController {
     record ConvertRequest(String targetType) {
     }
 
+    record CancelRequest(String reason) {
+    }
+
     private final SalesDocuments documents;
     private final SaleLines lines;
     private final SaleConfirmation confirmation;
     private final SaleConversion conversion;
+    private final SaleCancellation cancellation;
 
     SalesController(SalesDocuments documents, SaleLines lines, SaleConfirmation confirmation,
-            SaleConversion conversion) {
+            SaleConversion conversion, SaleCancellation cancellation) {
         this.documents = documents;
         this.lines = lines;
         this.confirmation = confirmation;
         this.conversion = conversion;
+        this.cancellation = cancellation;
     }
 
     @GetMapping
@@ -136,6 +142,11 @@ class SalesController {
     ResponseEntity<SaleDetail> convert(@PathVariable long id, @RequestBody ConvertRequest body) {
         SaleDetail created = conversion.convert(id, body.targetType());
         return ResponseEntity.created(URI.create("/api/sales/" + created.id())).body(created);
+    }
+
+    @PostMapping("/{id}/cancel")
+    SaleDetail cancel(@PathVariable long id, @RequestBody CancelRequest body) {
+        return cancellation.cancel(id, body.reason());
     }
 
     @GetMapping("/{id}/withdrawal-warnings")

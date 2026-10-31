@@ -509,7 +509,8 @@
       "adjustment_internal_use": "Internal use",
       "adjustment_inventory": "Inventory count",
       "opening_stock": "Opening stock",
-      "receipt_cancellation": "Receipt cancellation"
+      "receipt_cancellation": "Receipt cancellation",
+      "sale_cancellation": "Sale cancellation"
     },
     "adjustment": {
       "new": "New adjustment",

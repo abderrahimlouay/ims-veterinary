@@ -26,6 +26,8 @@ public interface PaymentRecorder {
      */
     RecordedPayments record(long documentId, Long customerId, BigDecimal documentTtc, List<Tender> tenders);
 
+    boolean sessionOpen(long cashSessionId);
+
     /** What is still in force on a document, oldest first. */
     List<PaymentInForce> inForceOn(long documentId);
 

@@ -12,7 +12,7 @@ class MovementTypeTest {
     @Test
     void entriesArePositiveExitsNegativeAndInventoryEither() {
         for (MovementType type : new MovementType[] { MovementType.PURCHASE_RECEIPT, MovementType.CUSTOMER_RETURN,
-                MovementType.OPENING_STOCK }) {
+                MovementType.OPENING_STOCK, MovementType.SALE_CANCELLATION }) {
             assertThat(type.allows(BigDecimal.ONE)).as(type.code()).isTrue();
             assertThat(type.allows(BigDecimal.ONE.negate())).as(type.code()).isFalse();
         }
@@ -31,7 +31,7 @@ class MovementTypeTest {
 
     @Test
     void codesAreTheDatabaseValuesAndAdjustmentsNeedAReason() {
-        assertThat(MovementType.values()).hasSize(11);
+        assertThat(MovementType.values()).hasSize(12);
         assertThat(MovementType.RECEIPT_CANCELLATION.code()).isEqualTo("receipt_cancellation");
         assertThat(MovementType.RECEIPT_CANCELLATION.needsReason()).isFalse();
         assertThat(MovementType.fromCode("adjustment_internal_use")).isEqualTo(MovementType.ADJUSTMENT_INTERNAL_USE);

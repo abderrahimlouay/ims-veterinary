@@ -49,8 +49,8 @@ class StockMovementSchemaTest {
     @ParameterizedTest
     @CsvSource({ "purchase_receipt, 5", "customer_return, 1", "opening_stock, 2", "sale, -1", "supplier_return, -1",
             "adjustment_breakage, -1", "adjustment_expiry, -1", "adjustment_theft, -1", "adjustment_internal_use, -1",
-            "adjustment_inventory, 3", "adjustment_inventory, -3", "receipt_cancellation, -1" })
-    void theElevenTypesWithTheirSignAreAccepted(String type, String quantity) {
+            "adjustment_inventory, 3", "adjustment_inventory, -3", "receipt_cancellation, -1", "sale_cancellation, 1" })
+    void theTwelveTypesWithTheirSignAreAccepted(String type, String quantity) {
         insert(type, quantity, "Reason");
 
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM stock_movements WHERE lot_id = ? AND movement_type = ?",
@@ -58,7 +58,7 @@ class StockMovementSchemaTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "unit_conversion", "sale_cancellation", "discard" })
+    @ValueSource(strings = { "unit_conversion", "discard" })
     void otherTypesAreRefused(String type) {
         // An unknown type also fails the sign CHECK, which MySQL may report first: either way the row is refused.
         assertThatThrownBy(() -> insert(type, "1", "Reason")).satisfies(e -> checkViolation(e, "ck_stock_movements_"));
@@ -66,7 +66,7 @@ class StockMovementSchemaTest {
 
     @ParameterizedTest
     @CsvSource({ "opening_stock, -1", "purchase_receipt, -2", "sale, 1", "adjustment_breakage, 1",
-            "receipt_cancellation, 1" })
+            "receipt_cancellation, 1", "sale_cancellation, -1" })
     void aWrongSignIsRefused(String type, String quantity) {
         assertThatThrownBy(() -> insert(type, quantity, "Reason")).satisfies(e -> checkViolation(e, "ck_stock_movements_sign"));
     }

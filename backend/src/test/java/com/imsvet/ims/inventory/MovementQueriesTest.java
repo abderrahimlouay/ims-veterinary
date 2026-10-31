@@ -117,7 +117,7 @@ class MovementQueriesTest {
                 .andExpect(jsonPath("$.content.length()").value(2));
         seller.get("/api/inventory/movements?productId=" + product + "&to=2026-10-19")
                 .andExpect(jsonPath("$.content.length()").value(1));
-        seller.get("/api/inventory/movements?type=sale_cancellation").andExpect(status().isBadRequest())
+        seller.get("/api/inventory/movements?type=unit_conversion").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[0].field").value("type"));
     }
 }

@@ -12,6 +12,7 @@ import com.imsvet.ims.finance.domain.CashDirection;
 import com.imsvet.ims.finance.domain.CustomerPayment;
 import com.imsvet.ims.finance.domain.PaymentAllocation;
 import com.imsvet.ims.finance.domain.PaymentMethod;
+import com.imsvet.ims.finance.infrastructure.CashSessionRepository;
 import com.imsvet.ims.finance.infrastructure.CustomerPaymentRepository;
 import com.imsvet.ims.finance.infrastructure.PaymentAllocationRepository;
 import com.imsvet.ims.sales.application.PaymentRecorder;
@@ -39,15 +40,17 @@ public class CounterPayments implements PaymentRecorder {
     private final CustomerPaymentRepository payments;
     private final PaymentAllocationRepository allocations;
     private final CashLedger ledger;
+    private final CashSessionRepository sessions;
     private final ActorProvider actors;
     private final AuditRecorder audit;
     private final Clock clock;
 
     public CounterPayments(CustomerPaymentRepository payments, PaymentAllocationRepository allocations,
-            CashLedger ledger, ActorProvider actors, AuditRecorder audit, Clock clock) {
+            CashLedger ledger, CashSessionRepository sessions, ActorProvider actors, AuditRecorder audit, Clock clock) {
         this.payments = payments;
         this.allocations = allocations;
         this.ledger = ledger;
+        this.sessions = sessions;
         this.actors = actors;
         this.audit = audit;
         this.clock = clock;
@@ -83,6 +86,12 @@ public class CounterPayments implements PaymentRecorder {
             ids.add(payment.id());
         }
         return new RecordedPayments(session, ids);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean sessionOpen(long cashSessionId) {
+        return sessions.findById(cashSessionId).orElseThrow().open();
     }
 
     @Override

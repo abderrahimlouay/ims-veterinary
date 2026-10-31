@@ -509,7 +509,8 @@
       "adjustment_internal_use": "استعمال داخلي",
       "adjustment_inventory": "جرد",
       "opening_stock": "مخزون افتتاحي",
-      "receipt_cancellation": "إلغاء استلام"
+      "receipt_cancellation": "إلغاء استلام",
+      "sale_cancellation": "إلغاء بيع"
     },
     "adjustment": {
       "new": "تسوية جديدة",

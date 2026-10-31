@@ -509,7 +509,8 @@
       "adjustment_internal_use": "Usage interne",
       "adjustment_inventory": "Inventaire",
       "opening_stock": "Stock d'ouverture",
-      "receipt_cancellation": "Annulation de réception"
+      "receipt_cancellation": "Annulation de réception",
+      "sale_cancellation": "Annulation de vente"
     },
     "adjustment": {
       "new": "Nouvel ajustement",

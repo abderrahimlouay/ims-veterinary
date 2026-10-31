@@ -111,6 +111,9 @@ public class SalesDocument {
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
 
+    @Column(name = "cancel_reason", length = 500)
+    private String cancelReason;
+
     @Version
     private long version;
 
@@ -170,6 +173,15 @@ public class SalesDocument {
 
     public void abandon(Long by, Instant now) {
         this.status = SalesDocStatus.CANCELLED;
+        this.cancelledBy = by;
+        this.cancelledAt = now;
+        this.updatedAt = now;
+    }
+
+    /** The whole confirmed document (ADR-119): the number is kept. */
+    public void cancel(String reason, Long by, Instant now) {
+        this.status = SalesDocStatus.CANCELLED;
+        this.cancelReason = reason;
         this.cancelledBy = by;
         this.cancelledAt = now;
         this.updatedAt = now;
@@ -245,6 +257,10 @@ public class SalesDocument {
 
     public Instant cancelledAt() {
         return cancelledAt;
+    }
+
+    public String cancelReason() {
+        return cancelReason;
     }
 
     public long version() {
