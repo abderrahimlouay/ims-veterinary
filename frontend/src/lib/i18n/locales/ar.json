@@ -22,7 +22,8 @@
     "goodsReceipts": "الاستلامات",
     "supplierReturns": "المرتجعات إلى الموردين",
     "customers": "الزبائن",
-    "customerCategories": "فئات الزبائن"
+    "customerCategories": "فئات الزبائن",
+    "pos": "الصندوق"
   },
   "language": {
     "label": "اللغة",
@@ -111,7 +112,20 @@
     "LOT_BLOCK_CONFIRMATION_REQUIRED": "ستحجب حصص لها مخزون بالكامل: أكد لحجبها.",
     "RECEIPT_QUANTITY_EXCEEDS_ORDER": "أكثر من الكمية المتبقية للاستلام في الأمر.",
     "IDEMPOTENCY_CONFLICT": "أرسل هذا الاستلام من قبل بمحتوى آخر: أعد تحميل الصفحة.",
-    "RECEIPT_NOT_CANCELLABLE": "تحركت حصة من هذا الاستلام منذ ذلك: لم يعد بالإمكان إلغاؤه."
+    "RECEIPT_NOT_CANCELLABLE": "تحركت حصة من هذا الاستلام منذ ذلك: لم يعد بالإمكان إلغاؤه.",
+    "CREDIT_LIMIT_EXCEEDED": "رُفض البيع بسبب ائتمان الزبون: بلوغ السقف، أو نقدًا فقط، أو فاتورة متأخرة.",
+    "LOT_BLOCKED": "هذه الحصة محظورة ولا يمكن بيعها.",
+    "LOT_EXPIRED": "انتهت صلاحية هذه الحصة ولا يمكن بيعها.",
+    "LOT_REQUIRED": "يجب أن يكون لكل سطر حصة.",
+    "CASH_SESSION_REQUIRED": "افتح جلسة صندوق لقبض النقد.",
+    "CASH_SESSION_ALREADY_OPEN": "لديك جلسة صندوق مفتوحة.",
+    "CASH_SESSION_CLOSED": "جلسة الصندوق هذه مغلقة.",
+    "PAYMENT_TOTAL_MISMATCH": "يجب أن تساوي المدفوعات المجموع، وقد لا يقبل هذا المستند أي دفع.",
+    "PAYMENT_ALLOCATION_EXCEEDED": "المدفوعات تتجاوز المجموع.",
+    "SALE_NOT_CANCELLABLE": "لا يمكن إلغاء هذا المستند: استعمل إشعارًا دائنًا.",
+    "FEFO_VIOLATION": "اختيار حصة أخرى يتطلب إذن تجاوز FEFO.",
+    "CUSTOMER_REQUIRED_FOR_CREDIT": "البيع بالأجل يتطلب زبونًا.",
+    "CUSTOMER_INACTIVE": "هذا الزبون غير نشط."
   },
   "pager": {
     "label": "ترقيم الصفحات",
@@ -169,12 +183,14 @@
         "login_lockout_minutes": "مدة الحظر (دقائق)",
         "currency": "العملة",
         "locale": "التنسيق الإقليمي",
-        "business_time_zone": "المنطقة الزمنية"
+        "business_time_zone": "المنطقة الزمنية",
+        "credit_overdue_block_days": "حظر الائتمان بعد التأخر (أيام)"
       },
       "hints": {
         "expiry_alert_days": "ثلاثة أعداد تنازلية: إشعار، تحذير، حرج (مثال 60,30,15).",
         "default_vat_rate": "من 0 إلى 100، بمنزلتين عشريتين على الأكثر.",
-        "locale": "مثال: fr-DZ."
+        "locale": "مثال: fr-DZ.",
+        "credit_overdue_block_days": "off، أو أيام التأخر المسموح بها قبل رفض بيع جديد بالأجل."
       }
     },
     "audit": {
@@ -935,6 +951,93 @@
       "edit": "تعديل",
       "editOf": "تعديل {{name}}",
       "add": "فئة جديدة"
+    }
+  },
+  "pos": {
+    "title": "الصندوق",
+    "back": "العودة إلى التطبيق",
+    "items": "إضافة منتج",
+    "scan": "امسح أو ابحث عن منتج",
+    "quantity": "الكمية",
+    "species": "نوع الحيوان",
+    "anySpecies": "كل الأنواع",
+    "chooseCustomerFirst": "اختر زبونًا أولًا.",
+    "unknownCode": "لا يحمل أي منتج الرمز {{code}}.",
+    "add": "إضافة {{name}}",
+    "cart": "السلة",
+    "emptyCart": "السلة فارغة.",
+    "summary": "الملخص",
+    "docType": "المستند",
+    "credit": "بيع بالأجل",
+    "customerOptional": "الزبون (اختياري)",
+    "customerRequired": "الزبون",
+    "changeCustomer": "تغيير",
+    "chooseCustomer": "اختيار {{name}}",
+    "ht": "المجموع دون ضريبة",
+    "discount": "الخصم",
+    "vat": "الضريبة",
+    "ttc": "المجموع",
+    "total": "المجموع: {{amount}}",
+    "balance": "الرصيد: {{amount}}",
+    "available": "المتاح: {{amount}}",
+    "payment": "الدفع",
+    "method": "الطريقة",
+    "amount": "المبلغ",
+    "reference": "المرجع",
+    "split": "إضافة طريقة دفع",
+    "tendered": "النقد المستلم",
+    "tenderedHint": "لحساب الباقي فقط؛ لا يُسجَّل.",
+    "change": "الباقي: {{amount}}",
+    "confirm": "تأكيد البيع",
+    "abandon": "التخلي عن البيع",
+    "unreachable": "تعذر الوصول إلى الخادم: لم يُبع شيء. تحقق من الاتصال وأعد المحاولة.",
+    "lotOf": "الحصة {{lot}}، تنتهي في {{expiry}}",
+    "edit": "تعديل",
+    "remove": "إزالة",
+    "editLine": "تعديل {{name}}",
+    "removeLine": "إزالة {{name}}",
+    "types": {
+      "receipt": "تذكرة",
+      "invoice": "فاتورة",
+      "delivery_note": "وصل تسليم",
+      "quote": "عرض سعر"
+    },
+    "methods": {
+      "cash": "نقدًا",
+      "cheque": "شيك",
+      "bank_transfer": "تحويل"
+    },
+    "warnings": {
+      "nearExpiry": "قرب انتهاء الصلاحية: {{expiry}}",
+      "lowStock": "مخزون منخفض بعد هذا البيع",
+      "withdrawal": "فترة السحب، {{species}}: لحم {{meat}} ي، حليب {{milk}} ي، بيض {{eggs}} ي"
+    },
+    "line": {
+      "title": "تعديل {{name}}",
+      "unit": "الوحدة",
+      "baseUnit": "الوحدة الأساسية",
+      "discount": "خصم يدوي (%)",
+      "discountHint": "الحالي: {{current}} %. الفراغ يبقي الاستحقاق.",
+      "lot": "الحصة",
+      "fefo": "اقتراح FEFO",
+      "reason": "سبب اختيار حصة أخرى",
+      "save": "حفظ"
+    },
+    "session": {
+      "none": "لا توجد جلسة صندوق مفتوحة",
+      "open": "جلسة الصندوق مفتوحة، المتوقع {{amount}}",
+      "openAction": "فتح الجلسة",
+      "close": "إغلاق الجلسة",
+      "openTitle": "فتح جلسة صندوق",
+      "openingAmount": "مبلغ الافتتاح",
+      "closeTitle": "إغلاق جلسة الصندوق",
+      "countedAmount": "المبلغ المعدود",
+      "closed": "أُغلقت الجلسة، الفرق {{variance}}"
+    },
+    "done": {
+      "title": "تم تأكيد البيع",
+      "number": "المستند {{number}}",
+      "next": "بيع جديد"
     }
   }
 }

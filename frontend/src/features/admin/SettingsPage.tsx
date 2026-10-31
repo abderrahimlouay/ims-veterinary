@@ -18,6 +18,7 @@ const LOCAL_CHECKS: Record<string, (value: string) => boolean> = {
   login_max_failures: (v) => /^[1-9]\d*$/.test(v.trim()),
   login_window_minutes: (v) => /^[1-9]\d*$/.test(v.trim()),
   login_lockout_minutes: (v) => /^[1-9]\d*$/.test(v.trim()),
+  credit_overdue_block_days: (v) => /^(off|\d+)$/i.test(v.trim()),
 }
 
 /** `/admin/settings` (FR-SEC-003, ADR-044): one form per setting; currency and time zone are read-only. */

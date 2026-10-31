@@ -22,7 +22,8 @@
     "goodsReceipts": "Réceptions",
     "supplierReturns": "Retours fournisseurs",
     "customers": "Clients",
-    "customerCategories": "Catégories de clients"
+    "customerCategories": "Catégories de clients",
+    "pos": "Caisse"
   },
   "language": {
     "label": "Langue",
@@ -111,7 +112,20 @@
     "LOT_BLOCK_CONFIRMATION_REQUIRED": "Des lots déjà en stock seraient bloqués en entier : confirmez pour les bloquer.",
     "RECEIPT_QUANTITY_EXCEEDS_ORDER": "Plus que la quantité restant à recevoir sur la commande.",
     "IDEMPOTENCY_CONFLICT": "Cette réception a déjà été envoyée avec un autre contenu : rechargez la page.",
-    "RECEIPT_NOT_CANCELLABLE": "Un lot de cette réception a bougé depuis : elle ne peut plus être annulée."
+    "RECEIPT_NOT_CANCELLABLE": "Un lot de cette réception a bougé depuis : elle ne peut plus être annulée.",
+    "CREDIT_LIMIT_EXCEEDED": "Vente refusée par le crédit du client : plafond atteint, comptant uniquement, ou facture en retard.",
+    "LOT_BLOCKED": "Ce lot est bloqué et ne peut pas être vendu.",
+    "LOT_EXPIRED": "Ce lot est périmé et ne peut pas être vendu.",
+    "LOT_REQUIRED": "Chaque ligne doit avoir un lot.",
+    "CASH_SESSION_REQUIRED": "Ouvrez une session de caisse pour encaisser des espèces.",
+    "CASH_SESSION_ALREADY_OPEN": "Vous avez déjà une session de caisse ouverte.",
+    "CASH_SESSION_CLOSED": "Cette session de caisse est fermée.",
+    "PAYMENT_TOTAL_MISMATCH": "Les paiements doivent égaler le total, et ce document peut n'en accepter aucun.",
+    "PAYMENT_ALLOCATION_EXCEEDED": "Les paiements dépassent le total.",
+    "SALE_NOT_CANCELLABLE": "Ce document ne peut pas être annulé : utilisez un avoir.",
+    "FEFO_VIOLATION": "Choisir un autre lot demande la permission de dérogation FEFO.",
+    "CUSTOMER_REQUIRED_FOR_CREDIT": "Une vente à crédit demande un client.",
+    "CUSTOMER_INACTIVE": "Ce client est inactif."
   },
   "pager": {
     "label": "Pagination",
@@ -169,12 +183,14 @@
         "login_lockout_minutes": "Durée du blocage (minutes)",
         "currency": "Devise",
         "locale": "Format régional",
-        "business_time_zone": "Fuseau horaire"
+        "business_time_zone": "Fuseau horaire",
+        "credit_overdue_block_days": "Blocage du crédit après retard (jours)"
       },
       "hints": {
         "expiry_alert_days": "Trois nombres décroissants : avis, avertissement, critique (ex. 60,30,15).",
         "default_vat_rate": "De 0 à 100, deux décimales au plus.",
-        "locale": "Par exemple fr-DZ."
+        "locale": "Par exemple fr-DZ.",
+        "credit_overdue_block_days": "off, ou les jours de retard tolérés avant de refuser une nouvelle vente à crédit."
       }
     },
     "audit": {
@@ -935,6 +951,93 @@
       "edit": "Modifier",
       "editOf": "Modifier {{name}}",
       "add": "Nouvelle catégorie"
+    }
+  },
+  "pos": {
+    "title": "Caisse",
+    "back": "Retour à l'application",
+    "items": "Ajouter un produit",
+    "scan": "Scanner ou chercher un produit",
+    "quantity": "Quantité",
+    "species": "Espèce animale",
+    "anySpecies": "Toutes espèces",
+    "chooseCustomerFirst": "Choisissez d'abord un client.",
+    "unknownCode": "Aucun produit ne porte le code {{code}}.",
+    "add": "Ajouter {{name}}",
+    "cart": "Panier",
+    "emptyCart": "Le panier est vide.",
+    "summary": "Récapitulatif",
+    "docType": "Document",
+    "credit": "Vente à crédit",
+    "customerOptional": "Client (facultatif)",
+    "customerRequired": "Client",
+    "changeCustomer": "Changer",
+    "chooseCustomer": "Choisir {{name}}",
+    "ht": "Total HT",
+    "discount": "Remise",
+    "vat": "TVA",
+    "ttc": "Total TTC",
+    "total": "Total : {{amount}}",
+    "balance": "Solde : {{amount}}",
+    "available": "Disponible : {{amount}}",
+    "payment": "Paiement",
+    "method": "Mode",
+    "amount": "Montant",
+    "reference": "Référence",
+    "split": "Ajouter un mode de paiement",
+    "tendered": "Espèces reçues",
+    "tenderedHint": "Sert seulement à calculer la monnaie ; n'est pas enregistré.",
+    "change": "Monnaie à rendre : {{amount}}",
+    "confirm": "Confirmer la vente",
+    "abandon": "Abandonner la vente",
+    "unreachable": "Le serveur est injoignable : rien n'a été vendu. Vérifiez la connexion et réessayez.",
+    "lotOf": "Lot {{lot}}, périme le {{expiry}}",
+    "edit": "Modifier",
+    "remove": "Retirer",
+    "editLine": "Modifier {{name}}",
+    "removeLine": "Retirer {{name}}",
+    "types": {
+      "receipt": "Ticket",
+      "invoice": "Facture",
+      "delivery_note": "Bon de livraison",
+      "quote": "Devis"
+    },
+    "methods": {
+      "cash": "Espèces",
+      "cheque": "Chèque",
+      "bank_transfer": "Virement"
+    },
+    "warnings": {
+      "nearExpiry": "Péremption proche : {{expiry}}",
+      "lowStock": "Stock bas après cette vente",
+      "withdrawal": "Délai d'attente, {{species}} : viande {{meat}} j, lait {{milk}} j, œufs {{eggs}} j"
+    },
+    "line": {
+      "title": "Modifier {{name}}",
+      "unit": "Unité",
+      "baseUnit": "Unité de base",
+      "discount": "Remise manuelle (%)",
+      "discountHint": "Actuelle : {{current}} %. Vide garde le droit du client.",
+      "lot": "Lot",
+      "fefo": "Proposition FEFO",
+      "reason": "Motif du choix d'un autre lot",
+      "save": "Enregistrer"
+    },
+    "session": {
+      "none": "Aucune session de caisse ouverte",
+      "open": "Session de caisse ouverte, attendu {{amount}}",
+      "openAction": "Ouvrir la session",
+      "close": "Fermer la session",
+      "openTitle": "Ouvrir une session de caisse",
+      "openingAmount": "Fonds de caisse",
+      "closeTitle": "Fermer la session de caisse",
+      "countedAmount": "Montant compté",
+      "closed": "Session fermée, écart {{variance}}"
+    },
+    "done": {
+      "title": "Vente confirmée",
+      "number": "Document {{number}}",
+      "next": "Nouvelle vente"
     }
   }
 }

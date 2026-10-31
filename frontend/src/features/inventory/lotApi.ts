@@ -46,7 +46,7 @@ export interface ExpiryAlerts {
   businessDate: string
 }
 
-/** api.md §5.7; the buyer lists stay empty until sales exist (Phase 7, ADR-068). */
+/** api.md §5.7. */
 export interface RecallReport {
   lot: { id: number; status: LotStatus; blockedAt: string | null; blockedBy: number | null }
   buyers: { customerId: number; customerName: string; phone: string | null; documentNumber: string; documentType: string; issuedAt: string; quantityBase: string; unit: string | null }[]
@@ -98,8 +98,9 @@ export function useLot(id: number) {
   return useQuery({ queryKey: lotKeys.detail(id), queryFn: () => apiFetch<LotDetail>(`/api/lots/${id}`) })
 }
 
-export function useProductLots(productId: number) {
+export function useProductLots(productId: number, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: lotKeys.ofProduct(productId),
     queryFn: () => apiFetch<LotSummary[]>(`/api/products/${productId}/lots`),
   })
