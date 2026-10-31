@@ -242,7 +242,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-134 | `customers.tax_id` (normalised, unique), `email`, `payment_terms_days`, `phone_key` with `UQ(name, phone_key)`, `updated_at`; `customer_product_prices` foreign keys `RESTRICT` (Source: `CASCADE`) | ADR-109, ADR-110, ADR-111 | Accepted 2026-10-25 |
 | SD-133 | `customers.credit_limit` nullable: NULL = no limit, 0 = cash only (the Source Schema has `NOT NULL DEFAULT 0`) | ADR-108 | Accepted 2026-10-24 |
 | SD-135 | Movement type `sale_cancellation` (+) added to the CHECKs; `sales_documents.cancel_reason` | ADR-119 | Accepted 2026-10-31 |
-| SD-136 | `sales_documents.number` nullable for drafts, CHECK on non-drafts | ADR-122 | Accepted 2026-10-31 |
+| SD-136 | `sales_documents.number` nullable; CHECKs: required when confirmed, absent on a draft; an abandoned draft has none | ADR-122 | Accepted 2026-10-31 |
 | SD-137 | `sales_document_lines.unit_price DECIMAL(14,4)` per sold unit | ADR-123 | Accepted 2026-10-31 |
 
 ## 9. Operational requirements for MySQL

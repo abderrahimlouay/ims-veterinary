@@ -811,7 +811,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 
 ## ADR-122 — Sales document numbering (resolves OD-035; completes ADR-097)
 - **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D8 A).
-- **Decision:** Keys `QUO` quote, `DN` delivery note, `INV` invoice, `RCT` receipt, `CN` credit note, format and yearly reset per ADR-097. A sales document is numbered **at confirmation**, in the confirming transaction, so an abandoned draft uses no number and a failed confirmation leaves no gap. `sales_documents.number` is **nullable while the document is a draft** (`UQ(doc_type, number)` ignores NULLs; a CHECK requires a number on a non-draft, SD-136). `CN` is issued from Phase 8.
+- **Decision:** Keys `QUO` quote, `DN` delivery note, `INV` invoice, `RCT` receipt, `CN` credit note, format and yearly reset per ADR-097. A sales document is numbered **at confirmation**, in the confirming transaction, so an abandoned draft uses no number and a failed confirmation leaves no gap. `sales_documents.number` is **nullable while the document is a draft** (`UQ(doc_type, number)` ignores NULLs; CHECKs require a number on a confirmed document and none on a draft, SD-136). A draft that is abandoned stays cancelled without a number; a cancelled confirmed document keeps its own. `CN` is issued from Phase 8.
 - **Alternatives:** numbered at creation, as purchase orders (B): abandoned drafts leave gaps.
 - **Consequences:** BR-DOC-001, W2 step 6, `database.md` sales_documents, `api.md` §4 (a draft has `number: null`).
 

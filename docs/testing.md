@@ -179,10 +179,10 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PURCH-012 | S,C | Cancel a receipt: reversal movements, PO rolled back, audited, number kept; a later movement on one lot → RECEIPT_NOT_CANCELLABLE naming it; fault injection rolls everything back; created lot stays at 0 without supplier; cost restored; status restored only if unchanged — block/unblock/recall between receipt and cancellation leave it; forced-closed order stays closed; price-history entry marked cancelled and ignored by the prefill (ADR-106) | (`GoodsReceiptCancellationTest`; a failed `LOT_UNBLOCK` audit in `GoodsReceiptAtomicityTest`; two parallel cancellations and a cancellation racing a withdrawal, 20 times each, in `GoodsReceiptCancellationConcurrencyTest`). A lot the receipt created and blocked is unblocked as well (its status at creation was active). A lot the receipt did not block, then blocked or recalled by a person, keeps that status (`GoodsReceiptCancellationTest.aLotBlockedOrRecalledByAPersonAfterTheReceiptKeepsThatStatus`); a cancellation racing a supplier return of the same lot ×20 never deadlocks despite the lock-order exception (`aCancellationRacingASupplierReturnOfTheSameLotNeverDeadlocks`).
 | BR-PURCH-013 | S | Same key + same body → first receipt, nothing posted twice; same key + other body → IDEMPOTENCY_CONFLICT (`GoodsReceiptsTest.theSameIdempotencyKeyReturnsTheFirstReceipt`, CT-05 in `IdempotencyKeysTest`) |
 | BR-DOC-001 | C,R | CT-03: 1000 concurrent numbers unique and gap-free on commit, 20 times; format `KEY-YYYY-NNNNNN`; yearly reset on the Algiers business year (31 Dec 23:30 UTC = next year); no number without a transaction; a rolled-back transaction leaves no gap; the counter stays locked until commit; number then lots in opposite orders never deadlock, 20 times (`NumberingServiceTest`, `NumberingTransactionTest`) |
-| BR-SALE-001 | U | Document chain and allowed conversions |
+| BR-SALE-001 | U | Document chain and allowed conversions (`SalesDocTypeTest`) |
 | BR-SALE-002 | S | Quote posts none; delivery note, receipt and direct invoice post `sale`; invoice from a delivery note reuses its lots and posts no second movement (ADR-117); one delivery note gives one invoice, no second limit check, cancelling that invoice posts no movement (ADR-125) |
 | BR-SALE-003 | S | Confirm quote → no movement |
-| BR-SALE-004 | A | Edit confirmed document → DOCUMENT_IMMUTABLE |
+| BR-SALE-004 | A | Edit confirmed document → DOCUMENT_IMMUTABLE (`SalesDraftsTest`) |
 | BR-SALE-005 | S | Lots assigned and verified at confirmation |
 | BR-SALE-006 | U,I | Price precedence (ADR-107): manual > customer's own price > unit price > product × factor; category discount only without a customer price; manual discount on top within the entitlement; unit conversion; customer without category; archived product; no rounding — `PriceResolverTest` (table), `CustomerPricingTest` (stored facts) |
 | BR-SALE-007 | U,SEC | Discount above entitlement needs sale.discount; no stacking (ADR-113); a manual price needs price.edit; the rights come from the signed-in user — `PriceResolverTest`, `CustomerPricingTest` |
@@ -190,7 +190,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SALE-009 | S | Line stores unit cost snapshot equal to lot cost |
 | BR-SALE-010 | S | On screen: warnings for any customer, by species, every species when none is given, none when no data (ADR-121); printing from Phase 10 (OD-028) |
 | BR-SALE-011 | S | Archived product in sale → PRODUCT_ARCHIVED |
-| BR-SALE-012 | S | Credit sale without customer; inactive customer → errors |
+| BR-SALE-012 | S,R | Credit sale without customer; inactive customer → errors; anonymous only on a receipt; DB CHECKs (`SalesDraftsTest`, re-checked at confirmation) |
 | BR-SALE-013 | S | A payment with a cash part needs an open session; cheque, transfer and credit sales do not (ADR-118) |
 | BR-SALE-014 | S | ADR-119: whole document; refused with a return, credit note, derived document or closed session; `sale_cancellation` movements, payments reversed, number kept, audit, atomic |
 | BR-SALE-015 | C | Confirm with insufficient stock → STOCK_INSUFFICIENT, atomic rollback |

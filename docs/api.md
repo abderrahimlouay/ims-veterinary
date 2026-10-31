@@ -283,8 +283,8 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 | Method | Path | Purpose | Permission | Contract |
 |---|---|---|---|---|
-| GET | `/api/sales` | list: `docType`, `status`, `customerId`, `number`, `from`, `to` | `sale.read` | page |
-| POST | `/api/sales` | create a **draft** document | `sale.create` | `{docType, customerId?, parentId?, creditSale?, dueDate?, notes?}` → 201 |
+| GET | `/api/sales` | list: `docType`, `status`, `customerId`, `number`, `from`, `to` (business dates, inclusive; a draft is dated by its creation) | `sale.read` | page |
+| POST | `/api/sales` | create a **draft** document | `sale.create` | `{docType, customerId?, creditSale?, dueDate?, notes?}` → 201, `number: null`; a derived document comes from `convert`, a credit note from a return |
 | GET | `/api/sales/{id}` | detail with lines, totals, warnings | `sale.read` | |
 | POST | `/api/sales/{id}/lines` ● | add line; server resolves unit, price, FEFO lot(s), warnings | `sale.create` | see §5.5 → updated document |
 | PUT/DELETE | `/api/sales/{id}/lines/{lineId}` | edit / remove draft line | `sale.create` | `DOCUMENT_IMMUTABLE` if not draft |
