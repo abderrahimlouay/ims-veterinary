@@ -129,6 +129,14 @@ public class SalesDocument {
         this.updatedAt = now;
     }
 
+    /** A draft derived from {@code parent} (BR-SALE-001): same customer, credit status and terms. */
+    public static SalesDocument derivedFrom(SalesDocument parent, SalesDocType type, Long createdBy, Instant now) {
+        SalesDocument derived = new SalesDocument(type, parent.customerId, parent.creditSale, parent.dueDate,
+                parent.notes, createdBy, now);
+        derived.parentId = parent.id;
+        return derived;
+    }
+
     public void updateHeader(Long customerId, boolean creditSale, LocalDate dueDate, String notes, Instant now) {
         this.customerId = customerId;
         this.creditSale = creditSale;

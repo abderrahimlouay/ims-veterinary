@@ -10,6 +10,7 @@ import com.imsvet.ims.inventory.application.InventoryCounts;
 import com.imsvet.ims.inventory.application.InventoryCounts.OpenInput;
 import com.imsvet.ims.sales.application.PaymentRecorder.Tender;
 import com.imsvet.ims.sales.application.SaleConfirmation;
+import com.imsvet.ims.sales.application.SaleConversion;
 import com.imsvet.ims.sales.application.SaleLines;
 import com.imsvet.ims.sales.application.SaleLines.LineInput;
 import com.imsvet.ims.sales.application.SalesDocuments;
@@ -58,6 +59,9 @@ class SaleConfirmationConcurrencyTest {
 
     @Autowired
     private SaleConfirmation confirmation;
+
+    @Autowired
+    private SaleConversion conversion;
 
     @Autowired
     private InventoryCounts counts;
@@ -184,6 +188,25 @@ class SaleConfirmationConcurrencyTest {
                 + " AND status = 'confirmed'", BigDecimal.class, customer)).isEqualByComparingTo("32.70");
         assertThat(jdbc.queryForObject("SELECT quantity_on_hand FROM lots WHERE id = ?", BigDecimal.class, lot))
                 .isEqualByComparingTo("97");
+    }
+
+    @RepeatedTest(5)
+    void twoConversionsOfADeliveryNoteGiveOneInvoice() throws Exception {
+        long product = product();
+        fixtures.lot(product, "L-" + key(), EXPIRY, "10");
+        jdbc.update("""
+                INSERT INTO customers (name, created_at, updated_at)
+                VALUES (?, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))""", "Ferme " + key());
+        long customer = jdbc.queryForObject("SELECT MAX(id) FROM customers", Long.class);
+        SaleDetail note = documents.create(new DraftInput("delivery_note", customer, false, null, null));
+        lines.add(note.id(), new LineInput(product, null, BigDecimal.ONE, null, null, null, null, null));
+        confirmation.confirm(note.id(), List.of(), null);
+        List<String> outcomes = race(List.of(() -> conversion.convert(note.id(), "invoice"),
+                () -> conversion.convert(note.id(), "invoice")));
+
+        assertThat(outcomes).containsExactlyInAnyOrder("ok", "INVALID_STATE_TRANSITION");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM sales_documents WHERE parent_id = ?", Integer.class,
+                note.id())).isOne();
     }
 
     @Test

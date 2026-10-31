@@ -293,7 +293,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | DELETE | `/api/sales/{id}` | abandon a draft | `sale.create` | only drafts, which have no number yet (ADR-122) |
 | POST | `/api/sales/{id}/confirm` ● | confirm; stock-moving per ADR-117; numbered here (ADR-122) | `sale.create` | see §5.6 |
 | POST | `/api/sales/{id}/cancel` | cancel a whole confirmed document (ADR-119) | `sale.cancel` | `{reason}`; `SALE_NOT_CANCELLABLE` |
-| POST | `/api/sales/{id}/convert` | derive quote→DN→invoice | `sale.create` | `{targetType}` → new draft with `parentId` |
+| POST | `/api/sales/{id}/convert` | derive quote→DN→invoice | `sale.create` | `{targetType}` (`delivery_note`, `invoice`) → 201, new draft with `parentId` (W11, ADR-125); `INVALID_STATE_TRANSITION` (pair or status not allowed, a delivery note that already has an invoice), `STOCK_INSUFFICIENT`, `CUSTOMER_INACTIVE`, `VALIDATION_FAILED` (`targetType` `REQUIRED` / `UNKNOWN`) |
 | GET | `/api/sales/{id}/pdf` | `?format=a4\|ticket` | `sale.read` | `application/pdf` (OD-020) |
 | GET | `/api/sales/{id}/withdrawal-warnings` | withdrawal warnings of the document, once per product and species | `sale.read` | on screen: ADR-121; printing: BR-SALE-010, Phase 10 |
 
@@ -397,10 +397,10 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ### 5.6 Confirm sale
 - **POST `/api/sales/{id}/confirm`** — **Permission:** `sale.create`. **Header:** `Idempotency-Key` (recommended, enforced for POS).
-- **Request:** `{ "payments": [ {"method": "cash", "amount": "45.00", "reference": null} ] }` — an immediate sale must be paid in full, Σ `amount` = TTC, several methods allowed; a cash part needs an open session; a credit sale has no `payments` (ADR-118). `amount` is the amount kept; no tendered amount is sent, the screen computes the change.
+- **Request:** `{ "payments": [ {"method": "cash", "amount": "45.00", "reference": null} ] }` — an immediate sale must be paid in full, Σ `amount` = TTC, several methods allowed; a cash part needs an open session; a credit sale, a quote and a delivery note have no `payments` (ADR-118, ADR-125). `amount` is the amount kept; no tendered amount is sent, the screen computes the change.
 - **Response 200:** `{ id, number, status: "confirmed", totals: {ht, discount, vat, ttc}, lines[…], payments[…], customerBalance?, documents: { pdfA4: "/api/sales/{id}/pdf?format=a4", ticket: "…" } }`
 - **Server steps (one transaction, lock order of `database.md` §7):** idempotency key → document row → number → lots (id order) and re-validation → credit check → post movements → payment records → `confirmed`.
-- **Validation:** document is a draft; at least one line; every line has a lot; totals recomputed server-side.
+- **Validation:** document is a draft; at least one line; every line of a stock-moving document has a lot; totals recomputed server-side. A quote is only numbered. The invoice of a delivery note takes no lot lock, movement or limit check (ADR-117, ADR-125).
 - **Errors:** `STOCK_INSUFFICIENT`, `LOT_EXPIRED`, `LOT_BLOCKED`, `LOT_RECALLED`, `LOT_REQUIRED`, `CREDIT_LIMIT_EXCEEDED`, `CUSTOMER_REQUIRED_FOR_CREDIT`, `CUSTOMER_INACTIVE`, `CASH_SESSION_REQUIRED`, `PAYMENT_TOTAL_MISMATCH`, `INVALID_STATE_TRANSITION`, `IDEMPOTENCY_CONFLICT`, `CONCURRENT_MODIFICATION`.
 
 ### 5.7 Recall a lot
