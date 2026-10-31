@@ -9,6 +9,7 @@ import com.imsvet.ims.common.error.ValidationException;
 import com.imsvet.ims.common.error.ValidationException.Violation;
 import com.imsvet.ims.common.idempotency.IdempotencyKeys;
 import com.imsvet.ims.common.idempotency.IdempotencyKeys.Claim;
+import com.imsvet.ims.common.time.BusinessCalendar;
 import com.imsvet.ims.inventory.application.SaleLots;
 import com.imsvet.ims.inventory.application.StockService;
 import com.imsvet.ims.inventory.application.StockService.Movement;
@@ -22,6 +23,7 @@ import com.imsvet.ims.sales.domain.SalesDocStatus;
 import com.imsvet.ims.sales.domain.SalesDocType;
 import com.imsvet.ims.sales.domain.SalesDocument;
 import com.imsvet.ims.sales.domain.SalesDocumentLine;
+import com.imsvet.ims.sales.infrastructure.CustomerLocks;
 import com.imsvet.ims.sales.infrastructure.CustomerRepository;
 import com.imsvet.ims.sales.infrastructure.SalesDocumentLineRepository;
 import com.imsvet.ims.sales.infrastructure.SalesDocumentLocks;
@@ -41,8 +43,9 @@ import org.springframework.transaction.annotation.Transactional;
  * of database.md §7: idempotency key (a repeat returns the first result, BR-SALE-016), document, number (ADR-122), lots
  * in ascending id, validated again under lock (BR-LOT-003/004), {@code sale} movements through {@link StockService}
  * (BR-SALE-015), then the payments and the cash session (ADR-118). Paid in full: the amounts are what is kept, never
- * what was tendered. A credit sale is refused until {@code CreditLimitPort} exists, so none is ever confirmed without
- * the limit check; quotes and delivery notes are confirmed with the conversions.
+ * what was tendered. A credit sale takes no payment: it locks the customer after the lots and passes the limit check
+ * (BR-PAY-005), and its due date defaults to the customer's payment terms (ADR-109). Quotes and delivery notes are
+ * confirmed with the conversions.
  */
 @Service
 public class SaleConfirmation {
@@ -58,6 +61,8 @@ public class SaleConfirmation {
     private final SalesDocumentLineRepository lines;
     private final SalesDocumentLocks locks;
     private final CustomerRepository customers;
+    private final CustomerLocks customerLocks;
+    private final CreditLimitPort credit;
     private final ProductLookup products;
     private final SaleLots lots;
     private final StockService stock;
@@ -66,16 +71,20 @@ public class SaleConfirmation {
     private final IdempotencyKeys keys;
     private final SaleViewer viewer;
     private final ActorProvider actors;
+    private final BusinessCalendar calendar;
     private final Clock clock;
 
     public SaleConfirmation(SalesDocumentRepository documents, SalesDocumentLineRepository lines,
-            SalesDocumentLocks locks, CustomerRepository customers, ProductLookup products, SaleLots lots,
-            StockService stock, NumberingService numbering, PaymentRecorder payments, IdempotencyKeys keys,
-            SaleViewer viewer, ActorProvider actors, Clock clock) {
+            SalesDocumentLocks locks, CustomerRepository customers, CustomerLocks customerLocks, CreditLimitPort credit,
+            ProductLookup products, SaleLots lots, StockService stock, NumberingService numbering,
+            PaymentRecorder payments, IdempotencyKeys keys, SaleViewer viewer, ActorProvider actors,
+            BusinessCalendar calendar, Clock clock) {
         this.documents = documents;
         this.lines = lines;
         this.locks = locks;
         this.customers = customers;
+        this.customerLocks = customerLocks;
+        this.credit = credit;
         this.products = products;
         this.lots = lots;
         this.stock = stock;
@@ -84,6 +93,7 @@ public class SaleConfirmation {
         this.keys = keys;
         this.viewer = viewer;
         this.actors = actors;
+        this.calendar = calendar;
         this.clock = clock;
     }
 
@@ -108,6 +118,9 @@ public class SaleConfirmation {
 
         String number = numbering.next(document.docType().key());
         Map<Long, BigDecimal> costs = lots.lockForSale(found.stream().map(SalesDocumentLine::lotId).toList());
+        if (document.creditSale()) {
+            checkCredit(document);
+        }
         found.forEach(line -> line.snapshotCost(costs.get(line.lotId())));
         stock.post(found.stream().map(line -> new Movement(line.lotId(), line.productId(), MovementType.SALE,
                 line.quantityBase().negate(), null, REFERENCE_TYPE, id)).toList());
@@ -123,11 +136,6 @@ public class SaleConfirmation {
         if (document.status() != SalesDocStatus.DRAFT) {
             throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, "Only a draft can be confirmed.",
                     Map.of("status", document.status().code()));
-        }
-        if (document.creditSale()) {
-            throw new BusinessException(ErrorCode.CREDIT_SALE_UNAVAILABLE,
-                    "Credit sales cannot be confirmed until the credit-limit check is available.",
-                    Map.of("documentId", document.id()));
         }
         SalesDocType type = document.docType();
         if (type != SalesDocType.RECEIPT && type != SalesDocType.INVOICE) {
@@ -165,7 +173,26 @@ public class SaleConfirmation {
         }
     }
 
+    private void checkCredit(SalesDocument document) {
+        Customer customer = customerLocks.lock(document.customerId()).orElseThrow();
+        if (!customer.active()) {
+            throw new BusinessException(ErrorCode.CUSTOMER_INACTIVE, "This customer is inactive.",
+                    Map.of("customerId", customer.id()));
+        }
+        credit.requireWithinLimit(customer.id(), customer.creditLimit(), document.totalTtc());
+        if (document.dueDate() == null) {
+            document.dueOn(calendar.today().plusDays(customer.paymentTermsDays()));
+        }
+    }
+
     private static void requirePaidInFull(SalesDocument document, List<Tender> paid) {
+        if (document.creditSale()) {
+            if (!paid.isEmpty()) {
+                throw new BusinessException(ErrorCode.PAYMENT_TOTAL_MISMATCH,
+                        "A credit sale takes no payment at confirmation.", Map.of("documentId", document.id()));
+            }
+            return;
+        }
         List<Violation> missing = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
         for (int i = 0; i < paid.size(); i++) {

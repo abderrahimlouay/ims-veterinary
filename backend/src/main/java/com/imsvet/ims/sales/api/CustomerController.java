@@ -8,6 +8,8 @@ import com.imsvet.ims.sales.application.CustomerViews.CustomerDetail;
 import com.imsvet.ims.sales.application.CustomerViews.CustomerPriceView;
 import com.imsvet.ims.sales.application.CustomerViews.CustomerSummary;
 import com.imsvet.ims.sales.application.CustomerViews.SimilarCustomer;
+import com.imsvet.ims.sales.application.SalesDocuments;
+import com.imsvet.ims.sales.application.SalesViews;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -58,11 +60,14 @@ class CustomerController {
     private final CustomerDirectory directory;
     private final CustomerCredit credit;
     private final CustomerPrices prices;
+    private final SalesDocuments sales;
 
-    CustomerController(CustomerDirectory directory, CustomerCredit credit, CustomerPrices prices) {
+    CustomerController(CustomerDirectory directory, CustomerCredit credit, CustomerPrices prices,
+            SalesDocuments sales) {
         this.directory = directory;
         this.credit = credit;
         this.prices = prices;
+        this.sales = sales;
     }
 
     @GetMapping
@@ -104,6 +109,17 @@ class CustomerController {
     @PutMapping("/{id}")
     CustomerDetail update(@PathVariable long id, @Valid @RequestBody CustomerRequest body) {
         return directory.update(id, body.input(), body.version() == null ? -1 : body.version());
+    }
+
+    @GetMapping("/{id}/balance")
+    CustomerCredit.CreditBalance balance(@PathVariable long id) {
+        return credit.balance(id);
+    }
+
+    @GetMapping("/{id}/sales")
+    PageResponse<SalesViews.SaleSummary> sales(@PathVariable long id, @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return sales.ofCustomer(id, page, size);
     }
 
     @GetMapping("/{id}/prices")

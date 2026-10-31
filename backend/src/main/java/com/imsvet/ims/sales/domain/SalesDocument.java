@@ -155,6 +155,11 @@ public class SalesDocument {
         this.updatedAt = now;
     }
 
+    /** The default of a credit sale confirmed without one (ADR-109). */
+    public void dueOn(LocalDate date) {
+        this.dueDate = date;
+    }
+
     public void abandon(Long by, Instant now) {
         this.status = SalesDocStatus.CANCELLED;
         this.cancelledBy = by;

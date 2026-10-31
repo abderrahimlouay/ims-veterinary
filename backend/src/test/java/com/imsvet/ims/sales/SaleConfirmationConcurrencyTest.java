@@ -40,7 +40,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Real sales on committed data (testing.md §6): CT-01 last units, CT-02 opposite lot order, CT-04 sale against a count
- * regularisation, CT-05 double submit, a second confirmation in parallel; and atomicity (BR-SALE-015): a failure in
+ * regularisation, CT-05 double submit, CT-06 credit sales near the limit, a second confirmation in parallel; and atomicity (BR-SALE-015): a failure in
  * the last step leaves no number, movement, payment or status change.
  */
 @SpringBootTest
@@ -160,6 +160,30 @@ class SaleConfirmationConcurrencyTest {
         assertThat(outcomes).containsExactlyInAnyOrder("ok", "INVALID_STATE_TRANSITION");
         assertThat(jdbc.queryForObject("SELECT quantity_on_hand FROM lots WHERE id = ?", BigDecimal.class, lot))
                 .isEqualByComparingTo("9");
+    }
+
+    @RepeatedTest(5)
+    void ct06ParallelCreditSalesNeverExceedTheLimit() throws Exception {
+        long product = product();
+        long lot = fixtures.lot(product, "L-" + key(), EXPIRY, "100");
+        jdbc.update("""
+                INSERT INTO customers (name, credit_limit, created_at, updated_at)
+                VALUES (?, 32.70, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))""", "Ferme " + key());
+        long customer = jdbc.queryForObject("SELECT MAX(id) FROM customers", Long.class);
+        List<Callable<?>> sales = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            SaleDetail draft = documents.create(new DraftInput("invoice", customer, true, null, null));
+            lines.add(draft.id(), new LineInput(product, null, BigDecimal.ONE, null, null, null, null, null));
+            sales.add(() -> confirmation.confirm(draft.id(), List.of(), null));
+        }
+        List<String> outcomes = race(sales);
+
+        assertThat(outcomes).filteredOn("ok"::equals).hasSize(3);
+        assertThat(outcomes).filteredOn("CREDIT_LIMIT_EXCEEDED"::equals).hasSize(3);
+        assertThat(jdbc.queryForObject("SELECT SUM(total_ttc) FROM sales_documents WHERE customer_id = ?"
+                + " AND status = 'confirmed'", BigDecimal.class, customer)).isEqualByComparingTo("32.70");
+        assertThat(jdbc.queryForObject("SELECT quantity_on_hand FROM lots WHERE id = ?", BigDecimal.class, lot))
+                .isEqualByComparingTo("97");
     }
 
     @Test

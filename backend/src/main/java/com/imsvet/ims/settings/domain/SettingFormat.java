@@ -114,6 +114,26 @@ public enum SettingFormat {
         }
     },
 
+    /** {@code off}, or a number of days ≥ 0 (ADR-108). */
+    OFF_OR_DAYS {
+        @Override
+        public String normalize(String raw) {
+            if (raw.trim().equalsIgnoreCase("off")) {
+                return "off";
+            }
+            int value;
+            try {
+                value = Integer.parseInt(raw.trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Enter off or a number of days.");
+            }
+            if (value < 0) {
+                throw new IllegalArgumentException("Enter off or a number of days.");
+            }
+            return String.valueOf(value);
+        }
+    },
+
     /** A time of day {@code HH:mm} in the business time zone, stored with two-digit hours (ADR-078, ADR-086). */
     TIME_OF_DAY {
         @Override

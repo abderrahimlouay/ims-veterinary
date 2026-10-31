@@ -37,15 +37,17 @@ class SaleViewer {
     private final ProductWithdrawals withdrawals;
     private final SaleLots lots;
     private final PaymentRecorder payments;
+    private final CreditLimitPort credit;
 
     SaleViewer(SalesDocumentLineRepository lines, CustomerRepository customers, ProductLookup products,
-            ProductWithdrawals withdrawals, SaleLots lots, PaymentRecorder payments) {
+            ProductWithdrawals withdrawals, SaleLots lots, PaymentRecorder payments, CreditLimitPort credit) {
         this.lines = lines;
         this.customers = customers;
         this.products = products;
         this.withdrawals = withdrawals;
         this.lots = lots;
         this.payments = payments;
+        this.credit = credit;
     }
 
     SaleDetail detail(SalesDocument document) {
@@ -63,7 +65,9 @@ class SaleViewer {
             return SalesViews.line(l, product.commercialName(), unit, lot,
                     warnings(l, product, lot, draft, heldPerProduct.get(l.productId())));
         }).toList(), payments.inForceOn(document.id()).stream()
-                .map(p -> new SalePayment(p.id(), p.method(), p.amount(), p.reference())).toList());
+                .map(p -> new SalePayment(p.id(), p.method(), p.amount(), p.reference())).toList(),
+                document.creditSale() && document.status() == SalesDocStatus.CONFIRMED
+                        ? credit.position(document.customerId()).balance() : null);
     }
 
     /** The withdrawal warnings of all lines, once per product and species. */

@@ -115,7 +115,7 @@ Customer → Product Search → Lot Selection / FEFO → Sale → Stock Movement
 5. **Payment choice:** cash/cheque/transfer now, or **credit** (customer required, BR-SALE-012). An immediate sale is paid in full, several methods allowed; a credit sale takes no payment at confirmation (ADR-118).
 6. **Confirm** (one transaction — idempotent, BR-SALE-016):
    1. Lock the document and take the number (BR-DOC-001; format ADR-097, keys and numbering at confirmation ADR-122), then lock lots in id order (BR-STOCK-012); re-validate status, expiry, quantity (BR-LOT-003/004, BR-SALE-015); order per `database.md` §7.
-   2. If credit sale: lock customer, compute balance + uninvoiced credit delivery notes + total vs limit (BR-PAY-005, ADR-108, ADR-117; NULL limit = no check, 0 = refused).
+   2. If credit sale: lock customer, compute balance + uninvoiced credit delivery notes + total vs limit (BR-PAY-005, ADR-108, ADR-117; NULL limit = no amount check, 0 = refused; an invoice overdue beyond `credit_overdue_block_days`, when on, refuses also without a limit). A due date left empty defaults to today + the customer's payment terms.
    3. Snapshot `unit_cost` (BR-SALE-009); compute totals (BR-SALE-008).
    4. Post `sale` movements (−) and update balances; set lots `depleted` when 0 (BR-STOCK-002).
    5. Record payment and allocations, and a cash movement for the cash part (ADR-118).

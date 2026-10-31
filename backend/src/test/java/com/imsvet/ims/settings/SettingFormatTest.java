@@ -75,6 +75,19 @@ class SettingFormatTest {
         assertThatThrownBy(() -> SettingFormat.BOOLEAN.normalize(raw)).isInstanceOf(IllegalArgumentException.class);
     }
 
+    /** ADR-108: {@code credit_overdue_block_days}. */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {"off|off", " OFF |off", "0|0", " 30 |30"})
+    void overdueDaysAreOffOrADayCount(String raw, String stored) {
+        assertThat(SettingFormat.OFF_OR_DAYS.normalize(raw)).isEqualTo(stored);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"-1", "on", "1.5", ""})
+    void otherOverdueDaysAreRejected(String raw) {
+        assertThatThrownBy(() -> SettingFormat.OFF_OR_DAYS.normalize(raw)).isInstanceOf(IllegalArgumentException.class);
+    }
+
     /** ADR-078, ADR-086: {@code reorder_job_time}, {@code integrity_check_time}. */
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {"06:00|06:00", "6:05|06:05", "23:59|23:59", "00:00|00:00"})

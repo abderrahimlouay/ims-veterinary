@@ -27,13 +27,18 @@ import org.springframework.transaction.annotation.Transactional;
  * second is {@code CONCURRENT_MODIFICATION}). {@code null} = no limit, 0 = cash only, otherwise ≥ 0 with 2 decimals.
  * Every change — also to or from {@code null} — is audited {@code CREDIT_LIMIT_CHANGE} with the old and new value
  * before the customer changes, in the same transaction: a failed audit leaves the limit as it was. The audit entry
- * carries the amounts only (ADR-114).
+ * carries the amounts only (ADR-114). The balance view is read from {@code finance} (ADR-118).
  */
 @Service
 public class CustomerCredit {
 
     /** {@code given}: the request named {@code creditLimit} (a missing field never removes the limit). */
     public record CreditLimitInput(boolean given, String creditLimit, Long version) {
+    }
+
+    /** {@code availableCredit} and {@code creditLimit} {@code null} without a limit; available is never below 0. */
+    public record CreditBalance(BigDecimal balance, BigDecimal uninvoicedDeliveryNotes, BigDecimal creditLimit,
+            BigDecimal availableCredit) {
     }
 
     private static final int MONEY_SCALE = 2;
@@ -43,14 +48,16 @@ public class CustomerCredit {
     private final CustomerRepository customers;
     private final CustomerDirectory directory;
     private final AuditRecorder audit;
+    private final CreditLimitPort port;
     private final Clock clock;
 
     public CustomerCredit(CustomerLocks locks, CustomerRepository customers, CustomerDirectory directory,
-            AuditRecorder audit, Clock clock) {
+            AuditRecorder audit, CreditLimitPort port, Clock clock) {
         this.locks = locks;
         this.customers = customers;
         this.directory = directory;
         this.audit = audit;
+        this.port = port;
         this.clock = clock;
     }
 
@@ -73,6 +80,19 @@ public class CustomerCredit {
             customers.saveAndFlush(customer);
         }
         return directory.detail(customer);
+    }
+
+    @PreAuthorize("hasAuthority('customer.read')")
+    @Transactional(readOnly = true)
+    public CreditBalance balance(long id) {
+        Customer customer = customers.findById(id).orElseThrow(
+                () -> new BusinessException(ErrorCode.NOT_FOUND, "Customer not found.", Map.of("id", id)));
+        CreditLimitPort.CreditPosition position = port.position(id);
+        BigDecimal limit = customer.creditLimit();
+        BigDecimal available = limit == null ? null
+                : limit.subtract(position.balance()).subtract(position.uninvoicedDeliveryNotes())
+                        .max(BigDecimal.ZERO).setScale(MONEY_SCALE);
+        return new CreditBalance(position.balance(), position.uninvoicedDeliveryNotes(), limit, available);
     }
 
     private static BigDecimal limit(CreditLimitInput in) {

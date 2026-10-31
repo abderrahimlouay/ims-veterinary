@@ -19,7 +19,8 @@ public enum SettingDefinition {
     BUSINESS_TIME_ZONE("business_time_zone", SettingFormat.ZONE_ID, false, true),
     OPENING_STOCK_OPEN("opening_stock_open", SettingFormat.BOOLEAN, true, true),
     REORDER_JOB_TIME("reorder_job_time", SettingFormat.TIME_OF_DAY, true, false),
-    INTEGRITY_CHECK_TIME("integrity_check_time", SettingFormat.TIME_OF_DAY, true, false);
+    INTEGRITY_CHECK_TIME("integrity_check_time", SettingFormat.TIME_OF_DAY, true, false),
+    CREDIT_OVERDUE_BLOCK_DAYS("credit_overdue_block_days", SettingFormat.OFF_OR_DAYS, true, false);
 
     private final String key;
     private final SettingFormat format;

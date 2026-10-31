@@ -64,7 +64,7 @@ class SettingsEndpointTest {
     @Test
     void listsEverySettingWithItsEditability() throws Exception {
         client.get("/api/settings").andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(11)))
+                .andExpect(jsonPath("$", hasSize(12)))
                 .andExpect(jsonPath("$[?(@.key == 'currency')].editable").value(false))
                 .andExpect(jsonPath("$[?(@.key == 'default_vat_rate')].editable").value(true));
         client.get("/api/settings/expiry_alert_days").andExpect(status().isOk())
