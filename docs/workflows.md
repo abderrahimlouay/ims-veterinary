@@ -219,7 +219,7 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 1. Pharmacist selects lot and enters the reason.
 2. **One transaction:** lot → `recalled` (`blocked_reason/by/at`), audit `LOT_RECALL` (BR-LOT-008). `recalled` is final: nobody can unblock or un-recall the lot (ADR-060).
-3. System returns the **buyers list**: customer, phone, document number/date, quantity — including anonymous sales (customer unknown) and un-invoiced delivery notes (ADR-117). Until sales exist (Phase 7) the lists are empty and the screen says so (ADR-068).
+3. System returns the **buyers list**: customer, phone, document number/date, quantity — including anonymous sales (customer unknown) and un-invoiced delivery notes (ADR-117). With no sale of the lot the screen says so.
 4. List is printable/exportable; remaining stock of the lot is no longer sellable and can be returned to the supplier (W4) or discarded by adjustment (W7).
 - **Failure:** unknown lot → `NOT_FOUND`; already recalled → idempotent success; no permission → `ACCESS_DENIED`.
 

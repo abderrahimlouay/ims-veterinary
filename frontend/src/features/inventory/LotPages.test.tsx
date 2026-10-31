@@ -148,7 +148,7 @@ describe('lot detail and actions (ADR-060, W6)', () => {
     expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent("n'est pas possible")
   })
 
-  it('recalls a lot and shows that no sales exist yet', async () => {
+  it('recalls a lot and says when it has no sales', async () => {
     serveMe(PHARMACIST)
     let lot = aDetail({ status: 'blocked', sellable: false, blockedReason: 'Suspicion' })
     server.use(
@@ -169,11 +169,33 @@ describe('lot detail and actions (ADR-060, W6)', () => {
     await userEvent.type(screen.getByLabelText('Motif'), 'Notice')
     await userEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
 
-    expect(await screen.findByText(/Aucune vente n'existe encore/)).toBeInTheDocument()
+    expect(await screen.findByText(/Aucune vente de ce lot/)).toBeInTheDocument()
     expect(screen.getByText(/Stock restant : 120,000 tablet/)).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Débloquer' })).not.toBeInTheDocument())
     expect(screen.queryByRole('button', { name: 'Bloquer' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rappeler' })).not.toBeInTheDocument()
+  })
+
+  it('lists who bought the lot with phone and date, anonymous sales included (BR-LOT-008)', async () => {
+    serveMe(PHARMACIST)
+    server.use(
+      http.get('/api/lots/21', () => HttpResponse.json(aDetail({ status: 'recalled', sellable: false }))),
+      http.get('/api/lots/21/recall-report', () =>
+        HttpResponse.json({
+          lot: { id: 21, status: 'recalled', blockedAt: null, blockedBy: 7 },
+          buyers: [{ customerId: 3, customerName: 'Ferme Démo', phone: '0550000001', documentNumber: 'DN-2026-000001', documentType: 'delivery_note', issuedAt: '2026-10-20T08:00:00Z', quantityBase: '2.000', unit: 'tablet' }],
+          anonymousSales: [{ documentNumber: 'RCT-2026-000001', issuedAt: '2026-10-20T09:00:00Z', quantityBase: '1.000' }],
+          remainingStockBase: '5.000',
+        }),
+      ),
+    )
+    renderApp('/lots/21')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Rapport de rappel' }))
+    expect(await screen.findByText('Ferme Démo')).toBeInTheDocument()
+    expect(screen.getByText('0550000001')).toBeInTheDocument()
+    expect(screen.getByText('DN-2026-000001')).toBeInTheDocument()
+    expect(screen.getByText('RCT-2026-000001')).toBeInTheDocument()
   })
 
   it('reopens the recall report of a recalled lot', async () => {

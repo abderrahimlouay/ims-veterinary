@@ -34,16 +34,18 @@ public class LotActions {
     private final ExpiryPolicies policies;
     private final LotStatusChanges statusChanges;
     private final UserNames userNames;
+    private final LotBuyers buyers;
 
     public LotActions(LotRepository lots,
             LotLocks lotLocks, ProductLookup products, ExpiryPolicies policies, AuditRecorder audit,
-            ActorProvider actors, Clock clock, UserNames userNames) {
+            ActorProvider actors, Clock clock, UserNames userNames, LotBuyers buyers) {
         this.lots = lots;
         this.lotLocks = lotLocks;
         this.products = products;
         this.policies = policies;
         this.statusChanges = new LotStatusChanges(lots, audit, actors, clock);
         this.userNames = userNames;
+        this.buyers = buyers;
     }
 
     @PreAuthorize("hasAuthority('lot.block')")
@@ -58,7 +60,7 @@ public class LotActions {
         return detail(change(locked(id), Action.UNBLOCK, AuditAction.LOT_UNBLOCK, reason));
     }
 
-    /** BR-LOT-008: buyers are listed once sales exist (Phase 7, ADR-068). */
+    /** BR-LOT-008: under the lot's row lock, so a sale of the lot still being confirmed is listed or refused. */
     @PreAuthorize("hasAuthority('lot.recall')")
     @Transactional
     public RecallReport recall(long id, String reason) {
@@ -66,7 +68,7 @@ public class LotActions {
         if (lot.status() != LotStatus.RECALLED) {
             change(lot, Action.RECALL, AuditAction.LOT_RECALL, reason);
         }
-        return LotViews.recallReport(lot);
+        return report(lot);
     }
 
     @PreAuthorize("hasAuthority('lot.recall')")
@@ -77,7 +79,12 @@ public class LotActions {
             throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, "This lot is not recalled.",
                     Map.of("status", lot.status().code()));
         }
-        return LotViews.recallReport(lot);
+        return report(lot);
+    }
+
+    private RecallReport report(Lot lot) {
+        return LotViews.recallReport(lot, buyers.salesOf(lot.id()),
+                products.find(lot.productId()).orElseThrow().baseUnit());
     }
 
     private Lot change(Lot lot, Action action, AuditAction auditAction, String reason) {

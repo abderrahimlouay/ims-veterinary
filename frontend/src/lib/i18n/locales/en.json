@@ -446,7 +446,9 @@
     "report": {
       "title": "Recall report",
       "remaining": "Remaining stock: {{quantity}}",
-      "noSales": "No sales exist yet: buyers will be listed once sales are recorded.",
+      "noSales": "No sale of this lot.",
+      "phone": "Phone",
+      "date": "Date",
       "customer": "Customer",
       "document": "Document",
       "anonymous": "Counter sale"
