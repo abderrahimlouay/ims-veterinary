@@ -6,7 +6,7 @@ import { logIn } from './session'
 /**
  * J4 (testing.md §8): a counter sale spanning two lots by FEFO, paid in cash with change. The cash session is opened
  * here, from the refusal of a sale without one; the expected cash grows by the total, never by what was tendered
- * (ADR-118). Then the session stays open for J5.
+ * (ADR-118).
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 

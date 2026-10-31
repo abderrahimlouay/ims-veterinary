@@ -23,7 +23,8 @@
     "supplierReturns": "المرتجعات إلى الموردين",
     "customers": "الزبائن",
     "customerCategories": "فئات الزبائن",
-    "pos": "الصندوق"
+    "pos": "الصندوق",
+    "sales": "مستندات البيع"
   },
   "language": {
     "label": "اللغة",
@@ -886,7 +887,8 @@
     "startsCashOnly": "يبدأ الزبون الجديد بـ«نقدًا فقط»؛ ويُغيَّر سقف الائتمان بعد ذلك بصلاحيته الخاصة.",
     "tabs": {
       "overview": "نظرة عامة",
-      "prices": "الأسعار"
+      "prices": "الأسعار",
+      "history": "السجل"
     },
     "errors": {
       "phoneFormat": "رقم الهاتف لا يتجاوز 15 رقمًا.",
@@ -1038,6 +1040,40 @@
       "title": "تم تأكيد البيع",
       "number": "المستند {{number}}",
       "next": "بيع جديد"
+    }
+  },
+  "sales": {
+    "title": "مستندات البيع",
+    "type": "النوع",
+    "status": "الحالة",
+    "number": "الرقم",
+    "customer": "الزبون",
+    "date": "التاريخ",
+    "total": "المجموع",
+    "empty": "لا يوجد مستند.",
+    "draftOf": "مسودة {{id}}",
+    "onCredit": "بالأجل",
+    "anonymous": "مجهول",
+    "dueDate": "تاريخ الاستحقاق",
+    "parent": "مأخوذ من",
+    "parentLink": "المستند الأصلي",
+    "cancelReason": "سبب الإلغاء",
+    "product": "المنتج",
+    "lot": "الحصة",
+    "unitPrice": "سعر الوحدة",
+    "resume": "الإتمام في الصندوق",
+    "convertTo": "تحويل إلى: {{type}}",
+    "cancel": "إلغاء المستند",
+    "cancelTitle": "إلغاء هذا المستند",
+    "statuses": {
+      "draft": "مسودة",
+      "confirmed": "مؤكد",
+      "cancelled": "ملغى"
+    },
+    "balance": {
+      "balance": "الرصيد",
+      "uninvoiced": "وصولات التسليم بالأجل غير المفوترة",
+      "available": "الائتمان المتاح"
     }
   }
 }

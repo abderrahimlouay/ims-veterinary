@@ -31,7 +31,7 @@ import {
   SupplierReturnsPage,
   SuppliersPage,
 } from '../features/purchasing'
-import { PosPage } from '../features/sales'
+import { PosPage, SaleDetailPage, SalesPage } from '../features/sales'
 import { RequireAuth, RequirePermission } from './guards'
 import { AppLayout } from './layouts/AppLayout'
 import { AuthLayout } from './layouts/AuthLayout'
@@ -89,6 +89,8 @@ export const routes: RouteObject[] = [
       { path: 'supplier-returns', element: <RequirePermission code="return.read"><SupplierReturnsPage /></RequirePermission> },
       { path: 'supplier-returns/new', element: <RequirePermission code="return.supplier.create"><NewSupplierReturnPage /></RequirePermission> },
       { path: 'supplier-returns/:id', element: <RequirePermission code="return.read"><SupplierReturnPage /></RequirePermission> },
+      { path: 'sales', element: <RequirePermission code="sale.read"><SalesPage /></RequirePermission> },
+      { path: 'sales/:id', element: <RequirePermission code="sale.read"><SaleDetailPage /></RequirePermission> },
       { path: 'customers', element: <RequirePermission code="customer.read"><CustomersPage /></RequirePermission> },
       { path: 'customers/new', element: <RequirePermission code="customer.manage"><NewCustomerPage /></RequirePermission> },
       { path: 'customers/:id', element: <RequirePermission code="customer.read"><CustomerPage /></RequirePermission> },

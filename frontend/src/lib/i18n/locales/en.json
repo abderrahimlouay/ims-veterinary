@@ -23,7 +23,8 @@
     "supplierReturns": "Supplier returns",
     "customers": "Customers",
     "customerCategories": "Customer categories",
-    "pos": "Counter"
+    "pos": "Counter",
+    "sales": "Sales documents"
   },
   "language": {
     "label": "Language",
@@ -886,7 +887,8 @@
     "startsCashOnly": "A new customer starts at \"Cash only\"; the credit limit is changed afterwards, with its own permission.",
     "tabs": {
       "overview": "Overview",
-      "prices": "Prices"
+      "prices": "Prices",
+      "history": "History"
     },
     "errors": {
       "phoneFormat": "A phone number has at most 15 digits.",
@@ -1038,6 +1040,40 @@
       "title": "Sale confirmed",
       "number": "Document {{number}}",
       "next": "New sale"
+    }
+  },
+  "sales": {
+    "title": "Sales documents",
+    "type": "Type",
+    "status": "Status",
+    "number": "Number",
+    "customer": "Customer",
+    "date": "Date",
+    "total": "Total",
+    "empty": "No document.",
+    "draftOf": "Draft {{id}}",
+    "onCredit": "on credit",
+    "anonymous": "Anonymous",
+    "dueDate": "Due date",
+    "parent": "Made from",
+    "parentLink": "The source document",
+    "cancelReason": "Reason for cancellation",
+    "product": "Product",
+    "lot": "Lot",
+    "unitPrice": "Unit price",
+    "resume": "Finish at the counter",
+    "convertTo": "Convert to: {{type}}",
+    "cancel": "Cancel the document",
+    "cancelTitle": "Cancel this document",
+    "statuses": {
+      "draft": "Draft",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled"
+    },
+    "balance": {
+      "balance": "Balance",
+      "uninvoiced": "Uninvoiced credit delivery notes",
+      "available": "Available credit"
     }
   }
 }

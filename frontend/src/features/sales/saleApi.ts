@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../api/client'
+import type { PageMetadata } from '../../components/Pager'
 
 /** api.md §4.10 and §5.5–5.6: sales documents. Amounts, lots and warnings are the server's (BR-SALE-008). */
 export type DocType = 'quote' | 'delivery_note' | 'invoice' | 'receipt' | 'credit_note'
@@ -160,3 +161,80 @@ export function useCloseSession() {
 
 export const invalidateSession = (client: ReturnType<typeof useQueryClient>) =>
   client.invalidateQueries({ queryKey: SESSION_KEY })
+
+export interface SaleSummary {
+  id: number
+  docType: DocType
+  number: string | null
+  status: SaleDetail['status']
+  customer: { id: number; name: string } | null
+  creditSale: boolean
+  issuedAt: string | null
+  createdAt: string
+  totalTtc: string
+  version: number
+}
+
+export interface SaleFilters {
+  docType: string
+  status: string
+  number: string
+  page: number
+}
+
+type Page<T> = { content: T[]; page: PageMetadata }
+
+const SALES_KEY = ['sales'] as const
+
+export function useSales(filters: SaleFilters) {
+  return useQuery({
+    queryKey: [...SALES_KEY, 'list', filters],
+    queryFn: () => {
+      const params = new URLSearchParams({ page: String(filters.page) })
+      for (const key of ['docType', 'status', 'number'] as const) {
+        if (filters[key].trim() !== '') {
+          params.set(key, filters[key].trim())
+        }
+      }
+      return apiFetch<Page<SaleSummary>>(`/api/sales?${params}`)
+    },
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useCustomerSales(customerId: number, page: number, enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryKey: [...SALES_KEY, 'customer', customerId, page],
+    queryFn: () => apiFetch<Page<SaleSummary>>(`/api/customers/${customerId}/sales?page=${page}`),
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useSale(id: number) {
+  return useQuery({ queryKey: [...SALES_KEY, id], queryFn: () => fetchSale(id) })
+}
+
+export function useConvertSale(id: number) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (targetType: DocType) => post<SaleDetail>(`/api/sales/${id}/convert`, { targetType }),
+    onSuccess: () => client.invalidateQueries({ queryKey: SALES_KEY }),
+  })
+}
+
+export function useCancelSale(id: number) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (reason: string) => post<SaleDetail>(`/api/sales/${id}/cancel`, { reason }),
+    onSuccess: () => client.invalidateQueries({ queryKey: SALES_KEY }),
+  })
+}
+
+export function useAbandonSale(id: number) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: () => abandonDraft(id),
+    onSuccess: () => client.invalidateQueries({ queryKey: SALES_KEY }),
+  })
+}

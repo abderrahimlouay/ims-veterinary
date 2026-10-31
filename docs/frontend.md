@@ -143,6 +143,7 @@ Layout: left = product search + scan field + quick results; centre = cart lines 
 **Delivered (Phase 7):** type and customer are chosen before the first line and lock with the draft, since the price depends on the customer and a type never changes; credit stays switchable until confirmation. The change is computed on the screen only (ADR-118). A line is changed in one dialog: quantity, unit, discount (`sale.discount`), lot (`sale.override_fefo`). Printing comes with Phase 10.
 
 ### 4.8 Sales documents and returns
+- **Delivered (Phase 7):** `/sales` (type, status, exact number; drafts included), `/sales/:id` (lines, totals, payments, the parent document), convert and cancel; a draft, converted ones included, is finished at the counter (`/pos?draft=`). PDF buttons come with Phase 10; returns with Phase 8; the documents derived from one are not listed, the API having no such filter yet. The customer Overview shows the balance and a History tab the documents.
 - Document list with type/status badges; detail with lines, totals, payments, linked documents, PDF buttons. Convert actions (quote → DN → invoice). Cancel under the conditions of ADR-119, with reason modal.
 - **Customer return wizard:** pick invoice → select lines/quantity (max = sold − already returned) → reason, sealed?, disposition (restock / discard per OD-005) → review → submit. Shows resulting credit note.
 - **Supplier return:** pick lot(s) and quantities, reason.

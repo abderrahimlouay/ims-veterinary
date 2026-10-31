@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
@@ -48,8 +49,8 @@ const CUSTOMER_SEARCH = { type: '', active: 'true', page: 0 }
 const EMPTY_ROW: PaymentRow = { method: 'cash', amount: '', reference: '' }
 
 /**
- * `/pos` (frontend.md §4.7): one screen for the counter. The draft is created on the first line; type and customer are
- * chosen before it, since prices depend on the customer and a type never changes. The server computes prices, lots and
+ * `/pos` (frontend.md §4.7): one screen for the counter. The draft is created on the first line, or reopened with `?draft=`; type and customer
+ * are chosen before it, since prices depend on the customer and a type never changes. The server computes prices, lots and
  * totals. Change is computed here only and never sent (ADR-118). Printing comes with Phase 10.
  */
 export function PosPage() {
@@ -70,6 +71,33 @@ export function PosPage() {
   const [rows, setRows] = useState<PaymentRow[]>([EMPTY_ROW])
   const [tendered, setTendered] = useState('')
   const idempotency = useRef({ body: '', key: '' })
+  const [params, setParams] = useSearchParams()
+  const draftId = Number(params.get('draft') ?? '0')
+
+  useEffect(() => {
+    if (draftId === 0) {
+      return
+    }
+    let current = true
+    fetchSale(draftId).then(
+      (found) => {
+        if (current && found.status === 'draft') {
+          setSale(found)
+          setDocType(found.docType)
+          setCustomer(found.customer)
+          setCredit(found.creditSale)
+        }
+      },
+      (failure: unknown) => {
+        if (current) {
+          setError(failure)
+        }
+      },
+    )
+    return () => {
+      current = false
+    }
+  }, [draftId])
 
   const immediate = (docType === 'receipt' || docType === 'invoice') && !credit
   const canCredit = docType !== 'receipt'
@@ -106,6 +134,7 @@ export function PosPage() {
     })
 
   const reset = () => {
+    setParams({}, { replace: true })
     setSale(null)
     setDone(null)
     setCustomer(null)
