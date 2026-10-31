@@ -123,7 +123,7 @@ For each: purpose → main elements → key behaviours → states.
 - **Reorder:** select pending proposals, choose a supplier per group, convert to draft orders (ADR-102).
 - **Supplier invoice & payment:** Phase 9.
 ### 4.6 Customers
-- List + create/edit; detail page tabs: Overview (balance, limit, available credit), Statement (date range, print), Prices, Invoices & payments, History. Credit-limit editing requires `customer.credit.manage`; balance definition per OD-003. **Phase 6** delivers the list, create/edit (with the similar-customers warning before saving, ADR-110), the Overview without balance, the Prices tab (one price at a time, ADR-111), the categories page and the credit-limit dialog; Statement, Invoices & payments and the balance come with Phases 7 and 9. Delivered (slice 6): `/customers` (search by name, phone in any format or tax id; type and state filters), `/customers/new` and `/customers/:id` (Overview with the record form, deactivate and the credit limit; Prices tab), `/customer-categories`. The credit-limit dialog offers three radio choices that cannot be confused — "No limit" (sends `null` explicitly), "Cash only" (`"0.00"`), "Limit" with an amount > 0 — and the page shows the current state in words. Each control (new, edit, deactivate, credit limit, price edits, category edits) appears only with its permission; the server refuses anyway. Duplicates: before saving, `POST /customers/similar` warns with links to the other customers by id; "Save anyway" confirms.
+- List + create/edit; detail page tabs: Overview (balance, limit, available credit), Statement (date range, print), Prices, Invoices & payments, History. Credit-limit editing requires `customer.credit.manage`; balance definition per ADR-118. **Phase 6** delivers the list, create/edit (with the similar-customers warning before saving, ADR-110), the Overview without balance, the Prices tab (one price at a time, ADR-111), the categories page and the credit-limit dialog; Statement, Invoices & payments and the balance come with Phases 7 and 9. Delivered (slice 6): `/customers` (search by name, phone in any format or tax id; type and state filters), `/customers/new` and `/customers/:id` (Overview with the record form, deactivate and the credit limit; Prices tab), `/customer-categories`. The credit-limit dialog offers three radio choices that cannot be confused — "No limit" (sends `null` explicitly), "Cash only" (`"0.00"`), "Limit" with an amount > 0 — and the page shows the current state in words. Each control (new, edit, deactivate, credit limit, price edits, category edits) appears only with its permission; the server refuses anyway. Duplicates: before saving, `POST /customers/similar` warns with links to the other customers by id; "Save anyway" confirms.
 
 ### 4.7 Point of sale (`/pos`)
 Layout: left = product search + scan field + quick results; centre = cart lines (lot + expiry visible, warnings inline); right = customer, totals, payment, actions.
@@ -133,7 +133,7 @@ Layout: left = product search + scan field + quick results; centre = cart lines 
 | Add item | scan/enter → `POST /sales/{id}/lines`; a draft document is created lazily on first line |
 | Lot allocation | shown per line (lot, expiry); a quantity spanning lots appears as several lines grouped visually |
 | Warnings | near-expiry, withdrawal period (animal-species context), low stock after sale — shown as `Alert` banners/chips; never block |
-| Override FEFO | visible only with `sale.override_fefo`; opens lot picker **[OPEN OD-010]** |
+| Override FEFO | visible only with `sale.override_fefo`; opens lot picker, reason mandatory; non-sellable lots are not offered (ADR-120) |
 | Customer | optional for cash; mandatory for credit (`CUSTOMER_REQUIRED_FOR_CREDIT`); credit-limit state shown |
 | Confirm | one button, disabled while request in flight, sends `Idempotency-Key`; on `STOCK_INSUFFICIENT`/`LOT_*` the offending line is highlighted and refreshed from `context` |
 | After confirm | success screen with number, print A4/ticket (OD-020), "new sale" |
@@ -141,12 +141,12 @@ Layout: left = product search + scan field + quick results; centre = cart lines 
 | Cash session | if no open session and payments need one → modal to open it (`CASH_SESSION_REQUIRED`) |
 
 ### 4.8 Sales documents and returns
-- Document list with type/status badges; detail with lines, totals, payments, linked documents, PDF buttons. Convert actions (quote → DN → invoice). Cancel only if OD-004 allows, with reason modal.
+- Document list with type/status badges; detail with lines, totals, payments, linked documents, PDF buttons. Convert actions (quote → DN → invoice). Cancel under the conditions of ADR-119, with reason modal.
 - **Customer return wizard:** pick invoice → select lines/quantity (max = sold − already returned) → reason, sealed?, disposition (restock / discard per OD-005) → review → submit. Shows resulting credit note.
 - **Supplier return:** pick lot(s) and quantities, reason.
 
 ### 4.9 Payments and cash
-- Customer payment dialog: method, amount, reference (mandatory for cheque/transfer), allocation grid pre-filled oldest-first and editable; shows unallocated remainder (policy OD-003). Reversal requires reason + `payment.reverse`.
+- Customer payment dialog: method, amount, reference (mandatory for cheque/transfer), allocation grid pre-filled oldest-first and editable; shows unallocated remainder (advance, ADR-118). Reversal requires reason + `payment.reverse`.
 - Cash: open session (amount), live expected total, manual movements, close with counted amount, variance report.
 
 ### 4.10 Reports
@@ -247,4 +247,4 @@ Component tests for primitives and forms (RTL), API-mocked page tests (MSW) incl
 
 ## 17. Open frontend items
 
-OD-002/003 (POS confirm payload), OD-010 (FEFO override UI), OD-020 (print formats); DR-014 (theme switch, Phase 13), DR-015 (hard-coded thresholds).
+OD-020 (print formats), OD-038 (invoice from a delivery note); DR-014 (theme switch, Phase 13), DR-015 (hard-coded thresholds).

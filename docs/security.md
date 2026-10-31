@@ -104,8 +104,8 @@ The Spec names four roles with "restricted rights" but gives no matrix. The cata
 | `sale.read` | view sales documents | ● | ● | ● | ● |
 | `sale.create` | create quotes, receipts, invoices, delivery notes | ● | ● | ● | – |
 | `sale.discount` | discount above entitlement | ● | ● | – | – |
-| `sale.cancel` | cancel a confirmed document (if OD-004 allows) | ● | ● | – | – |
-| `sale.override_fefo` | deviate from FEFO (if OD-010 allows) | ● | ● | – | – |
+| `sale.cancel` | cancel a whole confirmed document (ADR-119) | ● | ● | – | – |
+| `sale.override_fefo` | deviate from FEFO, with a reason (ADR-120) | ● | ● | – | – |
 | `return.customer.create` | customer returns and credit notes | ● | ● | – | – |
 | `payment.read` / `statement.read` | view payments, account statements | ● | – | ● | ● |
 | `payment.customer.create` | record customer payments | ● | – | ● | ● |
@@ -142,7 +142,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | Action code | Operation | Basis |
 |---|---|---|
 | `PRICE_CHANGE` | product/unit/customer price changes, price override at sale | SRC |
-| `INVOICE_CANCEL` | cancellation of a confirmed sales document | SRC (OD-004) |
+| `INVOICE_CANCEL` | cancellation of a confirmed sales document | SRC (ADR-119) |
 | `STOCK_CORRECTION` | manual adjustment; inventory regularisation | SRC |
 | `OPENING_STOCK` | opening-stock entry (allowed only while `opening_stock_open`, ADR-082) | REC |
 | `LOT_BLOCK`, `LOT_UNBLOCK`, `LOT_RECALL` | lot status actions | SCH (`recall_lot`) + REC |
@@ -154,7 +154,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `USER_CREATE`, `USER_UPDATE`, `USER_DEACTIVATE`, `ROLE_PERMISSION_CHANGE`, `PASSWORD_RESET` | identity administration (re-activation is a `USER_UPDATE`) | REC |
 | `SETTING_CHANGE` | alert thresholds, VAT default, company data | REC |
 | `BACKUP_RUN`, `BACKUP_DOWNLOAD` | backup operations | REC |
-| `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (OD-010, BR-SALE-007) |
+| `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (ADR-120, BR-SALE-007) |
 
 Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD-102, BR-SEC-006). Passwords, tokens and hashes are never written to audit values.
 

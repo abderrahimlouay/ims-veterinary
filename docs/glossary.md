@@ -12,7 +12,7 @@
 | Alert level | Niveau d'alerte | Expiry classification (expired, critical, warning, notice) from configurable thresholds. |
 | Allocation (payment) | Imputation / affectation | Assignment of part of a payment to a specific invoice. |
 | Audit log | Journal d'audit | Immutable record of sensitive actions with user, time and before/after values. |
-| Balance (customer) | Solde client | Amount a customer owes; exact definition is OD-003. |
+| Balance (customer) | Solde client | Amount a customer owes: confirmed credit invoices − their credit notes − account payments (ADR-118). |
 | Balance (lot) | Quantité en stock du lot | Maintained quantity on hand of a lot; must equal the sum of its movements. |
 | Barcode | Code-barres | Scannable code (EAN, QR…) identifying a product or packaging unit. |
 | Base unit | Unité de base | Smallest unit in which a product's quantities are stored (e.g. tablet, ml). |
@@ -25,7 +25,7 @@
 | Credit note (supplier) | Avoir fournisseur | Document received from a supplier reducing a payable. |
 | Credit sale | Vente à crédit | Sale paid later; requires an identified customer. |
 | Customer category | Catégorie de clientèle | Segment carrying default discount/price conditions. |
-| Delivery note | Bon de livraison (BL) | Document accompanying goods delivered; stock effect per OD-002. |
+| Delivery note | Bon de livraison (BL) | Document accompanying goods delivered; moves stock when confirmed; its invoice posts no second movement (ADR-117). |
 | Depleted (lot) | Lot épuisé | Lot with zero quantity. |
 | Disposition (return) | Devenir du retour | Outcome of returned goods: restock or discard (OD-005). |
 | Document number | Numéro de document | Unique human-readable number of an order, invoice, etc. (BR-DOC-001). |

@@ -25,15 +25,15 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 4 | Inventory & stock | ledger, stock levels, adjustments, opening stock, counts, reorder proposals | ~~OD-012~~, ~~OD-013~~ → ADR-072…079 |
 | 5 | Purchasing | suppliers, purchase orders, goods receipts, supplier returns, numbering | ~~OD-007~~, ~~OD-014~~, ~~OD-015~~, ~~OD-017~~, ~~OD-029~~ → ADR-093…105 |
 | 6 | Customers | customers, categories, prices, credit-limit data | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 |
-| 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | OD-002, OD-003, OD-004, OD-010 |
+| 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | ~~OD-002, OD-003, OD-004, OD-010~~ → ADR-117…120, ADR-115/116/121…123; **open:** OD-037, OD-038, OD-039 |
 | 8 | Returns | customer returns, credit notes, restock/discard | OD-005 |
-| 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | OD-003, OD-016 (ADR-108: payments enter the credit balance) |
+| 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | ~~OD-003~~ → ADR-118, OD-016 (ADR-108: payments enter the credit balance) |
 | 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | OD-020, OD-026, OD-028 |
 | 11 | Reports & audit | reports, exports, backup | OD-021 |
 | 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | OD-021, ADR-036 hardening |
 | 13 | Dark theme `[REC]` | user-selectable theme (system / light / dark), contrast verified | ADR-069 (decided 2026-10-22) |
 
-**Dependency adjustment (DR-003).** The POS in Phase 7 needs cash/anonymous-sale payment capture (OD-003) and a cash session (BR-SALE-013, BR-PAY-006), which belong to Phase 9. Two options, to be chosen when OD-003 is decided: **(a)** deliver a minimal counter-payment and cash-session slice inside Phase 7 (recommended `[REC]`), or **(b)** reorder so Phase 9's payment/cash core precedes Phase 7. The plan below assumes (a).
+**Dependency adjustment (DR-003).** The POS in Phase 7 needs cash/anonymous-sale payment capture (OD-003) and a cash session (BR-SALE-013, BR-PAY-006), which belong to Phase 9. **Decided 2026-10-31 (ADR-118): option (a)**, a minimal counter-payment and cash-session slice inside Phase 7; manual cash movements and the session report stay in Phase 9.
 
 ---
 
@@ -118,9 +118,9 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 7 — Sales / POS
 - **Objective:** a fast, correct counter sale and document chain.
-- **Prerequisites:** Phases 3–6; OD-002, OD-003, OD-004, OD-010 decided; DR-003 option chosen.
-- **To settle at the start of Phase 7 (ADR-108):** whether credit sales are enabled before Phase 9 (payments) exists — without recorded payments a customer's balance only grows, so the limit check would eventually refuse every credit sale.
-- **Features:** quote, delivery note, invoice; conversions; POS screen with scan and FEFO lot proposal; discounts; withdrawal warnings (in-app); credit sale (uses `CreditLimitPort`); idempotent confirmation; cancellation per OD-004; **minimal counter-payment/cash-session slice** (DR-003 option a).
+- **Prerequisites:** Phases 3–6; ~~OD-002, OD-003, OD-004, OD-010~~ → ADR-117…120; ADR-115, ADR-116, ADR-121…123 (2026-10-31); DR-003 option (a); OD-037, OD-038, OD-039 to decide.
+- **Credit sales (ADR-116):** enabled from Phase 7 with the limit enforced; until Phase 9 a balance only grows, so demo and test customers will hit their limit and raising it is the workaround.
+- **Features:** quote, delivery note, invoice; conversions; POS screen with scan and FEFO lot proposal; discounts; withdrawal warnings (in-app); credit sale (uses `CreditLimitPort`); idempotent confirmation; restricted cancellation (ADR-119); **minimal counter-payment/cash-session slice** (DR-003 option a).
 - **Database work:** sales documents/lines (cost snapshot, lot per line), idempotency store, cash session minimal tables if not yet created.
 - **Backend work:** `sales` use cases; stock consumption through `StockService`; recall buyers report completed; confirm transaction (`architecture.md` §5).
 - **Frontend work:** POS layout and flows, documents list/detail, convert/cancel actions.
@@ -139,17 +139,17 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 9 — Payments & finance
 - **Objective:** know who owes what, and what is in the till.
-- **Prerequisites:** Phases 7–8; OD-003, OD-016; ADR-108 (payments enter the credit balance).
+- **Prerequisites:** Phases 7–8; ADR-118, OD-016; ADR-108 (payments enter the credit balance).
 - **Features:** customer payments with allocations and reversal; balance and statement; credit-limit enforcement; supplier invoices, payments, advances, credit notes; cash sessions, movements, variance.
 - **Database work:** payments, allocations, supplier invoices, cash sessions/movements, corrected balance view/query (DR-006), unique open-session constraint (ADR-015).
 - **Backend work:** `finance` module implementing `CreditLimitPort`, `BalanceQuery`; reversal; session close.
 - **Frontend work:** payment dialog, statements, cash screens, supplier payables.
 - **Tests:** BR-PAY-*, BR-CASH-*; CT-06, CT-09; e2e J7, J10.
-- **Completion criteria:** FR-FIN-001..008 done; balance equals definition in OD-003 on fixtures; payments never edited or deleted.
+- **Completion criteria:** FR-FIN-001..008 done; balance equals the definition in ADR-118 on fixtures; payments never edited or deleted.
 
 ## Phase 10 — Documents & printing
 - **Objective:** produce the printable documents.
-- **Prerequisites:** Phase 7–9; OD-020 (printing), OD-026 (company identity), OD-028 (withdrawal-warning applicability).
+- **Prerequisites:** Phase 7–9; OD-020 (printing), OD-026 (company identity), OD-028 (withdrawal-warning applicability when printing).
 - **Features:** A4 invoices/quotes/delivery notes/credit notes/PO, thermal tickets, statements; withdrawal-period warnings printed; company identity on documents.
 - **Database work:** settings for company identity; none else.
 - **Backend work:** `printing` module, templates, generation after commit.
@@ -159,7 +159,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 11 — Reports & audit
 - **Objective:** management information and data safety.
-- **Prerequisites:** Phase 9; OD-021 (backup), OD-002/003 (scope of margin).
+- **Prerequisites:** Phase 9; OD-021 (backup); scope of margin per ADR-117, ADR-118.
 - **Features:** revenue, margin, valuation, sales statistics, balances, payables, cash variance, lot traceability; CSV/PDF export; backups and backup log; audit viewer finalised.
 - **Database work:** rewritten MySQL views (ADR-014) with corrected margin/credit-note handling (DR-007), indexes for reports.
 - **Backend work:** `reporting`, `backup`.
@@ -233,4 +233,4 @@ Every requirement of `requirements.md` appears below with the phase in which it 
 
 ## 4. Risks to the plan
 
-1. Undecided OD-002/003 delay Phase 7 (largest risk). 2. Printer variability (Phase 10). 3. Large volumes affecting search (Phase 2/12). 4. Schema deltas discovered late — mitigated by `database-migration.md` and small migrations.
+1. Go-live blockers: the accountant's confirmation of invoice rounding (DR-040) and the client's answer on prescription-only products (OD-037). 2. Printer variability (Phase 10). 3. Large volumes affecting search (Phase 2/12). 4. Schema deltas discovered late — mitigated by `database-migration.md` and small migrations.

@@ -61,7 +61,7 @@ Legend for *Where*: **DB** = enforced in MySQL; **APP** = enforced in Spring Boo
 | 11 | `INSERT … ON CONFLICT (…) DO UPDATE … RETURNING` | inside `next_doc_number` | `INSERT … ON DUPLICATE KEY UPDATE`; no `RETURNING` | No | Yes (D) | Row lock + read + update in one transaction (`SELECT … FOR UPDATE`). | APP | Sequence row is a hot spot per `(doc_key, year)`; acceptable. |
 | 12 | PL/pgSQL trigger function + `CREATE TRIGGER … BEFORE UPDATE OR DELETE` | `stock_movements` append-only guard | MySQL triggers: **one event per trigger**, body uses `SIGNAL SQLSTATE '45000'` | No | Minor (B) | Two triggers (`BEFORE UPDATE`, `BEFORE DELETE`). **ADR-017**. Also revoke `UPDATE/DELETE` from the app DB user and map entity `@Immutable`. | DB | `TRUNCATE` is not covered by triggers (guard by privileges). Cascaded FK actions do not fire triggers (no cascade targets this table). With binary logging, trigger creation needs `log_bin_trust_function_creators=1` or elevated migration rights. |
 | 13 | `fefo_lots(product_id)` — SQL function `RETURNS TABLE` | FEFO ordering | MySQL stored functions return scalars only | No | **Yes (D)** | Repository query `ORDER BY expiry_date ASC, id ASC` filtered on sellable lots, with locking read inside the sale transaction. | APP | FEFO logic and the sellable predicate (status, expiry, quantity) are in Java + one query; one place only (BR-LOT-005). |
-| 14 | `recall_lot(...)` — PL/pgSQL (update + audit insert + `RETURN QUERY`) | lot recall | stored procedure possible but not wanted | No | **Yes (D)** | `LotRecallService` (`@Transactional`): block lot, write audit, return recall report via query. | APP | Recall report must also cover anonymous sales and (per OD-002) delivery notes. |
+| 14 | `recall_lot(...)` — PL/pgSQL (update + audit insert + `RETURN QUERY`) | lot recall | stored procedure possible but not wanted | No | **Yes (D)** | `LotRecallService` (`@Transactional`): block lot, write audit, return recall report via query. | APP | Recall report must also cover anonymous sales and delivery notes (ADR-117). |
 | 15 | Partial indexes (`… WHERE …`) | `idx_lots_fefo`, `idx_lots_expiry`, `uq_one_open_session` | none | No | **Yes (C)** | **ADR-015**: ordinary composite indexes for the two lot indexes; generated column `open_cashier_id` + `UNIQUE` for one-open-session. | DB (+APP check) | Slightly larger indexes; planner may scan non-active lots; negligible volume. |
 | 16 | Functional indexes `lower(col)` | `idx_products_name_trgm`, `idx_customers_name` | functional key parts (8.0.13+) — but unnecessary | B | No | Default collation `utf8mb4_0900_ai_ci` is already case/accent-insensitive; plain index on the column. **ADR-024, ADR-025** | DB | Search semantics differ from PostgreSQL (accent-insensitive). |
 | 17 | `pg_trgm` GIN (mentioned in comment) | fuzzy name search idea | contains `LIKE` with `_ai_ci` collation | No | Decided | **ADR-048** | DB / APP | NFR-002 (< 1 s) must be verified with realistic data volume. |
@@ -103,7 +103,7 @@ All become `VARCHAR(30)` + `CHECK` (ADR-009).
 | cash_session_status | open, closed | cash_sessions |
 | cash_move_direction | in, out | cash_movements |
 
-Open points on values: additional `movement_type` values for cancellations/discards (**OD-004**, **OD-005**); `unit_conversion` is removed because stock is kept in base units only (ADR-061, SD-118).
+Open points on values: additional `movement_type` values for discards (**OD-005**); `sale_cancellation` is added by ADR-119; `unit_conversion` is removed because stock is kept in base units only (ADR-061, SD-118).
 
 ## 5. Type mapping reference
 
@@ -128,11 +128,11 @@ Open points on values: additional `movement_type` values for cancellations/disca
 | `v_product_stock` | D | Not created: sellable stock needs the business date in the business time zone (ADR-055) and the single Java predicate (BR-STOCK-011); stock levels are computed by the service (ADR-080). |
 | `v_reorder_needed` | D | Not created: sellable stock depends on the business date and expiry policy, so the service computes stock levels and reorder candidates (ADR-076, ADR-080). |
 | `v_expiring_lots` | D | Not created: the service lists expiring lots and computes the level from configured thresholds (ADR-056, DR-019). |
-| `v_sale_withdrawal_warnings` | A | Direct. Applicability rules **OD-028**. |
-| `v_customer_balance` | B + **defect** | Do not reuse as-is; definition **OD-003** (DR-006). |
+| `v_sale_withdrawal_warnings` | A | Direct. Printing applicability **OD-028**; screen ADR-121. |
+| `v_customer_balance` | B + **defect** | Do not reuse as-is; definition **ADR-118** (DR-006). |
 | `v_supplier_payables` | A/B | Direct; ignores advances (OD-016). |
 | `v_stock_valuation` | A | Direct; "at sale price" uses `products.sale_price` per base unit. |
-| `v_sales_margin` | B + **defect** | `date_trunc(...)::date` → `DATE(...)`; ignores credit notes (DR-007, OD-003). |
+| `v_sales_margin` | B + **defect** | `date_trunc(...)::date` → `DATE(...)`; ignores credit notes (DR-007, ADR-118). |
 | `next_doc_number` | D | `NumberingService` (ADR-011). |
 | `trg_movements_immutable` + trigger | B | Two MySQL triggers (ADR-017). |
 | `fefo_lots` | D | Repository query (BR-LOT-005). |
@@ -208,13 +208,13 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | ID | Delta | Linked decision | Status |
 |---|---|---|---|
 | SD-101 | `version` columns for optimistic locking | ADR-027 | Accepted 2026-10-20 |
-| SD-102 | Append-only triggers on `audit_log` (and possibly payment/cash ledgers) | ADR-017, OD-003 | Accepted 2026-10-20 for `audit_log`; ledgers open (OD-003) |
+| SD-102 | Append-only triggers on `audit_log` and on the payment and cash ledgers | ADR-017, ADR-118 | Accepted 2026-10-20 for `audit_log`; 2026-10-31 for `customer_payments`, `payment_allocations`, `cash_movements` |
 | SD-103 | Composite uniqueness `lots (id, product_id)` and composite FKs so that `stock_movements`, `goods_receipt_lines`, `sales_document_lines` cannot reference a lot of another product | DR-008, ADR-062 | Accepted 2026-10-22 (`lots` in Phase 3; each FK with its table) |
 | SD-104 | Prices per base unit `DECIMAL(14,4)` | ADR-049 | Accepted 2026-10-21 |
 | SD-105 | `product_barcodes.unit_id` (composite FK to `product_units(id, product_id)`) and `code` in `utf8mb4_bin` | ADR-057, ADR-058 | Accepted 2026-10-22 |
 | SD-106 | `product_target_species` (target species) | ADR-047 | Accepted 2026-10-21 |
-| SD-107 | New `movement_type` values (cancellation/discard) | OD-004, OD-005 | Open |
-| SD-108 | Payment capture model for counter/anonymous sales | OD-003 | Open |
+| SD-107 | New `movement_type` value for discard | OD-005 | Open (cancellation: SD-135) |
+| SD-108 | `customer_payments.customer_id` nullable; every immediate sale creates a payment | ADR-118 | Accepted 2026-10-31 |
 | SD-109 | Link supplier return ↔ supplier credit note | OD-016 | Open |
 | SD-110 | Company profile / document header data | OD-026 | Open |
 | SD-111 | Spring Session JDBC tables (no refresh-token or login-attempt table) | ADR-036, ADR-038 | Accepted 2026-10-20 |
@@ -241,6 +241,9 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-132 | `supplier_price_history.receipt_id` and `cancelled` | ADR-106 | Accepted 2026-10-24 |
 | SD-134 | `customers.tax_id` (normalised, unique), `email`, `payment_terms_days`, `phone_key` with `UQ(name, phone_key)`, `updated_at`; `customer_product_prices` foreign keys `RESTRICT` (Source: `CASCADE`) | ADR-109, ADR-110, ADR-111 | Accepted 2026-10-25 |
 | SD-133 | `customers.credit_limit` nullable: NULL = no limit, 0 = cash only (the Source Schema has `NOT NULL DEFAULT 0`) | ADR-108 | Accepted 2026-10-24 |
+| SD-135 | Movement type `sale_cancellation` (+) added to the CHECKs; `sales_documents.cancel_reason` | ADR-119 | Accepted 2026-10-31 |
+| SD-136 | `sales_documents.number` nullable for drafts, CHECK on non-drafts | ADR-122 | Accepted 2026-10-31 |
+| SD-137 | `sales_document_lines.unit_price DECIMAL(14,4)` per sold unit | ADR-123 | Accepted 2026-10-31 |
 
 ## 9. Operational requirements for MySQL
 

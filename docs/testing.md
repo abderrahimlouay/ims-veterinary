@@ -54,7 +54,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 |---|---|
 | Purchasing (W1) | draft→validated→sent; partial and full receipt; lot create/merge; over-receipt; conformity; inactive supplier; atomic rollback; supplier price history |
 | Sales / POS (W2) | FEFO allocation across lots; expired/blocked/recalled refusal; insufficient stock; discount rights; credit limit; idempotent confirm; withdrawal warnings; cash-session link; documents numbering |
-| Cancellation (W2b) | per OD-004 |
+| Cancellation (W2b) | ADR-119: allowed and refused cases, reversal, payment reversal, atomicity |
 | Customer return (W3) | partial returns, cumulative limit, restock vs discard (OD-005), credit note, refund |
 | Supplier return (W4) | lot reduction, insufficient stock, financial effect (OD-016) |
 | Inventory count (W5) | open, enter, variance, regularise, concurrent sale, one open full count, closed immutability |
@@ -180,7 +180,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PURCH-013 | S | Same key + same body → first receipt, nothing posted twice; same key + other body → IDEMPOTENCY_CONFLICT (`GoodsReceiptsTest.theSameIdempotencyKeyReturnsTheFirstReceipt`, CT-05 in `IdempotencyKeysTest`) |
 | BR-DOC-001 | C,R | CT-03: 1000 concurrent numbers unique and gap-free on commit, 20 times; format `KEY-YYYY-NNNNNN`; yearly reset on the Algiers business year (31 Dec 23:30 UTC = next year); no number without a transaction; a rolled-back transaction leaves no gap; the counter stays locked until commit; number then lots in opposite orders never deadlock, 20 times (`NumberingServiceTest`, `NumberingTransactionTest`) |
 | BR-SALE-001 | U | Document chain and allowed conversions |
-| BR-SALE-002 | S | Which documents move stock (OD-002): quote none; others per decision |
+| BR-SALE-002 | S | Quote posts none; delivery note, receipt and direct invoice post `sale`; invoice from a delivery note reuses its lots and posts no second movement (ADR-117) |
 | BR-SALE-003 | S | Confirm quote → no movement |
 | BR-SALE-004 | A | Edit confirmed document → DOCUMENT_IMMUTABLE |
 | BR-SALE-005 | S | Lots assigned and verified at confirmation |
@@ -188,11 +188,11 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SALE-007 | U,SEC | Discount above entitlement needs sale.discount; no stacking (ADR-113); a manual price needs price.edit; the rights come from the signed-in user — `PriceResolverTest`, `CustomerPricingTest` |
 | BR-SALE-008 | U | Server totals identical for same input; client totals ignored |
 | BR-SALE-009 | S | Line stores unit cost snapshot equal to lot cost |
-| BR-SALE-010 | S | Warnings for meat/milk/eggs days by species; none when no data (OD-028) |
+| BR-SALE-010 | S | On screen: warnings for any customer, by species, every species when none is given, none when no data (ADR-121); printing from Phase 10 (OD-028) |
 | BR-SALE-011 | S | Archived product in sale → PRODUCT_ARCHIVED |
 | BR-SALE-012 | S | Credit sale without customer; inactive customer → errors |
-| BR-SALE-013 | S | Cash sale needs open session when required (OD-003) |
-| BR-SALE-014 | S | Cancellation per OD-004: allowed states, reversal movements, audit |
+| BR-SALE-013 | S | A payment with a cash part needs an open session; cheque, transfer and credit sales do not (ADR-118) |
+| BR-SALE-014 | S | ADR-119: whole document; refused with a return, credit note, derived document or closed session; `sale_cancellation` movements, payments reversed, number kept, audit, atomic |
 | BR-SALE-015 | C | Confirm with insufficient stock → STOCK_INSUFFICIENT, atomic rollback |
 | BR-SALE-016 | S,A | Double submit with same Idempotency-Key → one document; different body → IDEMPOTENCY_CONFLICT |
 | BR-CUST-001 | A | Veterinarian link: an active customer of type veterinarian (`NOT_VETERINARIAN`), not itself (`SELF`); a referenced veterinarian's type cannot change (`RESOURCE_IN_USE`); deactivating it keeps the links (`CustomersTest`) |
@@ -211,8 +211,8 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PAY-001 | U,A | Amount ≤ 0; missing reference for cheque/transfer → VALIDATION_FAILED |
 | BR-PAY-002 | S | Allocation > payment or > outstanding → PAYMENT_ALLOCATION_EXCEEDED |
 | BR-PAY-003 | SEC,A | Payment update/delete refused; reversal creates counter entry |
-| BR-PAY-004 | S,R | Balance = sales − credit notes − allocated payments (OD-003); view parity test |
-| BR-PAY-005 | S,C | Credit above limit → CREDIT_LIMIT_EXCEEDED; concurrent sales respect limit; NULL = no limit, 0 = cash only; overdue blocks only with `credit_overdue_block_days` (ADR-108) |
+| BR-PAY-004 | S,R | Balance = credit invoices − their credit notes − account payments; counter payments never count (ADR-118); view parity test |
+| BR-PAY-005 | S,C | Credit above limit → CREDIT_LIMIT_EXCEEDED; concurrent sales respect limit; NULL = no limit, 0 = cash only; overdue blocks only with `credit_overdue_block_days` (ADR-108); uninvoiced credit delivery notes count in the check, not in the balance (ADR-117) |
 | BR-PAY-006 | S | Cash payment with no open session → CASH_SESSION_REQUIRED |
 | BR-PAY-007 | S | Statement lines and running balance over a period |
 | BR-PAY-008 | R,A | Duplicate (supplier, invoice number) → DUPLICATE_RESOURCE |
@@ -267,4 +267,4 @@ See `database-migration.md` §10 checklist. Every migration runs on an empty dat
 
 ## 13. Open testing items
 
-ADR-107 and ADR-093 (price and rounding fixtures), OD-002/003/004/005 (sales/payment/cancellation/return expectations), OD-012/013/015/017 (resolved), ADR-108.
+ADR-107, ADR-093 and ADR-115 (price and rounding fixtures), ADR-117…119 and OD-005 (sales/payment/cancellation/return expectations), OD-012/013/015/017 (resolved), ADR-108.

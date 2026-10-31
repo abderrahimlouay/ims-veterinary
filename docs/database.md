@@ -54,7 +54,7 @@ No final DDL is given here; column lists are the contract the first migrations m
 `supplier_returns` (+ lines) send stock back from specific lots.
 
 ### 2.5 Sales
-One table family handles every sales paper: `sales_documents.doc_type` ∈ quote, delivery_note, invoice, receipt, credit_note; `parent_id` chains quote → delivery note → invoice and invoice → credit note (OD-002 decides which types move stock).
+One table family handles every sales paper: `sales_documents.doc_type` ∈ quote, delivery_note, invoice, receipt, credit_note; `parent_id` chains quote → delivery note → invoice and invoice → credit note (which types move stock: ADR-117).
 Lines carry `product_id`, `lot_id` (required at confirmation for stock-moving documents), `unit_id`, `target_species_id` (drives withdrawal-period warnings), `quantity`, `quantity_base`, `unit_price` (per sold unit), `unit_cost` (snapshot of lot cost for margin), `discount_pct`, `vat_rate` (snapshot), generated `line_ht` / `line_ttc`.
 Totals (`total_ht`, `total_discount`, `total_vat`, `total_ttc`) are computed by the server and stored (rounding per line, HALF_UP, ADR-093).
 `customer_id IS NULL` allowed only for anonymous counter receipts (credit sales require a customer — DB `CHECK`).
@@ -64,7 +64,7 @@ Totals (`total_ht`, `total_discount`, `total_vat`, `total_ttc`) are computed by 
 - **Supplier return:** `supplier_returns` + `supplier_return_lines(lot_id, quantity_base)`; stock effect: `supplier_return` movement `−qty`. Supplier credit linkage: **OD-016** (SD-109).
 
 ### 2.7 Payments and financial balances
-- **Customer payments:** `customer_payments(customer, method, amount, reference, cash_session)`; `payment_allocations(payment_id, invoice_id, amount)` split a payment across invoices. Immediate payments at the counter and anonymous sales: **OD-003**.
+- **Customer payments:** `customer_payments(customer, method, amount, reference, cash_session)`; `payment_allocations(payment_id, invoice_id, amount)` split a payment across invoices. Every immediate sale, anonymous ones included, creates a payment and allocations (ADR-118).
 - **Supplier payments:** `supplier_payments` optionally linked to one `supplier_invoices` row; `invoice_id IS NULL` + `is_advance` = advance (acompte); `supplier_invoices.is_credit_note = TRUE` is a supplier *avoir* stored as a positive amount and treated as negative in payables.
 - **Cash:** `cash_sessions` (open/close, expected vs counted, generated `variance_amount`) and `cash_movements` (in/out, by method, optionally linked to a customer or supplier payment).
 - **Balances are derived, never stored** (no balance column anywhere):
@@ -72,7 +72,7 @@ Totals (`total_ht`, `total_discount`, `total_vat`, `total_ttc`) are computed by 
 | Balance | Definition | Status |
 |---|---|---|
 | Invoice outstanding | `total_ttc − Σ payment_allocations.amount` for that invoice | `[REC]` |
-| Customer balance (Source) | `Σ confirmed credit invoices − Σ confirmed credit notes − Σ customer_payments` | **Defective as written** (DR-006); final definition **OD-003** |
+| Customer balance (Source) | `Σ confirmed credit invoices − Σ confirmed credit notes − Σ customer_payments` | **Defective as written** (DR-006); final definition **ADR-118**: confirmed credit invoices − their credit notes − account payments |
 | Supplier payable (per invoice) | `±total_ttc − Σ supplier_payments(invoice)` | Source view `v_supplier_payables`; advances not netted (OD-016) |
 | Expected cash in session | `opening_amount + Σ cash-method IN − Σ cash-method OUT` for the session | `[REC]` (BR-CASH-003) |
 
@@ -182,7 +182,7 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 | id | BIGINT AI | PK | |
 | lot_id | BIGINT | NOT NULL FK→lots | |
 | product_id | BIGINT | NOT NULL FK→products | composite `FK (lot_id, product_id) → lots(id, product_id)` (SD-103, ADR-062) |
-| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock, receipt_cancellation — V05_012) — all ten from Phase 4 (ADR-081), plus `receipt_cancellation` from Phase 5 (ADR-103, SD-127); no `unit_conversion` (ADR-061, SD-118); cancellation/discard only after OD-004/005 (SD-107) |
+| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock, receipt_cancellation — V05_012) — all ten from Phase 4 (ADR-081), plus `receipt_cancellation` from Phase 5 (ADR-103, SD-127); no `unit_conversion` (ADR-061, SD-118); `sale_cancellation` from Phase 7 (ADR-119, SD-135); discard only after OD-005 (SD-107) |
 | quantity | DECIMAL(14,3) | NOT NULL, **CK ≠ 0** | signed, base unit; CK sign per type (BR-STOCK-005): receipts, customer returns and opening stock > 0, sales, supplier returns, receipt cancellations and the four manual adjustments < 0, `adjustment_inventory` either |
 | reference_type | VARCHAR(40) | NULL | e.g. `sales_document`, `goods_receipt`, `inventory` |
 | reference_id | BIGINT | NULL | |
@@ -222,16 +222,16 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 
 **cash_sessions** — `id`, `cashier_id FK→users`, `status VARCHAR(30) NOT NULL DEFAULT 'open'` (open | closed), `opened_at`, `closed_at NULL`, `opening_amount DECIMAL(14,2) NOT NULL DEFAULT 0`, `expected_amount DECIMAL(14,2) NULL`, `counted_amount DECIMAL(14,2) NULL`, `variance_amount DECIMAL(14,2) GENERATED ALWAYS AS (counted_amount − expected_amount) STORED`, `open_cashier_id BIGINT GENERATED ALWAYS AS (IF(status='open', cashier_id, NULL)) … UQ` (SD-009).
 
-**sales_documents** — `id`, `doc_type VARCHAR(30) NOT NULL`, `number VARCHAR(30) NOT NULL`, `status VARCHAR(30) NOT NULL DEFAULT 'draft'` (draft | confirmed | cancelled), `customer_id NULL FK`, `parent_id NULL FK→sales_documents`, `is_credit_sale BOOLEAN NOT NULL DEFAULT FALSE`, `due_date DATE NULL`, `cash_session_id NULL FK`, `issued_at`, `total_ht / total_discount / total_vat / total_ttc DECIMAL(14,2) NOT NULL DEFAULT 0`, `notes TEXT`, `created_by FK`, `cancelled_by NULL FK`, `cancelled_at NULL`, `version`. `UQ(doc_type, number)`; `CK (is_credit_sale = FALSE OR customer_id IS NOT NULL)`. Indexes `(customer_id, issued_at DESC)`, `(issued_at)`. **[OPEN]** payment-method/payment-status columns (SD-108, OD-003); number assignment moment for sales documents decided in Phase 7 (format ADR-097).
+**sales_documents** — `id`, `doc_type VARCHAR(30) NOT NULL`, `number VARCHAR(30) NULL` (a draft has none; CHECK on non-drafts, ADR-122), `status VARCHAR(30) NOT NULL DEFAULT 'draft'` (draft | confirmed | cancelled), `customer_id NULL FK`, `parent_id NULL FK→sales_documents`, `is_credit_sale BOOLEAN NOT NULL DEFAULT FALSE`, `due_date DATE NULL`, `cash_session_id NULL FK`, `issued_at`, `total_ht / total_discount / total_vat / total_ttc DECIMAL(14,2) NOT NULL DEFAULT 0`, `notes TEXT`, `created_by FK`, `cancelled_by NULL FK`, `cancelled_at NULL`, `cancel_reason NULL` (ADR-119), `version`. `UQ(doc_type, number)`; `CK (is_credit_sale = FALSE OR customer_id IS NOT NULL)`. Indexes `(customer_id, issued_at DESC)`, `(issued_at)`. No payment columns: payments are rows (ADR-118, SD-108). Numbered at confirmation (ADR-122).
 
-**sales_document_lines** — `id`, `document_id FK CASCADE`, `product_id FK`, `lot_id NULL FK→lots`, `unit_id NULL FK→product_units`, `target_species_id NULL FK→animal_species`, `quantity DECIMAL(14,3) CK > 0`, `quantity_base DECIMAL(14,3) CK > 0`, `unit_price DECIMAL(14,2) CK ≥ 0`, `unit_cost DECIMAL(14,4) NOT NULL DEFAULT 0`, `discount_pct DECIMAL(5,2) CK 0–100`, `vat_rate DECIMAL(5,2) NOT NULL DEFAULT 0`, `line_ht` and `line_ttc` generated (formulas in ADR-016). Indexes `(document_id)`, `(lot_id)` (recall), `(product_id)`.
+**sales_document_lines** — `id`, `document_id FK CASCADE`, `product_id FK`, `lot_id NULL FK→lots`, `unit_id NULL FK→product_units`, `target_species_id NULL FK→animal_species`, `quantity DECIMAL(14,3) CK > 0`, `quantity_base DECIMAL(14,3) CK > 0`, `unit_price DECIMAL(14,4) CK ≥ 0` (per sold unit, ADR-123), `unit_cost DECIMAL(14,4) NOT NULL DEFAULT 0`, `discount_pct DECIMAL(5,2) CK 0–100`, `vat_rate DECIMAL(5,2) NOT NULL DEFAULT 0`, `line_ht` and `line_ttc` generated (formulas in ADR-016). Indexes `(document_id)`, `(lot_id)` (recall), `(product_id)`.
 
 **customer_returns** — `id`, `number VARCHAR(30) UQ` (service), `invoice_id NOT NULL FK→sales_documents`, `credit_note_id NULL FK→sales_documents`, `reason TEXT`, `created_by FK`, `created_at`.
 **customer_return_lines** — `id`, `return_id FK CASCADE`, `sale_line_id FK→sales_document_lines`, `quantity_base CK > 0`, `disposition VARCHAR(30) NOT NULL` (restock | discard).
 
 ### 3.7 Finance (module 6)
 
-**customer_payments** — `id`, `customer_id NOT NULL FK`, `method VARCHAR(30) NOT NULL` (cash | cheque | bank_transfer), `amount DECIMAL(14,2) CK > 0`, `reference VARCHAR(80) NULL`, `cash_session_id NULL FK`, `paid_at`, `created_by FK`. (`customer_id NOT NULL` conflicts with anonymous sales — OD-003.)
+**customer_payments** — `id`, `customer_id NULL FK` (anonymous sale, ADR-118), `method VARCHAR(30) NOT NULL` (cash | cheque | bank_transfer), `amount DECIMAL(14,2) CK > 0`, `reference VARCHAR(80) NULL`, `cash_session_id NULL FK`, `paid_at`, `created_by FK`. Append-only (SD-102, ADR-118).
 **payment_allocations** — `payment_id FK CASCADE`, `invoice_id FK→sales_documents`, `amount DECIMAL(14,2) CK > 0`, `PK(payment_id, invoice_id)`.
 **supplier_invoices** — `id`, `supplier_id FK`, `invoice_number VARCHAR(60) NOT NULL`, `receipt_id NULL FK→goods_receipts`, `invoice_date DATE`, `due_date DATE`, `total_ttc DECIMAL(14,2) CK ≥ 0`, `is_credit_note BOOLEAN NOT NULL DEFAULT FALSE`, `UQ(supplier_id, invoice_number)`.
 **supplier_payments** — `id`, `supplier_id FK`, `invoice_id NULL FK→supplier_invoices` (NULL = advance), `method`, `amount CK > 0`, `is_advance BOOLEAN NOT NULL DEFAULT FALSE`, `reference VARCHAR(80)`, `paid_at`, `created_by FK`.
@@ -260,11 +260,11 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 | `v_product_stock` | sellable vs total quantity per product, thresholds | Not created: computed by the service with the business date (ADR-080) |
 | `v_reorder_needed` | products at/below reorder point | Not created: computed by the service (ADR-076, ADR-080) |
 | `v_expiring_lots` | expiry alert list | Not created: the list and its levels are computed by the service from settings (ADR-056, DR-019) |
-| `v_sale_withdrawal_warnings` | printable withdrawal warnings | Keep; applicability OD-028 |
-| `v_customer_balance` | customer running balance | **Do not use as written** (DR-006); redefine after OD-003 |
+| `v_sale_withdrawal_warnings` | printable withdrawal warnings | Keep; printing applicability OD-028 (screen: ADR-121) |
+| `v_customer_balance` | customer running balance | **Do not use as written** (DR-006); redefine per ADR-118 (Phase 9) |
 | `v_supplier_payables` | outstanding per supplier invoice | Keep; advances OD-016 |
 | `v_stock_valuation` | value at cost and at sale price | Keep |
-| `v_sales_margin` | revenue / cost / margin by day, product, zone, customer | **Fix** (credit notes, delivery notes — DR-007, OD-002) |
+| `v_sales_margin` | revenue / cost / margin by day, product, zone, customer | **Fix** (credit notes, delivery notes — DR-007, ADR-117) |
 
 Rule (ADR-014): views are read models for listings/reports; decisions inside transactions use locking queries.
 
@@ -275,15 +275,15 @@ Rule (ADR-014): views are read models for listings/reports; decisions inside tra
 | **FEFO lots for product P** | lots | `status='active' AND quantity_on_hand>0 AND expiry_date ≥ business date` (ADR-055) order by `expiry_date, id`; inside the sale transaction use `FOR UPDATE` in that order |
 | **Sellable stock of P** | lots | sum over the same predicate (BR-STOCK-011) |
 | **Expiry alerts** | lots, products | `quantity_on_hand>0 AND expiry_date ≤ today + max(threshold)`; level computed in the service from `app_settings.expiry_alert_days`, inclusive limits (ADR-056) |
-| **Recall report for lot L** | sales_document_lines, sales_documents, customers | confirmed stock-moving documents containing `lot_id = L`; **left join** customers (anonymous receipts must still appear); document types per OD-002 |
+| **Recall report for lot L** | sales_document_lines, sales_documents, customers | confirmed stock-moving documents containing `lot_id = L`; **left join** customers (anonymous receipts must still appear); document types per ADR-117 |
 | **Ledger reconciliation** | lots, stock_movements | `lots.quantity_on_hand = SUM(stock_movements.quantity)` per lot; any difference is a Critical defect (BR-STOCK-007) |
 | **Reorder candidates** | lots, products | `reorder_point > 0 AND sellable_qty ≤ reorder_point`, not archived (ADR-076), computed by the service |
 | **Withdrawal warnings for document D** | sales_document_lines, product_withdrawal_periods, animal_species | match species when specified |
-| **Customer account statement** | sales_documents, payment_allocations, customer_payments | chronological, running balance (definition OD-003) |
+| **Customer account statement** | sales_documents, payment_allocations, customer_payments | chronological, running balance (definition ADR-118) |
 | **Supplier payables** | supplier_invoices, supplier_payments | open amount per invoice, ordered by `due_date` |
 | **Expected cash for session S** | cash_movements | cash method only (BR-CASH-003) |
 | **Stock valuation** | lots, products | at cost: `Σ qty × lots.unit_cost`; at price: `Σ qty × products.sale_price` |
-| **Margin** | sales_document_lines, sales_documents | `Σ line_ht − Σ quantity_base × unit_cost`, net of credit notes (OD-003) |
+| **Margin** | sales_document_lines, sales_documents | `Σ line_ht − Σ quantity_base × unit_cost`, net of credit notes (ADR-118) |
 | **Customer sales by zone** | sales_documents, customers | group by `wilaya/commune`, period (FR-RPT-003) |
 
 ## 7. Transaction requirements
@@ -293,8 +293,8 @@ All rows below are **one database transaction** (`@Transactional`, READ COMMITTE
 | Operation | Writes | Locks / checks |
 |---|---|---|
 | Confirm goods receipt | `goods_receipts`, `goods_receipt_lines`, `lots` (find-or-create), `stock_movements(+)`, `lots.quantity_on_hand`, `purchase_order_lines.received_base`, `purchase_orders.status`, `supplier_price_history`(opt.), `document_sequences`, `audit_log`(opt.) | lot row; PO row |
-| Confirm sale (invoice/receipt) | `sales_documents`, `sales_document_lines`(lot, cost snapshot), `stock_movements(−)`, `lots`, payment rows (OD-003), `document_sequences`, `audit_log` | lots in `id` order; customer row if credit |
-| Cancel confirmed document | status change, compensating movements, `audit_log` | lots; OD-004 |
+| Confirm sale (invoice/receipt) | `sales_documents`, `sales_document_lines`(lot, cost snapshot), `stock_movements(−)`, `lots`, payment rows (ADR-118), `document_sequences`, `audit_log` | lots in `id` order; customer row if credit |
+| Cancel confirmed document | status change, compensating movements, `audit_log` | lots; ADR-119 |
 | Customer return | `customer_returns/lines`, credit note document, movement(s) per disposition, `document_sequences`, `audit_log` | original lot; sale line |
 | Supplier return | `supplier_returns/lines`, `stock_movements(−)`, `lots`, numbering | lot rows |
 | Manual adjustment | `stock_movements(adjustment_*)`, `lots`, `audit_log` | lot row; reason mandatory |
@@ -321,4 +321,4 @@ Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), set
 
 ## 10. Items awaiting decisions
 
-SD-104…SD-113 and OD-002, 003, 004, 005, 006, 007, 011, 012, 013, 014, 015, 016, 017, 018, 019, 022, 025, 026, 027 each change this document. When a decision is made: update `decisions.md`, then this file, then `business-rules.md`, `api.md`, `testing.md`.
+SD-104…SD-113 and OD-005, 006, 007, 011, 012, 013, 014, 015, 016, 017, 018, 019, 022, 025, 026, 027 each change this document. When a decision is made: update `decisions.md`, then this file, then `business-rules.md`, `api.md`, `testing.md`.

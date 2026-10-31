@@ -169,7 +169,7 @@ stateDiagram-v2
 `draft → validated → sent → partially_received → closed`; `draft | validated | sent → cancelled`. Receipts advance it automatically; the first receipt moves a `sent` order to `partially_received`; full reception closes it; a `partially_received` order can be closed with a reason (BR-PURCH-001, -004, ADR-096). Cancelling a receipt rolls the received quantities and the status back (ADR-103).
 
 ### 5.3 Sales document
-`draft → confirmed`; `confirmed → cancelled` only if OD-004 allows. `draft → cancelled` (abandon). A confirmed stock-moving document has posted movements; quotes never do (BR-SALE-002, -003, -014).
+`draft → confirmed`; `confirmed → cancelled` under the conditions of ADR-119. `draft → cancelled` (abandon). A confirmed stock-moving document has posted movements; quotes never do (BR-SALE-002, -003, -014).
 Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → credit_note` (BR-SALE-001).
 
 ### 5.4 Inventory count
@@ -214,7 +214,7 @@ Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → 
 | Use case | Aggregates modified |
 |---|---|
 | Confirm goods receipt | GoodsReceipt, Lot(s), StockMovement(s), PurchaseOrder, DocumentSequence, SupplierPriceHistory, (AuditEntry) |
-| Confirm sale | SalesDocument, Lot(s), StockMovement(s), DocumentSequence, Customer *(locked for credit check)*, CustomerPayment/Allocation/CashMovement *(per OD-003)*, AuditEntry |
+| Confirm sale | SalesDocument, Lot(s), StockMovement(s), DocumentSequence, Customer *(locked for credit check)*, CustomerPayment/Allocation/CashMovement *(ADR-118)*, AuditEntry |
 | Customer return | CustomerReturn, SalesDocument (credit note), Lot(s), StockMovement(s), DocumentSequence, AuditEntry |
 | Supplier return | SupplierReturn, Lot(s), StockMovement(s), DocumentSequence |
 | Manual adjustment | Lot, StockMovement, AuditEntry |
