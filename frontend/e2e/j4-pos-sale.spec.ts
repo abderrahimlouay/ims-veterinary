@@ -44,4 +44,9 @@ test('J4: a cash sale across two lots by FEFO, with change', async ({ page }) =>
   await page.getByRole('button', { name: 'Nouvelle vente' }).click()
   await expect(page.getByText('Le panier est vide.')).toBeVisible()
   await expect(page.getByTestId('cash-session')).toContainText(/104,50/)
+
+  // A scanner types the code and Enter; the unknown code proves the form submits (the code goes to the server).
+  await page.getByLabel('Scanner ou chercher un produit').fill('J4-UNKNOWN-CODE')
+  await page.getByLabel('Scanner ou chercher un produit').press('Enter')
+  await expect(page.getByText('Aucun produit ne porte le code J4-UNKNOWN-CODE.')).toBeVisible()
 })

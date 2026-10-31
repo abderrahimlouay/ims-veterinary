@@ -1042,7 +1042,8 @@
       "next": "Nouvelle vente"
     },
     "category": "Catégorie thérapeutique",
-    "anyCategory": "Toutes catégories"
+    "anyCategory": "Toutes catégories",
+    "addCode": "Ajouter par code"
   },
   "sales": {
     "title": "Documents de vente",

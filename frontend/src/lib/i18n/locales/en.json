@@ -1042,7 +1042,8 @@
       "next": "New sale"
     },
     "category": "Therapeutic category",
-    "anyCategory": "Any category"
+    "anyCategory": "Any category",
+    "addCode": "Add by code"
   },
   "sales": {
     "title": "Sales documents",

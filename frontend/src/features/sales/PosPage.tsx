@@ -378,6 +378,9 @@ function ItemEntry({
       <form onSubmit={onScan} className="flex flex-col gap-3">
         <TextField ref={scan} autoFocus type="search" label={t('pos.scan')} value={q} onChange={(e) => { setQ(e.target.value); setUnknownCode(null) }} />
         <TextField label={t('pos.quantity')} inputMode="decimal" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+        <Button type="submit" variant="secondary" disabled={disabled}>
+          {t('pos.addCode')}
+        </Button>
       </form>
       <SelectField
         label={t('pos.species')}
