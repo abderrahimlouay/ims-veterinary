@@ -22,7 +22,8 @@
     "goodsReceipts": "Goods receipts",
     "supplierReturns": "Supplier returns",
     "customers": "Customers",
-    "customerCategories": "Customer categories"
+    "customerCategories": "Customer categories",
+    "pos": "Counter"
   },
   "language": {
     "label": "Language",
@@ -111,7 +112,20 @@
     "LOT_BLOCK_CONFIRMATION_REQUIRED": "Lots already in stock would be blocked as a whole: confirm to block them.",
     "RECEIPT_QUANTITY_EXCEEDS_ORDER": "More than the quantity still outstanding on the order.",
     "IDEMPOTENCY_CONFLICT": "This receipt was already sent with other content: reload the page.",
-    "RECEIPT_NOT_CANCELLABLE": "A lot of this receipt has moved since: it can no longer be cancelled."
+    "RECEIPT_NOT_CANCELLABLE": "A lot of this receipt has moved since: it can no longer be cancelled.",
+    "CREDIT_LIMIT_EXCEEDED": "This sale is refused by the customer's credit: limit reached, cash only, or an overdue invoice.",
+    "LOT_BLOCKED": "This lot is blocked and cannot be sold.",
+    "LOT_EXPIRED": "This lot has expired and cannot be sold.",
+    "LOT_REQUIRED": "Every line needs a lot.",
+    "CASH_SESSION_REQUIRED": "Open a cash session to take cash.",
+    "CASH_SESSION_ALREADY_OPEN": "You already have an open cash session.",
+    "CASH_SESSION_CLOSED": "This cash session is closed.",
+    "PAYMENT_TOTAL_MISMATCH": "The payments must equal the total, and this document may take none.",
+    "PAYMENT_ALLOCATION_EXCEEDED": "The payments exceed the total.",
+    "SALE_NOT_CANCELLABLE": "This document cannot be cancelled: use a credit note.",
+    "FEFO_VIOLATION": "Choosing another lot needs the FEFO override permission.",
+    "CUSTOMER_REQUIRED_FOR_CREDIT": "A credit sale needs a customer.",
+    "CUSTOMER_INACTIVE": "This customer is inactive."
   },
   "pager": {
     "label": "Pagination",
@@ -169,12 +183,14 @@
         "login_lockout_minutes": "Lockout duration (minutes)",
         "currency": "Currency",
         "locale": "Regional format",
-        "business_time_zone": "Time zone"
+        "business_time_zone": "Time zone",
+        "credit_overdue_block_days": "Block credit after overdue (days)"
       },
       "hints": {
         "expiry_alert_days": "Three decreasing numbers: notice, warning, critical (e.g. 60,30,15).",
         "default_vat_rate": "From 0 to 100, at most two decimals.",
-        "locale": "For example fr-DZ."
+        "locale": "For example fr-DZ.",
+        "credit_overdue_block_days": "off, or the days overdue tolerated before a new credit sale is refused."
       }
     },
     "audit": {
@@ -935,6 +951,93 @@
       "edit": "Edit",
       "editOf": "Edit {{name}}",
       "add": "New category"
+    }
+  },
+  "pos": {
+    "title": "Counter",
+    "back": "Back to the application",
+    "items": "Add a product",
+    "scan": "Scan or search a product",
+    "quantity": "Quantity",
+    "species": "Animal species",
+    "anySpecies": "Any species",
+    "chooseCustomerFirst": "Choose a customer first.",
+    "unknownCode": "No product carries the code {{code}}.",
+    "add": "Add {{name}}",
+    "cart": "Cart",
+    "emptyCart": "The cart is empty.",
+    "summary": "Summary",
+    "docType": "Document",
+    "credit": "Credit sale",
+    "customerOptional": "Customer (optional)",
+    "customerRequired": "Customer",
+    "changeCustomer": "Change",
+    "chooseCustomer": "Choose {{name}}",
+    "ht": "Total excl. VAT",
+    "discount": "Discount",
+    "vat": "VAT",
+    "ttc": "Total",
+    "total": "Total: {{amount}}",
+    "balance": "Balance: {{amount}}",
+    "available": "Available: {{amount}}",
+    "payment": "Payment",
+    "method": "Method",
+    "amount": "Amount",
+    "reference": "Reference",
+    "split": "Add a payment method",
+    "tendered": "Cash received",
+    "tenderedHint": "Only to compute the change; it is not recorded.",
+    "change": "Change to give: {{amount}}",
+    "confirm": "Confirm the sale",
+    "abandon": "Abandon the sale",
+    "unreachable": "The server cannot be reached: nothing was sold. Check the connection and try again.",
+    "lotOf": "Lot {{lot}}, expires {{expiry}}",
+    "edit": "Change",
+    "remove": "Remove",
+    "editLine": "Change {{name}}",
+    "removeLine": "Remove {{name}}",
+    "types": {
+      "receipt": "Receipt",
+      "invoice": "Invoice",
+      "delivery_note": "Delivery note",
+      "quote": "Quote"
+    },
+    "methods": {
+      "cash": "Cash",
+      "cheque": "Cheque",
+      "bank_transfer": "Bank transfer"
+    },
+    "warnings": {
+      "nearExpiry": "Near expiry: {{expiry}}",
+      "lowStock": "Low stock after this sale",
+      "withdrawal": "Withdrawal period, {{species}}: meat {{meat}} d, milk {{milk}} d, eggs {{eggs}} d"
+    },
+    "line": {
+      "title": "Change {{name}}",
+      "unit": "Unit",
+      "baseUnit": "Base unit",
+      "discount": "Manual discount (%)",
+      "discountHint": "Current: {{current}} %. Empty keeps the entitlement.",
+      "lot": "Lot",
+      "fefo": "FEFO proposal",
+      "reason": "Reason for another lot",
+      "save": "Save"
+    },
+    "session": {
+      "none": "No open cash session",
+      "open": "Cash session open, expected {{amount}}",
+      "openAction": "Open the session",
+      "close": "Close the session",
+      "openTitle": "Open a cash session",
+      "openingAmount": "Opening amount",
+      "closeTitle": "Close the cash session",
+      "countedAmount": "Counted amount",
+      "closed": "Session closed, variance {{variance}}"
+    },
+    "done": {
+      "title": "Sale confirmed",
+      "number": "Document {{number}}",
+      "next": "New sale"
     }
   }
 }

@@ -140,6 +140,8 @@ Layout: left = product search + scan field + quick results; centre = cart lines 
 | Offline | not supported (no offline requirement in the Spec `[REC]`); a banner blocks sale when API unreachable |
 | Cash session | if no open session and payments need one → modal to open it (`CASH_SESSION_REQUIRED`) |
 
+**Delivered (Phase 7):** type and customer are chosen before the first line and lock with the draft, since the price depends on the customer and a type never changes; credit stays switchable until confirmation. The change is computed on the screen only (ADR-118). A line is changed in one dialog: quantity, unit, discount (`sale.discount`), lot (`sale.override_fefo`). Printing comes with Phase 10.
+
 ### 4.8 Sales documents and returns
 - Document list with type/status badges; detail with lines, totals, payments, linked documents, PDF buttons. Convert actions (quote → DN → invoice). Cancel under the conditions of ADR-119, with reason modal.
 - **Customer return wizard:** pick invoice → select lines/quantity (max = sold − already returned) → reason, sealed?, disposition (restock / discard per OD-005) → review → submit. Shows resulting credit note.

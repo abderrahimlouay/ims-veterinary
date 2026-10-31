@@ -31,9 +31,11 @@ import {
   SupplierReturnsPage,
   SuppliersPage,
 } from '../features/purchasing'
+import { PosPage } from '../features/sales'
 import { RequireAuth, RequirePermission } from './guards'
 import { AppLayout } from './layouts/AppLayout'
 import { AuthLayout } from './layouts/AuthLayout'
+import { PosLayout } from './layouts/PosLayout'
 import { NotFoundPage } from './NotFoundPage'
 
 /** Route map (frontend.md §3.1); feature routes are added phase by phase. */
@@ -41,6 +43,15 @@ export const routes: RouteObject[] = [
   {
     element: <AuthLayout />,
     children: [{ path: '/login', element: <LoginPage /> }],
+  },
+  {
+    path: '/pos',
+    element: (
+      <RequireAuth>
+        <PosLayout />
+      </RequireAuth>
+    ),
+    children: [{ index: true, element: <RequirePermission code="sale.create"><PosPage /></RequirePermission> }],
   },
   {
     path: '/',
