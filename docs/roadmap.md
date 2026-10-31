@@ -1,8 +1,8 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–4 complete (tags `phase-0-done` … `phase-4-done`); Phases 5–13 not started
+> **Status:** Phases 0–6 complete (tags `phase-0-done` … `phase-6-done`); Phase 7 (Sales / POS) is the current phase, decisions first; Phases 8–13 not started
 > **Scope:** ordered plan for Claude Code to implement.
-> **Last updated:** 2026-10-22
+> **Last updated:** 2026-10-31
 
 Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` review item.
 
@@ -114,7 +114,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** customer list/detail, price and category screens.
 - **Tests:** BR-CUST-*, price-resolution unit tests.
 - **Completion criteria:** FR-SALE-004, 005, 010 done; credit limit editable only with its permission and audited.
-- **Delivered (2026-10-25; awaiting approval of the close):** decisions PRs #71 (ADR-107, ADR-108) and #73 (ADR-109…114, SD-134), then PRs #74–#80 (slices customer categories, customers with duplicate detection and the veterinarian link, credit limit under the row lock, customer prices, the pure `PriceResolver` and the `CustomerPricing` port, the customers frontend with the three-state credit-limit dialog, demo customers) and the close PR; migrations V06_001…003; no OD opened. e2e J12 added (own `customers` project, after `stock`). `Phase6UpgradeMigrationTest`: Phase 5 data upgraded to V06_003, balances still equal the ledger. Not delivered here, by plan: the balance, statement, invoices and payments of a customer (Phases 7 and 9, OD-003); the credit-limit check at sale time (Phase 7, `CreditLimitPort`, ADR-108); BR-CUST-004 (sale to an inactive customer, Phase 7). Before Phase 7: an accountant must confirm the legal rounding rule for sales invoices (per line or per VAT rate, ADR-093), and whether credit sales are enabled before Phase 9 is settled (ADR-108).
+- **Delivered (2026-10-25; approved and tagged `phase-6-done` on `224af14`):** decisions PRs #71 (ADR-107, ADR-108) and #73 (ADR-109…114, SD-134), then PRs #74–#80 (slices customer categories, customers with duplicate detection and the veterinarian link, credit limit under the row lock, customer prices, the pure `PriceResolver` and the `CustomerPricing` port, the customers frontend with the three-state credit-limit dialog, demo customers) and the close PR; migrations V06_001…003; no OD opened. e2e J12 added (own `customers` project, after `stock`). `Phase6UpgradeMigrationTest`: Phase 5 data upgraded to V06_003, balances still equal the ledger. Not delivered here, by plan: the balance, statement, invoices and payments of a customer (Phases 7 and 9, OD-003); the credit-limit check at sale time (Phase 7, `CreditLimitPort`, ADR-108); BR-CUST-004 (sale to an inactive customer, Phase 7). Before Phase 7: an accountant must confirm the legal rounding rule for sales invoices (per line or per VAT rate, ADR-093), and whether credit sales are enabled before Phase 9 is settled (ADR-108).
 
 ## Phase 7 — Sales / POS
 - **Objective:** a fast, correct counter sale and document chain.
