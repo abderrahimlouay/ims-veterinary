@@ -76,7 +76,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 | CT-04 | sale vs count regularisation on same lot | consistent final balance, no lost update; the sale after the watermark stays valid (ADR-072) — `CountRegularisationConcurrencyTest`, 20 repetitions |
 | CT-04a | a lot read earlier in a transaction, then withdrawn from by another transaction, then locked and moved | the withdrawal is not lost: balance and weighted cost from the committed state, ledger = balance (`LotLockReloadTest`; supplier returns overdrawing one lot ×20 in `SupplierReturnConcurrencyTest`); no other way to lock a lot exists (`LotLockingRuleTest`: the other lock helpers — customers, proposals, orders — may not even refer to `Lot` or `LotRepository`; no `@Lock` query returning lots, no `EntityManager` lock call outside the lock helpers, no SQL text locking `lots`) |
 
-Until sales exist (Phase 7), CT-01 and CT-04 use a manual adjustment in place of a sale; Phase 7 re-runs both with real sales (roadmap Phase 7 completion criteria).
+CT-01, CT-02, CT-04 and CT-05 run with real sales in `SaleConfirmationConcurrencyTest` (Phase 7); the earlier adjustment versions stay.
 | CT-05 | double-submit same Idempotency-Key | one document (`IdempotencyKeysTest`, 20 repetitions: the second waits on the key, then replays the first; per endpoint again in BR-PURCH-013 / BR-SALE-016) |
 | CT-06 | two credit sales for same customer near limit | limit not exceeded (ADR-108) |
 | CT-07 | simultaneous edit of same product (`@Version`) | second gets `CONCURRENT_MODIFICATION` |
@@ -183,18 +183,18 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SALE-002 | S | Quote posts none; delivery note, receipt and direct invoice post `sale`; invoice from a delivery note reuses its lots and posts no second movement (ADR-117); one delivery note gives one invoice, no second limit check, cancelling that invoice posts no movement (ADR-125) |
 | BR-SALE-003 | S | Confirm quote → no movement |
 | BR-SALE-004 | A | Edit confirmed document → DOCUMENT_IMMUTABLE (`SalesDraftsTest`) |
-| BR-SALE-005 | S | Lots assigned and verified at confirmation |
+| BR-SALE-005 | S | Lots assigned and verified at confirmation (`SaleConfirmationTest`) |
 | BR-SALE-006 | U,I | Price precedence (ADR-107): manual > customer's own price > unit price > product × factor; category discount only without a customer price; manual discount on top within the entitlement; unit conversion; customer without category; archived product; no rounding — `PriceResolverTest` (table), `CustomerPricingTest` (stored facts) |
 | BR-SALE-007 | U,SEC | Discount above entitlement needs sale.discount; no stacking (ADR-113); a manual price needs price.edit; the rights come from the signed-in user — `PriceResolverTest`, `CustomerPricingTest` |
 | BR-SALE-008 | U,I | Server totals identical for same input; client totals ignored; generated columns equal the formula with 4-decimal prices (`SaleLinesTest`, ADR-016, ADR-115, ADR-123) |
-| BR-SALE-009 | S | Line stores unit cost snapshot equal to lot cost |
+| BR-SALE-009 | S | Line stores unit cost snapshot equal to lot cost (`SaleConfirmationTest`) |
 | BR-SALE-010 | S | On screen: warnings for any customer, by species, every species when none is given, none when no data (ADR-121, `WithdrawalWarningsTest`, `SaleLinesTest`); printing from Phase 10 (OD-028) |
 | BR-SALE-011 | S | Archived product in sale → PRODUCT_ARCHIVED; non-sellable unit → UNIT_NOT_SELLABLE (`SaleLinesTest`) |
 | BR-SALE-012 | S,R | Credit sale without customer; inactive customer → errors; anonymous only on a receipt; DB CHECKs (`SalesDraftsTest`, re-checked at confirmation) |
 | BR-SALE-013 | S | A payment with a cash part needs an open session; cheque, transfer and credit sales do not (ADR-118) |
 | BR-SALE-014 | S | ADR-119: whole document; refused with a return, credit note, derived document or closed session; `sale_cancellation` movements, payments reversed, number kept, audit, atomic |
-| BR-SALE-015 | C | Confirm with insufficient stock → STOCK_INSUFFICIENT, atomic rollback |
-| BR-SALE-016 | S,A | Double submit with same Idempotency-Key → one document; different body → IDEMPOTENCY_CONFLICT |
+| BR-SALE-015 | C | Confirm with insufficient stock → STOCK_INSUFFICIENT, atomic rollback (`SaleConfirmationTest`, CT-01 and atomicity in `SaleConfirmationConcurrencyTest`) |
+| BR-SALE-016 | S,A | Double submit with same Idempotency-Key → one document; different body → IDEMPOTENCY_CONFLICT (`SaleConfirmationTest`; parallel: `SaleConfirmationConcurrencyTest`) |
 | BR-CUST-001 | A | Veterinarian link: an active customer of type veterinarian (`NOT_VETERINARIAN`), not itself (`SELF`); a referenced veterinarian's type cannot change (`RESOURCE_IN_USE`); deactivating it keeps the links (`CustomersTest`) |
 | BR-CUST-002 | S,A,C,F,E | New customer at 0 (shown "Cash only"); the dialog shows three explicit states — no limit (sends `null`), cash only (`"0.00"`), a limit (zero typed as a limit refused) — tested in fr, ar (RTL) and en, its button only with customer.credit.manage (`CustomerPages.test.tsx`, e2e J12); a `creditLimit` sent on create or update is ignored; Seller (customer.manage) and Pharmacist cannot change it; NULL accepted; negative, 3 decimals, text and a missing field refused; every change, to and from NULL, audited with old and new value (amounts only); stale version refused; a failed audit rolls the change back; two parallel changes ×20 → one CONCURRENT_MODIFICATION (`CustomerCreditLimitTest`, `CustomersTest`, `CustomerCreditAtomicityTest`) |
 | BR-CUST-003 | A | `DELETE /api/customers/{id}` → 405; deactivate and reactivate; edit with the version (`CustomersTest`) |
@@ -221,7 +221,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PAY-011 | S | Supplier credit note reduces payable |
 | BR-CASH-001 | R,S | Second open session for same cashier → CASH_SESSION_ALREADY_OPEN (unique via generated column) (`CashSessionsTest`, CT-09 `CashSessionConcurrencyTest`) |
 | BR-CASH-002 | S | Close: variance = counted − expected, generated column equal (`CashSessionsTest`, `CashAmountsTest`) |
-| BR-CASH-003 | U,S | Expected = opening + cash in − cash out (cash only); a cash sale with change posts the sale total, never the amount tendered (ADR-118) |
+| BR-CASH-003 | U,S | Expected = opening + cash in − cash out (cash only); a cash sale with change posts the sale total, never the amount tendered (ADR-118, `SaleConfirmationTest.aCashSaleWithChangeKeepsTheTotalNotTheTendered`) |
 | BR-CASH-004 | A | Modify closed session → CASH_SESSION_CLOSED; movements append-only (`CashSessionsTest`, `CashMovementAppendOnlyTest`) |
 | BR-CASH-005 | S | Movement amount ≤ 0 / wrong direction rejected |
 | BR-SEC-001 | SEC | Every endpoint (enumerated) without credential → 401 |

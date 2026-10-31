@@ -1,6 +1,9 @@
 package com.imsvet.ims.sales.api;
 
+import com.imsvet.ims.common.idempotency.IdempotencyKeys;
 import com.imsvet.ims.common.paging.PageResponse;
+import com.imsvet.ims.sales.application.PaymentRecorder;
+import com.imsvet.ims.sales.application.SaleConfirmation;
 import com.imsvet.ims.sales.application.SaleLines;
 import com.imsvet.ims.sales.application.SalesDocuments;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,12 +50,26 @@ class SalesController {
         }
     }
 
+    /** {@code amount} is what is kept; no tendered amount exists here (ADR-118). */
+    record PaymentRequest(String method, BigDecimal amount, String reference) {
+    }
+
+    record ConfirmRequest(List<PaymentRequest> payments) {
+
+        List<PaymentRecorder.Tender> tenders() {
+            return payments == null ? List.of() : payments.stream()
+                    .map(p -> new PaymentRecorder.Tender(p.method(), p.amount(), p.reference())).toList();
+        }
+    }
+
     private final SalesDocuments documents;
     private final SaleLines lines;
+    private final SaleConfirmation confirmation;
 
-    SalesController(SalesDocuments documents, SaleLines lines) {
+    SalesController(SalesDocuments documents, SaleLines lines, SaleConfirmation confirmation) {
         this.documents = documents;
         this.lines = lines;
+        this.confirmation = confirmation;
     }
 
     @GetMapping
@@ -99,6 +117,12 @@ class SalesController {
     @DeleteMapping("/{id}/lines/{lineId}")
     SaleDetail removeLine(@PathVariable long id, @PathVariable long lineId) {
         return lines.remove(id, lineId);
+    }
+
+    @PostMapping("/{id}/confirm")
+    SaleDetail confirm(@PathVariable long id, @RequestBody(required = false) ConfirmRequest body,
+            @RequestHeader(name = IdempotencyKeys.HEADER, required = false) String idempotencyKey) {
+        return confirmation.confirm(id, body == null ? List.of() : body.tenders(), idempotencyKey);
     }
 
     @GetMapping("/{id}/withdrawal-warnings")

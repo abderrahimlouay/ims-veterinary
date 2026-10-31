@@ -4,18 +4,21 @@ import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
 import com.imsvet.ims.common.security.InternalService;
 import com.imsvet.ims.inventory.domain.AlertLevel;
-import com.imsvet.ims.inventory.domain.EffectiveLotStatus;
 import com.imsvet.ims.inventory.domain.ExpiryPolicy;
 import com.imsvet.ims.inventory.domain.FefoAllocator;
 import com.imsvet.ims.inventory.domain.FefoAllocator.Allocation;
 import com.imsvet.ims.inventory.domain.FefoAllocator.Candidate;
 import com.imsvet.ims.inventory.domain.Lot;
+import com.imsvet.ims.inventory.infrastructure.LotLocks;
 import com.imsvet.ims.inventory.infrastructure.LotRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -38,11 +41,13 @@ public class SaleLots {
     }
 
     private final LotRepository lots;
+    private final LotLocks locks;
     private final LotGuard guard;
     private final ExpiryPolicies policies;
 
-    public SaleLots(LotRepository lots, LotGuard guard, ExpiryPolicies policies) {
+    public SaleLots(LotRepository lots, LotLocks locks, LotGuard guard, ExpiryPolicies policies) {
         this.lots = lots;
+        this.locks = locks;
         this.guard = guard;
         this.policies = policies;
     }
@@ -66,19 +71,37 @@ public class SaleLots {
     public void requireSellable(long lotId, long productId, BigDecimal requestedBase, Map<Long, BigDecimal> held) {
         Lot lot = guard.lotOfProduct(lotId, productId);
         ExpiryPolicy policy = policies.current();
-        EffectiveLotStatus status = policy.effectiveStatus(lot.status(), lot.expiryDate(), lot.quantityOnHand());
-        Map<String, Object> context = Map.of("lotId", lotId);
-        switch (status) {
+        refuseUnsellable(lot, policy);
+        if (available(lot, held).compareTo(requestedBase) < 0) {
+            throw new BusinessException(ErrorCode.STOCK_INSUFFICIENT, "Not enough stock in this lot.",
+                    Map.of("lotId", lotId, "available", available(lot, held).toPlainString()));
+        }
+    }
+
+    private static void refuseUnsellable(Lot lot, ExpiryPolicy policy) {
+        Map<String, Object> context = Map.of("lotId", lot.id());
+        switch (policy.effectiveStatus(lot.status(), lot.expiryDate(), lot.quantityOnHand())) {
             case EXPIRED -> throw new BusinessException(ErrorCode.LOT_EXPIRED, "This lot has expired.", context);
             case BLOCKED -> throw new BusinessException(ErrorCode.LOT_BLOCKED, "This lot is blocked.", context);
             case RECALLED -> throw new BusinessException(ErrorCode.LOT_RECALLED, "This lot is recalled.", context);
             case ACTIVE, DEPLETED -> {
-                if (available(lot, held).compareTo(requestedBase) < 0) {
-                    throw new BusinessException(ErrorCode.STOCK_INSUFFICIENT, "Not enough stock in this lot.",
-                            Map.of("lotId", lotId, "available", available(lot, held).toPlainString()));
-                }
             }
         }
+    }
+
+    /**
+     * Locks the lots in ascending id and validates them again (BR-LOT-003/004, BR-STOCK-012); returns each lot's cost
+     * for the snapshot (BR-SALE-009). Stock itself is checked by {@link StockService} under the same locks.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Map<Long, BigDecimal> lockForSale(Collection<Long> lotIds) {
+        ExpiryPolicy policy = policies.current();
+        Map<Long, BigDecimal> costs = new HashMap<>();
+        for (Lot lot : locks.lockAll(lotIds.stream().distinct().sorted().toList())) {
+            refuseUnsellable(lot, policy);
+            costs.put(lot.id(), lot.unitCost());
+        }
+        return costs;
     }
 
     @Transactional(readOnly = true)

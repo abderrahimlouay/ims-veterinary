@@ -86,6 +86,13 @@ public class CounterPayments implements PaymentRecorder {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PaymentInForce> inForceOn(long documentId) {
+        return payments.inForceOn(documentId).stream()
+                .map(p -> new PaymentInForce(p.id(), p.method().code(), p.amount(), p.reference())).toList();
+    }
+
+    @Override
     @Transactional
     public List<Long> reverseAll(long documentId, String reason) {
         long actor = actors.current().userId();

@@ -72,6 +72,11 @@ public class SalesDocumentLine {
         this.vatRate = vatRate;
     }
 
+    /** BR-SALE-009: the lot's cost at confirmation, for margin reporting. */
+    public void snapshotCost(BigDecimal lotCost) {
+        this.unitCost = lotCost;
+    }
+
     public BigDecimal lineHt() {
         return SaleAmounts.lineHt(quantity, unitPrice, discountPct);
     }

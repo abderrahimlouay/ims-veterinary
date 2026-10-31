@@ -95,6 +95,10 @@ public class CustomerPayment {
         return amount;
     }
 
+    public String reference() {
+        return reference;
+    }
+
     public Long cashSessionId() {
         return cashSessionId;
     }
