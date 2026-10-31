@@ -73,12 +73,12 @@ public final class LotViews {
     public record RecalledLot(long id, String status, Instant blockedAt, Long blockedBy) {
     }
 
-    /** A sale of the lot to a known customer; listed from Phase 7 (ADR-068). */
+    /** A sale of the lot to a known customer; {@code unit} is the base unit of {@code quantityBase}. */
     public record RecallBuyer(long customerId, String customerName, String phone, String documentNumber,
             String documentType, Instant issuedAt, BigDecimal quantityBase, String unit) {
     }
 
-    /** A counter sale without customer; listed from Phase 7 (ADR-068). */
+    /** A counter sale without customer. */
     public record AnonymousSale(String documentNumber, Instant issuedAt, BigDecimal quantityBase) {
     }
 
@@ -86,10 +86,14 @@ public final class LotViews {
             BigDecimal remainingStockBase) {
     }
 
-    /** Until sales exist (Phase 7) both buyer lists are empty (ADR-068). */
-    static RecallReport recallReport(Lot l) {
-        return new RecallReport(new RecalledLot(l.id(), l.status().code(), l.blockedAt(), l.blockedBy()), List.of(),
-                List.of(), l.quantityOnHand());
+    static RecallReport recallReport(Lot l, List<LotBuyers.LotSale> sales, String baseUnit) {
+        return new RecallReport(new RecalledLot(l.id(), l.status().code(), l.blockedAt(), l.blockedBy()),
+                sales.stream().filter(s -> s.customerId() != null).map(s -> new RecallBuyer(s.customerId(),
+                        s.customerName(), s.phone(), s.documentNumber(), s.documentType(), s.issuedAt(),
+                        s.quantityBase(), baseUnit)).toList(),
+                sales.stream().filter(s -> s.customerId() == null).map(s -> new AnonymousSale(s.documentNumber(),
+                        s.issuedAt(), s.quantityBase())).toList(),
+                l.quantityOnHand());
     }
 
     static LotSummary summary(Lot l, ProductRef product, ExpiryPolicy policy) {

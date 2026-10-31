@@ -21,7 +21,7 @@ function storedStatus(lot: LotDetail): 'active' | 'blocked' | 'recalled' {
 /**
  * `/lots/:id` (frontend.md §4.2): effective status, balance and expiry; Block / Unblock / Recall with a mandatory
  * reason, offered only when the transition exists (ADR-060: never Unblock on a recalled lot) and the user holds the
- * permission; the recall report lists buyers once sales exist (ADR-068). From Phase 4 the lot's movements (`stock.read`)
+ * permission; the recall report lists the buyers (BR-LOT-008). From Phase 4 the lot's movements (`stock.read`)
  * and a link to adjust it (`stock.adjust`, any status, ADR-085).
  */
 export function LotDetailPage() {
@@ -232,7 +232,7 @@ function ReasonDialog({ lot, action, onClose, onRecalled }: {
   )
 }
 
-/** api.md §5.7: buyers of the lot; until sales exist (Phase 7) the lists are empty (ADR-068). */
+/** api.md §5.7: who received the lot, anonymous sales included (BR-LOT-008). */
 function RecallReportView({ report, baseUnit }: { report: RecallReport; baseUnit: string }) {
   const { t } = useTranslation()
   const none = report.buyers.length === 0 && report.anonymousSales.length === 0
@@ -247,7 +247,9 @@ function RecallReportView({ report, baseUnit }: { report: RecallReport; baseUnit
           <thead>
             <tr className="border-b border-line">
               <th className="text-start py-1 pe-4">{t('lots.report.customer')}</th>
+              <th className="text-start pe-4">{t('lots.report.phone')}</th>
               <th className="text-start pe-4">{t('lots.report.document')}</th>
+              <th className="text-start pe-4">{t('lots.report.date')}</th>
               <th className="text-end">{t('lots.quantity')}</th>
             </tr>
           </thead>
@@ -255,14 +257,18 @@ function RecallReportView({ report, baseUnit }: { report: RecallReport; baseUnit
             {report.buyers.map((b) => (
               <tr key={`${b.documentNumber}-${b.customerId}`} className="border-b border-line">
                 <td className="py-1 pe-4">{b.customerName}</td>
+                <td className="pe-4">{b.phone}</td>
                 <td className="pe-4">{b.documentNumber}</td>
+                <td className="pe-4">{formatDateTime(b.issuedAt)}</td>
                 <td className="text-end">{formatQuantity(b.quantityBase)}</td>
               </tr>
             ))}
             {report.anonymousSales.map((s) => (
               <tr key={s.documentNumber} className="border-b border-line">
                 <td className="py-1 pe-4">{t('lots.report.anonymous')}</td>
+                <td className="pe-4" />
                 <td className="pe-4">{s.documentNumber}</td>
+                <td className="pe-4">{formatDateTime(s.issuedAt)}</td>
                 <td className="text-end">{formatQuantity(s.quantityBase)}</td>
               </tr>
             ))}

@@ -446,7 +446,9 @@
     "report": {
       "title": "Rapport de rappel",
       "remaining": "Stock restant : {{quantity}}",
-      "noSales": "Aucune vente n'existe encore : les acheteurs seront listés dès que les ventes seront enregistrées.",
+      "noSales": "Aucune vente de ce lot.",
+      "phone": "Téléphone",
+      "date": "Date",
       "customer": "Client",
       "document": "Document",
       "anonymous": "Vente au comptoir"
