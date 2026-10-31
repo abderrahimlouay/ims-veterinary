@@ -37,8 +37,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Confirming immediate sales (W2 step 6): numbered at confirmation (ADR-122), sale movements and cost snapshot
  * (BR-SALE-002/009/015), paid in full with the amount kept (ADR-118, BR-SALE-013), re-validation
- * (BR-LOT-003/004, BR-CUST-004, BR-SALE-005/011), idempotency (BR-SALE-016); a credit sale is refused until the limit
- * check exists (user rule, roadmap Phase 7).
+ * (BR-LOT-003/004, BR-CUST-004, BR-SALE-005/011), idempotency (BR-SALE-016). Credit sales: {@code CreditSaleTest}.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -135,18 +134,6 @@ class SaleConfirmationTest {
     void aCashPartNeedsAnOpenSessionAndNothingIsConfirmedWithoutIt() throws Exception {
         confirm(receipt, cash(TTC)).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CASH_SESSION_REQUIRED"));
-    }
-
-    @Test
-    void aCreditSaleIsRefusedUntilTheLimitCheckExists() throws Exception {
-        long customer = customer();
-        long credit = draftWithLine("{\"docType\":\"invoice\",\"creditSale\":true,\"customerId\":" + customer + "}");
-        confirm(credit, "{}").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CREDIT_SALE_UNAVAILABLE"));
-        assertThat(balance()).isEqualByComparingTo("10");
-        assertThat(jdbc.queryForObject("SELECT status FROM sales_documents WHERE id = ?", String.class, credit))
-                .isEqualTo("draft");
-        assertThat(jdbc.queryForObject("SELECT number FROM sales_documents WHERE id = ?", String.class, credit)).isNull();
     }
 
     @Test

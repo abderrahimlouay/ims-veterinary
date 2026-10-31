@@ -79,6 +79,17 @@ public class SalesDocuments {
         return PageResponse.of(found, d -> SalesViews.summary(d, names.get(d.customerId())));
     }
 
+    /** The customer's documents, newest first (api.md §4.9). */
+    @PreAuthorize("hasAuthority('sale.read')")
+    @Transactional(readOnly = true)
+    public PageResponse<SaleSummary> ofCustomer(long customerId, int page, int size) {
+        Customer customer = customers.findById(customerId).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND,
+                "Customer not found.", Map.of("id", customerId)));
+        CustomerRef ref = new CustomerRef(customer.id(), customer.name());
+        return PageResponse.of(documents.search(null, null, customerId, null, null, null,
+                PageRequests.of(page, size, Sort.unsorted())), d -> SalesViews.summary(d, ref));
+    }
+
     @PreAuthorize("hasAuthority('sale.read')")
     @Transactional(readOnly = true)
     public SaleDetail get(long id) {

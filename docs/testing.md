@@ -78,7 +78,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `BR-…` b
 
 CT-01, CT-02, CT-04 and CT-05 run with real sales in `SaleConfirmationConcurrencyTest` (Phase 7); the earlier adjustment versions stay.
 | CT-05 | double-submit same Idempotency-Key | one document (`IdempotencyKeysTest`, 20 repetitions: the second waits on the key, then replays the first; per endpoint again in BR-PURCH-013 / BR-SALE-016) |
-| CT-06 | two credit sales for same customer near limit | limit not exceeded (ADR-108) |
+| CT-06 | two credit sales for same customer near limit | limit not exceeded (ADR-108; `SaleConfirmationConcurrencyTest`, 6 sales, 5 repetitions) |
 | CT-07 | simultaneous edit of same product (`@Version`) | second gets `CONCURRENT_MODIFICATION` |
 | CT-08 | parallel goods receipts of same new lot number | one lot, summed balance, weighted-average cost, ledger = balance (`GoodsReceiptConcurrencyTest`, 20 repetitions; with two receipts beyond one order line's outstanding quantity: one refused) |
 | CT-09 | two cash sessions opened concurrently by same cashier | one succeeds |

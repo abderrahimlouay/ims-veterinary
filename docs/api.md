@@ -97,7 +97,6 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 | `CASH_SESSION_REQUIRED` | 409 | operation needs an open session | BR-SALE-013, BR-PAY-006 |
 | `CASH_SESSION_CLOSED` | 409 | session closed | BR-CASH-004 |
 | `PAYMENT_TOTAL_MISMATCH` | 422 | payments of an immediate sale do not equal its TTC, or a credit sale has payments | ADR-118 |
-| `CREDIT_SALE_UNAVAILABLE` | 409 | a credit sale cannot be confirmed yet; removed when `CreditLimitPort` arrives (user rule, roadmap Phase 7) | BR-PAY-005 |
 | `PRODUCT_ARCHIVED` | 422 | product archived | BR-PROD-004, BR-SALE-011 |
 | `UNIT_NOT_SELLABLE` | 422 | unit not sellable | BR-UNIT-003 |
 | `UNIT_FACTOR_LOCKED` | 422 | unit factor in use | BR-UNIT-004 |
@@ -272,10 +271,10 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET/PUT | `/api/customers/{id}` | view / update (credit limit excluded) | `customer.read` / `customer.manage` | with `version`; `CustomerDetail {id, name, customerType, category: {id, name, discountPct}, farmingType, wilaya, commune, address, phone, email, taxId (normalised), paymentTermsDays, veterinarian: {id, name}, creditLimit, active, createdAt, updatedAt, version}`; `CustomerSummary {id, name, customerType, category, wilaya, commune, phone, active}`; `RESOURCE_IN_USE` (a referenced veterinarian's type), `DUPLICATE_RESOURCE`, `VALIDATION_FAILED` (`name` `REQUIRED`, `customerType` / `categoryId` `UNKNOWN`, `paymentTermsDays` `RANGE`, `email` `EMAIL`, `phone` `FORMAT`, `veterinarianId` `SELF` / `NOT_VETERINARIAN`) |
 | PUT | `/api/customers/{id}/credit-limit` | change credit limit under the customer-row lock, audited `CREDIT_LIMIT_CHANGE` (old and new value, also to and from `null`) | `customer.credit.manage` | `{creditLimit, version}` — `creditLimit` must be present: `null` = no limit, `"0.00"` = cash only, else ≥ 0 with 2 decimals (ADR-108) → `CustomerDetail`; `VALIDATION_FAILED` (`creditLimit` `REQUIRED` / `FORMAT` / `NOT_NEGATIVE` / `SCALE` / `RANGE`), `CONCURRENT_MODIFICATION` (stale version, or a parallel change), `NOT_FOUND` |
 | POST | `/api/customers/{id}/deactivate` · `/activate` | toggle | `customer.manage` | |
-| GET | `/api/customers/{id}/balance` | balance, limit, available credit | `customer.read` | definition ADR-118 |
+| GET | `/api/customers/{id}/balance` | balance, limit, available credit | `customer.read` | definition ADR-118; `{balance, uninvoicedDeliveryNotes, creditLimit, availableCredit}` — the last two `null` without a limit, available = limit − balance − uninvoiced delivery notes, never below 0 |
 | GET | `/api/customers/{id}/statement` | account statement `?from&to` (+ `format=pdf`) | `statement.read` | chronological lines + running balance |
 | GET | `/api/customers/{id}/open-invoices` | invoices with outstanding amount (for allocation) | `payment.read` | |
-| GET | `/api/customers/{id}/sales` | sales history | `sale.read` | |
+| GET | `/api/customers/{id}/sales` | sales history, newest first | `sale.read` | page of `SaleSummary` |
 | GET | `/api/customers/{id}/prices` | the customer's prices, by product name | `customer.read` | `[CustomerPriceView {product: {id, sku, commercialName, baseUnit, archived}, unitPrice, updatedAt, version}]` (per base unit) |
 | PUT | `/api/customers/{id}/prices/{productId}` | set (`version` null) or change (current `version`) one price (ADR-111), audited `PRICE_CHANGE` (old and new value) | `customer.price.manage` | `{unitPrice, version}` — `unitPrice` > 0, 4 decimals → `CustomerPriceView`; `VALIDATION_FAILED` (`unitPrice` `REQUIRED` / `POSITIVE` / `SCALE` / `RANGE`), `PRODUCT_ARCHIVED` (no price is set for an archived product; existing ones are kept), `CONCURRENT_MODIFICATION` (stale or missing version, or a parallel creation of the same price), `NOT_FOUND`. An **inactive customer's prices can still be edited** |
 | DELETE | `/api/customers/{id}/prices/{productId}?version=` | remove one price, audited `PRICE_CHANGE` (new value `null`) | `customer.price.manage` | 204; `CONCURRENT_MODIFICATION`, `NOT_FOUND` |
@@ -402,7 +401,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 - **Response 200:** `{ id, number, status: "confirmed", totals: {ht, discount, vat, ttc}, lines[…], payments[…], customerBalance?, documents: { pdfA4: "/api/sales/{id}/pdf?format=a4", ticket: "…" } }`
 - **Server steps (one transaction, lock order of `database.md` §7):** idempotency key → document row → number → lots (id order) and re-validation → credit check → post movements → payment records → `confirmed`.
 - **Validation:** document is a draft; at least one line; every line has a lot; totals recomputed server-side.
-- **Errors:** `STOCK_INSUFFICIENT`, `LOT_EXPIRED`, `LOT_BLOCKED`, `LOT_RECALLED`, `LOT_REQUIRED`, `CREDIT_LIMIT_EXCEEDED`, `CUSTOMER_REQUIRED_FOR_CREDIT`, `CUSTOMER_INACTIVE`, `CASH_SESSION_REQUIRED`, `PAYMENT_TOTAL_MISMATCH`, `CREDIT_SALE_UNAVAILABLE`, `INVALID_STATE_TRANSITION`, `IDEMPOTENCY_CONFLICT`, `CONCURRENT_MODIFICATION`.
+- **Errors:** `STOCK_INSUFFICIENT`, `LOT_EXPIRED`, `LOT_BLOCKED`, `LOT_RECALLED`, `LOT_REQUIRED`, `CREDIT_LIMIT_EXCEEDED`, `CUSTOMER_REQUIRED_FOR_CREDIT`, `CUSTOMER_INACTIVE`, `CASH_SESSION_REQUIRED`, `PAYMENT_TOTAL_MISMATCH`, `INVALID_STATE_TRANSITION`, `IDEMPOTENCY_CONFLICT`, `CONCURRENT_MODIFICATION`.
 
 ### 5.7 Recall a lot
 - **POST `/api/lots/{id}/recall`** — **Permission:** `lot.recall`.

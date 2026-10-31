@@ -60,6 +60,7 @@ class SecurityAdministrationSchemaTest {
                 Map.entry("business_time_zone", "Africa/Algiers"),
                 Map.entry("opening_stock_open", "true"),
                 Map.entry("reorder_job_time", "06:00"),
-                Map.entry("integrity_check_time", "02:00")));
+                Map.entry("integrity_check_time", "02:00"),
+                Map.entry("credit_overdue_block_days", "off")));
     }
 }
