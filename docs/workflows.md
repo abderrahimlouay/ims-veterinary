@@ -259,7 +259,7 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 ## 11. W11 — Document conversion
 
-`Quote → Delivery note → Invoice`, and `Invoice/Receipt → Credit note` (BR-SALE-001). Conversion copies lines into a new draft with `parent_id`; an invoice from a confirmed delivery note posts no second movement (ADR-117; commercial rules ADR-125). A quote converts only while `confirmed` or `draft` per policy `[REC]`; its price validity period is not specified by the Spec.
+`Quote → Delivery note → Invoice`, and `Invoice/Receipt → Credit note` (BR-SALE-001). Conversion copies lines into a new draft with `parent_id`; an invoice from a confirmed delivery note posts no second movement (ADR-117; commercial rules ADR-125). A quote converts while `confirmed` or `draft`, as often as asked; its lines keep the quoted price and VAT and take their lots by FEFO at conversion (`STOCK_INSUFFICIENT` without enough stock); its price validity period is not specified by the Spec. A delivery note converts once confirmed and only if it has no non-cancelled invoice, a draft included; abandoning that draft frees it. That invoice's lines and its customer and credit status cannot change.
 
 ## 12. W12 — Expiry alerting
 

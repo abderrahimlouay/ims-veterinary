@@ -112,6 +112,20 @@ public class SaleLines {
         return viewer.withdrawalWarnings(find(documentId));
     }
 
+    /** A quote's line on its derived draft: FEFO lots, split if needed, at the quoted price and VAT (W11). */
+    void copyWithLots(SalesDocument document, SalesDocumentLine quoted) {
+        LineInput in = new LineInput(quoted.productId(), quoted.unitId(), quoted.quantity(), quoted.targetSpeciesId(),
+                null, null, null, null);
+        BigDecimal factor = quoted.unitId() == null ? BigDecimal.ONE
+                : products.unit(quoted.productId(), quoted.unitId()).orElseThrow().factorToBase();
+        for (LotPick pick : picks(document, in, quoted.quantityBase())) {
+            lines.saveAndFlush(new SalesDocumentLine(document.id(), quoted.productId(), pick.lotId(), quoted.unitId(),
+                    quoted.targetSpeciesId(), soldQuantity(pick, quoted.quantityBase(), quoted.quantity(), factor)
+                            .setScale(UnitConversion.BASE_SCALE),
+                    pick.quantityBase(), quoted.unitPrice(), quoted.discountPct(), quoted.vatRate()));
+        }
+    }
+
     private void addLines(SalesDocument document, LineInput in) {
         if (in.productId() == null) {
             throw invalid("productId", "REQUIRED", "The product is required.");
@@ -257,6 +271,10 @@ public class SaleLines {
         if (document.status() != SalesDocStatus.DRAFT) {
             throw new BusinessException(ErrorCode.DOCUMENT_IMMUTABLE, "Only a draft can be changed.",
                     Map.of("status", document.status().code()));
+        }
+        if (documents.invoicesADeliveryNote(document)) {
+            throw new BusinessException(ErrorCode.DOCUMENT_IMMUTABLE,
+                    "The lines of a delivery note's invoice are frozen.", Map.of("parentId", document.parentId()));
         }
         return document;
     }

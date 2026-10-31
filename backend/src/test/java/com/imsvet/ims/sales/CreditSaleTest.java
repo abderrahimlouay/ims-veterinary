@@ -163,6 +163,12 @@ class CreditSaleTest {
         confirm(sale).andExpect(jsonPath("$.code").value("CREDIT_LIMIT_EXCEEDED"))
                 .andExpect(jsonPath("$.context.uninvoicedDeliveryNotes").value("90.00"));
 
+        long draft = document("invoice", "INV-DRAFT", true, "90.00", note, null);
+        jdbc.update("UPDATE sales_documents SET status = 'draft', number = NULL WHERE id = ?", draft);
+        seller.get("/api/customers/" + customer + "/balance").andExpect(jsonPath("$.balance").value("0.00"))
+                .andExpect(jsonPath("$.uninvoicedDeliveryNotes").value("90.00"));
+        jdbc.update("UPDATE sales_documents SET status = 'cancelled' WHERE id = ?", draft);
+
         long invoice = document("invoice", "INV-DN", true, "90.00", note, null);
         seller.get("/api/customers/" + customer + "/balance").andExpect(jsonPath("$.balance").value("90.00"))
                 .andExpect(jsonPath("$.uninvoicedDeliveryNotes").value("0.00"));

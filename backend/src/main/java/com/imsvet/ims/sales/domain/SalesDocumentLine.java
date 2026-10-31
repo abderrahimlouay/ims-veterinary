@@ -77,6 +77,14 @@ public class SalesDocumentLine {
         this.unitCost = lotCost;
     }
 
+    /** The same line on the invoice of a delivery note, cost included (ADR-125). */
+    public SalesDocumentLine frozenCopyFor(Long invoiceId) {
+        SalesDocumentLine copy = new SalesDocumentLine(invoiceId, productId, lotId, unitId, targetSpeciesId, quantity,
+                quantityBase, unitPrice, discountPct, vatRate);
+        copy.unitCost = unitCost;
+        return copy;
+    }
+
     public BigDecimal lineHt() {
         return SaleAmounts.lineHt(quantity, unitPrice, discountPct);
     }

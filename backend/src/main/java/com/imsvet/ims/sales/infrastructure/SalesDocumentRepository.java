@@ -32,6 +32,18 @@ public interface SalesDocumentRepository extends Repository<SalesDocument, Long>
     Page<SalesDocument> search(SalesDocType docType, SalesDocStatus status, Long customerId, String number,
             Instant from, Instant to, Pageable pageable);
 
+    boolean existsByParentIdAndStatusNot(Long parentId, SalesDocStatus status);
+
+    @Query("""
+            SELECT COUNT(d) > 0 FROM SalesDocument d WHERE d.id = :id
+              AND d.docType = com.imsvet.ims.sales.domain.SalesDocType.DELIVERY_NOTE""")
+    boolean isDeliveryNote(long id);
+
+    /** ADR-125: its lines, lots and prices are the delivery note's, and its goods have already left. */
+    default boolean invoicesADeliveryNote(SalesDocument document) {
+        return document.parentId() != null && isDeliveryNote(document.parentId());
+    }
+
     @Query("""
             SELECT COALESCE(SUM(d.totalTtc), 0) FROM SalesDocument d
             WHERE d.customerId = :customerId AND d.creditSale = TRUE
@@ -49,7 +61,7 @@ public interface SalesDocumentRepository extends Repository<SalesDocument, Long>
                   AND p.docType = com.imsvet.ims.sales.domain.SalesDocType.INVOICE)""")
     BigDecimal creditNoted(long customerId);
 
-    /** A delivery note stops counting once a non-cancelled invoice carries it (ADR-117, ADR-125). */
+    /** A delivery note stops counting once a confirmed invoice, in the balance from then on, carries it (ADR-117, ADR-125). */
     @Query("""
             SELECT COALESCE(SUM(d.totalTtc), 0) FROM SalesDocument d
             WHERE d.customerId = :customerId AND d.creditSale = TRUE
@@ -57,7 +69,7 @@ public interface SalesDocumentRepository extends Repository<SalesDocument, Long>
               AND d.status = com.imsvet.ims.sales.domain.SalesDocStatus.CONFIRMED
               AND NOT EXISTS (SELECT 1 FROM SalesDocument i WHERE i.parentId = d.id
                   AND i.docType = com.imsvet.ims.sales.domain.SalesDocType.INVOICE
-                  AND i.status <> com.imsvet.ims.sales.domain.SalesDocStatus.CANCELLED)""")
+                  AND i.status = com.imsvet.ims.sales.domain.SalesDocStatus.CONFIRMED)""")
     BigDecimal uninvoicedCreditDeliveryNotes(long customerId);
 
     @Query("SELECT d.id FROM SalesDocument d WHERE d.customerId = :customerId AND d.creditSale = TRUE")

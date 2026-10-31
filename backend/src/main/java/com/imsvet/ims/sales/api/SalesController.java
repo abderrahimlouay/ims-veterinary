@@ -4,6 +4,7 @@ import com.imsvet.ims.common.idempotency.IdempotencyKeys;
 import com.imsvet.ims.common.paging.PageResponse;
 import com.imsvet.ims.sales.application.PaymentRecorder;
 import com.imsvet.ims.sales.application.SaleConfirmation;
+import com.imsvet.ims.sales.application.SaleConversion;
 import com.imsvet.ims.sales.application.SaleLines;
 import com.imsvet.ims.sales.application.SalesDocuments;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
@@ -62,14 +63,20 @@ class SalesController {
         }
     }
 
+    record ConvertRequest(String targetType) {
+    }
+
     private final SalesDocuments documents;
     private final SaleLines lines;
     private final SaleConfirmation confirmation;
+    private final SaleConversion conversion;
 
-    SalesController(SalesDocuments documents, SaleLines lines, SaleConfirmation confirmation) {
+    SalesController(SalesDocuments documents, SaleLines lines, SaleConfirmation confirmation,
+            SaleConversion conversion) {
         this.documents = documents;
         this.lines = lines;
         this.confirmation = confirmation;
+        this.conversion = conversion;
     }
 
     @GetMapping
@@ -123,6 +130,12 @@ class SalesController {
     SaleDetail confirm(@PathVariable long id, @RequestBody(required = false) ConfirmRequest body,
             @RequestHeader(name = IdempotencyKeys.HEADER, required = false) String idempotencyKey) {
         return confirmation.confirm(id, body == null ? List.of() : body.tenders(), idempotencyKey);
+    }
+
+    @PostMapping("/{id}/convert")
+    ResponseEntity<SaleDetail> convert(@PathVariable long id, @RequestBody ConvertRequest body) {
+        SaleDetail created = conversion.convert(id, body.targetType());
+        return ResponseEntity.created(URI.create("/api/sales/" + created.id())).body(created);
     }
 
     @GetMapping("/{id}/withdrawal-warnings")

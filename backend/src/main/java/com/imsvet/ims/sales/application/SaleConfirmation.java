@@ -39,13 +39,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Confirms an immediate sale, a receipt or a direct invoice (W2 step 6, api.md §5.6), all or nothing, in the lock order
+ * Confirms a sales document (W2 step 6, api.md §5.6), all or nothing, in the lock order
  * of database.md §7: idempotency key (a repeat returns the first result, BR-SALE-016), document, number (ADR-122), lots
  * in ascending id, validated again under lock (BR-LOT-003/004), {@code sale} movements through {@link StockService}
  * (BR-SALE-015), then the payments and the cash session (ADR-118). Paid in full: the amounts are what is kept, never
  * what was tendered. A credit sale takes no payment: it locks the customer after the lots and passes the limit check
- * (BR-PAY-005), and its due date defaults to the customer's payment terms (ADR-109). Quotes and delivery notes are
- * confirmed with the conversions.
+ * (BR-PAY-005), and its due date defaults to the customer's payment terms (ADR-109). A quote is only numbered
+ * (BR-SALE-003). A delivery note moves stock and passes the limit check but takes no payment; the invoice made from it
+ * posts nothing and passes no new check, its goods having left (ADR-117, ADR-125).
  */
 @Service
 public class SaleConfirmation {
@@ -111,19 +112,27 @@ public class SaleConfirmation {
         locks.lockAndRefresh(document);
         requireConfirmable(document);
         List<SalesDocumentLine> found = lines.findByDocumentIdOrderByIdAsc(id);
-        requireLines(document, found);
+        boolean frozen = documents.invoicesADeliveryNote(document);
+        boolean movesStock = !frozen && document.docType() != SalesDocType.QUOTE;
+        requireLines(document, found, frozen, movesStock);
         Instant now = clock.instant();
         SaleTotals.apply(document, found, now);
         requirePaidInFull(document, paid);
 
         String number = numbering.next(document.docType().key());
-        Map<Long, BigDecimal> costs = lots.lockForSale(found.stream().map(SalesDocumentLine::lotId).toList());
-        if (document.creditSale()) {
-            checkCredit(document);
+        if (movesStock) {
+            Map<Long, BigDecimal> costs = lots.lockForSale(found.stream().map(SalesDocumentLine::lotId).toList());
+            if (document.creditSale()) {
+                checkCredit(document);
+            }
+            found.forEach(line -> line.snapshotCost(costs.get(line.lotId())));
+            stock.post(found.stream().map(line -> new Movement(line.lotId(), line.productId(), MovementType.SALE,
+                    line.quantityBase().negate(), null, REFERENCE_TYPE, id)).toList());
         }
-        found.forEach(line -> line.snapshotCost(costs.get(line.lotId())));
-        stock.post(found.stream().map(line -> new Movement(line.lotId(), line.productId(), MovementType.SALE,
-                line.quantityBase().negate(), null, REFERENCE_TYPE, id)).toList());
+        if (document.creditSale() && document.docType() == SalesDocType.INVOICE && document.dueDate() == null) {
+            int terms = customers.findById(document.customerId()).orElseThrow().paymentTermsDays();
+            document.dueOn(calendar.today().plusDays(terms));
+        }
         RecordedPayments recorded = payments.record(id, document.customerId(), document.totalTtc(), paid);
         document.confirm(number, recorded.cashSessionId(), now);
         documents.saveAndFlush(document);
@@ -138,9 +147,9 @@ public class SaleConfirmation {
                     Map.of("status", document.status().code()));
         }
         SalesDocType type = document.docType();
-        if (type != SalesDocType.RECEIPT && type != SalesDocType.INVOICE) {
+        if (!type.creatableDirectly()) {
             throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION,
-                    "This document type cannot be confirmed yet.", Map.of("docType", type.code()));
+                    "A credit note is issued by a customer return.", Map.of("docType", type.code()));
         }
         if (document.customerId() != null) {
             Customer customer = customers.findById(document.customerId()).orElseThrow();
@@ -151,13 +160,18 @@ public class SaleConfirmation {
         }
     }
 
-    private void requireLines(SalesDocument document, List<SalesDocumentLine> found) {
+    /** {@code frozen}: already delivered, so an archived product since then does not stop the billing. */
+    private void requireLines(SalesDocument document, List<SalesDocumentLine> found, boolean frozen,
+            boolean movesStock) {
         if (found.isEmpty()) {
             throw new ValidationException("The sales document is invalid.",
                     List.of(new Violation("lines", "REQUIRED", "A document needs at least one line.")));
         }
+        if (frozen) {
+            return;
+        }
         for (SalesDocumentLine line : found) {
-            if (line.lotId() == null) {
+            if (movesStock && line.lotId() == null) {
                 throw new BusinessException(ErrorCode.LOT_REQUIRED, "Every line needs a lot.",
                         Map.of("documentId", document.id(), "lineId", line.id()));
             }
@@ -180,16 +194,14 @@ public class SaleConfirmation {
                     Map.of("customerId", customer.id()));
         }
         credit.requireWithinLimit(customer.id(), customer.creditLimit(), document.totalTtc());
-        if (document.dueDate() == null) {
-            document.dueOn(calendar.today().plusDays(customer.paymentTermsDays()));
-        }
     }
 
     private static void requirePaidInFull(SalesDocument document, List<Tender> paid) {
-        if (document.creditSale()) {
+        SalesDocType type = document.docType();
+        if (document.creditSale() || type == SalesDocType.QUOTE || type == SalesDocType.DELIVERY_NOTE) {
             if (!paid.isEmpty()) {
                 throw new BusinessException(ErrorCode.PAYMENT_TOTAL_MISMATCH,
-                        "A credit sale takes no payment at confirmation.", Map.of("documentId", document.id()));
+                        "This document takes no payment at confirmation.", Map.of("documentId", document.id()));
             }
             return;
         }

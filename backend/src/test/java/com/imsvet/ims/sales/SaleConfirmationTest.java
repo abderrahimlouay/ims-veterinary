@@ -37,7 +37,8 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Confirming immediate sales (W2 step 6): numbered at confirmation (ADR-122), sale movements and cost snapshot
  * (BR-SALE-002/009/015), paid in full with the amount kept (ADR-118, BR-SALE-013), re-validation
- * (BR-LOT-003/004, BR-CUST-004, BR-SALE-005/011), idempotency (BR-SALE-016). Credit sales: {@code CreditSaleTest}.
+ * (BR-LOT-003/004, BR-CUST-004, BR-SALE-005/011), idempotency (BR-SALE-016). Credit sales: {@code CreditSaleTest}; quotes, delivery
+ * notes and their invoices: {@code SaleConversionTest}.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -142,14 +143,6 @@ class SaleConfirmationTest {
         confirm(invoice, cheque(TTC)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.number").value(startsWith("INV-")));
         assertThat(balance()).isEqualByComparingTo("8");
-    }
-
-    @Test
-    void quotesAndDeliveryNotesWaitForTheConversions() throws Exception {
-        long customer = customer();
-        long note = draftWithLine("{\"docType\":\"delivery_note\",\"customerId\":" + customer + "}");
-        confirm(note, "{}").andExpect(jsonPath("$.code").value("INVALID_STATE_TRANSITION"));
-        assertThat(balance()).isEqualByComparingTo("10");
     }
 
     @Test

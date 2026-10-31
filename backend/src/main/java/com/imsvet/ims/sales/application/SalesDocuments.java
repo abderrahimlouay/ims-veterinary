@@ -119,6 +119,10 @@ public class SalesDocuments {
         }
         boolean credit = Boolean.TRUE.equals(in.creditSale());
         requireParties(document.docType(), in.customerId(), credit);
+        if (documents.invoicesADeliveryNote(document)
+                && (!Objects.equals(in.customerId(), document.customerId()) || credit != document.creditSale())) {
+            throw invalid("customerId", "FROZEN", "An invoice keeps the customer and credit status of its delivery note.");
+        }
         document.updateHeader(in.customerId(), credit, dueDate(in, credit), notes(in.notes()), clock.instant());
         return viewer.detail(documents.saveAndFlush(document));
     }
