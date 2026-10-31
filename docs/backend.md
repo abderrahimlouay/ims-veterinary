@@ -163,4 +163,4 @@ Constructor injection; no field injection; no static state; small services per u
 
 ## 18. Open backend items
 
-OD-002/003 (sales stock/payment semantics), OD-020/021 (OD-006 → ADR-107, OD-007 → ADR-093, OD-011 → ADR-108; OD-012/013/015/017 resolved). (OD-024 resolved by ADR-032.)
+OD-020/021 (OD-002 → ADR-117, OD-003 → ADR-118, OD-006 → ADR-107, OD-007 → ADR-093, OD-011 → ADR-108; OD-012/013/015/017 resolved). (OD-024 resolved by ADR-032.)

@@ -631,7 +631,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #1 A)
 - **Decision:** Per line: `line_ht = round(quantity × unit_price × (1 − discount_pct/100), 2)`, `line_vat = round(line_ht × vat_rate/100, 2)`, `line_ttc = line_ht + line_vat`; document totals are the sums of the rounded line amounts. Rounding mode HALF_UP everywhere. The server computes every amount; client values are ignored (BR-SALE-008, BR-PURCH-002). The generated `line_ht` column and the service use the identical formula (ADR-016 parity test).
 - **Alternatives:** VAT per rate group on the document (B); round only the document totals (C).
-- **Consequences:** BR-PURCH-002, `database.md` purchase_order_lines, `api.md` §4.7. **Before Phase 7** the legal rounding rule for *sales* invoices must be confirmed with an accountant (the user asked for this to be repeated in the Phase 5 close report).
+- **Consequences:** BR-PURCH-002, `database.md` purchase_order_lines, `api.md` §4.7. **Before Phase 7** the legal rounding rule for *sales* invoices must be confirmed with an accountant (the user asked for this to be repeated in the Phase 5 close report). **Amended by ADR-115 (2026-10-31):** per line is kept for sales, and the confirmation is now a go-live blocker (DR-040).
 
 ## ADR-094 — Purchase-order line prices per ordered unit, 4 decimals
 - **Status:** Accepted (user decision, 2026-10-24, Phase 5 preflight; #2 A)
@@ -721,7 +721,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Status:** Accepted (user decision, 2026-10-24, Phase 5 close; option C).
 - **Decision:** `customers.credit_limit` becomes **nullable**: `NULL` = no limit, `0` = cash only (no credit sale), a positive amount = the limit (SD-133). A credit sale is allowed only if **balance + the new sale's TTC ≤ limit**, where the balance is the customer's confirmed invoices minus payments (drafts not counted), evaluated **under the customer-row lock** (database.md §7 lock order: after the lots). Overdue invoices block a new credit sale **only when** the new setting `credit_overdue_block_days` is on (default off; when on, an invoice overdue by more than that many days blocks). **Phase 6** stores the limit (`customer.credit.manage`) and audits its changes (`CREDIT_LIMIT_CHANGE`); the **check lands with sales** (Phase 7, through `CreditLimitPort`), and Phase 9 brings payments into the balance.
 - **Alternatives:** 0 = no credit, overdue always blocks (A); 0 = unlimited, overdue only warns (B).
-- **Consequences:** BR-CUST-002, BR-PAY-005, CT-06, `database.md` customers, `api.md` §4.9 credit-limit endpoint (`null` allowed), settings seed (Phase 6 or 7 migration), W2 step 6. **Open point for Phase 7 (roadmap):** whether credit sales are enabled before Phase 9 exists, since without recorded payments the balance only grows.
+- **Consequences:** BR-CUST-002, BR-PAY-005, CT-06, `database.md` customers, `api.md` §4.9 credit-limit endpoint (`null` allowed), settings seed (Phase 6 or 7 migration), W2 step 6. **Open point for Phase 7 closed by ADR-116** (credit sales are enabled from Phase 7). ADR-117 adds uninvoiced credit delivery notes to the check, not to the balance.
 
 ## ADR-109 — The customer record
 - **Status:** Accepted (user decision, 2026-10-25, Phase 6 preflight; D1 B, D2 B, D7 A, D8 A, D11 A, D12).
@@ -759,6 +759,86 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** audit every customer change (`CUSTOMER_UPDATE`).
 - **Consequences:** `security.md` §9, `testing.md`, the demo seeder (Phase 6 slice 7). The reserved fake range is `0100 00 xx xx` (testing.md §3, DR-039).
 
+## ADR-115 — Sales invoices round per line; legal confirmation pending (confirms ADR-093 for sales)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D1 A).
+- **Decision:** Sales documents use the formula of ADR-093: VAT and rounding per line, HALF_UP, document totals are the sums of the rounded line amounts. VAT per rate group is not used.
+- **Alternatives:** VAT per rate on the document total (B); two lines of 0.33 HT at 19 % give 0.12 VAT per line and 0.13 per rate.
+- **Consequences:** BR-SALE-008, `api.md` §5.5/§5.6, `testing.md` BR-SALE-008. The legal rule has **not** been confirmed: an accountant must confirm it before go-live. This is a **go-live blocker, not a Phase 7 blocker** (DR-040). If the accountant requires another rule, it is changed by a new ADR before any real invoice exists.
+
+## ADR-116 — Credit sales are enabled from Phase 7 (closes the open point of ADR-108)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D2 A).
+- **Decision:** Credit sales work from Phase 7 with the limit enforced server-side (BR-PAY-005). Payments only enter the balance in Phase 9, so until then a customer's balance only grows. Go-live is not before Phase 9 (the roadmap deploys in Phase 12), so no real user is affected.
+- **Alternatives:** disable credit sales until Phase 9 (B); bring customer payments forward into Phase 7 (C).
+- **Consequences:** **Demo and test customers will eventually hit their limit; raising the limit (`customer.credit.manage`, audited) is the workaround.** CT-06 runs with real sales from Phase 7. `finance` implements `CreditLimitPort` from Phase 7, with no payment side until Phase 9. A go-live before Phase 9 would reopen this decision.
+
+## ADR-117 — Delivery notes, invoices and receipts move stock, once (resolves OD-002, DR-004)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D3 B and its follow-up).
+- **Decision:** Confirming a **delivery note**, a **receipt** or an **invoice not derived from a delivery note** posts `sale` (−) movements. A quote never does (BR-SALE-003). An **invoice made from a confirmed delivery note reuses its lots and posts no second movement**. The recall buyers list covers every confirmed document that posted movements, including anonymous receipts and delivery notes not yet invoiced. **Uninvoiced credit delivery notes count in the credit-limit check but not in the balance:** the check is `balance + uninvoiced credit delivery notes + the new document's TTC ≤ limit`.
+- **Alternatives:** only invoices and receipts move stock, the delivery note is informational (A): delivered goods would stay in stock on paper and a recall would miss them.
+- **Consequences:** BR-SALE-002, BR-PAY-005, BR-LOT-008, W2, W6, `database.md`, ADR-108 (the check is widened; the balance is unchanged), `v_sales_margin` scope (DR-007, Phase 11). The commercial rules of a delivery note: ADR-125.
+
+## ADR-118 — Every immediate sale creates a payment; balance definition (resolves OD-003, DR-003, DR-005)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D4 A, DR-003 option a).
+- **Decision:**
+  1. Every immediate sale creates `customer_payments` rows and allocations to the document at confirmation, written by `finance` through a port defined in `sales`, in the confirmation transaction. `customer_payments.customer_id` becomes **nullable** for anonymous sales; there is no fake customer (SD-108).
+  2. An immediate sale is **paid in full**: Σ payments = TTC, several methods allowed. Change given on cash is not recorded.
+  3. A cash session is required **only when the payment includes cash** (`CASH_SESSION_REQUIRED`); the document is then linked to that session and a `cash_movements` IN row is written for the cash part. Cheques and transfers need no session and stay out of expected cash (BR-CASH-003).
+  4. A credit sale takes **no payment at confirmation**.
+  5. **Balance** (derived, never stored) = confirmed credit invoices − their credit notes − account payments, allocated or not. Counter payments of immediate sales never count. Anything received on account beyond the invoices lowers the balance as an advance; its handling on screen is Phase 9.
+  6. As ADR-017 provided once this was confirmed, `customer_payments`, `payment_allocations` and `cash_movements` get the append-only triggers (SD-102); errors are reversed (BR-PAY-003).
+  7. **Amount kept (user check, 2026-10-31):** the payment, the cash movement and the session's expected amount use the amount kept, which is the sale total, never the amount tendered. The API takes no tendered amount; the screen computes the change. A test covers a cash sale with change.
+  8. **DR-003 option (a):** Phase 7 delivers a minimal slice: opening and closing a session (with variance) and the cash movements of sales. Manual cash movements and the session report stay in Phase 9.
+- **Alternatives:** payment method stored on the document, `customer_payments` only for account settlements (B): no split payment and two payment paths.
+- **Consequences:** BR-SALE-013, BR-PAY-004, BR-PAY-006, W2, W9, `api.md` §5.6 and the cash-session endpoints, `database.md`, DR-006 (the balance query follows this definition in Phase 9), `database-migration.md` SD-102/SD-108. Who may take cash at the counter: ADR-126.
+
+## ADR-119 — Restricted cancellation of confirmed sales documents (resolves OD-004, DR-029)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D5 C).
+- **Decision:** A confirmed document is cancelled **as a whole**, following the pattern of ADR-103, with permission `sale.cancel` and a mandatory reason. It is **refused** (`SALE_NOT_CANCELLABLE`, 409, `context` names the blocking item) if a return, a credit note or a derived document exists, or if its cash session is closed; those cases go through a credit note (Phase 8). In one transaction: one `sale_cancellation` (+) movement per posted line through `StockService` (new movement type, SD-135), recorded payments reversed and the cash part posted OUT on the same session, status `cancelled`, `cancelled_by/at` and the reason stored, audited `INVOICE_CANCEL`. The **number is kept** (BR-DOC-001). The stock returns to the original lot whatever its status, and a blocked, recalled or expired lot stays unsellable. A cancelled document no longer counts in the balance or in the credit-limit check.
+- **Alternatives:** cancellation with `sale.cancel` and no conditions (A); credit note only (B).
+- **Consequences:** BR-SALE-004, BR-SALE-014, BR-STOCK-005, W2b, `api.md` (`POST /api/sales/{id}/cancel`, new code), `database.md` (`cancel_reason`, movement CHECK), `testing.md` BR-SALE-014, DR-002 (the discard type stays with OD-005).
+
+## ADR-120 — FEFO override needs a permission and a reason (resolves OD-010)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D6 A).
+- **Decision:** A seller may choose another lot than the FEFO proposal only with `sale.override_fefo` (Administrator, Pharmacist) and a **mandatory reason**, audited `FEFO_OVERRIDE` in the same transaction; without the permission the result is `FEFO_VIOLATION`. Expired, blocked and recalled lots can **never** be selected, with or without the permission (`LOT_EXPIRED` / `LOT_BLOCKED` / `LOT_RECALLED`, BR-LOT-003/004).
+- **Alternatives:** never allowed (B); allowed for any seller with a warning only (C).
+- **Consequences:** BR-LOT-005, `api.md` §5.5 (`lotId` + `fefoOverrideReason`), `frontend.md` §POS, `security.md`.
+
+## ADR-121 — On-screen withdrawal warnings (resolves OD-028 for the screen only)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D7 A).
+- **Decision:** The sale screen shows a non-blocking `WITHDRAWAL_PERIOD` warning for **any customer**, anonymous included, on a line whose product has withdrawal periods: for the line's target species, or **every species of the product when none is given**. A product without withdrawal data shows nothing. **The printing rule stays open: OD-028, Phase 10.**
+- **Alternatives:** breeders only (B): an anonymous buyer would never see the warning.
+- **Consequences:** BR-SALE-010, W2 step 3, `api.md` §5.5, `testing.md` BR-SALE-010.
+
+## ADR-122 — Sales document numbering (resolves OD-035; completes ADR-097)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D8 A).
+- **Decision:** Keys `QUO` quote, `DN` delivery note, `INV` invoice, `RCT` receipt, `CN` credit note, format and yearly reset per ADR-097. A sales document is numbered **at confirmation**, in the confirming transaction, so an abandoned draft uses no number and a failed confirmation leaves no gap. `sales_documents.number` is **nullable while the document is a draft** (`UQ(doc_type, number)` ignores NULLs; a CHECK requires a number on a non-draft, SD-136). `CN` is issued from Phase 8.
+- **Alternatives:** numbered at creation, as purchase orders (B): abandoned drafts leave gaps.
+- **Consequences:** BR-DOC-001, W2 step 6, `database.md` sales_documents, `api.md` §4 (a draft has `number: null`).
+
+## ADR-123 — Sales line prices per sold unit, 4 decimals (resolves OD-036)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; D9 A).
+- **Decision:** `sales_document_lines.unit_price` is `DECIMAL(14,4)`, per **sold unit** (the line's unit, base unit when none), as purchase-order lines (ADR-094, SD-137). Line amounts and totals stay 2 decimals (ADR-115).
+- **Alternatives:** keep 2 decimals (B): a price like 0.1234 per ml would be rounded before the line total is computed.
+- **Consequences:** `database.md` sales_document_lines, `api.md` §5.5, ADR-016 parity test, ADR-107.
+
+## ADR-124 — Phase 7 has no prescription flag; the client's answer is a go-live blocker (resolves OD-037)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; option A).
+- **Decision:** Phase 7 is built without any prescription attribute or check. Whether some products may be sold only on a veterinary prescription remains a question to the client, and its answer is a **go-live blocker** (DR-041). If the client requires it, it is added by a new ADR and a migration; confirmed documents are not changed.
+- **Alternatives:** a product flag that refuses the sale without a prescription reference (B); a product flag with a warning only (C).
+- **Consequences:** `documentation-review.md` DR-041, `roadmap.md`.
+
+## ADR-125 — Commercial rules of a delivery note (resolves OD-038)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; option A).
+- **Decision:** A delivery note takes **no payment**. One whole delivery note gives **exactly one invoice**, with lines, lots and prices frozen; there is no partial invoicing and no grouping. The invoice inherits the credit status: a non-credit invoice is paid in full at its confirmation (ADR-118), a credit invoice takes no payment. Confirming that invoice makes **no new limit check**, since the amount is already counted and the goods have left. Cancelling it (ADR-119) posts no stock movement and makes the delivery note invoiceable again; a delivery note with a non-cancelled invoice cannot be cancelled.
+- **Alternatives:** partial invoicing, tracked per line (B); several delivery notes on one invoice, which needs a link table (C).
+- **Consequences:** BR-SALE-001, BR-SALE-002, BR-PAY-005, W2, `api.md` convert endpoint, `testing.md` BR-SALE-002.
+
+## ADR-126 — The Pharmacist may open a cash session (resolves OD-039; amends ADR-037)
+- **Status:** Accepted (user decision, 2026-10-31, Phase 7 preflight; option A).
+- **Decision:** The Pharmacist role receives `cash.open`, by a migration in the cash-session slice, so that the role can take cash sales from its own session. `cash.manage` is unchanged.
+- **Alternatives:** keep the matrix, so Pharmacists make only credit, cheque and transfer sales (B).
+- **Consequences:** `security.md` §4 changes **with that migration**, because `PermissionMatrixSeedTest` requires the matrix to equal the seeded grants.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -771,18 +851,21 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 1. **Related:** `security.md`, `api.md` §4.1, BR-SEC-001.
 
 ## OD-002 — Which sales documents move stock, and when
+- **Status:** Resolved 2026-10-31 → **ADR-117** (option B).
 - **Question:** Does a **delivery note** deduct stock, or only an **invoice/receipt**? If an invoice is created from a delivery note, how is double deduction prevented? Are delivery notes part of lot recall?
 - **Why it matters:** `sales_doc_type` includes `quote`, `delivery_note`, `invoice`, `receipt`, `credit_note`; Source views `v_sales_margin` and function `recall_lot` consider only `invoice` and `receipt`, so goods delivered on an un-invoiced delivery note would be missed by a recall.
 - **Options:** (A) Only `invoice`/`receipt` deduct stock; delivery note is informational. (B) Delivery note deducts; invoice created from it does not (flag on lines). 
 - **Blocks:** Phase 7. **Related:** BR-SALE-002, BR-SALE-005, BR-LOT-008, DR-004.
 
 ## OD-003 — Payment capture at the counter and the customer-balance definition
+- **Status:** Resolved 2026-10-31 → **ADR-118** (option A; DR-003 option a).
 - **Question:** How are payments for **immediate (non-credit) sales** and **anonymous receipts** recorded? `customer_payments.customer_id` is `NOT NULL` and `sales_documents` carries no payment method, yet `cash_movements` need a method. And what exactly is a *customer balance* (credit invoices only? all invoices minus all payments?).
 - **Why it matters:** `v_customer_balance` subtracts **all** `customer_payments` and **all** credit notes but adds only **credit** invoices → balance becomes wrong as soon as any cash sale is paid through `customer_payments` or a credit note is issued against a cash sale.
 - **Options:** (A) Every sale creates a payment + allocation (uniform model; anonymous customer record allowed or `customer_id` nullable). (B) Immediate sales are "paid on confirmation" with a payment-method column on the document; `customer_payments` only for account settlements. 
 - **Blocks:** Phase 7 (counter payment) and Phase 9. **Related:** BR-PAY-004…006, BR-CASH-003, DR-005, DR-006.
 
 ## OD-004 — Cancellation of confirmed documents
+- **Status:** Resolved 2026-10-31 → **ADR-119** (restricted cancellation).
 - **Question:** May a *confirmed* invoice/receipt be cancelled, or only reversed by a credit note? If cancellable, which movement type reverses the stock (the Source enum has no `sale_cancellation`/`receipt_cancellation`)?
 - **Options:** (A) Cancellation allowed with permission `sale.cancel`; add movement type `sale_cancellation`. (B) No cancellation after confirmation; use credit note + customer return. 
 - **Spec hint:** audit of "annulations de factures" (§2.7) implies cancellation exists.
@@ -814,6 +897,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 3. **Related:** BR-LOT-003.
 
 ## OD-010 — FEFO override policy
+- **Status:** Resolved 2026-10-31 → **ADR-120** (option A).
 - **Question:** The Spec says the system *proposes* FEFO. May a seller choose a different lot? With what permission/reason?
 - **Leaning:** Allow only with permission `sale.override_fefo` and a recorded reason; always allow skipping non-sellable lots.
 - **Blocks:** Phase 7. **Related:** BR-LOT-005.
@@ -901,6 +985,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 3. **Related:** BR-LOT-009.
 
 ## OD-028 — Applicability of withdrawal-period warnings
+- **Status:** On-screen warnings resolved 2026-10-31 → **ADR-121**. **Still open for printing** (Phase 10).
 - **Question:** Print warnings only on documents for customers of type *breeder*, or on all documents containing products that have withdrawal periods? What when `target_species_id` is not specified on the line (Source view then lists all species)?
 - **Blocks:** Phase 10. **Related:** BR-SALE-010.
 
@@ -946,6 +1031,37 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Leaning:** none recorded; for the user.
 - **Blocks:** nothing in Phase 4; to decide before Phase 5 uses the thresholds for purchase orders. **Related:** BR-PROD-005, BR-STOCK-009, BR-STOCK-010, ADR-077.
 
+## OD-035 — Sales document keys and numbering moment
+- **Status:** Resolved 2026-10-31 → **ADR-122** (option A).
+- **Question:** ADR-097 left the sales keys and the moment of numbering to Phase 7, while `sales_documents.number` was `NOT NULL` although drafts exist. Number at confirmation or at creation?
+- **Blocks:** Phase 7. **Related:** BR-DOC-001, ADR-097.
+
+## OD-036 — Precision of a sales line price
+- **Status:** Resolved 2026-10-31 → **ADR-123** (option A).
+- **Question:** `sales_document_lines.unit_price` was documented with 2 decimals while prices per base unit have 4 (ADR-049). 2 or 4 decimals?
+- **Blocks:** Phase 7. **Related:** ADR-049, ADR-094.
+
+## OD-037 — Prescription-only products
+- **Status:** Resolved 2026-10-31 → **ADR-124** (option A); the client's answer is a go-live blocker (DR-041).
+- **Question:** May some products be sold only on a veterinary prescription, and what must the sale then record or check? The model has no such attribute and the Spec is silent (raised 2026-10-25 with the demo data; question to the client still pending).
+- **Options:** (A) deliver Phase 7 without it, keep the question as a **go-live blocker**, and add it later by a migration if the client requires it; (B) add a product flag now and refuse the sale without a prescription reference; (C) add a product flag now with a warning only.
+- **Leaning:** `[REC]` (A): (B) and (C) would invent a requirement before the client answers, and adding it later does not change confirmed documents.
+- **Blocks:** Phase 7 (decision on how to proceed), go-live (the client's answer). **Related:** BR-SALE-*, W2 step 6.
+
+## OD-038 — Commercial rules of a delivery note
+- **Status:** Resolved 2026-10-31 → **ADR-125** (option A).
+- **Question:** ADR-117 makes a delivery note move stock and ADR-118 takes payment on an immediate sale, but neither says: (1) when a non-credit delivery note is paid; (2) whether an invoice can cover part of a delivery note, or several; (3) whether invoicing a delivery note is checked against the limit again; (4) what cancelling such an invoice does.
+- **Options:** (A) a delivery note takes no payment; the invoice inherits its credit status, and is paid in full at its confirmation when non-credit; one whole delivery note gives exactly one invoice, with lines, lots and prices frozen; no new limit check (the amount is already counted and the goods have left); cancelling the invoice posts no stock movement and makes the delivery note invoiceable again. (B) as (A), but partial invoicing is allowed, tracked per line. (C) as (A), but several delivery notes may be grouped into one invoice, which needs a link table because `parent_id` holds one parent.
+- **Leaning:** `[REC]` (A): simplest, and it fits the single `parent_id`. Partial or grouped invoicing can be added later.
+- **Blocks:** Phase 7. **Related:** ADR-117, ADR-118, ADR-119, BR-SALE-001, BR-SALE-002.
+
+## OD-039 — The Pharmacist sells but cannot take cash
+- **Status:** Resolved 2026-10-31 → **ADR-126** (option A).
+- **Question:** The matrix (ADR-037) gives the Pharmacist `sale.create` but not `cash.open`. Since a cash payment needs the cashier's own open session (ADR-118), a Pharmacist could never take a cash sale. Is that intended?
+- **Options:** (A) grant `cash.open` to the Pharmacist, by a migration; (B) keep the matrix: a Pharmacist only makes credit, cheque and transfer sales (`CASH_SESSION_REQUIRED` on cash).
+- **Leaning:** `[REC]` (A): the Pharmacist is a named actor of the counter workflow (W2).
+- **Blocks:** Phase 7. **Related:** ADR-037, BR-SALE-013, BR-PAY-006.
+
 ---
 
 # Part C — Decision backlog by phase
@@ -959,11 +1075,11 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 4 Inventory & Stock | ~~OD-012~~ → ADR-072…075, ~~OD-013~~ → ADR-076…079, ~~OD-030~~ → ADR-035, ADR-012 (accepted, amended), ADR-028; ADR-080…089 (all 2026-10-22); ADR-090, ADR-091, ADR-077 amendment, ~~OD-034~~ → ADR-092 (2026-10-23) |
 | 5 Purchasing | ~~OD-007~~ → ADR-093, ~~OD-014~~ → ADR-095, ~~OD-015~~ → ADR-096, ~~OD-017~~ → ADR-097 (ADR-011 accepted), ~~OD-029~~ → ADR-098; ADR-094, ADR-099…106 (all 2026-10-24) |
 | 6 Customers | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (both 2026-10-24); ADR-109…114 (2026-10-25) |
-| 7 Sales / POS | OD-002, OD-003, OD-004, OD-010, ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (the credit check), ~~OD-033~~ → ADR-071 |
+| 7 Sales / POS | ~~OD-002~~ → ADR-117, ~~OD-003~~ → ADR-118, ~~OD-004~~ → ADR-119, ~~OD-010~~ → ADR-120, ~~OD-028 (screen)~~ → ADR-121, ~~OD-035~~ → ADR-122, ~~OD-036~~ → ADR-123, ~~OD-037~~ → ADR-124, ~~OD-038~~ → ADR-125, ~~OD-039~~ → ADR-126, ADR-115, ADR-116 (all 2026-10-31); ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (the credit check), ~~OD-033~~ → ADR-071 |
 | 8 Returns | OD-005 |
-| 9 Payments / Finance | OD-003, OD-016; ~~OD-011~~ → ADR-108 (payments in the balance) |
+| 9 Payments / Finance | ~~OD-003~~ → ADR-118, OD-016; ~~OD-011~~ → ADR-108 (payments in the balance) |
 | 10 Documents & Printing | OD-020, OD-026, OD-028, OD-008 |
-| 11 Reports & Audit | OD-021 (backup), OD-002 (margin scope), OD-003 |
+| 11 Reports & Audit | OD-021 (backup); margin scope follows ADR-117, ADR-118 |
 | 12 Testing, Security, Deployment | OD-021, ADR-036 hardening review |
 | 13 Dark theme | ADR-069 (decided 2026-10-22) |
 
@@ -971,4 +1087,4 @@ Each Open Decision lists the question, the options, an optional author's leaning
 
 | Item | Raised | Linked to | Status |
 |---|---|---|---|
-| Prescription-only status for products: whether some products may only be sold on a veterinary prescription, and what the sale must then record or check | 2026-10-25, demo data (the model has no such attribute; nothing was invented) | Phase 7 — confirmation of a sale (BR-SALE-*, W2 step 6) | Question to the client pending; becomes an OD (and then an ADR) before Phase 7 starts |
+| Prescription-only status for products: whether some products may only be sold on a veterinary prescription, and what the sale must then record or check | 2026-10-25, demo data (the model has no such attribute; nothing was invented) | Phase 7 — confirmation of a sale (BR-SALE-*, W2 step 6) | ~~OD-037~~ → ADR-124: Phase 7 is built without it; the client's answer is a go-live blocker (DR-041) |

@@ -122,6 +122,8 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 
 Status policy: **400** malformed input · **401/403** identity/permission · **404** missing · **409** conflict with current state/uniqueness/concurrency · **422** syntactically valid request that violates a business rule · **429** throttled · **500** defect.
 
+Phase 7 adds, with the slices that implement them (this table matches `ErrorCode`, checked by `ErrorCatalogueTest`): `SALE_NOT_CANCELLABLE` (409; a return, credit note or derived document exists, or the cash session is closed; `context` names the item; BR-SALE-014) and `PAYMENT_TOTAL_MISMATCH` (422; the payments of an immediate sale do not equal its TTC, or a credit sale has payments; ADR-118).
+
 ## 4. Endpoint catalogue
 
 Format: **Method · Path · Purpose · Permission · Contract (request → response; notable errors)**. Unless stated, list endpoints are paginated; `GET /…/{id}` returns the detail DTO with `version`; unknown id → `NOT_FOUND`; missing permission → `ACCESS_DENIED`. `●` marks endpoints detailed in §5.
@@ -268,7 +270,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET/PUT | `/api/customers/{id}` | view / update (credit limit excluded) | `customer.read` / `customer.manage` | with `version`; `CustomerDetail {id, name, customerType, category: {id, name, discountPct}, farmingType, wilaya, commune, address, phone, email, taxId (normalised), paymentTermsDays, veterinarian: {id, name}, creditLimit, active, createdAt, updatedAt, version}`; `CustomerSummary {id, name, customerType, category, wilaya, commune, phone, active}`; `RESOURCE_IN_USE` (a referenced veterinarian's type), `DUPLICATE_RESOURCE`, `VALIDATION_FAILED` (`name` `REQUIRED`, `customerType` / `categoryId` `UNKNOWN`, `paymentTermsDays` `RANGE`, `email` `EMAIL`, `phone` `FORMAT`, `veterinarianId` `SELF` / `NOT_VETERINARIAN`) |
 | PUT | `/api/customers/{id}/credit-limit` | change credit limit under the customer-row lock, audited `CREDIT_LIMIT_CHANGE` (old and new value, also to and from `null`) | `customer.credit.manage` | `{creditLimit, version}` — `creditLimit` must be present: `null` = no limit, `"0.00"` = cash only, else ≥ 0 with 2 decimals (ADR-108) → `CustomerDetail`; `VALIDATION_FAILED` (`creditLimit` `REQUIRED` / `FORMAT` / `NOT_NEGATIVE` / `SCALE` / `RANGE`), `CONCURRENT_MODIFICATION` (stale version, or a parallel change), `NOT_FOUND` |
 | POST | `/api/customers/{id}/deactivate` · `/activate` | toggle | `customer.manage` | |
-| GET | `/api/customers/{id}/balance` | balance, limit, available credit | `customer.read` | definition **[OPEN OD-003]** |
+| GET | `/api/customers/{id}/balance` | balance, limit, available credit | `customer.read` | definition ADR-118 |
 | GET | `/api/customers/{id}/statement` | account statement `?from&to` (+ `format=pdf`) | `statement.read` | chronological lines + running balance |
 | GET | `/api/customers/{id}/open-invoices` | invoices with outstanding amount (for allocation) | `payment.read` | |
 | GET | `/api/customers/{id}/sales` | sales history | `sale.read` | |
@@ -287,9 +289,9 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | POST | `/api/sales/{id}/lines` ● | add line; server resolves unit, price, FEFO lot(s), warnings | `sale.create` | see §5.5 → updated document |
 | PUT/DELETE | `/api/sales/{id}/lines/{lineId}` | edit / remove draft line | `sale.create` | `DOCUMENT_IMMUTABLE` if not draft |
 | PUT | `/api/sales/{id}` | edit draft header | `sale.create` | `version` |
-| DELETE | `/api/sales/{id}` | abandon a draft | `sale.create` | only drafts (sales numbering decided in Phase 7, format ADR-097) |
-| POST | `/api/sales/{id}/confirm` ● | confirm; stock-moving per OD-002 | `sale.create` | see §5.6 |
-| POST | `/api/sales/{id}/cancel` **[OPEN OD-004]** | cancel a confirmed document | `sale.cancel` | `{reason}` |
+| DELETE | `/api/sales/{id}` | abandon a draft | `sale.create` | only drafts, which have no number yet (ADR-122) |
+| POST | `/api/sales/{id}/confirm` ● | confirm; stock-moving per ADR-117; numbered here (ADR-122) | `sale.create` | see §5.6 |
+| POST | `/api/sales/{id}/cancel` | cancel a whole confirmed document (ADR-119) | `sale.cancel` | `{reason}`; `SALE_NOT_CANCELLABLE` |
 | POST | `/api/sales/{id}/convert` | derive quote→DN→invoice | `sale.create` | `{targetType}` → new draft with `parentId` |
 | GET | `/api/sales/{id}/pdf` | `?format=a4\|ticket` | `sale.read` | `application/pdf` (OD-020) |
 | GET | `/api/sales/{id}/withdrawal-warnings` | warnings printed on the document | `sale.read` | per BR-SALE-010 |
@@ -333,7 +335,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/reports/cash-sessions` | variances over a period | `report.finance` |
 | GET | `/api/reports/lot-traceability` | `lotId` → upstream receipt and downstream sales | `lot.recall` |
 
-Scope of revenue/margin per OD-002 / OD-003 and BR-RPT-001 (net of credit notes).
+Scope of revenue/margin per ADR-117 / ADR-118 and BR-RPT-001 (net of credit notes).
 
 ### 4.14 Administration
 
@@ -387,18 +389,18 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ### 5.5 Add sales line (POS)
 - **POST `/api/sales/{id}/lines`** — **Permission:** `sale.create`.
-- **Request:** `{ "productId": 12, "unitId": 7, "quantity": "3", "targetSpeciesId": 1, "lotId": null, "manualDiscountPct": null, "manualUnitPrice": null }` (`lotId` only with `sale.override_fefo` **[OPEN OD-010]**; manual price needs `price.edit`; manual discount above entitlement needs `sale.discount`).
+- **Request:** `{ "productId": 12, "unitId": 7, "quantity": "3", "targetSpeciesId": 1, "lotId": null, "fefoOverrideReason": null, "manualDiscountPct": null, "manualUnitPrice": null }` (`lotId` other than the FEFO proposal needs `sale.override_fefo` and `fefoOverrideReason`, ADR-120; manual price needs `price.edit`; manual discount above entitlement needs `sale.discount`).
 - **Response 200:** the document with recomputed lines and totals; each line `{id, productId, lotId, lotNumber, expiryDate, unitId, quantity, quantityBase, unitPrice, discountPct, vatRate, lineHt, lineTtc, warnings[]}`; a multi-lot quantity yields several lines.
-- **Warnings (non-blocking):** `LOT_NEAR_EXPIRY`, `WITHDRAWAL_PERIOD` (meat/milk/eggs days), `LOW_STOCK_AFTER_SALE`.
+- **Warnings (non-blocking):** `LOT_NEAR_EXPIRY`, `WITHDRAWAL_PERIOD` (meat/milk/eggs days, for any customer; every species when none is given, ADR-121), `LOW_STOCK_AFTER_SALE`.
 - **Errors:** `DOCUMENT_IMMUTABLE`, `PRODUCT_ARCHIVED`, `UNIT_NOT_SELLABLE`, `STOCK_INSUFFICIENT`, `LOT_EXPIRED`, `LOT_BLOCKED`, `LOT_RECALLED`, `FEFO_VIOLATION`, `ACCESS_DENIED`.
 
 ### 5.6 Confirm sale
 - **POST `/api/sales/{id}/confirm`** — **Permission:** `sale.create`. **Header:** `Idempotency-Key` (recommended, enforced for POS).
-- **Request:** `{ "payments": [ {"method": "cash", "amount": "45.00", "reference": null} ] }` — payment payload **[OPEN OD-003]**; for credit sales `payments` may be empty.
+- **Request:** `{ "payments": [ {"method": "cash", "amount": "45.00", "reference": null} ] }` — an immediate sale must be paid in full, Σ `amount` = TTC, several methods allowed; a cash part needs an open session; a credit sale has no `payments` (ADR-118). `amount` is the amount kept; no tendered amount is sent, the screen computes the change.
 - **Response 200:** `{ id, number, status: "confirmed", totals: {ht, discount, vat, ttc}, lines[…], payments[…], customerBalance?, documents: { pdfA4: "/api/sales/{id}/pdf?format=a4", ticket: "…" } }`
 - **Server steps (one transaction):** lock lots (id order) → re-validate → credit check → number → post movements → payment records → `confirmed`.
 - **Validation:** document is a draft; at least one line; every line has a lot; totals recomputed server-side.
-- **Errors:** `STOCK_INSUFFICIENT`, `LOT_EXPIRED`, `LOT_BLOCKED`, `LOT_RECALLED`, `LOT_REQUIRED`, `CREDIT_LIMIT_EXCEEDED`, `CUSTOMER_REQUIRED_FOR_CREDIT`, `CUSTOMER_INACTIVE`, `CASH_SESSION_REQUIRED`, `INVALID_STATE_TRANSITION`, `IDEMPOTENCY_CONFLICT`, `CONCURRENT_MODIFICATION`.
+- **Errors:** `STOCK_INSUFFICIENT`, `LOT_EXPIRED`, `LOT_BLOCKED`, `LOT_RECALLED`, `LOT_REQUIRED`, `CREDIT_LIMIT_EXCEEDED`, `CUSTOMER_REQUIRED_FOR_CREDIT`, `CUSTOMER_INACTIVE`, `CASH_SESSION_REQUIRED`, `PAYMENT_TOTAL_MISMATCH`, `INVALID_STATE_TRANSITION`, `IDEMPOTENCY_CONFLICT`, `CONCURRENT_MODIFICATION`.
 
 ### 5.7 Recall a lot
 - **POST `/api/lots/{id}/recall`** — **Permission:** `lot.recall`.
@@ -414,7 +416,7 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ### 5.9 Customer payment
 - **POST `/api/payments/customers`** — **Permission:** `payment.customer.create`. **Header:** `Idempotency-Key`.
-- **Request:** `{ "customerId": 55, "method": "cheque", "amount": "300.00", "reference": "CHQ-0412", "allocations": [ {"invoiceId": 4400, "amount": "200.00"}, {"invoiceId": 4421, "amount": "100.00"} ] }` (unallocated remainder policy **[OPEN OD-003]**).
+- **Request:** `{ "customerId": 55, "method": "cheque", "amount": "300.00", "reference": "CHQ-0412", "allocations": [ {"invoiceId": 4400, "amount": "200.00"}, {"invoiceId": 4421, "amount": "100.00"} ] }` (an unallocated remainder lowers the balance as an advance, ADR-118).
 - **Response 201:** `{ id, customerId, method, amount, allocations[…], unallocated, customerBalance }`
 - **Validation:** amount > 0; Σ allocations ≤ amount; each ≤ outstanding; reference required for cheque/transfer (BR-PAY-001/002); cash needs open session.
 - **Errors:** `PAYMENT_ALLOCATION_EXCEEDED`, `CASH_SESSION_REQUIRED`, `CUSTOMER_INACTIVE`, `VALIDATION_FAILED`.
@@ -445,4 +447,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-002/003 (confirm payload, balance), OD-004 (cancel), OD-005 (refund), OD-010 (lot override), OD-020 (pdf formats), OD-021 (backup run).
+OD-005 (refund), OD-020 (pdf formats), OD-021 (backup run).

@@ -103,25 +103,25 @@ Customer → Product Search → Lot Selection / FEFO → Sale → Stock Movement
 | Item | Content |
 |---|---|
 | **Actors** | Seller (primary), Pharmacist (overrides, returns), customer (breeder, veterinarian, anonymous) |
-| **Preconditions** | Logged in with `sale.create`; (counter cash sales) an open cash session for the cashier (BR-SALE-013 **⚠ OD-003**); products active; stock exists |
+| **Preconditions** | Logged in with `sale.create`; (counter cash sales) an open cash session for the cashier (BR-SALE-013, ADR-118: only when the payment includes cash); products active; stock exists |
 
 ### Steps
 1. **Customer** (optional): select a customer (by name/phone) or continue anonymous. Customer data supplies category discount, preferential prices, credit limit, type.
 2. **Product search** (NFR-002 < 1 s): scan barcode (keyboard-wedge, `Enter` ends) or search by name/DCI/category/species. Out-of-stock products offer **substitutes** with the same active ingredient (FR-PROD-004).
-3. **Add line:** product, unit (box/bottle/dose…), quantity, target species (for breeders). Server returns the resolved unit price and discount (BR-SALE-006, ADR-107), the proposed lot(s) (FEFO, BR-LOT-005 **⚠ OD-010**) and warnings (nearly expired lot, withdrawal period).
+3. **Add line:** product, unit (box/bottle/dose…), quantity, target species (for breeders). Server returns the resolved unit price and discount (BR-SALE-006, ADR-107), the proposed lot(s) (FEFO, BR-LOT-005; another lot needs `sale.override_fefo` and a reason, ADR-120) and warnings (nearly expired lot; withdrawal period for any customer, every species when none is given, ADR-121).
    - A quantity that spans several lots is split into several lines (BR-LOT-006).
    - Expired / blocked / recalled lots are never proposed (BR-LOT-003/004).
 4. **Review / discount:** manual discount beyond entitlement needs `sale.discount` (BR-SALE-007).
-5. **Payment choice:** cash/cheque/transfer now, or **credit** (customer required, BR-SALE-012). **⚠ OD-003** (how immediate payments are recorded).
+5. **Payment choice:** cash/cheque/transfer now, or **credit** (customer required, BR-SALE-012). An immediate sale is paid in full, several methods allowed; a credit sale takes no payment at confirmation (ADR-118).
 6. **Confirm** (one transaction — idempotent, BR-SALE-016):
    1. Lock lots in id order (BR-STOCK-012); re-validate status, expiry, quantity (BR-LOT-003/004, BR-SALE-015).
-   2. If credit sale: lock customer, compute balance + total vs limit (BR-PAY-005, ADR-108; NULL limit = no check, 0 = refused).
-   3. Assign number (BR-DOC-001; format ADR-097, sales keys and assignment moment decided in Phase 7); snapshot `unit_cost` (BR-SALE-009); compute totals (BR-SALE-008).
+   2. If credit sale: lock customer, compute balance + uninvoiced credit delivery notes + total vs limit (BR-PAY-005, ADR-108, ADR-117; NULL limit = no check, 0 = refused).
+   3. Assign number (BR-DOC-001; format ADR-097, keys and numbering at confirmation ADR-122); snapshot `unit_cost` (BR-SALE-009); compute totals (BR-SALE-008).
    4. Post `sale` movements (−) and update balances; set lots `depleted` when 0 (BR-STOCK-002).
-   5. Record payment/allocations/cash movement per OD-003.
-   6. Mark document `confirmed`; **which document types move stock: ⚠ OD-002**.
-7. **Output:** thermal ticket (receipt) or A4 invoice/delivery note PDF with withdrawal-period warnings for breeders (BR-SALE-010 **⚠ OD-028**).
-- **DB changes:** `sales_documents`, `sales_document_lines`, `lots`, `stock_movements`, `document_sequences`, `customer_payments`/`payment_allocations`/`cash_movements` (OD-003).
+   5. Record payment and allocations, and a cash movement for the cash part (ADR-118).
+   6. Mark document `confirmed`. Delivery notes, receipts and invoices not derived from a delivery note post movements; an invoice from a delivery note reuses its lots and posts none (ADR-117; commercial rules ADR-125).
+7. **Output:** thermal ticket (receipt) or A4 invoice/delivery note PDF with withdrawal-period warnings for breeders (BR-SALE-010 **⚠ OD-028**, Phase 10).
+- **DB changes:** `sales_documents`, `sales_document_lines`, `lots`, `stock_movements`, `document_sequences`, `customer_payments`/`payment_allocations`/`cash_movements` (ADR-118).
 - **Failure cases:**
 
 | Condition | Result |
@@ -137,8 +137,8 @@ Customer → Product Search → Lot Selection / FEFO → Sale → Stock Movement
 
 - **Audit:** price overrides (`PRICE_CHANGE`-type entry), FEFO overrides, discounts above entitlement `[REC]`. Cancellation: see W2b.
 
-### 2b. Cancelling a confirmed document (⚠ OD-004)
-Permission `sale.cancel` + reason. Compensating stock movements for every posted line, handling of any recorded payment (reversal), status `cancelled`, `cancelled_by/at`, number retained, audit `INVOICE_CANCEL` with old/new values. If OD-004 chooses "credit note only", this action does not exist and W3 is used.
+### 2b. Cancelling a confirmed document (ADR-119)
+Permission `sale.cancel` + reason, whole document only. Refused (`SALE_NOT_CANCELLABLE`) if a return, credit note or derived document exists or its cash session is closed; those cases use a credit note (W3). One transaction: `sale_cancellation` (+) movement for every posted line, recorded payments reversed and the cash part posted OUT on the same session, status `cancelled`, `cancelled_by/at`, number retained, audit `INVOICE_CANCEL` with old/new values.
 
 ---
 
@@ -159,7 +159,7 @@ Customer Return → Validation → Product/Lot Verification → Restock or Disca
    1. Numbers: return and credit note.
    2. `restock` → `customer_return` movement (+) on the original lot; a `depleted` lot becomes `active` if allowed (BR-RET-003, BR-LOT-009). `discard` → **⚠ OD-005** (no movement vs. traceability pair).
    3. Create credit note (`credit_note`, `parent_id` = original, amounts from original net prices, BR-RET-004).
-   4. Settlement: credit-sale customer → reduces balance; cash/anonymous sale → refund via cash movement OUT **⚠ OD-005 / OD-003** (BR-RET-006).
+   4. Settlement: credit-sale customer → reduces balance; cash/anonymous sale → refund via cash movement OUT **⚠ OD-005** (BR-RET-006).
    5. Audit entry `[REC]` (a return changes stock and money).
 - **DB changes:** `customer_returns`, `customer_return_lines`, `sales_documents` (credit note) + lines, `stock_movements`, `lots`, `document_sequences`, `cash_movements`/`customer_payments` (if refunded).
 - **Failure:** quantity beyond sold → `RETURN_QUANTITY_EXCEEDED`; restock not allowed → `RETURN_NOT_RESTOCKABLE`; original not confirmed → `INVALID_STATE_TRANSITION`.
@@ -219,7 +219,7 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 1. Pharmacist selects lot and enters the reason.
 2. **One transaction:** lot → `recalled` (`blocked_reason/by/at`), audit `LOT_RECALL` (BR-LOT-008). `recalled` is final: nobody can unblock or un-recall the lot (ADR-060).
-3. System returns the **buyers list**: customer, phone, document number/date, quantity — including anonymous sales (customer unknown) and, per **⚠ OD-002**, un-invoiced delivery notes. Until sales exist (Phase 7) the lists are empty and the screen says so (ADR-068).
+3. System returns the **buyers list**: customer, phone, document number/date, quantity — including anonymous sales (customer unknown) and un-invoiced delivery notes (ADR-117). Until sales exist (Phase 7) the lists are empty and the screen says so (ADR-068).
 4. List is printable/exportable; remaining stock of the lot is no longer sellable and can be returned to the supplier (W4) or discarded by adjustment (W7).
 - **Failure:** unknown lot → `NOT_FOUND`; already recalled → idempotent success; no permission → `ACCESS_DENIED`.
 
@@ -232,9 +232,9 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 ## 8. W8 — Customer payment and account statement
 
 1. Accountant/Seller selects the customer and records a payment (method, amount, reference). Cash payments require an open session (BR-PAY-006).
-2. The payment is **allocated** to one or several invoices (default: oldest first `[REC]`), each ≤ outstanding (BR-PAY-002); any remainder stays unallocated (advance on account) **⚠ OD-003**.
+2. The payment is **allocated** to one or several invoices (default: oldest first `[REC]`), each ≤ outstanding (BR-PAY-002); any remainder stays unallocated (advance on account) and lowers the balance (ADR-118).
 3. **One transaction:** `customer_payments`, `payment_allocations`, `cash_movements` IN (cash).
-4. **Account statement:** invoices, credit notes and payments in date order with running balance (BR-PAY-007; balance definition **⚠ OD-003**), printable A4.
+4. **Account statement:** invoices, credit notes and payments in date order with running balance (BR-PAY-007; balance definition ADR-118), printable A4.
 5. **Corrections:** a mistaken payment is reversed by a counter-entry with reason, never edited (BR-PAY-003); audited.
 - **Failure:** allocation > outstanding → `PAYMENT_ALLOCATION_EXCEEDED`; customer inactive → `CUSTOMER_INACTIVE`.
 
@@ -259,7 +259,7 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 ## 11. W11 — Document conversion
 
-`Quote → Delivery note → Invoice`, and `Invoice/Receipt → Credit note` (BR-SALE-001). Conversion copies lines into a new draft with `parent_id`; **stock-moving rule and double-deduction prevention: ⚠ OD-002**. A quote converts only while `confirmed` or `draft` per policy `[REC]`; its price validity period is not specified by the Spec.
+`Quote → Delivery note → Invoice`, and `Invoice/Receipt → Credit note` (BR-SALE-001). Conversion copies lines into a new draft with `parent_id`; an invoice from a confirmed delivery note posts no second movement (ADR-117; commercial rules ADR-125). A quote converts only while `confirmed` or `draft` per policy `[REC]`; its price validity period is not specified by the Spec.
 
 ## 12. W12 — Expiry alerting
 
