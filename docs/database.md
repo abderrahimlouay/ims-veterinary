@@ -182,7 +182,7 @@ Indexes: `uq_products_sku`, `idx_products_commercial_name` (renamed, SD-010), `i
 | id | BIGINT AI | PK | |
 | lot_id | BIGINT | NOT NULL FK→lots | |
 | product_id | BIGINT | NOT NULL FK→products | composite `FK (lot_id, product_id) → lots(id, product_id)` (SD-103, ADR-062) |
-| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock, receipt_cancellation — V05_012) — all ten from Phase 4 (ADR-081), plus `receipt_cancellation` from Phase 5 (ADR-103, SD-127); no `unit_conversion` (ADR-061, SD-118); `sale_cancellation` from Phase 7 (ADR-119, SD-135); discard only after OD-005 (SD-107) |
+| movement_type | VARCHAR(30) | NOT NULL | CK IN (purchase_receipt, sale, customer_return, supplier_return, adjustment_breakage, adjustment_expiry, adjustment_theft, adjustment_internal_use, adjustment_inventory, opening_stock, receipt_cancellation — V05_012, sale_cancellation — V07_012, ADR-119) — all ten from Phase 4 (ADR-081), plus `receipt_cancellation` from Phase 5 (ADR-103, SD-127); no `unit_conversion` (ADR-061, SD-118); `sale_cancellation` from Phase 7 (ADR-119, SD-135); discard only after OD-005 (SD-107) |
 | quantity | DECIMAL(14,3) | NOT NULL, **CK ≠ 0** | signed, base unit; CK sign per type (BR-STOCK-005): receipts, customer returns and opening stock > 0, sales, supplier returns, receipt cancellations and the four manual adjustments < 0, `adjustment_inventory` either |
 | reference_type | VARCHAR(40) | NULL | e.g. `sales_document`, `goods_receipt`, `inventory` |
 | reference_id | BIGINT | NULL | |

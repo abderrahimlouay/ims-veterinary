@@ -89,6 +89,7 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 | `IDEMPOTENCY_CONFLICT` | 409 | key reused with different request | BR-SALE-016, BR-PURCH-013 |
 | `RECEIPT_NOT_CANCELLABLE` | 409 | a lot of the receipt has a movement after the receipt's own; `context`: `lotId`, `lotNumber`, `movementId`, `movementType`, `movementAt` (ADR-103) | BR-PURCH-012 |
 | `LOT_BLOCK_CONFIRMATION_REQUIRED` | 409 | a non-conforming receipt line would block a lot that already has stock; `context.lots[]`: `lotId`, `lotNumber`, `productId`, `quantityInStock` (ADR-095) | BR-PURCH-006 |
+| `SALE_NOT_CANCELLABLE` | 409 | a later document exists or the cash session is closed; `context`: `blockedBy` (`derived_document`, `cash_session`) and its id | BR-SALE-014, ADR-119 |
 | `INVENTORY_NOT_OPEN` | 409 | count is closed/cancelled | BR-INV-004 |
 | `OPENING_STOCK_CLOSED` | 409 | the opening-stock period is closed (setting `opening_stock_open`); use an inventory count | BR-STOCK-014, ADR-082 |
 | `INVENTORY_ALREADY_OPEN` | 409 | another full count is open | BR-INV-007 |
@@ -292,7 +293,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | PUT | `/api/sales/{id}` | edit draft header | `sale.create` | `version` |
 | DELETE | `/api/sales/{id}` | abandon a draft | `sale.create` | only drafts, which have no number yet (ADR-122) |
 | POST | `/api/sales/{id}/confirm` ● | confirm; stock-moving per ADR-117; numbered here (ADR-122) | `sale.create` | see §5.6 |
-| POST | `/api/sales/{id}/cancel` | cancel a whole confirmed document (ADR-119) | `sale.cancel` | `{reason}`; `SALE_NOT_CANCELLABLE` |
+| POST | `/api/sales/{id}/cancel` | cancel a whole confirmed document (ADR-119) | `sale.cancel` | `{reason}` (at most 500 characters) → `SaleDetail`; `SALE_NOT_CANCELLABLE`, `INVALID_STATE_TRANSITION` (not confirmed), `CASH_SESSION_CLOSED` (the session closed during the cancellation), `VALIDATION_FAILED` (`reason` `REQUIRED` / `SIZE`) |
 | POST | `/api/sales/{id}/convert` | derive quote→DN→invoice | `sale.create` | `{targetType}` (`delivery_note`, `invoice`) → 201, new draft with `parentId` (W11, ADR-125); `INVALID_STATE_TRANSITION` (pair or status not allowed, a delivery note that already has an invoice), `STOCK_INSUFFICIENT`, `CUSTOMER_INACTIVE`, `VALIDATION_FAILED` (`targetType` `REQUIRED` / `UNKNOWN`) |
 | GET | `/api/sales/{id}/pdf` | `?format=a4\|ticket` | `sale.read` | `application/pdf` (OD-020) |
 | GET | `/api/sales/{id}/withdrawal-warnings` | withdrawal warnings of the document, once per product and species | `sale.read` | on screen: ADR-121; printing: BR-SALE-010, Phase 10 |
