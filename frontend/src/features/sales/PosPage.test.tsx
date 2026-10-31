@@ -168,6 +168,58 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
     expect(screen.getByRole('button', { name: 'Confirmer la vente' })).toBeEnabled()
   })
 
+  it('adds a scanned product in its unit on Enter and goes back to the scan field, by keyboard alone', async () => {
+    serveCounter()
+    let write: unknown
+    server.use(
+      http.get('/api/products/by-barcode', () => HttpResponse.json({ product: PRODUCT, unit: { id: 7, name: 'Boîte' }, quantity: '1' })),
+      http.post('/api/sales/300/lines', async ({ request }) => {
+        write = await request.json()
+        return HttpResponse.json(aSale())
+      }),
+    )
+    renderApp('/pos')
+
+    const scan = await screen.findByLabelText('Scanner ou chercher un produit')
+    expect(scan).toHaveFocus()
+    await userEvent.keyboard('613/000{Enter}')
+
+    await screen.findByTestId('pos-line')
+    expect(write).toMatchObject({ productId: 5, unitId: 7, quantity: '1' })
+    await waitFor(() => expect(scan).toHaveFocus())
+    expect(scan).toHaveValue('')
+  })
+
+  it('says when a scanned code is unknown and adds nothing', async () => {
+    serveCounter()
+    server.use(http.get('/api/products/by-barcode', () => problem(404, 'NOT_FOUND')))
+    renderApp('/pos')
+
+    await userEvent.type(await screen.findByLabelText('Scanner ou chercher un produit'), 'INCONNU{Enter}')
+
+    expect(await screen.findByText('Aucun produit ne porte le code INCONNU.')).toBeInTheDocument()
+    expect(screen.queryByTestId('pos-line')).not.toBeInTheDocument()
+  })
+
+  it('searches by category and species without any text (FR-SALE-002)', async () => {
+    serveCounter()
+    const urls: string[] = []
+    server.use(
+      http.get('/api/categories', () => HttpResponse.json([{ id: 3, name: 'Antibiotique', code: null, country: null }])),
+      http.get('/api/products', ({ request }) => {
+        urls.push(request.url)
+        return HttpResponse.json({ content: [PRODUCT], page: { number: 0, size: 10, totalElements: 1, totalPages: 1 } })
+      }),
+    )
+    renderApp('/pos')
+
+    await screen.findByRole('option', { name: 'Antibiotique' })
+    await userEvent.selectOptions(screen.getByLabelText('Catégorie thérapeutique'), 'Antibiotique')
+
+    expect(await screen.findByRole('button', { name: 'Ajouter Vermifuge Démo' })).toBeInTheDocument()
+    await waitFor(() => expect(urls.at(-1)).toContain('categoryId=3'))
+  })
+
   it('needs a customer before the first line of an invoice, and a receipt is never a credit sale', async () => {
     serveCounter()
     renderApp('/pos')

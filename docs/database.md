@@ -316,7 +316,7 @@ Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), set
 | Master data (products, customers, suppliers, users) | Deactivate/archive; never delete once referenced |
 | Stock movements, audit log | Append-only; retained indefinitely (retention policy OD-021) |
 | Sales/purchase documents | Never physically deleted; cancelled documents keep their numbers |
-| Drafts | Purchase orders are numbered at creation and never deleted (cancelled instead, ADR-097); sales drafts: decided in Phase 7 |
+| Drafts | Purchase orders are numbered at creation and never deleted (cancelled instead, ADR-097); sales documents are numbered at confirmation, an abandoned draft stays cancelled without a number (ADR-122) |
 | Backups | `backup_log` records each run (mechanism OD-021) |
 
 ## 10. Items awaiting decisions
