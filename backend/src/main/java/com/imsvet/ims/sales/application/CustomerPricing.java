@@ -55,13 +55,14 @@ public class CustomerPricing {
     }
 
     /**
-     * {@code unitId} {@code null} for the base unit; {@code manualUnitPrice} (per unit) and
+     * {@code customerId} {@code null} for an anonymous sale: no own price and no category. {@code unitId} {@code null}
+     * for the base unit; {@code manualUnitPrice} (per unit) and
      * {@code manualDiscountPct} {@code null} when not given. Unrounded (ADR-093).
      */
     @Transactional(readOnly = true)
-    public Resolution resolve(long customerId, long productId, Long unitId, BigDecimal manualUnitPrice,
+    public Resolution resolve(Long customerId, long productId, Long unitId, BigDecimal manualUnitPrice,
             BigDecimal manualDiscountPct) {
-        Customer customer = customers.findById(customerId).orElseThrow(
+        Customer customer = customerId == null ? null : customers.findById(customerId).orElseThrow(
                 () -> new BusinessException(ErrorCode.NOT_FOUND, "Customer not found.", Map.of("id", customerId)));
         ProductRef product = products.find(productId).orElseThrow(
                 () -> new BusinessException(ErrorCode.NOT_FOUND, "Product not found.", Map.of("id", productId)));
@@ -77,9 +78,9 @@ public class CustomerPricing {
             factor = unit.factorToBase();
             unitPrice = unit.salePrice();
         }
-        BigDecimal own = prices.findById(new CustomerPrice.Key(customerId, productId))
+        BigDecimal own = customer == null ? null : prices.findById(new CustomerPrice.Key(customerId, productId))
                 .map(CustomerPrice::unitPrice).orElse(null);
-        BigDecimal category = customer.categoryId() == null ? null
+        BigDecimal category = customer == null || customer.categoryId() == null ? null
                 : categories.findById(customer.categoryId()).map(CustomerCategory::discountPct).orElse(null);
         try {
             return PriceResolver.resolve(

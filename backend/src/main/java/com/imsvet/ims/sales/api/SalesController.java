@@ -1,11 +1,15 @@
 package com.imsvet.ims.sales.api;
 
 import com.imsvet.ims.common.paging.PageResponse;
+import com.imsvet.ims.sales.application.SaleLines;
 import com.imsvet.ims.sales.application.SalesDocuments;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.sales.application.SalesViews.SaleSummary;
+import com.imsvet.ims.sales.application.SalesViews.SaleWarning;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,10 +36,22 @@ class SalesController {
         }
     }
 
-    private final SalesDocuments documents;
+    /** Amounts and lots proposed by a client are not part of the request (BR-SALE-008, api.md §5.5). */
+    record LineRequest(Long productId, Long unitId, BigDecimal quantity, Integer targetSpeciesId, Long lotId,
+            String fefoOverrideReason, BigDecimal manualDiscountPct, BigDecimal manualUnitPrice) {
 
-    SalesController(SalesDocuments documents) {
+        SaleLines.LineInput input() {
+            return new SaleLines.LineInput(productId, unitId, quantity, targetSpeciesId, lotId, fefoOverrideReason,
+                    manualDiscountPct, manualUnitPrice);
+        }
+    }
+
+    private final SalesDocuments documents;
+    private final SaleLines lines;
+
+    SalesController(SalesDocuments documents, SaleLines lines) {
         this.documents = documents;
+        this.lines = lines;
     }
 
     @GetMapping
@@ -68,5 +84,25 @@ class SalesController {
     ResponseEntity<Void> abandon(@PathVariable long id) {
         documents.abandon(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/lines")
+    SaleDetail addLine(@PathVariable long id, @RequestBody LineRequest body) {
+        return lines.add(id, body.input());
+    }
+
+    @PutMapping("/{id}/lines/{lineId}")
+    SaleDetail replaceLine(@PathVariable long id, @PathVariable long lineId, @RequestBody LineRequest body) {
+        return lines.replace(id, lineId, body.input());
+    }
+
+    @DeleteMapping("/{id}/lines/{lineId}")
+    SaleDetail removeLine(@PathVariable long id, @PathVariable long lineId) {
+        return lines.remove(id, lineId);
+    }
+
+    @GetMapping("/{id}/withdrawal-warnings")
+    List<SaleWarning> withdrawalWarnings(@PathVariable long id) {
+        return lines.withdrawalWarnings(id);
     }
 }

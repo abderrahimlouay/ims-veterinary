@@ -135,7 +135,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-LOT-002 | S,R,C | Receive same (product, lot number) twice → one lot, balance summed; another expiry → `LOT_EXPIRY_MISMATCH`, nothing written; recalled → `LOT_RECALLED`; DB rejects a duplicate (product, lot number) even with another expiry (ADR-070); weighted-average cost (ADR-098): empty lot (entry cost replaces), existing lot, opening stock with the same rule; CT-08 two parallel receipts of one new lot → one lot, summed balance, correct cost (Phase 4: `OpeningStockTest`, `OpeningStockConcurrencyTest`) |
 | BR-LOT-003 | U,S | Lot expiring yesterday → expired; today and tomorrow → sellable (ADR-055); business date in Africa/Algiers differs from the UTC date around midnight; Phase 3 covers the rule (FEFO preview, alerts), sale confirmation from Phase 7 (`ExpiryPolicyTest`, `LotQueriesTest`) |
 | BR-LOT-004 | S | Blocked and recalled lots excluded from FEFO and rejected at confirm |
-| BR-LOT-005 | U | Allocation order by expiry then id; skips non-sellable; override without permission → FEFO_VIOLATION (Phase 3: `FefoAllocatorTest`, `FefoAndAlertsTest`; override from Phase 7) |
+| BR-LOT-005 | U | Allocation order by expiry then id; skips non-sellable; override without permission → FEFO_VIOLATION (Phase 3: `FefoAllocatorTest`, `FefoAndAlertsTest`; override with its reason and audit, non-sellable lots never chosen: `SaleLinesTest`, ADR-120) |
 | BR-LOT-006 | S | Quantity spanning two lots yields two lines, each with one lot |
 | BR-LOT-007 | S,R | Lot of another product → LOT_PRODUCT_MISMATCH (Phase 3: service check); composite FK refuses a movement whose product differs from its lot's (Phase 4, ADR-062); line without lot → LOT_REQUIRED (Phase 7) (Phase 3: `LotGuardTest`) |
 | BR-LOT-008 | S,A | Recall lot → status recalled, reason/user/time stored, `LOT_RECALL` audited in the same transaction, repeat returns same report; buyers lists empty until Phase 7 (ADR-068), then incl. delivery notes and anonymous sales (`LotActionsTest`, `LotActionAuditFailureTest`) |
@@ -186,10 +186,10 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SALE-005 | S | Lots assigned and verified at confirmation |
 | BR-SALE-006 | U,I | Price precedence (ADR-107): manual > customer's own price > unit price > product × factor; category discount only without a customer price; manual discount on top within the entitlement; unit conversion; customer without category; archived product; no rounding — `PriceResolverTest` (table), `CustomerPricingTest` (stored facts) |
 | BR-SALE-007 | U,SEC | Discount above entitlement needs sale.discount; no stacking (ADR-113); a manual price needs price.edit; the rights come from the signed-in user — `PriceResolverTest`, `CustomerPricingTest` |
-| BR-SALE-008 | U | Server totals identical for same input; client totals ignored |
+| BR-SALE-008 | U,I | Server totals identical for same input; client totals ignored; generated columns equal the formula with 4-decimal prices (`SaleLinesTest`, ADR-016, ADR-115, ADR-123) |
 | BR-SALE-009 | S | Line stores unit cost snapshot equal to lot cost |
-| BR-SALE-010 | S | On screen: warnings for any customer, by species, every species when none is given, none when no data (ADR-121); printing from Phase 10 (OD-028) |
-| BR-SALE-011 | S | Archived product in sale → PRODUCT_ARCHIVED |
+| BR-SALE-010 | S | On screen: warnings for any customer, by species, every species when none is given, none when no data (ADR-121, `WithdrawalWarningsTest`, `SaleLinesTest`); printing from Phase 10 (OD-028) |
+| BR-SALE-011 | S | Archived product in sale → PRODUCT_ARCHIVED; non-sellable unit → UNIT_NOT_SELLABLE (`SaleLinesTest`) |
 | BR-SALE-012 | S,R | Credit sale without customer; inactive customer → errors; anonymous only on a receipt; DB CHECKs (`SalesDraftsTest`, re-checked at confirmation) |
 | BR-SALE-013 | S | A payment with a cash part needs an open session; cheque, transfer and credit sales do not (ADR-118) |
 | BR-SALE-014 | S | ADR-119: whole document; refused with a return, credit note, derived document or closed session; `sale_cancellation` movements, payments reversed, number kept, audit, atomic |
