@@ -64,6 +64,9 @@ public class CashMovement {
     @Column(updatable = false, length = 200)
     private String label;
 
+    @Column(name = "customer_payment_id", updatable = false)
+    private Long customerPaymentId;
+
     @Column(name = "created_by", nullable = false, updatable = false)
     private Long createdBy;
 
@@ -74,12 +77,13 @@ public class CashMovement {
     }
 
     public CashMovement(Long cashSessionId, CashDirection direction, PaymentMethod method, BigDecimal amount,
-            String label, Long createdBy, Instant now) {
+            String label, Long customerPaymentId, Long createdBy, Instant now) {
         this.cashSessionId = cashSessionId;
         this.direction = direction;
         this.method = method;
         this.amount = amount;
         this.label = label;
+        this.customerPaymentId = customerPaymentId;
         this.createdBy = createdBy;
         this.createdAt = now;
     }

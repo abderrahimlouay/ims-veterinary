@@ -231,11 +231,11 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 
 ### 3.7 Finance (module 6)
 
-**customer_payments** — `id`, `customer_id NULL FK` (anonymous sale, ADR-118), `method VARCHAR(30) NOT NULL` (cash | cheque | bank_transfer), `amount DECIMAL(14,2) CK > 0`, `reference VARCHAR(80) NULL`, `cash_session_id NULL FK`, `paid_at`, `created_by FK`. Append-only (SD-102, ADR-118).
-**payment_allocations** — `payment_id FK CASCADE`, `invoice_id FK→sales_documents`, `amount DECIMAL(14,2) CK > 0`, `PK(payment_id, invoice_id)`.
+**customer_payments** — `id`, `customer_id NULL FK` (anonymous sale, ADR-118), `method VARCHAR(30) NOT NULL` (cash | cheque | bank_transfer), `amount DECIMAL(14,2) CK > 0`, `reference VARCHAR(80) NULL`, `cash_session_id NULL FK` (required when cash), `reverses_payment_id NULL FK UQ`, `reversal_reason NULL` (a reversal is a new row, SD-138), `paid_at`, `created_by FK`; a reference is required unless cash. Append-only (SD-102, ADR-118).
+**payment_allocations** — append-only; `payment_id FK` (no cascade: never deleted), `invoice_id FK→sales_documents`, `amount DECIMAL(14,2) CK > 0`, `PK(payment_id, invoice_id)`.
 **supplier_invoices** — `id`, `supplier_id FK`, `invoice_number VARCHAR(60) NOT NULL`, `receipt_id NULL FK→goods_receipts`, `invoice_date DATE`, `due_date DATE`, `total_ttc DECIMAL(14,2) CK ≥ 0`, `is_credit_note BOOLEAN NOT NULL DEFAULT FALSE`, `UQ(supplier_id, invoice_number)`.
 **supplier_payments** — `id`, `supplier_id FK`, `invoice_id NULL FK→supplier_invoices` (NULL = advance), `method`, `amount CK > 0`, `is_advance BOOLEAN NOT NULL DEFAULT FALSE`, `reference VARCHAR(80)`, `paid_at`, `created_by FK`.
-**cash_movements** — `id`, `cash_session_id NULL FK`, `direction VARCHAR(30)` (in | out), `method`, `amount CK > 0`, `label VARCHAR(200)`, `customer_payment_id NULL FK`, `supplier_payment_id NULL FK`, `created_by FK`, `created_at`.
+**cash_movements** — `id`, `cash_session_id NULL FK`, `direction VARCHAR(30)` (in | out), `method`, `amount CK > 0`, `label VARCHAR(200)`, `customer_payment_id NULL FK`, `supplier_payment_id NULL FK` (Phase 9), `created_by FK`, `created_at`.
 
 ## 4. Indexing and search strategy
 
