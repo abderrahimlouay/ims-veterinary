@@ -1,6 +1,7 @@
 package com.imsvet.ims.common.time;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import org.springframework.stereotype.Component;
 
@@ -21,5 +22,10 @@ public class BusinessCalendar {
 
     public LocalDate today() {
         return LocalDate.now(clock.withZone(business.timeZone()));
+    }
+
+    /** The instant a business date begins. */
+    public Instant startOf(LocalDate date) {
+        return date.atStartOfDay(business.timeZone()).toInstant();
     }
 }
