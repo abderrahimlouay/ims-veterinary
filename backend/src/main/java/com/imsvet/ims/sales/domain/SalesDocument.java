@@ -140,6 +140,17 @@ public class SalesDocument {
         return derived;
     }
 
+    /**
+     * The credit note of a customer return (ADR-131): same customer and credit status, no due date; confirmed by the
+     * return with its number.
+     */
+    public static SalesDocument creditNoteOf(SalesDocument original, Long createdBy, Instant now) {
+        SalesDocument note = new SalesDocument(SalesDocType.CREDIT_NOTE, original.customerId, original.creditSale, null,
+                null, createdBy, now);
+        note.parentId = original.id;
+        return note;
+    }
+
     public void updateHeader(Long customerId, boolean creditSale, LocalDate dueDate, String notes, Instant now) {
         this.customerId = customerId;
         this.creditSale = creditSale;

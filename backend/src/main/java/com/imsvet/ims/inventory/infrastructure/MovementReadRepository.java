@@ -3,6 +3,7 @@ package com.imsvet.ims.inventory.infrastructure;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.inventory.domain.StockMovement;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -14,6 +15,10 @@ import org.springframework.data.repository.Repository;
 public interface MovementReadRepository extends Repository<StockMovement, Long> {
 
     Optional<StockMovement> findById(Long id);
+
+    /** The movements a document's lines posted, oldest first (a customer return's detail, W3). */
+    List<StockMovement> findByReferenceTypeAndReferenceIdInOrderByIdAsc(String referenceType,
+            Collection<Long> referenceIds);
 
     /** The lot's last movement id (a count line's watermark, ADR-072), or null when it has none. */
     @Query("SELECT MAX(m.id) FROM StockMovement m WHERE m.lotId = :lotId")
