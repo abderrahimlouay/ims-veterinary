@@ -5,8 +5,6 @@ import com.imsvet.ims.audit.domain.AuditAction;
 import com.imsvet.ims.common.actor.ActorProvider;
 import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
-import com.imsvet.ims.common.error.ValidationException;
-import com.imsvet.ims.common.error.ValidationException.Violation;
 import com.imsvet.ims.common.security.InternalService;
 import com.imsvet.ims.finance.domain.CashDirection;
 import com.imsvet.ims.finance.domain.CustomerPayment;
@@ -34,8 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @InternalService
 public class CounterPayments implements PaymentRecorder {
 
-    private static final int MONEY_SCALE = 2;
-    private static final int REFERENCE_MAX = 80;
+    private static final String PAYMENT_INVALID = "The payment is invalid.";
 
     private final CustomerPaymentRepository payments;
     private final PaymentAllocationRepository allocations;
@@ -62,7 +59,7 @@ public class CounterPayments implements PaymentRecorder {
         List<PaymentMethod> methods = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
         for (int i = 0; i < tenders.size(); i++) {
-            methods.add(validate(tenders.get(i), "payments[" + i + "]."));
+            methods.add(Tenders.validate(tenders.get(i), "payments[" + i + "].", PAYMENT_INVALID));
             total = total.add(tenders.get(i).amount());
         }
         if (total.compareTo(documentTtc) > 0) {
@@ -76,8 +73,8 @@ public class CounterPayments implements PaymentRecorder {
             Tender tender = tenders.get(i);
             boolean cash = methods.get(i) == PaymentMethod.CASH;
             CustomerPayment payment = payments.saveAndFlush(new CustomerPayment(customerId, methods.get(i),
-                    tender.amount().setScale(MONEY_SCALE), reference(tender), cash ? session : null, actor,
-                    clock.instant()));
+                    tender.amount().setScale(Tenders.MONEY_SCALE), Tenders.reference(tender), cash ? session : null,
+                    actor, clock.instant()));
             allocations.saveAndFlush(new PaymentAllocation(payment.id(), documentId, payment.amount()));
             if (cash) {
                 ledger.post(session, CashDirection.IN, PaymentMethod.CASH, payment.amount(), "sale " + documentId,
@@ -118,39 +115,5 @@ public class CounterPayments implements PaymentRecorder {
             reversals.add(reversal.id());
         }
         return reversals;
-    }
-
-    private static PaymentMethod validate(Tender tender, String prefix) {
-        PaymentMethod method = tender.method() == null ? null : PaymentMethod.fromCode(tender.method())
-                .orElseThrow(() -> invalid(prefix + "method", "UNKNOWN", "Unknown payment method."));
-        if (method == null) {
-            throw invalid(prefix + "method", "REQUIRED", "The payment method is required.");
-        }
-        BigDecimal amount = tender.amount();
-        if (amount == null) {
-            throw invalid(prefix + "amount", "REQUIRED", "The amount is required.");
-        }
-        if (amount.signum() <= 0) {
-            throw invalid(prefix + "amount", "POSITIVE", "The amount must be greater than zero.");
-        }
-        if (amount.stripTrailingZeros().scale() > MONEY_SCALE) {
-            throw invalid(prefix + "amount", "SCALE", "At most two decimals.");
-        }
-        String reference = reference(tender);
-        if (method != PaymentMethod.CASH && reference == null) {
-            throw invalid(prefix + "reference", "REQUIRED", "A cheque or a transfer needs its reference.");
-        }
-        if (reference != null && reference.length() > REFERENCE_MAX) {
-            throw invalid(prefix + "reference", "SIZE", "At most " + REFERENCE_MAX + " characters.");
-        }
-        return method;
-    }
-
-    private static String reference(Tender tender) {
-        return tender.reference() == null || tender.reference().isBlank() ? null : tender.reference().trim();
-    }
-
-    private static ValidationException invalid(String field, String code, String message) {
-        return new ValidationException("The payment is invalid.", List.of(new Violation(field, code, message)));
     }
 }

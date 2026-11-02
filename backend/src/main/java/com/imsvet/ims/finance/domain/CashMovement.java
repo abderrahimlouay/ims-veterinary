@@ -67,6 +67,9 @@ public class CashMovement {
     @Column(name = "customer_payment_id", updatable = false)
     private Long customerPaymentId;
 
+    @Column(name = "customer_refund_id", updatable = false)
+    private Long customerRefundId;
+
     @Column(name = "created_by", nullable = false, updatable = false)
     private Long createdBy;
 
@@ -86,6 +89,15 @@ public class CashMovement {
         this.customerPaymentId = customerPaymentId;
         this.createdBy = createdBy;
         this.createdAt = now;
+    }
+
+    /** The cash paid out for a customer refund (ADR-128). */
+    public static CashMovement refund(Long cashSessionId, BigDecimal amount, String label, Long customerRefundId,
+            Long createdBy, Instant now) {
+        CashMovement movement = new CashMovement(cashSessionId, CashDirection.OUT, PaymentMethod.CASH, amount, label,
+                null, createdBy, now);
+        movement.customerRefundId = customerRefundId;
+        return movement;
     }
 
     public Long id() {

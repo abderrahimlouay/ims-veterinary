@@ -98,6 +98,8 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 | `CASH_SESSION_REQUIRED` | 409 | operation needs an open session | BR-SALE-013, BR-PAY-006 |
 | `CASH_SESSION_CLOSED` | 409 | session closed | BR-CASH-004 |
 | `PAYMENT_TOTAL_MISMATCH` | 422 | payments of an immediate sale do not equal its TTC, or a credit sale has payments | ADR-118 |
+| `REFUND_TOTAL_MISMATCH` | 422 | refund tenders ≠ the credit note's TTC, or tenders on a credit sale; `context`: `expected`, `given` | BR-RET-006, ADR-128 |
+| `CASH_INSUFFICIENT` | 422 | a cash refund would bring the session's expected cash below zero; `context`: `cashSessionId`, `expected`, `requested` | BR-RET-011, ADR-128 |
 | `PRODUCT_ARCHIVED` | 422 | product archived | BR-PROD-004, BR-SALE-011 |
 | `UNIT_NOT_SELLABLE` | 422 | unit not sellable | BR-UNIT-003 |
 | `UNIT_FACTOR_LOCKED` | 422 | unit factor in use | BR-UNIT-004 |
@@ -122,7 +124,7 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 | `LEDGER_MISMATCH` | 500 | balance ≠ Σ movements (integrity check) | BR-STOCK-007 |
 | `INTERNAL_ERROR` | 500 | unexpected failure | BR-STOCK-003, BR-AUDIT-003 |
 
-**Phase 8 codes (ADR-128…131), added to the table above with the slice that implements them** (the table must equal `ErrorCode`): `RETURN_REQUIRES_INVOICE` 422 — the original is a delivery note not yet invoiced; `RETURN_PERIOD_EXPIRED` 422 — later than `customer_return_max_days` after the original (`context`: `maxDays`, `issuedOn`); `REFUND_TOTAL_MISMATCH` 422 — refund tenders ≠ the credit note's TTC, or tenders on a credit sale (`context`: `expected`, `given`); `CASH_INSUFFICIENT` 422 — a cash refund would bring the session's expected cash below zero (`context`: `cashSessionId`, `expected`, `requested`). `RETURN_NOT_RESTOCKABLE` gains `context`: `saleLineId`, `reason` (`not_sealed`, `lot_expired`, `product_restricted`).
+**Phase 8 codes (ADR-128…131), added to the table above with the slice that implements them** (the table must equal `ErrorCode`): `RETURN_REQUIRES_INVOICE` 422 — the original is a delivery note not yet invoiced; `RETURN_PERIOD_EXPIRED` 422 — later than `customer_return_max_days` after the original (`context`: `maxDays`, `issuedOn`); `RETURN_NOT_RESTOCKABLE` gains `context`: `saleLineId`, `reason` (`not_sealed`, `lot_expired`, `product_restricted`).
 
 Status policy: **400** malformed input · **401/403** identity/permission · **404** missing · **409** conflict with current state/uniqueness/concurrency · **422** syntactically valid request that violates a business rule · **429** throttled · **500** defect.
 
