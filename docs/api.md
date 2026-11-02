@@ -89,7 +89,7 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 | `IDEMPOTENCY_CONFLICT` | 409 | key reused with different request | BR-SALE-016, BR-PURCH-013 |
 | `RECEIPT_NOT_CANCELLABLE` | 409 | a lot of the receipt has a movement after the receipt's own; `context`: `lotId`, `lotNumber`, `movementId`, `movementType`, `movementAt` (ADR-103) | BR-PURCH-012 |
 | `LOT_BLOCK_CONFIRMATION_REQUIRED` | 409 | a non-conforming receipt line would block a lot that already has stock; `context.lots[]`: `lotId`, `lotNumber`, `productId`, `quantityInStock` (ADR-095) | BR-PURCH-006 |
-| `SALE_NOT_CANCELLABLE` | 409 | a later document exists or the cash session is closed; `context`: `blockedBy` (`derived_document`, `cash_session`; `return` from Phase 8, ADR-131) and its id | BR-SALE-014, ADR-119 |
+| `SALE_NOT_CANCELLABLE` | 409 | a later document exists or the cash session is closed; `context`: `blockedBy` (`derived_document`, `cash_session`; `return` from Phase 8, checked first, with `returnId`, ADR-131) and its id | BR-SALE-014, ADR-119 |
 | `INVENTORY_NOT_OPEN` | 409 | count is closed/cancelled | BR-INV-004 |
 | `OPENING_STOCK_CLOSED` | 409 | the opening-stock period is closed (setting `opening_stock_open`); use an inventory count | BR-STOCK-014, ADR-082 |
 | `INVENTORY_ALREADY_OPEN` | 409 | another full count is open | BR-INV-007 |
@@ -290,7 +290,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 |---|---|---|---|---|
 | GET | `/api/sales` | list: `docType`, `status`, `customerId`, `number`, `from`, `to` (business dates, inclusive; a draft is dated by its creation) | `sale.read` | page |
 | POST | `/api/sales` | create a **draft** document | `sale.create` | `{docType, customerId?, creditSale?, dueDate?, notes?}` → 201, `number: null`; a derived document comes from `convert`, a credit note from a return |
-| GET | `/api/sales/{id}` | detail with lines, totals, warnings | `sale.read` | |
+| GET | `/api/sales/{id}` | detail with lines, totals, warnings | `sale.read` | from Phase 8 each line carries `returnedQuantityBase` and the detail its `returns: [{id, number, creditNoteId, creditNoteNumber, creditNoteTtc}]`, oldest first (ADR-131) |
 | POST | `/api/sales/{id}/lines` ● | add line; server resolves unit, price, FEFO lot(s), warnings | `sale.create` | see §5.5 → updated document |
 | PUT/DELETE | `/api/sales/{id}/lines/{lineId}` | edit / remove draft line | `sale.create` | `DOCUMENT_IMMUTABLE` if not draft |
 | PUT | `/api/sales/{id}` | edit draft header | `sale.create` | `version` |

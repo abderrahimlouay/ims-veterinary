@@ -25,14 +25,24 @@ public interface SalesDocumentLineRepository extends Repository<SalesDocumentLin
         Instant getIssuedAt();
 
         BigDecimal getQuantityBase();
+
+        BigDecimal getReturnedBase();
     }
 
     SalesDocumentLine saveAndFlush(SalesDocumentLine line);
 
-    /** One row per document that posted stock of the lot, however many of its lines used it. */
+    /**
+     * One row per document that posted stock of the lot, however many of its lines used it, with what customers
+     * returned of it; the returns made on a delivery note's invoice count on the note (ADR-131).
+     */
     @Query("""
             SELECT d.customerId AS customerId, c.name AS customerName, c.phone AS phone, d.number AS documentNumber,
-                   d.docType AS documentType, d.issuedAt AS issuedAt, SUM(l.quantityBase) AS quantityBase
+                   d.docType AS documentType, d.issuedAt AS issuedAt, SUM(l.quantityBase) AS quantityBase,
+                   SUM(l.returnedQuantityBase) + COALESCE((SELECT SUM(il.returnedQuantityBase)
+                       FROM SalesDocumentLine il JOIN SalesDocument i ON i.id = il.documentId
+                       WHERE i.parentId = d.id AND il.lotId = :lotId
+                         AND i.docType = com.imsvet.ims.sales.domain.SalesDocType.INVOICE
+                         AND i.status = com.imsvet.ims.sales.domain.SalesDocStatus.CONFIRMED), 0) AS returnedBase
             FROM SalesDocumentLine l
             JOIN SalesDocument d ON d.id = l.documentId
             LEFT JOIN Customer c ON c.id = d.customerId

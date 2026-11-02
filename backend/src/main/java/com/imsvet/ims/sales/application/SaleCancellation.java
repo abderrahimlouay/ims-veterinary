@@ -11,9 +11,11 @@ import com.imsvet.ims.inventory.application.StockService;
 import com.imsvet.ims.inventory.application.StockService.Movement;
 import com.imsvet.ims.inventory.domain.MovementType;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
+import com.imsvet.ims.sales.domain.CustomerReturn;
 import com.imsvet.ims.sales.domain.SalesDocStatus;
 import com.imsvet.ims.sales.domain.SalesDocType;
 import com.imsvet.ims.sales.domain.SalesDocument;
+import com.imsvet.ims.sales.infrastructure.CustomerReturnRepository;
 import com.imsvet.ims.sales.infrastructure.SalesDocumentLineRepository;
 import com.imsvet.ims.sales.infrastructure.SalesDocumentLocks;
 import com.imsvet.ims.sales.infrastructure.SalesDocumentRepository;
@@ -30,7 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
  * second cancellation waits and is refused: refused with a non-cancelled derived document or a closed session; audited
  * {@code INVOICE_CANCEL}; one {@code sale_cancellation} per line that posted stock, back to its lot whatever its status;
  * the payments reversed, cash out of the same session; the number kept. The invoice of a delivery note posted nothing, so
- * it returns nothing, and the note can be invoiced again (ADR-125). Returns join the refusal with their table in Phase 8.
+ * it returns nothing, and the note can be invoiced again (ADR-125). A document with a customer return is refused
+ * first, naming the return (BR-RET-008, ADR-131): its credit note is a later document too.
  */
 @Service
 public class SaleCancellation {
@@ -41,6 +44,7 @@ public class SaleCancellation {
     private final SalesDocumentRepository documents;
     private final SalesDocumentLineRepository lines;
     private final SalesDocumentLocks locks;
+    private final CustomerReturnRepository returns;
     private final StockService stock;
     private final PaymentRecorder payments;
     private final AuditRecorder audit;
@@ -49,11 +53,12 @@ public class SaleCancellation {
     private final Clock clock;
 
     public SaleCancellation(SalesDocumentRepository documents, SalesDocumentLineRepository lines,
-            SalesDocumentLocks locks, StockService stock, PaymentRecorder payments, AuditRecorder audit,
+            SalesDocumentLocks locks, CustomerReturnRepository returns, StockService stock, PaymentRecorder payments, AuditRecorder audit,
             SaleViewer viewer, ActorProvider actors, Clock clock) {
         this.documents = documents;
         this.lines = lines;
         this.locks = locks;
+        this.returns = returns;
         this.stock = stock;
         this.payments = payments;
         this.audit = audit;
@@ -90,6 +95,11 @@ public class SaleCancellation {
         if (document.status() != SalesDocStatus.CONFIRMED) {
             throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, "Only a confirmed document can be cancelled.",
                     Map.of("status", document.status().code(), "action", "cancel"));
+        }
+        List<CustomerReturn> made = returns.findByDocumentIdOrderByIdAsc(document.id());
+        if (!made.isEmpty()) {
+            throw new BusinessException(ErrorCode.SALE_NOT_CANCELLABLE, "This document was returned; use a return.",
+                    Map.of("blockedBy", "return", "returnId", made.getFirst().id()));
         }
         if (documents.existsByParentIdAndStatusNot(document.id(), SalesDocStatus.CANCELLED)) {
             throw new BusinessException(ErrorCode.SALE_NOT_CANCELLABLE, "A later document exists; use a credit note.",

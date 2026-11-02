@@ -10,9 +10,12 @@ import java.util.List;
  */
 public interface LotBuyers {
 
-    /** One document that took stock of the lot; {@code customerId} {@code null} on an anonymous sale. */
+    /**
+     * One document that took stock of the lot; {@code customerId} {@code null} on an anonymous sale;
+     * {@code returnedBase}: what customers returned of it, restocked or discarded (ADR-131).
+     */
     record LotSale(Long customerId, String customerName, String phone, String documentNumber, String documentType,
-            Instant issuedAt, BigDecimal quantityBase) {
+            Instant issuedAt, BigDecimal quantityBase, BigDecimal returnedBase) {
     }
 
     /** Oldest first. */

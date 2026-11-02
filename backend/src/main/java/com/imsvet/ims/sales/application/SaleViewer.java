@@ -10,13 +10,16 @@ import com.imsvet.ims.sales.application.SalesViews.CustomerRef;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.sales.application.SalesViews.SaleLine;
 import com.imsvet.ims.sales.application.SalesViews.SalePayment;
+import com.imsvet.ims.sales.application.SalesViews.SaleReturn;
 import com.imsvet.ims.sales.application.SalesViews.SaleWarning;
 import com.imsvet.ims.sales.domain.SalesDocStatus;
 import com.imsvet.ims.sales.domain.SalesDocument;
 import com.imsvet.ims.sales.domain.SalesDocumentLine;
 import com.imsvet.ims.sales.domain.WithdrawalWarnings;
 import com.imsvet.ims.sales.infrastructure.CustomerRepository;
+import com.imsvet.ims.sales.infrastructure.CustomerReturnRepository;
 import com.imsvet.ims.sales.infrastructure.SalesDocumentLineRepository;
+import com.imsvet.ims.sales.infrastructure.SalesDocumentRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,9 +41,12 @@ class SaleViewer {
     private final SaleLots lots;
     private final PaymentRecorder payments;
     private final CreditLimitPort credit;
+    private final CustomerReturnRepository returns;
+    private final SalesDocumentRepository documents;
 
     SaleViewer(SalesDocumentLineRepository lines, CustomerRepository customers, ProductLookup products,
-            ProductWithdrawals withdrawals, SaleLots lots, PaymentRecorder payments, CreditLimitPort credit) {
+            ProductWithdrawals withdrawals, SaleLots lots, PaymentRecorder payments, CreditLimitPort credit,
+            CustomerReturnRepository returns, SalesDocumentRepository documents) {
         this.lines = lines;
         this.customers = customers;
         this.products = products;
@@ -48,6 +54,8 @@ class SaleViewer {
         this.lots = lots;
         this.payments = payments;
         this.credit = credit;
+        this.returns = returns;
+        this.documents = documents;
     }
 
     SaleDetail detail(SalesDocument document) {
@@ -67,7 +75,11 @@ class SaleViewer {
         }).toList(), payments.inForceOn(document.id()).stream()
                 .map(p -> new SalePayment(p.id(), p.method(), p.amount(), p.reference())).toList(),
                 document.creditSale() && document.status() == SalesDocStatus.CONFIRMED
-                        ? credit.position(document.customerId()).balance() : null);
+                        ? credit.position(document.customerId()).balance() : null,
+                returns.findByDocumentIdOrderByIdAsc(document.id()).stream().map(r -> {
+                    SalesDocument note = documents.findById(r.creditNoteId()).orElseThrow();
+                    return new SaleReturn(r.id(), r.number(), note.id(), note.number(), note.totalTtc());
+                }).toList());
     }
 
     /** The withdrawal warnings of all lines, once per product and species. */

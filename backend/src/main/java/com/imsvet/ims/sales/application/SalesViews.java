@@ -40,7 +40,13 @@ public final class SalesViews {
     public record SaleLine(long id, long productId, String productName, Long lotId, String lotNumber,
             LocalDate expiryDate, Long unitId, String unitName, Integer targetSpeciesId, BigDecimal quantity,
             BigDecimal quantityBase, BigDecimal unitPrice, BigDecimal discountPct, BigDecimal vatRate,
-            BigDecimal lineHt, BigDecimal lineVat, BigDecimal lineTtc, List<SaleWarning> warnings) {
+            BigDecimal lineHt, BigDecimal lineVat, BigDecimal lineTtc, List<SaleWarning> warnings,
+            BigDecimal returnedQuantityBase) {
+    }
+
+    /** A customer return of the document and the credit note it issued (W3, ADR-131). */
+    public record SaleReturn(long id, String number, long creditNoteId, String creditNoteNumber,
+            BigDecimal creditNoteTtc) {
     }
 
     public record SalePayment(long id, String method, BigDecimal amount, String reference) {
@@ -53,7 +59,7 @@ public final class SalesViews {
     public record SaleDetail(long id, String docType, String number, String status, CustomerRef customer, Long parentId,
             boolean creditSale, LocalDate dueDate, Instant issuedAt, Instant createdAt, Instant cancelledAt,
             String cancelReason, String notes, Totals totals, List<SaleLine> lines, List<SalePayment> payments, Long cashSessionId,
-            BigDecimal customerBalance, long version) {
+            BigDecimal customerBalance, List<SaleReturn> returns, long version) {
     }
 
     private SalesViews() {
@@ -65,11 +71,11 @@ public final class SalesViews {
     }
 
     static SaleDetail detail(SalesDocument d, CustomerRef customer, List<SaleLine> lines,
-            List<SalePayment> payments, BigDecimal customerBalance) {
+            List<SalePayment> payments, BigDecimal customerBalance, List<SaleReturn> returns) {
         return new SaleDetail(d.id(), d.docType().code(), d.number(), d.status().code(), customer, d.parentId(),
                 d.creditSale(), d.dueDate(), d.issuedAt(), d.createdAt(), d.cancelledAt(), d.cancelReason(), d.notes(),
                 new Totals(d.totalHt(), d.totalDiscount(), d.totalVat(), d.totalTtc()), lines, payments, d.cashSessionId(),
-                customerBalance, d.version());
+                customerBalance, returns, d.version());
     }
 
     static SaleLine line(SalesDocumentLine l, String productName, String unitName, LotInfo lot,
@@ -77,6 +83,6 @@ public final class SalesViews {
         return new SaleLine(l.id(), l.productId(), productName, l.lotId(), lot == null ? null : lot.lotNumber(),
                 lot == null ? null : lot.expiryDate(), l.unitId(), unitName, l.targetSpeciesId(), l.quantity(),
                 l.quantityBase(), l.unitPrice(), l.discountPct(), l.vatRate(), l.lineHt(), l.lineVat(), l.lineTtc(),
-                warnings);
+                warnings, l.returnedQuantityBase());
     }
 }
