@@ -49,6 +49,9 @@ import com.imsvet.ims.sales.application.CustomerCredit.CreditLimitInput;
 import com.imsvet.ims.sales.application.CustomerDirectory;
 import com.imsvet.ims.sales.application.CustomerDirectory.CustomerInput;
 import com.imsvet.ims.sales.application.CustomerPrices;
+import com.imsvet.ims.sales.application.CustomerReturns;
+import com.imsvet.ims.sales.application.CustomerReturns.PreviewInput;
+import com.imsvet.ims.sales.application.CustomerReturns.ReturnLineInput;
 import com.imsvet.ims.sales.application.CustomerViews.CustomerDetail;
 import com.imsvet.ims.sales.application.PaymentRecorder.Tender;
 import com.imsvet.ims.sales.application.SaleCancellation;
@@ -87,7 +90,9 @@ import org.springframework.stereotype.Component;
  * 4 receipts (one cancelled, one with a non-conforming line), a supplier return, an inventory count, adjustments,
  * an opening-stock entry, a pending reorder proposal, 3 customer categories and 12 customers (veterinarians, breeders
  * and others; own prices; limits "cash only", "no limit" and amounts; one inactive; an Arabic and an accented name);
- * sales documents of every kind with a closed cash session, a cancelled sale, a draft, and a recalled lot with buyers.
+ * sales documents of every kind with a closed cash session, a cancelled sale, a draft, and a recalled lot with buyers;
+ * customer returns: a counter receipt with a restock, a discard and a cash refund, and a credit invoice credited to the
+ * account; the vaccines never go back into sellable stock after a return (BR-PROD-009).
  * Every name is fictional and every phone number is in the reserved fake range {@code 0100 00 xx xx} (testing.md
  * §3, ADR-114). Dates are relative to today (the
  * {@link DemoClock} is pinned to each moment); quantities that vary come from a fixed seed. Runs once: a database
@@ -139,6 +144,7 @@ class DemoDataSeeder {
     private final SaleConversion conversion;
     private final SaleCancellation cancellation;
     private final CashSessions sessions;
+    private final CustomerReturns customerReturns;
 
     private final Random random = new Random(20261024L);
     private final LocalDate today;
@@ -155,7 +161,7 @@ class DemoDataSeeder {
             ReorderProposals reorder, IntegrityChecks integrity, CustomerCategories customerCategories,
             CustomerDirectory customers, CustomerCredit credit, CustomerPrices customerPrices, SalesDocuments documents,
             SaleLines lines, SaleConfirmation confirmation, SaleConversion conversion, SaleCancellation cancellation,
-            CashSessions sessions) {
+            CashSessions sessions, CustomerReturns customerReturns) {
         this.environment = environment;
         this.jdbc = jdbc;
         this.clock = clock;
@@ -187,6 +193,7 @@ class DemoDataSeeder {
         this.conversion = conversion;
         this.cancellation = cancellation;
         this.sessions = sessions;
+        this.customerReturns = customerReturns;
         this.today = LocalDate.now(BUSINESS);
     }
 
@@ -297,7 +304,8 @@ class DemoDataSeeder {
         long id = catalog.create(new ProductInput(s.sku(), s.name(), categories.get(s.category()), forms.get(s.form()),
                 manufacturers.get(s.manufacturer()), s.baseUnit(), s.divisible(), new BigDecimal(s.vat()),
                 new BigDecimal(s.min()), s.max() == null ? null : new BigDecimal(s.max()), new BigDecimal(s.reorder()),
-                new BigDecimal(s.purchase()), new BigDecimal(s.sale()), null)).id();
+                new BigDecimal(s.purchase()), new BigDecimal(s.sale()), "VACCINE".equals(s.category()) ? true : null))
+                .id();
         products.put(s.key(), id);
         Long firstUnit = null;
         for (Map.Entry<String, String> u : s.units().entrySet()) {
@@ -463,14 +471,28 @@ class DemoDataSeeder {
         at(-1, 8, 0);
         var session = sessions.open(new BigDecimal("5000.00"));
         at(-1, 9, 0);
-        pay(sale("receipt", null, false, "amox", "melox"));
+        SaleDetail counter = sale("receipt", null, false, "amox", "melox");
+        pay(counter);
         SaleDetail cancelled = sale("receipt", null, false, "amox");
         pay(cancelled);
         at(-1, 9, 30);
         cancellation.cancel(cancelled.id(), "Erreur de saisie à la caisse (démonstration)");
+        at(-1, 9, 45);
+        List<ReturnLineInput> counterLines = List.of(new ReturnLineInput(lineOf(counter, "amox"),
+                new BigDecimal("2"), "base", true, "restock", null, null), new ReturnLineInput(lineOf(counter, "melox"),
+                        BigDecimal.ONE, "base", false, "discard", "opened", null));
+        BigDecimal refund = customerReturns.preview(new PreviewInput(counter.id(), counterLines)).creditNote()
+                .totalTtc();
+        customerReturns.create(new CustomerReturns.ReturnInput(counter.id(),
+                "Le client s'est trompé de produit (démonstration)", counterLines,
+                List.of(new Tender("cash", refund, null))), null);
 
         at(-1, 10, 0);
-        confirmation.confirm(sale("invoice", kaci, true, "oxy", "iver").id(), List.of(), null);
+        SaleDetail onAccount = confirmation.confirm(sale("invoice", kaci, true, "oxy", "iver").id(), List.of(), null);
+        at(-1, 10, 30);
+        customerReturns.create(new CustomerReturns.ReturnInput(onAccount.id(),
+                "Flacons en trop, non ouverts (démonstration)", List.of(new ReturnLineInput(lineOf(onAccount, "oxy"),
+                        new BigDecimal("3"), "base", true, "restock", null, null)), List.of()), null);
         SaleDetail recalledBuyer = saleOfLot("delivery_note", kaci, "IOD-2309", "iode");
         confirmation.confirm(recalledBuyer.id(), List.of(), null);
         at(-1, 11, 0);
@@ -511,6 +533,11 @@ class DemoDataSeeder {
         SaleDetail draft = documents.create(new DraftInput(type, customer, customer != null, null, null));
         return lines.add(draft.id(), new LineInput(products.get(key), null, new BigDecimal("50"), null, lots.get(lot),
                 "Lot demandé par le client (démonstration)", null, null));
+    }
+
+    private long lineOf(SaleDetail sale, String key) {
+        long product = products.get(key);
+        return sale.lines().stream().filter(l -> l.productId() == product).findFirst().orElseThrow().id();
     }
 
     private LineInput line(String key) {

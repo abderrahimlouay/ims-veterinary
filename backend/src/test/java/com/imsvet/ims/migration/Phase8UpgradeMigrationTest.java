@@ -21,11 +21,12 @@ import org.testcontainers.mysql.MySQLContainer;
 
 /**
  * Migration test (M) on a seeded database (database-migration.md §9): a separate schema is migrated to the end of
- * Phase 7 (V07_012), filled with Phase 7 data (a confirmed receipt whose line posted a sale), then upgraded with the
- * Phase 8 schema migrations (to V08_004). Nothing fails, the data stay as they were (the lot balance equals its ledger,
- * the receipt's line amounts and totals are unchanged, nothing is returned or credited yet), the return tables start
- * empty, and the new rules apply on the upgraded data: return_discard is negative only and needs a reason, the
- * returned quantity cannot exceed the sold one (ADR-127, ADR-130). Fictional data only (ADR-114).
+ * Phase 7 (V07_012), filled with Phase 7 data (a confirmed receipt whose line posted a sale), then upgraded with every
+ * Phase 8 migration (to V08_008). Nothing fails, the data stay as they were (the lot balance equals its ledger, the
+ * receipt's line amounts and totals are unchanged, nothing is returned or credited yet, an existing product may still
+ * be restocked after a return), the return and refund tables start empty, the age limit is off, and the new rules apply
+ * on the upgraded data: return_discard is negative only and needs a reason, the returned quantity cannot exceed the sold
+ * one, refunds are append-only (ADR-127…131). Fictional data only (ADR-114).
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -91,11 +92,11 @@ class Phase8UpgradeMigrationTest {
                 lot, product, user, lot, product, receipt, user);
         db.update("INSERT INTO document_sequences (doc_key, year, last_number) VALUES ('RCT', 2026, 1)");
 
-        flyway("08.004").migrate();
+        flyway("08.008").migrate();
 
-        MigrationInfo[] applied = flyway("08.004").info().applied();
+        MigrationInfo[] applied = flyway("08.008").info().applied();
         assertThat(applied).allSatisfy(m -> assertThat(m.getState()).isEqualTo(MigrationState.SUCCESS));
-        assertThat(applied[applied.length - 1].getVersion().getVersion()).isEqualTo("08.004");
+        assertThat(applied[applied.length - 1].getVersion().getVersion()).isEqualTo("08.008");
         assertThat(db.queryForObject("""
                 SELECT CONCAT(CAST(l.quantity_on_hand AS CHAR), ' ', CAST(SUM(m.quantity) AS CHAR))
                 FROM lots l JOIN stock_movements m ON m.lot_id = l.id WHERE l.id = ? GROUP BY l.id""", String.class, lot))
@@ -111,8 +112,12 @@ class Phase8UpgradeMigrationTest {
         assertThat(db.queryForObject("SELECT last_number FROM document_sequences WHERE doc_key = 'RCT'", Integer.class))
                 .isEqualTo(1);
         assertThat(db.queryForObject(
-                "SELECT (SELECT COUNT(*) FROM customer_returns) + (SELECT COUNT(*) FROM customer_return_lines)",
-                Integer.class)).isZero();
+                "SELECT (SELECT COUNT(*) FROM customer_returns) + (SELECT COUNT(*) FROM customer_return_lines)"
+                        + " + (SELECT COUNT(*) FROM customer_refunds)", Integer.class)).isZero();
+        assertThat(db.queryForObject("SELECT return_restock_forbidden FROM products WHERE id = ?", Boolean.class,
+                product)).isFalse();
+        assertThat(db.queryForObject("SELECT setting_value FROM app_settings WHERE setting_key = 'customer_return_max_days'",
+                String.class)).isEqualTo("off");
 
         String movement = """
                 INSERT INTO stock_movements (lot_id, product_id, movement_type, quantity, reason, user_id, created_at)
@@ -127,6 +132,11 @@ class Phase8UpgradeMigrationTest {
         assertThatThrownBy(() -> db.update(
                 "UPDATE sales_document_lines SET returned_quantity_base = 4 WHERE id = ?", line))
                 .isInstanceOf(DataAccessException.class).hasMessageContaining("ck_sales_document_lines_returned");
+        db.update("""
+                INSERT INTO customer_refunds (credit_note_id, method, amount, reference, refunded_at, created_by)
+                VALUES (?, 'cheque', 1.20, 'CHQ-UPG', UTC_TIMESTAMP(6), ?)""", receipt, user);
+        assertThatThrownBy(() -> db.update("UPDATE customer_refunds SET amount = 1"))
+                .isInstanceOf(DataAccessException.class).hasMessageContaining("append-only");
     }
 
     private Flyway flyway(String target) {
