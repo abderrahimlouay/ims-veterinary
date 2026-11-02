@@ -19,7 +19,7 @@ export interface StockLevel {
   nearestSellableExpiry: string | null
 }
 
-/** The ten movement types of ADR-081; the four manual adjustments of ADR-085 come first. */
+/** The movement types of ADR-081, ADR-103, ADR-119 and ADR-127; the four manual adjustments of ADR-085 come first. */
 export const ADJUSTMENT_TYPES = ['adjustment_breakage', 'adjustment_expiry', 'adjustment_theft', 'adjustment_internal_use'] as const
 export type AdjustmentType = (typeof ADJUSTMENT_TYPES)[number]
 export const MOVEMENT_TYPES = [
@@ -30,6 +30,9 @@ export const MOVEMENT_TYPES = [
   ...ADJUSTMENT_TYPES,
   'adjustment_inventory',
   'opening_stock',
+  'receipt_cancellation',
+  'sale_cancellation',
+  'return_discard',
 ] as const
 
 /** api.md §4.5 `MovementEntry`: immutable, `quantity` signed (BR-STOCK-003/004). */

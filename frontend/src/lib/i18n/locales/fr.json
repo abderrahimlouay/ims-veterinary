@@ -529,7 +529,8 @@
       "adjustment_inventory": "Inventaire",
       "opening_stock": "Stock d'ouverture",
       "receipt_cancellation": "Annulation de réception",
-      "sale_cancellation": "Annulation de vente"
+      "sale_cancellation": "Annulation de vente",
+      "return_discard": "Destruction au retour"
     },
     "adjustment": {
       "new": "Nouvel ajustement",

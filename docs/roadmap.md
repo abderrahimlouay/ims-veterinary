@@ -1,8 +1,8 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–6 complete (tags `phase-0-done` … `phase-6-done`); Phase 7 (Sales / POS) is the current phase, decisions first; Phases 8–13 not started
+> **Status:** Phases 0–7 complete (tags `phase-0-done` … `phase-7-done`); Phase 8 (Returns) is the current phase, decisions accepted 2026-11-02 (ADR-127…131), implementation in slices; Phases 9–13 not started
 > **Scope:** ordered plan for Claude Code to implement.
-> **Last updated:** 2026-10-31
+> **Last updated:** 2026-11-02
 
 Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` review item.
 
