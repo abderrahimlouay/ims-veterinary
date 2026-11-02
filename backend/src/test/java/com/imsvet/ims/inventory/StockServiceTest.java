@@ -132,6 +132,52 @@ class StockServiceTest {
         assertThat(movementCount()).isEqualTo(2);
     }
 
+    /** ADR-127, BR-RET-003: a discarded return enters and leaves the lot in one post, whatever its status. */
+    @Test
+    void aReturnDiscardPairLeavesTheBalanceUnchangedOnAnEmptyOrRecalledLot() {
+        long empty = lots.lot(product, "L-EMPTY", EXPIRY.minusYears(2), "0");
+        long recalled = lots.lot(product, "L-RECALLED", EXPIRY, "3", "recalled");
+
+        List<Long> ids = stock.post(List.of(
+                new Movement(empty, product, MovementType.CUSTOMER_RETURN, new BigDecimal("2"), null,
+                        "customer_return_line", 41L),
+                new Movement(empty, product, MovementType.RETURN_DISCARD, new BigDecimal("-2"), " expired ",
+                        "customer_return_line", 41L),
+                new Movement(recalled, product, MovementType.CUSTOMER_RETURN, BigDecimal.ONE, null,
+                        "customer_return_line", 42L),
+                new Movement(recalled, product, MovementType.RETURN_DISCARD, BigDecimal.ONE.negate(), "recalled",
+                        "customer_return_line", 42L)));
+
+        assertThat(ids).hasSize(4);
+        assertThat(jdbc.queryForObject("SELECT quantity_on_hand FROM lots WHERE id = ?", BigDecimal.class, empty))
+                .isEqualByComparingTo("0");
+        assertThat(jdbc.queryForObject("SELECT quantity_on_hand FROM lots WHERE id = ?", BigDecimal.class, recalled))
+                .isEqualByComparingTo("3");
+        assertThat(jdbc.queryForObject("SELECT reason FROM stock_movements WHERE id = ?", String.class, ids.get(1)))
+                .isEqualTo("expired");
+        assertThat(jdbc.queryForObject("SELECT status FROM lots WHERE id = ?", String.class, recalled))
+                .isEqualTo("recalled");
+        StockAssertions.assertLedgerMatchesBalances(jdbc, List.of(empty, recalled));
+    }
+
+    @Test
+    void aReturnDiscardWithoutReasonOrBeforeItsEntryIsRefused() {
+        long empty = lots.lot(product, "L-EMPTY-2", EXPIRY, "0");
+
+        assertThatThrownBy(() -> stock.post(List.of(
+                new Movement(empty, product, MovementType.CUSTOMER_RETURN, BigDecimal.ONE, null, null, null),
+                new Movement(empty, product, MovementType.RETURN_DISCARD, BigDecimal.ONE.negate(), " ", null, null))))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.code()).isEqualTo(ErrorCode.ADJUSTMENT_REASON_REQUIRED));
+        assertThatThrownBy(() -> stock.post(List.of(
+                new Movement(empty, product, MovementType.RETURN_DISCARD, BigDecimal.ONE.negate(), "opened", null, null),
+                new Movement(empty, product, MovementType.CUSTOMER_RETURN, BigDecimal.ONE, null, null, null))))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.code()).isEqualTo(ErrorCode.STOCK_INSUFFICIENT));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM stock_movements WHERE lot_id = ?", Integer.class, empty))
+                .isZero();
+    }
+
     @Test
     void anUnknownLotIsNotFound() {
         assertThatThrownBy(() -> stock.post(List.of(new Movement(999_999, product, MovementType.ADJUSTMENT_EXPIRY,

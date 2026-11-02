@@ -6,7 +6,7 @@ import com.imsvet.ims.inventory.domain.MovementType;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
-/** BR-STOCK-005, ADR-081: the ten types, their codes and their sign; adjustments carry a reason (BR-STOCK-006). */
+/** BR-STOCK-005, ADR-081, ADR-127: the thirteen types, their codes and their sign; adjustments and return discards carry a reason (BR-STOCK-006, BR-RET-010). */
 class MovementTypeTest {
 
     @Test
@@ -17,7 +17,7 @@ class MovementTypeTest {
             assertThat(type.allows(BigDecimal.ONE.negate())).as(type.code()).isFalse();
         }
         for (MovementType type : new MovementType[] { MovementType.SALE, MovementType.SUPPLIER_RETURN,
-                MovementType.RECEIPT_CANCELLATION, MovementType.ADJUSTMENT_BREAKAGE, MovementType.ADJUSTMENT_EXPIRY, MovementType.ADJUSTMENT_THEFT,
+                MovementType.RECEIPT_CANCELLATION, MovementType.RETURN_DISCARD, MovementType.ADJUSTMENT_BREAKAGE, MovementType.ADJUSTMENT_EXPIRY, MovementType.ADJUSTMENT_THEFT,
                 MovementType.ADJUSTMENT_INTERNAL_USE }) {
             assertThat(type.allows(BigDecimal.ONE.negate())).as(type.code()).isTrue();
             assertThat(type.allows(BigDecimal.ONE)).as(type.code()).isFalse();
@@ -31,12 +31,15 @@ class MovementTypeTest {
 
     @Test
     void codesAreTheDatabaseValuesAndAdjustmentsNeedAReason() {
-        assertThat(MovementType.values()).hasSize(12);
+        assertThat(MovementType.values()).hasSize(13);
         assertThat(MovementType.RECEIPT_CANCELLATION.code()).isEqualTo("receipt_cancellation");
         assertThat(MovementType.RECEIPT_CANCELLATION.needsReason()).isFalse();
         assertThat(MovementType.fromCode("adjustment_internal_use")).isEqualTo(MovementType.ADJUSTMENT_INTERNAL_USE);
         assertThat(MovementType.OPENING_STOCK.code()).isEqualTo("opening_stock");
         assertThat(MovementType.ADJUSTMENT_INVENTORY.needsReason()).isTrue();
         assertThat(MovementType.SALE.needsReason()).isFalse();
+        assertThat(MovementType.RETURN_DISCARD.code()).isEqualTo("return_discard");
+        assertThat(MovementType.RETURN_DISCARD.needsReason()).isTrue();
+        assertThat(MovementType.CUSTOMER_RETURN.needsReason()).isFalse();
     }
 }

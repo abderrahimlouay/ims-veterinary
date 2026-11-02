@@ -529,7 +529,8 @@
       "adjustment_inventory": "Inventory count",
       "opening_stock": "Opening stock",
       "receipt_cancellation": "Receipt cancellation",
-      "sale_cancellation": "Sale cancellation"
+      "sale_cancellation": "Sale cancellation",
+      "return_discard": "Return discard"
     },
     "adjustment": {
       "new": "New adjustment",

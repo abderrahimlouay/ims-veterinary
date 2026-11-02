@@ -529,7 +529,8 @@
       "adjustment_inventory": "جرد",
       "opening_stock": "مخزون افتتاحي",
       "receipt_cancellation": "إلغاء استلام",
-      "sale_cancellation": "إلغاء بيع"
+      "sale_cancellation": "إلغاء بيع",
+      "return_discard": "إتلاف عند الإرجاع"
     },
     "adjustment": {
       "new": "تسوية جديدة",

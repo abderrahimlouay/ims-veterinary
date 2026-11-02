@@ -22,7 +22,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Repository test (R) of stock_movements (database.md §3.4): the ten types of ADR-081 and no other, the sign per
+ * Repository test (R) of stock_movements (database.md §3.4): the types of ADR-081, ADR-103, ADR-119 and ADR-127 and no other, the sign per
  * type (BR-STOCK-005), no zero quantity, a reason for every adjustment (BR-STOCK-006), the movement's product equal
  * to its lot's (ADR-062), an operator on every row (BR-STOCK-004), and no UPDATE/DELETE for the application account
  * (1142, ADR-087). The trigger side is {@code StockMovementAppendOnlyTest}.
@@ -49,8 +49,8 @@ class StockMovementSchemaTest {
     @ParameterizedTest
     @CsvSource({ "purchase_receipt, 5", "customer_return, 1", "opening_stock, 2", "sale, -1", "supplier_return, -1",
             "adjustment_breakage, -1", "adjustment_expiry, -1", "adjustment_theft, -1", "adjustment_internal_use, -1",
-            "adjustment_inventory, 3", "adjustment_inventory, -3", "receipt_cancellation, -1", "sale_cancellation, 1" })
-    void theTwelveTypesWithTheirSignAreAccepted(String type, String quantity) {
+            "adjustment_inventory, 3", "adjustment_inventory, -3", "receipt_cancellation, -1", "sale_cancellation, 1", "return_discard, -1" })
+    void theThirteenTypesWithTheirSignAreAccepted(String type, String quantity) {
         insert(type, quantity, "Reason");
 
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM stock_movements WHERE lot_id = ? AND movement_type = ?",
@@ -66,7 +66,7 @@ class StockMovementSchemaTest {
 
     @ParameterizedTest
     @CsvSource({ "opening_stock, -1", "purchase_receipt, -2", "sale, 1", "adjustment_breakage, 1",
-            "receipt_cancellation, 1", "sale_cancellation, -1" })
+            "receipt_cancellation, 1", "sale_cancellation, -1", "return_discard, 1" })
     void aWrongSignIsRefused(String type, String quantity) {
         assertThatThrownBy(() -> insert(type, quantity, "Reason")).satisfies(e -> checkViolation(e, "ck_stock_movements_sign"));
     }
@@ -84,6 +84,16 @@ class StockMovementSchemaTest {
         assertThatThrownBy(() -> insert("adjustment_inventory", "1", "   "))
                 .satisfies(e -> checkViolation(e, "ck_stock_movements_adjustment_reason"));
         insert("sale", "-1", null);
+    }
+
+    @Test
+    void everyReturnDiscardNeedsAReason() {
+        assertThatThrownBy(() -> insert("return_discard", "-1", null))
+                .satisfies(e -> checkViolation(e, "ck_stock_movements_return_discard_reason"));
+        assertThatThrownBy(() -> insert("return_discard", "-1", "  "))
+                .satisfies(e -> checkViolation(e, "ck_stock_movements_return_discard_reason"));
+        insert("customer_return", "1", null);
+        insert("return_discard", "-1", "opened");
     }
 
     @Test

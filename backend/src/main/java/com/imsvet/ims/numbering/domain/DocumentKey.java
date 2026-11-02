@@ -1,6 +1,6 @@
 package com.imsvet.ims.numbering.domain;
 
-/** ADR-097: the numbered document kinds; the sales keys come from ADR-122. */
+/** ADR-097: the numbered document kinds; the sales keys come from ADR-122, the customer-return key from ADR-131. */
 public enum DocumentKey {
     /** Purchase order, numbered at creation. */
     PO,
@@ -17,5 +17,7 @@ public enum DocumentKey {
     /** Receipt, numbered at confirmation. */
     RCT,
     /** Credit note, numbered at confirmation (from Phase 8). */
-    CN
+    CN,
+    /** Customer return, numbered at creation (ADR-131). */
+    CR
 }
