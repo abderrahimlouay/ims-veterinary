@@ -150,6 +150,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `PO_CANCEL`, `PO_CLOSE` | purchase-order cancellation and forced close, with the reason (ADR-096, ADR-105) | user decision 2026-10-24 |
 | `RECEIPT_CANCEL` | cancellation of a whole goods receipt, with the reason (ADR-103) | user decision 2026-10-24 |
 | `PAYMENT_REVERSE` | reversal of a payment/cash entry | REC |
+| `REFUND_CREATE` | a refund of a customer return: credit note, method, amount, original document and its payment methods, session | REC (ADR-128) |
 | `CREDIT_LIMIT_CHANGE` | customer credit-limit change | REC |
 | `USER_CREATE`, `USER_UPDATE`, `USER_DEACTIVATE`, `ROLE_PERMISSION_CHANGE`, `PASSWORD_RESET` | identity administration (re-activation is a `USER_UPDATE`) | REC |
 | `SETTING_CHANGE` | alert thresholds, VAT default, company data | REC |
@@ -157,7 +158,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (ADR-120, BR-SALE-007) |
 | `CASH_VARIANCE` | a cash session closed with a non-zero variance | REC (W9) |
 
-**Phase 8 actions (ADR-128, ADR-129), added to the table above with the slice that implements them** (the table must equal `AuditAction`): `REFUND_CREATE` — a refund of a customer return (credit note, method, amount, original document and its payment methods, session); `PRODUCT_RETURN_POLICY_CHANGE` — a change of `return_restock_forbidden` (old and new value). `RETURN_CREATE` of a customer return records the lines, quantities, dispositions, sealed flags and discard reasons.
+**Phase 8 actions (ADR-128, ADR-129), added to the table above with the slice that implements them** (the table must equal `AuditAction`): `PRODUCT_RETURN_POLICY_CHANGE` — a change of `return_restock_forbidden` (old and new value). `RETURN_CREATE` of a customer return records the lines, quantities, dispositions, sealed flags and discard reasons.
 
 Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD-102, BR-SEC-006). Passwords, tokens and hashes are never written to audit values.
 
