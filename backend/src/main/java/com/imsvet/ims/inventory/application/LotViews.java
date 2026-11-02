@@ -73,13 +73,18 @@ public final class LotViews {
     public record RecalledLot(long id, String status, Instant blockedAt, Long blockedBy) {
     }
 
-    /** A sale of the lot to a known customer; {@code unit} is the base unit of {@code quantityBase}. */
+    /**
+     * A sale of the lot to a known customer; {@code unit} is the base unit of the quantities; {@code netBase} is what
+     * the customer still holds: sold − returned (ADR-131).
+     */
     public record RecallBuyer(long customerId, String customerName, String phone, String documentNumber,
-            String documentType, Instant issuedAt, BigDecimal quantityBase, String unit) {
+            String documentType, Instant issuedAt, BigDecimal quantityBase, String unit, BigDecimal returnedBase,
+            BigDecimal netBase) {
     }
 
     /** A counter sale without customer. */
-    public record AnonymousSale(String documentNumber, Instant issuedAt, BigDecimal quantityBase) {
+    public record AnonymousSale(String documentNumber, Instant issuedAt, BigDecimal quantityBase,
+            BigDecimal returnedBase, BigDecimal netBase) {
     }
 
     public record RecallReport(RecalledLot lot, List<RecallBuyer> buyers, List<AnonymousSale> anonymousSales,
@@ -90,9 +95,11 @@ public final class LotViews {
         return new RecallReport(new RecalledLot(l.id(), l.status().code(), l.blockedAt(), l.blockedBy()),
                 sales.stream().filter(s -> s.customerId() != null).map(s -> new RecallBuyer(s.customerId(),
                         s.customerName(), s.phone(), s.documentNumber(), s.documentType(), s.issuedAt(),
-                        s.quantityBase(), baseUnit)).toList(),
+                        s.quantityBase(), baseUnit, s.returnedBase(), s.quantityBase().subtract(s.returnedBase())))
+                        .toList(),
                 sales.stream().filter(s -> s.customerId() == null).map(s -> new AnonymousSale(s.documentNumber(),
-                        s.issuedAt(), s.quantityBase())).toList(),
+                        s.issuedAt(), s.quantityBase(), s.returnedBase(), s.quantityBase().subtract(s.returnedBase())))
+                        .toList(),
                 l.quantityOnHand());
     }
 
