@@ -11,7 +11,8 @@ import java.math.BigDecimal;
 /**
  * A line of a sales document: one lot (BR-LOT-006), {@code null} on a quote; the price per sold unit (ADR-123) and the
  * VAT rate as they were when the line was added (BR-SALE-008). Amounts are computed, never stored from a client; the
- * generated columns hold the same values (ADR-016).
+ * generated columns hold the same values (ADR-016). A sold line counts what customers returned of it (ADR-130,
+ * BR-RET-001); a credit-note line stores what it credits, which its amounts then are.
  */
 @Entity
 @Table(name = "sales_document_lines")
@@ -54,6 +55,15 @@ public class SalesDocumentLine {
     @Column(name = "vat_rate", nullable = false, precision = 5, scale = 2)
     private BigDecimal vatRate;
 
+    @Column(name = "returned_quantity_base", nullable = false, precision = 14, scale = 3)
+    private BigDecimal returnedQuantityBase = BigDecimal.ZERO.setScale(3);
+
+    @Column(name = "credited_ht", updatable = false, precision = 14, scale = 2)
+    private BigDecimal creditedHt;
+
+    @Column(name = "credited_vat", updatable = false, precision = 14, scale = 2)
+    private BigDecimal creditedVat;
+
     protected SalesDocumentLine() {
     }
 
@@ -77,6 +87,25 @@ public class SalesDocumentLine {
         this.unitCost = lotCost;
     }
 
+    /**
+     * The credit-note line of a return of {@code sold}: same product, lot, unit, species, price, discount, VAT rate and
+     * cost (BR-SALE-008, BR-SALE-009); {@code quantity} in the sold unit, the amounts of ADR-130.
+     */
+    public static SalesDocumentLine creditFor(SalesDocumentLine sold, Long creditNoteId, BigDecimal quantity,
+            BigDecimal quantityBase, BigDecimal ht, BigDecimal vat) {
+        SalesDocumentLine credit = new SalesDocumentLine(creditNoteId, sold.productId, sold.lotId, sold.unitId,
+                sold.targetSpeciesId, quantity, quantityBase, sold.unitPrice, sold.discountPct, sold.vatRate);
+        credit.unitCost = sold.unitCost;
+        credit.creditedHt = ht;
+        credit.creditedVat = vat;
+        return credit;
+    }
+
+    /** BR-RET-001: under the original document's lock; the database refuses more than the sold quantity. */
+    public void recordReturn(BigDecimal returnedBase) {
+        this.returnedQuantityBase = returnedQuantityBase.add(returnedBase);
+    }
+
     /** The same line on the invoice of a delivery note, cost included (ADR-125). */
     public SalesDocumentLine frozenCopyFor(Long invoiceId) {
         SalesDocumentLine copy = new SalesDocumentLine(invoiceId, productId, lotId, unitId, targetSpeciesId, quantity,
@@ -86,19 +115,35 @@ public class SalesDocumentLine {
     }
 
     public BigDecimal lineHt() {
-        return SaleAmounts.lineHt(quantity, unitPrice, discountPct);
+        return creditedHt != null ? creditedHt : SaleAmounts.lineHt(quantity, unitPrice, discountPct);
     }
 
     public BigDecimal lineVat() {
-        return SaleAmounts.lineVat(lineHt(), vatRate);
+        return creditedVat != null ? creditedVat : SaleAmounts.lineVat(lineHt(), vatRate);
     }
 
     public BigDecimal lineTtc() {
         return lineHt().add(lineVat());
     }
 
+    /** A credit-note line without discount shows none, whatever the rounding of its credited amount. */
     public BigDecimal lineDiscount() {
-        return SaleAmounts.lineDiscount(quantity, unitPrice, lineHt());
+        if (creditedHt != null && discountPct.signum() == 0) {
+            return BigDecimal.ZERO.setScale(2);
+        }
+        return SaleAmounts.lineDiscount(quantity, unitPrice, lineHt()).max(BigDecimal.ZERO.setScale(2));
+    }
+
+    public BigDecimal returnedQuantityBase() {
+        return returnedQuantityBase;
+    }
+
+    public BigDecimal creditedHt() {
+        return creditedHt;
+    }
+
+    public BigDecimal creditedVat() {
+        return creditedVat;
     }
 
     public Long id() {

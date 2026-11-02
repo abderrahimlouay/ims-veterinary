@@ -50,6 +50,8 @@ public interface SalesDocumentLineRepository extends Repository<SalesDocumentLin
 
     List<SalesDocumentLine> findByDocumentIdOrderByIdAsc(Long documentId);
 
+    Optional<SalesDocumentLine> findById(Long id);
+
     Optional<SalesDocumentLine> findByIdAndDocumentId(Long id, Long documentId);
 
     void delete(SalesDocumentLine line);
