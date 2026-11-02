@@ -26,7 +26,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 5 | Purchasing | suppliers, purchase orders, goods receipts, supplier returns, numbering | ~~OD-007~~, ~~OD-014~~, ~~OD-015~~, ~~OD-017~~, ~~OD-029~~ → ADR-093…105 |
 | 6 | Customers | customers, categories, prices, credit-limit data | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 |
 | 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | ~~OD-002, OD-003, OD-004, OD-010~~ → ADR-117…120, ADR-115/116/121…126 |
-| 8 | Returns | customer returns, credit notes, restock/discard | OD-005 |
+| 8 | Returns | customer returns, credit notes, restock/discard, refunds | ADR-127…131 (was OD-005) |
 | 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | ~~OD-003~~ → ADR-118, OD-016 (ADR-108: payments enter the credit balance) |
 | 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | OD-020, OD-026, OD-028 |
 | 11 | Reports & audit | reports, exports, backup | OD-021 |
@@ -131,13 +131,13 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 8 — Returns
 - **Objective:** handle returns and credit notes correctly.
-- **Prerequisites:** Phase 7; OD-005.
-- **Features:** customer return wizard; restock vs discard; automatic credit note; refund/settlement per OD-005; supplier-return completion with financial effect (OD-016 in Phase 9).
-- **Database work:** customer_returns/lines, credit notes (as sales documents), movement types for discard (SD register).
-- **Backend work:** return use case with cumulative limit; credit-note numbering.
-- **Frontend work:** return wizard, return lists.
-- **Tests:** BR-RET-*; e2e J6.
-- **Completion criteria:** FR-SALE-006, 007 done; returns cannot exceed sold quantity; atomic.
+- **Prerequisites:** Phase 7; decided 2026-11-02: ADR-127 (discard ledger), ADR-128 (refunds), ADR-129 (dispositions, product flag), ADR-130 (quantity invariant, credit-note amounts), ADR-131 (what can be returned, immutability); was OD-005. OD-040 (correcting a confirmed return) is registered and **not built** in Phase 8.
+- **Features:** customer return wizard with a server preview; restock (back into the original lot, a blocked or recalled lot staying unsellable) vs discard with a reason; automatic credit note; refund in full of immediate sales (cash, cheque, transfer) or credit to the account of a credit sale; the return check on cancellation; returned and net quantities in the recall buyers list; the product flag `return_restock_forbidden`; the setting `customer_return_max_days`. Not here: store credit and advances (Phase 9, OD-016), card payments (no ADR), supplier-return financial effect (Phase 9, OD-016), printing of credit notes (Phase 10).
+- **Database work:** `customer_returns`/lines, `return_discard` movement type, `sales_document_lines.returned_quantity_base` and credited amounts, `customer_refunds` and `cash_movements.customer_refund_id`, `products.return_restock_forbidden`, the setting, numbering key `CR` (SD-107, SD-139…142).
+- **Backend work:** return use case (lock order of ADR-130, idempotent, atomic) and preview; refunds through a `finance` port; cancellation guard; recall net quantities; return list and detail.
+- **Frontend work:** return wizard, return list and detail, sale detail with returns, product flag.
+- **Tests:** BR-RET-001…011, BR-PROD-009, concurrency (parallel returns; return vs cancellation), fault injection, `Phase8UpgradeMigrationTest`; e2e J6, J11 extended (a Seller cannot reach returns).
+- **Completion criteria:** FR-SALE-006, 007 done; returns cannot exceed the sold quantity under concurrency; a return with its credit note, movements and refund is all-or-nothing; a fully returned line is credited exactly what was invoiced. The close report repeats the go-live blockers DR-040 (now including credit notes, ADR-130) and DR-041.
 
 ## Phase 9 — Payments & finance
 - **Objective:** know who owes what, and what is in the till.

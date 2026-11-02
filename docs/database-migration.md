@@ -103,7 +103,7 @@ All become `VARCHAR(30)` + `CHECK` (ADR-009).
 | cash_session_status | open, closed | cash_sessions |
 | cash_move_direction | in, out | cash_movements |
 
-Open points on values: additional `movement_type` values for discards (**OD-005**); `sale_cancellation` is added by ADR-119; `unit_conversion` is removed because stock is kept in base units only (ADR-061, SD-118).
+Open points on values: the discard of returned goods is `return_discard` (ADR-127, SD-107); `sale_cancellation` is added by ADR-119; `unit_conversion` is removed because stock is kept in base units only (ADR-061, SD-118).
 
 ## 5. Type mapping reference
 
@@ -213,7 +213,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-104 | Prices per base unit `DECIMAL(14,4)` | ADR-049 | Accepted 2026-10-21 |
 | SD-105 | `product_barcodes.unit_id` (composite FK to `product_units(id, product_id)`) and `code` in `utf8mb4_bin` | ADR-057, ADR-058 | Accepted 2026-10-22 |
 | SD-106 | `product_target_species` (target species) | ADR-047 | Accepted 2026-10-21 |
-| SD-107 | New `movement_type` value for discard | OD-005 | Open (cancellation: SD-135) |
+| SD-107 | New `movement_type` value for discard: `return_discard` (−), always right after a `customer_return` (+) of the same return line | OD-005 → ADR-127 | Accepted 2026-11-02 (cancellation: SD-135) |
 | SD-108 | `customer_payments.customer_id` nullable; every immediate sale creates a payment | ADR-118 | Accepted 2026-10-31 |
 | SD-109 | Link supplier return ↔ supplier credit note | OD-016 | Open |
 | SD-110 | Company profile / document header data | OD-026 | Open |
@@ -245,6 +245,10 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-136 | `sales_documents.number` nullable; CHECKs: required when confirmed, absent on a draft; an abandoned draft has none | ADR-122 | Accepted 2026-10-31 |
 | SD-137 | `sales_document_lines.unit_price DECIMAL(14,4)` per sold unit | ADR-123 | Accepted 2026-10-31 |
 | SD-138 | `customer_payments.reverses_payment_id` (unique) and `reversal_reason`: a reversal is a new row with a positive amount; `cash_movements.customer_payment_id` | ADR-118, BR-PAY-003 | Accepted 2026-10-31 |
+| SD-139 | `customer_refunds` (append-only, triggers) and `cash_movements.customer_refund_id`; a refund is not a negative payment nor a reversal | ADR-128 | Accepted 2026-11-02 |
+| SD-140 | `sales_document_lines.returned_quantity_base` with `CHECK (≤ quantity_base)`; `credited_ht` / `credited_vat` on credit-note lines, taken by the generated `line_ht` / `line_vat` | ADR-130 | Accepted 2026-11-02 |
+| SD-141 | `customer_returns.document_id` (was `invoice_id`), `credit_note_id NOT NULL`, mandatory `reason`; `customer_return_lines` gain `lot_id`, `product_id`, `sealed`, `discard_reason`, `discard_note`, `credit_note_line_id`, no cascade; numbering key `CR` | ADR-127, ADR-131 | Accepted 2026-11-02 |
+| SD-142 | `products.return_restock_forbidden BOOLEAN NOT NULL DEFAULT FALSE` | ADR-129 | Accepted 2026-11-02 |
 
 ## 9. Operational requirements for MySQL
 

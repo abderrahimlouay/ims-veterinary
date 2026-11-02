@@ -21,13 +21,13 @@
 | Cash variance | Écart de caisse | Counted amount minus expected amount at closing. |
 | Discount entitlement | Remise accordée | The discount a customer gets without `sale.discount`: the category discount, or 0 when the customer has an own price for the product (ADR-113); a manual discount replaces it, never adds to it. |
 | Credit limit | Plafond de crédit | Maximum customer debt allowed; empty = no limit, 0 = cash only (ADR-108). |
-| Credit note (customer) | Avoir | Document reducing what a customer owes, created by a return. |
+| Credit note (customer) | Avoir | Document created by a customer return (`CN`): lowers the balance of a credit sale, or is refunded for an immediate sale (ADR-128). |
 | Credit note (supplier) | Avoir fournisseur | Document received from a supplier reducing a payable. |
 | Credit sale | Vente à crédit | Sale paid later; requires an identified customer. |
 | Customer category | Catégorie de clientèle | Segment carrying default discount/price conditions. |
 | Delivery note | Bon de livraison (BL) | Document accompanying goods delivered; moves stock when confirmed; its invoice posts no second movement (ADR-117). |
 | Depleted (lot) | Lot épuisé | Lot with zero quantity. |
-| Disposition (return) | Devenir du retour | Outcome of returned goods: restock or discard (OD-005). |
+| Disposition (return) | Devenir du retour | Outcome of returned goods: `restock` (back into the original lot, sellable only if the lot is) or `discard` (logged in and destroyed at once, `return_discard`, with a reason) (ADR-127, ADR-129). |
 | Document number | Numéro de document | Unique human-readable number of an order, invoice, etc. (BR-DOC-001). |
 | Dosage form | Forme galénique | Form of the medicine (injectable, powder, tablet…). |
 | Expiry date | Date de péremption (DLC) | Last date the lot may be used/sold: sellable on this date, expired from the next day (ADR-055); `MM/YYYY` = last day of the month. |
@@ -52,9 +52,11 @@
 | Quote | Devis | Offer to a customer with no stock or financial effect. |
 | Quarantine | Quarantaine | Not a separate state: non-conforming goods enter a blocked lot (ADR-095). |
 | Receipt (till) | Ticket de caisse | Short sales ticket for counter sales, printable on thermal paper. |
+| Refund (customer) | Remboursement client | Money paid back to a customer for the credit note of a return on an immediate sale, in cash, cheque or transfer, in the return's transaction (ADR-128). |
 | Recall | Rappel de lot | Procedure blocking a lot and listing everyone who received it. |
 | Reorder proposal | Proposition de commande | System-generated suggestion to buy when stock falls under the reorder point. |
-| Return (customer) | Retour client | Goods brought back by a customer, linked to the original sale. |
+| Return (customer) | Retour client | Goods brought back by a customer, linked to the original invoice or receipt, numbered `CR`; always issues one credit note; immutable once confirmed (ADR-131). |
+| Return discard | Destruction au retour | Movement type (−) that destroys returned goods right after their `customer_return` (+) (ADR-127). |
 | Return (supplier) | Retour fournisseur | Goods sent back to a supplier. |
 | Role | Rôle | Named bundle of permissions assigned to users. |
 | Sellable stock | Stock vendable | Quantity in lots that are active, unexpired and not blocked/recalled. |
