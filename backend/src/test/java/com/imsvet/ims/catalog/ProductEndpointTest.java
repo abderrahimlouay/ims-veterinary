@@ -1,5 +1,6 @@
 package com.imsvet.ims.catalog;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -120,6 +121,31 @@ class ProductEndpointTest {
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.minStock").value("2.500"));
         create(product("W-3", "Too precise", "ml", true).replace("\"minStock\":\"10\"", "\"minStock\":\"2.5001\""))
                 .andExpect(status().isBadRequest());
+    }
+
+    /** BR-PROD-009, ADR-129: off by default, set at creation without audit, each later change audited old/new. */
+    @Test
+    void theReturnRestrictionIsOffByDefaultAndEachChangeIsAudited() throws Exception {
+        long plain = idOf(create(product("RR-1", "Plain", "ml", true))
+                .andExpect(jsonPath("$.returnRestockForbidden").value(false)));
+        create(product("RR-2", "Vaccine", "dose", false).replace("{", "{\"returnRestockForbidden\":true,"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.returnRestockForbidden").value(true));
+        String base = product("RR-1", "Plain", "ml", true).replace("{", "{\"vatRate\":\"9\",");
+
+        put(plain, base.replace("{", "{\"version\":0,\"returnRestockForbidden\":true,")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.returnRestockForbidden").value(true));
+        put(plain, base.replace("{", "{\"version\":1,")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.returnRestockForbidden").value(true)).andExpect(jsonPath("$.version").value(1));
+        put(plain, base.replace("{", "{\"version\":1,\"returnRestockForbidden\":true,")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(1));
+
+        assertThat(jdbc.queryForList("""
+                SELECT CONCAT(JSON_EXTRACT(old_values, '$.returnRestockForbidden'), '>',
+                              JSON_EXTRACT(new_values, '$.returnRestockForbidden'))
+                FROM audit_log WHERE action = 'PRODUCT_RETURN_POLICY_CHANGE' AND entity = 'products'
+                  AND entity_id = ?""", String.class, plain)).containsExactly("false>true");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM audit_log WHERE action = 'PRODUCT_RETURN_POLICY_CHANGE'"
+                + " AND entity_id <> ?", Integer.class, plain)).isZero();
     }
 
     @Test

@@ -26,7 +26,7 @@ public class ProductLookup {
     /** What other modules need to show and handle a product. */
     public record ProductRef(long id, String sku, String commercialName, String baseUnit, boolean divisible,
             boolean archived, BigDecimal minStock, BigDecimal maxStock, BigDecimal reorderPoint, BigDecimal vatRate,
-            BigDecimal purchasePrice, BigDecimal salePrice) {
+            BigDecimal purchasePrice, BigDecimal salePrice, boolean returnRestockForbidden) {
     }
 
     /**
@@ -83,6 +83,7 @@ public class ProductLookup {
 
     static ProductRef ref(Product p) {
         return new ProductRef(p.id(), p.sku(), p.commercialName(), p.baseUnit(), p.divisible(), p.archived(),
-                p.minStock(), p.maxStock(), p.reorderPoint(), p.vatRate(), p.purchasePrice(), p.salePrice());
+                p.minStock(), p.maxStock(), p.reorderPoint(), p.vatRate(), p.purchasePrice(), p.salePrice(),
+                p.returnRestockForbidden());
     }
 }
