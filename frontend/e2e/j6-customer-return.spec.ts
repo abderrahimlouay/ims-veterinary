@@ -28,7 +28,9 @@ test('J6: a customer return with a credit note, a restock, a discard and a cash 
 
   await page.goto('/pos')
   await expect(page.getByRole('heading', { level: 1, name: 'Caisse' })).toBeVisible()
-  if (await page.getByText('Aucune session de caisse ouverte').isVisible()) {
+  // Ask the server, not the bar: while the session loads, the bar shows "none" for a moment.
+  const current = await page.request.get('/api/cash-sessions/current')
+  if (current.status() === 204) {
     await page.getByTestId('cash-session').getByRole('button', { name: 'Ouvrir la session' }).click()
     await page.getByLabel('Fonds de caisse').fill('100')
     await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la session' }).click()
