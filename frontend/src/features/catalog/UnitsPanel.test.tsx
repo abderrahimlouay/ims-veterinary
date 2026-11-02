@@ -18,6 +18,7 @@ const PRODUCT = {
   manufacturer: null,
   baseUnit: 'tablet',
   divisible: false,
+  returnRestockForbidden: false,
   vatRate: '9.00',
   purchasePrice: '0.0000',
   salePrice: '0.0125',

@@ -1,4 +1,5 @@
 export { CustomerBalance, CustomerSalesPanel } from './CustomerSalesPanel'
+export { CustomerReturnPage, CustomerReturnsPage, NewCustomerReturnPage } from './CustomerReturnPages'
 export { PosPage } from './PosPage'
 export { SaleDetailPage } from './SaleDetailPage'
 export { SalesPage } from './SalesPage'

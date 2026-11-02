@@ -20,7 +20,9 @@ function conversions(sale: SaleDetail): DocType[] {
 
 /**
  * `/sales/:id` (frontend.md §4.8): lines, totals, payments and the parent document. A derived draft and any other draft
- * are finished at the counter. Cancelling is whole, with a reason (ADR-119); a refusal says why. PDF buttons: Phase 10.
+ * are finished at the counter. Cancelling is whole, with a reason (ADR-119); a refusal says why. A confirmed invoice or
+ * receipt is returned through the return wizard, and its returns are listed with their credit notes (ADR-131). PDF
+ * buttons: Phase 10.
  */
 export function SaleDetailPage() {
   const { t } = useTranslation()
@@ -49,6 +51,8 @@ export function SaleDetailPage() {
   const data = sale.data
   const canSell = hasPermission(current, 'sale.create')
   const failure = convert.error ?? abandon.error
+  const returnedAny = data.lines.some((line) => Number(line.returnedQuantityBase) > 0)
+  const returnable = data.status === 'confirmed' && (data.docType === 'invoice' || data.docType === 'receipt')
   return (
     <section className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold">{data.number ?? t('sales.draftOf', { id: data.id })}</h1>
@@ -101,6 +105,7 @@ export function SaleDetailPage() {
             <th className="text-end">{t('sales.unitPrice')}</th>
             <th className="text-end">{t('pos.discount')}</th>
             <th className="text-end">{t('sales.total')}</th>
+            {returnedAny && <th className="text-end">{t('sales.returned')}</th>}
           </tr>
         </thead>
         <tbody>
@@ -114,6 +119,7 @@ export function SaleDetailPage() {
               <td className="text-end">{formatUnitPrice(line.unitPrice)}</td>
               <td className="text-end">{line.discountPct} %</td>
               <td className="text-end">{formatMoney(line.lineTtc)}</td>
+              {returnedAny && <td className="text-end">{formatQuantity(line.returnedQuantityBase)}</td>}
             </tr>
           ))}
         </tbody>
@@ -139,7 +145,31 @@ export function SaleDetailPage() {
           </ul>
         </section>
       )}
+      {data.returns.length > 0 && (
+        <section className="flex flex-col gap-1 text-sm">
+          <h2 className="text-lg font-semibold">{t('sales.returns')}</h2>
+          <ul>
+            {data.returns.map((r) => (
+              <li key={r.id}>
+                <Link to={`/returns/customer/${r.id}`} className="text-brand underline underline-offset-4">
+                  {r.number}
+                </Link>
+                {' · '}
+                <Link to={`/sales/${r.creditNoteId}`} className="underline">
+                  {r.creditNoteNumber}
+                </Link>
+                {` · ${formatMoney(r.creditNoteTtc)}`}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="flex flex-wrap gap-2">
+        {hasPermission(current, 'return.customer.create') && returnable && (
+          <Link to={`/returns/customer/new?documentId=${data.id}`} className="h-10 px-4 inline-flex items-center rounded-ctl bg-brand text-brand-ink text-sm font-medium">
+            {t('sales.return')}
+          </Link>
+        )}
         {canSell && data.status === 'draft' && (
           <>
             <Link to={`/pos?draft=${data.id}`} className="h-10 px-4 inline-flex items-center rounded-ctl bg-brand text-brand-ink text-sm font-medium">

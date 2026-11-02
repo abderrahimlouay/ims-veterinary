@@ -43,6 +43,7 @@ const schema = z.object({
   manufacturerId: z.string(),
   baseUnit: z.string().trim().min(1, 'validation.required').max(20, 'validation.tooLong'),
   divisible: z.boolean(),
+  returnRestockForbidden: z.boolean(),
   vatRate: z.string().regex(/^\d{1,3}(\.\d{1,2})?$/, 'fieldErrors.RANGE'),
   minStock: z.string().regex(DECIMAL_3, 'fieldErrors.SCALE'),
   maxStock: z.union([z.literal(''), z.string().regex(DECIMAL_3, 'fieldErrors.SCALE')]),
@@ -63,6 +64,7 @@ function toForm(p?: ProductDetail, defaultVat?: string): Form {
     manufacturerId: p?.manufacturer ? String(p.manufacturer.id) : '',
     baseUnit: p?.baseUnit ?? '',
     divisible: p?.divisible ?? false,
+    returnRestockForbidden: p?.returnRestockForbidden ?? false,
     vatRate: p?.vatRate ?? defaultVat ?? '',
     minStock: p?.minStock ?? '0',
     maxStock: p?.maxStock ?? '',
@@ -83,6 +85,7 @@ function toWrite(v: Form, withPrices: boolean, version?: number): ProductWrite {
     manufacturerId: id(v.manufacturerId),
     baseUnit: v.baseUnit,
     divisible: v.divisible,
+    returnRestockForbidden: v.returnRestockForbidden,
     vatRate: v.vatRate,
     minStock: v.minStock,
     maxStock: v.maxStock === '' ? null : v.maxStock,
@@ -162,6 +165,10 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
         <label className="flex items-center gap-2 text-sm col-span-2">
           <input type="checkbox" disabled={!editable} {...register('divisible')} />
           {t('catalog.products.divisible')}
+        </label>
+        <label className="flex items-center gap-2 text-sm col-span-2">
+          <input type="checkbox" disabled={!editable} {...register('returnRestockForbidden')} />
+          {t('catalog.products.returnRestockForbidden')}
         </label>
         <TextField label={t('catalog.products.vatRate')} inputMode="decimal" disabled={!editable} error={fieldError('vatRate')} {...register('vatRate')} />
         <TextField label={t('catalog.products.minStock')} inputMode="decimal" disabled={!editable} error={fieldError('minStock')} {...register('minStock')} />

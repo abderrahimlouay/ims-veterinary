@@ -37,6 +37,8 @@ export interface SaleLine {
   lineVat: string
   lineTtc: string
   warnings: SaleWarning[]
+  /** What customers returned of the line (ADR-131). */
+  returnedQuantityBase: string
 }
 
 export interface SaleDetail {
@@ -58,6 +60,8 @@ export interface SaleDetail {
   payments: { id: number; method: PaymentMethod; amount: string; reference: string | null }[]
   cashSessionId: number | null
   customerBalance: string | null
+  /** The document's customer returns and their credit notes, oldest first (ADR-131). */
+  returns: { id: number; number: string; creditNoteId: number; creditNoteNumber: string; creditNoteTtc: string }[]
   version: number
 }
 

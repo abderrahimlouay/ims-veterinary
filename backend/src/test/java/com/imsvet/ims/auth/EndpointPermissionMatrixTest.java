@@ -187,6 +187,7 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.POST, "/api/cash-sessions/999999/close", "cash.open", "{\"countedAmount\":\"1\"}"),
             new Endpoint(HttpMethod.GET, "/api/cash-sessions", "cash.manage"),
             new Endpoint(HttpMethod.GET, "/api/cash-sessions/999999", "cash.manage"),
+            new Endpoint(HttpMethod.GET, "/api/returns/customer", "return.read"),
             new Endpoint(HttpMethod.GET, "/api/returns/customer/999999", "return.read"),
             new Endpoint(HttpMethod.POST, "/api/returns/customer/preview", "return.customer.create",
                     "{\"documentId\":999999}"),

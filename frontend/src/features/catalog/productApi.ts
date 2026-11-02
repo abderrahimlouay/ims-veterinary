@@ -23,6 +23,8 @@ export interface ProductDetail extends ProductSummary {
   dosageForm: ReferenceItem | null
   manufacturer: ReferenceItem | null
   divisible: boolean
+  /** BR-PROD-009: returned units never go back into an active or blocked lot. */
+  returnRestockForbidden: boolean
   vatRate: string
   purchasePrice: string
   minStock: string
@@ -58,6 +60,7 @@ export interface ProductWrite {
   manufacturerId: number | null
   baseUnit: string
   divisible: boolean
+  returnRestockForbidden: boolean
   vatRate: string | null
   minStock: string
   maxStock: string | null

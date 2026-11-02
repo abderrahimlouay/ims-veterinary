@@ -10,6 +10,8 @@ import com.imsvet.ims.common.error.ErrorCode;
 import com.imsvet.ims.common.error.ValidationException;
 import com.imsvet.ims.common.error.ValidationException.Violation;
 import com.imsvet.ims.common.idempotency.IdempotencyKeys;
+import com.imsvet.ims.common.paging.PageRequests;
+import com.imsvet.ims.common.paging.PageResponse;
 import com.imsvet.ims.common.idempotency.IdempotencyKeys.Claim;
 import com.imsvet.ims.common.time.BusinessCalendar;
 import com.imsvet.ims.common.time.BusinessSettings;
@@ -27,6 +29,7 @@ import com.imsvet.ims.sales.application.ReturnViews.CreditLine;
 import com.imsvet.ims.sales.application.ReturnViews.CreditNoteRef;
 import com.imsvet.ims.sales.application.ReturnViews.CreditPreview;
 import com.imsvet.ims.sales.application.ReturnViews.CustomerReturnDetail;
+import com.imsvet.ims.sales.application.ReturnViews.CustomerReturnSummary;
 import com.imsvet.ims.sales.application.ReturnViews.DocumentRef;
 import com.imsvet.ims.sales.application.ReturnViews.LotItem;
 import com.imsvet.ims.sales.application.ReturnViews.OriginalDocument;
@@ -71,6 +74,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -280,11 +285,32 @@ public class CustomerReturns {
         return detail(created);
     }
 
+    /** Every filter optional; {@code from}/{@code to} business dates, both inclusive; newest first. */
+    @PreAuthorize("hasAuthority('return.read')")
+    @Transactional(readOnly = true)
+    public PageResponse<CustomerReturnSummary> search(Long customerId, Long documentId, LocalDate from, LocalDate to,
+            int page, int size) {
+        Page<CustomerReturn> found = returns.search(customerId, documentId, startOf(from),
+                to == null ? null : startOf(to.plusDays(1)), PageRequests.of(page, size, Sort.unsorted()));
+        return PageResponse.of(found, r -> {
+            SalesDocument document = documents.findById(r.documentId()).orElseThrow();
+            SalesDocument note = documents.findById(r.creditNoteId()).orElseThrow();
+            return new CustomerReturnSummary(r.id(), r.number(), new DocumentRef(document.id(), document.number(),
+                    document.docType().code()), customer(document), new CreditNoteRef(note.id(), note.number(),
+                    note.totalHt(), note.totalVat(), note.totalTtc()), !document.creditSale(), r.reason(),
+                    r.createdAt(), r.createdBy());
+        });
+    }
+
     @PreAuthorize("hasAuthority('return.read')")
     @Transactional(readOnly = true)
     public CustomerReturnDetail get(long id) {
         return detail(returns.findById(id).orElseThrow(
                 () -> new BusinessException(ErrorCode.NOT_FOUND, "Customer return not found.", Map.of("id", id))));
+    }
+
+    private Instant startOf(LocalDate day) {
+        return day == null ? null : day.atStartOfDay(business.timeZone()).toInstant();
     }
 
     private SalesDocument original(Long id) {

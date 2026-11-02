@@ -30,6 +30,7 @@ function aLine(overrides: Record<string, unknown> = {}) {
     lineHt: '20.00',
     lineVat: '1.80',
     lineTtc: '21.80',
+    returnedQuantityBase: '0.000',
     warnings: [],
     ...overrides,
   }
@@ -55,6 +56,7 @@ function aSale(overrides: Record<string, unknown> = {}) {
     payments: [],
     cashSessionId: null,
     customerBalance: null,
+    returns: [],
     version: 1,
     ...overrides,
   }
