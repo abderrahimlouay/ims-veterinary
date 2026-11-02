@@ -61,7 +61,7 @@ export function CustomerReturnsPage() {
                 <th className="text-start">{t('returns.document')}</th>
                 <th className="text-start">{t('sales.customer')}</th>
                 <th className="text-start">{t('returns.creditNote')}</th>
-                <th className="text-end">{t('sales.total')}</th>
+                <th className="text-end pe-6">{t('sales.total')}</th>
                 <th className="text-start">{t('returns.settlement')}</th>
                 <th className="text-start">{t('sales.date')}</th>
               </tr>
@@ -85,7 +85,7 @@ export function CustomerReturnsPage() {
                       {r.creditNote.number}
                     </Link>
                   </td>
-                  <td className="text-end">{formatMoney(r.creditNote.totalTtc)}</td>
+                  <td className="text-end pe-6">{formatMoney(r.creditNote.totalTtc)}</td>
                   <td>{r.refunded ? t('returns.refunded') : t('returns.credited')}</td>
                   <td>{formatDateTime(r.createdAt)}</td>
                 </tr>
@@ -293,7 +293,7 @@ export function NewCustomerReturnPage() {
               <tr className="border-b border-line">
                 <th className="text-start py-2">{t('sales.product')}</th>
                 <th className="text-start">{t('sales.lot')}</th>
-                <th className="text-end">{t('returns.returnable')}</th>
+                <th className="text-end pe-6">{t('returns.returnable')}</th>
                 <th className="text-start">{t('returns.quantity')}</th>
                 <th className="text-start">{t('returns.sealed')}</th>
                 <th className="text-start">{t('returns.disposition')}</th>
@@ -310,7 +310,7 @@ export function NewCustomerReturnPage() {
                       {line.lot.lotNumber} · {formatDate(line.lot.expiryDate)}
                       {line.lot.status !== 'active' && <span className="block text-xs text-warn">{t(`returns.lotStatus.${line.lot.status}`)}</span>}
                     </td>
-                    <td className="text-end">{`${formatQuantity(line.returnableBase)} ${line.product.baseUnit}`}</td>
+                    <td className="text-end pe-6">{`${formatQuantity(line.returnableBase)} ${line.product.baseUnit}`}</td>
                     <td className="w-32">
                       <TextField
                         label={t('returns.quantityOf', { name: line.product.commercialName })}
@@ -491,7 +491,7 @@ export function CustomerReturnPage() {
           <tr className="border-b border-line">
             <th className="text-start py-2">{t('sales.product')}</th>
             <th className="text-start">{t('sales.lot')}</th>
-            <th className="text-end">{t('returns.quantity')}</th>
+            <th className="text-end pe-6">{t('returns.quantity')}</th>
             <th className="text-start">{t('returns.sealed')}</th>
             <th className="text-start">{t('returns.disposition')}</th>
           </tr>
@@ -505,7 +505,7 @@ export function CustomerReturnPage() {
                   {l.lot.lotNumber}
                 </Link>
               </td>
-              <td className="text-end">{`${formatQuantity(l.quantityBase)} ${l.product.baseUnit}`}</td>
+              <td className="text-end pe-6">{`${formatQuantity(l.quantityBase)} ${l.product.baseUnit}`}</td>
               <td>{l.sealed ? t('returns.yes') : t('returns.no')}</td>
               <td>
                 {t(`returns.dispositions.${l.disposition}`)}
