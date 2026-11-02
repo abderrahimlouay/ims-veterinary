@@ -42,18 +42,21 @@ import org.springframework.transaction.annotation.Transactional;
  * Product sheets (FR-PROD-001/002/009). Validates BR-PROD-003/005 and ADR-050 (whole thresholds unless
  * divisible); SKU unique (BR-PROD-001). Prices per base unit (ADR-049): setting or changing one needs
  * {@code price.edit}, and every change after creation is audited {@code PRICE_CHANGE} in the same
- * transaction, before the save (BR-PROD-006).
+ * transaction, before the save (BR-PROD-006). A change of the return restriction (BR-PROD-009) is audited
+ * {@code PRODUCT_RETURN_POLICY_CHANGE} with its old and new value, in the same transaction.
  */
 @Service
 public class ProductCatalog {
 
     /**
      * The request fields. {@code vatRate} {@code null} at creation takes the {@code default_vat_rate} setting; a
-     * {@code null} price is 0 at creation and unchanged on update.
+     * {@code null} price is 0 at creation and unchanged on update; {@code returnRestockForbidden} {@code null} is
+     * {@code false} at creation and unchanged on update (BR-PROD-009).
      */
     public record ProductInput(String sku, String commercialName, Integer categoryId, Integer dosageFormId,
             Integer manufacturerId, String baseUnit, boolean divisible, BigDecimal vatRate, BigDecimal minStock,
-            BigDecimal maxStock, BigDecimal reorderPoint, BigDecimal purchasePrice, BigDecimal salePrice) {
+            BigDecimal maxStock, BigDecimal reorderPoint, BigDecimal purchasePrice, BigDecimal salePrice,
+            Boolean returnRestockForbidden) {
     }
 
     private static final String PRICE_EDIT = "price.edit";
@@ -131,6 +134,7 @@ public class ProductCatalog {
         rejectDuplicateSku(core.sku(), null);
         Product product = new Product(core, clock.instant());
         product.setPrices(purchase, sale, clock.instant());
+        product.forbidReturnRestock(Boolean.TRUE.equals(input.returnRestockForbidden()), clock.instant());
         return ProductViews.detail(save(product));
     }
 
@@ -160,6 +164,13 @@ public class ProductCatalog {
         if (!newPrices.isEmpty()) {
             product.setPrices(purchase, sale, clock.instant());
             audit.record(AuditAction.PRICE_CHANGE, "products", product.id(), oldPrices, newPrices);
+        }
+        Boolean restriction = input.returnRestockForbidden();
+        if (restriction != null && restriction != product.returnRestockForbidden()) {
+            audit.record(AuditAction.PRODUCT_RETURN_POLICY_CHANGE, "products", product.id(),
+                    Map.of("returnRestockForbidden", product.returnRestockForbidden()),
+                    Map.of("returnRestockForbidden", restriction));
+            product.forbidReturnRestock(restriction, clock.instant());
         }
         return ProductViews.detail(save(product));
     }

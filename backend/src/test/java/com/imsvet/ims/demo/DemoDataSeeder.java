@@ -297,7 +297,7 @@ class DemoDataSeeder {
         long id = catalog.create(new ProductInput(s.sku(), s.name(), categories.get(s.category()), forms.get(s.form()),
                 manufacturers.get(s.manufacturer()), s.baseUnit(), s.divisible(), new BigDecimal(s.vat()),
                 new BigDecimal(s.min()), s.max() == null ? null : new BigDecimal(s.max()), new BigDecimal(s.reorder()),
-                new BigDecimal(s.purchase()), new BigDecimal(s.sale()))).id();
+                new BigDecimal(s.purchase()), new BigDecimal(s.sale()), null)).id();
         products.put(s.key(), id);
         Long firstUnit = null;
         for (Map.Entry<String, String> u : s.units().entrySet()) {

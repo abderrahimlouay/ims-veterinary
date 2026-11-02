@@ -142,6 +142,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | Action code | Operation | Basis |
 |---|---|---|
 | `PRICE_CHANGE` | product/unit/customer price changes, price override at sale | SRC |
+| `PRODUCT_RETURN_POLICY_CHANGE` | a change of a product's `return_restock_forbidden` (old and new value) | REC (ADR-129, BR-PROD-009) |
 | `INVOICE_CANCEL` | cancellation of a confirmed sales document | SRC (ADR-119) |
 | `STOCK_CORRECTION` | manual adjustment; inventory regularisation | SRC |
 | `OPENING_STOCK` | opening-stock entry (allowed only while `opening_stock_open`, ADR-082) | REC |
@@ -158,7 +159,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (ADR-120, BR-SALE-007) |
 | `CASH_VARIANCE` | a cash session closed with a non-zero variance | REC (W9) |
 
-**Phase 8 actions (ADR-128, ADR-129), added to the table above with the slice that implements them** (the table must equal `AuditAction`): `PRODUCT_RETURN_POLICY_CHANGE` — a change of `return_restock_forbidden` (old and new value). `RETURN_CREATE` of a customer return records the lines, quantities, dispositions, sealed flags and discard reasons.
+**Phase 8 (ADR-131):** `RETURN_CREATE` of a customer return records the lines, quantities, dispositions, sealed flags and discard reasons.
 
 Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD-102, BR-SEC-006). Passwords, tokens and hashes are never written to audit values.
 

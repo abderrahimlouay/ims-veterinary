@@ -62,7 +62,7 @@ class PriceAuditFailureTest {
                 mock(ProductStock.class));
 
         assertThatThrownBy(() -> catalog.update(5, new ProductInput("SKU", "Name", null, null, null, "ml", true,
-                new BigDecimal("9"), null, null, null, null, new BigDecimal("2")), 0))
+                new BigDecimal("9"), null, null, null, null, new BigDecimal("2"), null), 0))
                 .hasMessage("audit_log unavailable");
 
         verify(products, never()).saveAndFlush(any());

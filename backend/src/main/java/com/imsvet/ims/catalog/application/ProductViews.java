@@ -32,7 +32,8 @@ public final class ProductViews {
     public record ProductDetail(long id, String sku, String commercialName, ReferenceItemView category,
             ReferenceItemView dosageForm, ReferenceItemView manufacturer, String baseUnit, boolean divisible,
             BigDecimal vatRate, BigDecimal purchasePrice, BigDecimal salePrice, BigDecimal minStock,
-            BigDecimal maxStock, BigDecimal reorderPoint, boolean archived, List<ProductIngredientView> ingredients,
+            BigDecimal maxStock, BigDecimal reorderPoint, boolean archived, boolean returnRestockForbidden,
+            List<ProductIngredientView> ingredients,
             List<ReferenceItemView> targetSpecies, List<WithdrawalPeriodView> withdrawalPeriods, Instant createdAt,
             Instant updatedAt, long version) {
     }
@@ -87,7 +88,8 @@ public final class ProductViews {
     static ProductDetail detail(Product p) {
         return new ProductDetail(p.id(), p.sku(), p.commercialName(), ref(p.category()), ref(p.dosageForm()),
                 ref(p.manufacturer()), p.baseUnit(), p.divisible(), p.vatRate(), p.purchasePrice(), p.salePrice(),
-                p.minStock(), p.maxStock(), p.reorderPoint(), p.archived(), ingredients(p), targetSpecies(p),
+                p.minStock(), p.maxStock(), p.reorderPoint(), p.archived(), p.returnRestockForbidden(), ingredients(p),
+                targetSpecies(p),
                 withdrawalPeriods(p), p.createdAt(), p.updatedAt(), p.version());
     }
 

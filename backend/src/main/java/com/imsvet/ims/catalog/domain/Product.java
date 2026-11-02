@@ -85,6 +85,10 @@ public class Product {
     @Column(name = "is_archived", nullable = false)
     private boolean archived;
 
+    /** BR-PROD-009, ADR-129: returned units never go back into an active or blocked lot. */
+    @Column(name = "return_restock_forbidden", nullable = false)
+    private boolean returnRestockForbidden;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -129,6 +133,12 @@ public class Product {
     public void setPrices(BigDecimal newPurchasePrice, BigDecimal newSalePrice, Instant now) {
         this.purchasePrice = newPurchasePrice;
         this.salePrice = newSalePrice;
+        this.updatedAt = now;
+    }
+
+    /** BR-PROD-009; the caller checks {@code product.update} and audits a change. */
+    public void forbidReturnRestock(boolean forbidden, Instant now) {
+        this.returnRestockForbidden = forbidden;
         this.updatedAt = now;
     }
 
@@ -244,6 +254,10 @@ public class Product {
 
     public boolean archived() {
         return archived;
+    }
+
+    public boolean returnRestockForbidden() {
+        return returnRestockForbidden;
     }
 
     public Instant createdAt() {

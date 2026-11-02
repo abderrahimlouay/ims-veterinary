@@ -128,7 +128,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PROD-005 | U,R | Negative price, max<min threshold → rejected by validation and CHECK; max ≤ reorder point (> 0) accepted with a warning (ADR-092: `thresholds.test.ts`, `ProductPages.test.tsx`, e2e J8) |
 | BR-PROD-006 | S | Change price → audit row PRICE_CHANGE with old/new; product prices (`ProductPricesTest`, `PriceAuditFailureTest`) and unit prices incl. clearing to derived (`ProductUnitsTest`, `ProductUnitRulesTest`) |
 | BR-PROD-007 | U,R | Negative or duplicate species withdrawal row → rejected |
-| BR-PROD-009 | S,A | `returnRestockForbidden` default false; changed with `product.update` only, audited `PRODUCT_RETURN_POLICY_CHANGE` with old/new value, no entry when unchanged |
+| BR-PROD-009 | S,A | `returnRestockForbidden` default false; changed with `product.update` only, audited `PRODUCT_RETURN_POLICY_CHANGE` with old/new value, no entry when unchanged (`ProductEndpointTest`) |
 | BR-UNIT-001 | R,A | Duplicate unit name for same product → DUPLICATE_RESOURCE; factor ≤ 0, > 4 decimals, or not whole for a non-divisible product rejected (`ProductUnitSchemaTest`, `ProductUnitsTest`) |
 | BR-UNIT-002 | U | 3 boxes × factor 10 → 30 base; 1.5 × 2.5 = 3.75; 1.25 × 1.25 = 1.5625 refused (SCALE, never rounded, ADR-065); non-whole result for a non-divisible product refused (`UnitConversionTest`) |
 | BR-UNIT-003 | S,A | Sell a non-sellable unit → UNIT_NOT_SELLABLE |
