@@ -50,6 +50,11 @@ public final class ReturnViews {
     public record RefundItem(long id, String method, BigDecimal amount, String reference, Long cashSessionId) {
     }
 
+    /** {@code refunded}: an immediate sale paid back; {@code false} when credited to the account (ADR-128). */
+    public record CustomerReturnSummary(long id, String number, DocumentRef document, CustomerRef customer,
+            CreditNoteRef creditNote, boolean refunded, String reason, Instant createdAt, long createdBy) {
+    }
+
     public record CustomerReturnDetail(long id, String number, DocumentRef document, CustomerRef customer,
             String reason, Instant createdAt, long createdBy, CreditNoteRef creditNote, List<ReturnedLine> lines,
             List<RefundItem> refunds) {

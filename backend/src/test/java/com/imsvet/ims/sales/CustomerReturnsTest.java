@@ -346,6 +346,33 @@ class CustomerReturnsTest {
     }
 
     @Test
+    void returnsAreListedNewestFirstByCustomerAndDocument() throws Exception {
+        long invoice = confirmed("invoice", true, "{}");
+        long[] lines = saleLines(invoice);
+        long first = id(create(invoice, "[" + restock(lines[0], "1") + "]", null).andExpect(status().isCreated()));
+        entities.clear();
+        long second = id(create(invoice, "[" + restock(lines[1], "1") + "]", null).andExpect(status().isCreated()));
+        entities.clear();
+
+        admin.get("/api/returns/customer?customerId=" + customer).andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").value(second))
+                .andExpect(jsonPath("$.content[1].id").value(first))
+                .andExpect(jsonPath("$.content[0].document.id").value(invoice))
+                .andExpect(jsonPath("$.content[0].customer.id").value(customer))
+                .andExpect(jsonPath("$.content[0].creditNote.totalTtc").value(UNIT_TTC))
+                .andExpect(jsonPath("$.content[0].refunded").value(false));
+        admin.get("/api/returns/customer?documentId=" + invoice + "&size=1").andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.page.totalElements").value(2));
+        admin.get("/api/returns/customer?documentId=999999999").andExpect(jsonPath("$.content").isEmpty());
+        String today = calendar.today().toString();
+        admin.get("/api/returns/customer?documentId=" + invoice + "&from=" + today + "&to=" + today)
+                .andExpect(jsonPath("$.content.length()").value(2));
+        admin.get("/api/returns/customer?documentId=" + invoice + "&to=" + calendar.today().minusDays(1))
+                .andExpect(jsonPath("$.content").isEmpty());
+    }
+
+    @Test
     void aSellerCannotReturnAndThePreviewWritesNothing() throws Exception {
         long invoice = confirmed("invoice", true, "{}");
         long[] lines = saleLines(invoice);
