@@ -24,7 +24,8 @@
     "customers": "Customers",
     "customerCategories": "Customer categories",
     "pos": "Counter",
-    "sales": "Sales documents"
+    "sales": "Sales documents",
+    "customerReturns": "Customer returns"
   },
   "language": {
     "label": "Language",
@@ -126,7 +127,13 @@
     "SALE_NOT_CANCELLABLE": "This document cannot be cancelled: use a credit note.",
     "FEFO_VIOLATION": "Choosing another lot needs the FEFO override permission.",
     "CUSTOMER_REQUIRED_FOR_CREDIT": "A credit sale needs a customer.",
-    "CUSTOMER_INACTIVE": "This customer is inactive."
+    "CUSTOMER_INACTIVE": "This customer is inactive.",
+    "RETURN_QUANTITY_EXCEEDED": "More than what is left to return of this line.",
+    "RETURN_NOT_RESTOCKABLE": "These goods cannot go back into stock: discard them with a reason.",
+    "RETURN_REQUIRES_INVOICE": "Invoice this delivery note first, then return against the invoice.",
+    "RETURN_PERIOD_EXPIRED": "This sale is too old to be returned.",
+    "REFUND_TOTAL_MISMATCH": "The refund must equal the credit note total; a credit sale is not refunded.",
+    "CASH_INSUFFICIENT": "Not enough cash in your session for this refund: refund by cheque or transfer."
   },
   "pager": {
     "label": "Pagination",
@@ -294,7 +301,8 @@
       "ingredient": "Active ingredient",
       "species": "Species",
       "noMatch": "No product matches the search.",
-      "inStockOnly": "In stock only"
+      "inStockOnly": "In stock only",
+      "returnRestockForbidden": "Returned units never go back into sellable stock (e.g. cold chain)"
     },
     "ingredients": {
       "none": "No active ingredient.",
@@ -401,7 +409,9 @@
     "NOT_ON_ORDER": "This product is not on this line of the order.",
     "NOT_ORDER_SUPPLIER": "The supplier of a receipt is the supplier of its order.",
     "OTHER_SUPPLIER": "This lot was received from another supplier.",
-    "PATTERN": "The format is not valid."
+    "PATTERN": "The format is not valid.",
+    "OTHER_DOCUMENT": "This line belongs to another document.",
+    "NOT_ALLOWED": "Not allowed here."
   },
   "lots": {
     "title": "Lots",
@@ -1078,6 +1088,64 @@
       "balance": "Balance",
       "uninvoiced": "Uninvoiced credit delivery notes",
       "available": "Available credit"
+    },
+    "returned": "Returned",
+    "returns": "Returns",
+    "return": "Return goods"
+  },
+  "returns": {
+    "title": "Customer returns",
+    "new": "New customer return",
+    "empty": "No customer return.",
+    "document": "Sale",
+    "creditNote": "Credit note",
+    "settlement": "Settlement",
+    "refunded": "Refunded",
+    "credited": "Credited to the account",
+    "findDocument": "Invoice or receipt number",
+    "find": "Find",
+    "notFound": "No invoice or receipt with this number.",
+    "of": "Return of {{number}} — {{customer}} — {{date}}",
+    "refundRequired": "paid at the counter: refunded in full",
+    "creditedToAccount": "Credited to the customer account, no refund.",
+    "noLine": "Enter a quantity on at least one line.",
+    "returnable": "Left to return",
+    "quantity": "Quantity returned",
+    "quantityOf": "Quantity returned of {{name}} (base unit)",
+    "sealed": "Sealed",
+    "sealedOf": "{{name}} is sealed",
+    "disposition": "Disposition",
+    "dispositionOf": "Disposition of {{name}}",
+    "discardReasonOf": "Why {{name}} is discarded",
+    "discardNote": "Explanation",
+    "reason": "Reason for the return",
+    "review": "Review",
+    "creditTotal": "Credit note total",
+    "refund": "Refund",
+    "confirm": "Confirm the return",
+    "staysUnsellable": "Goes back into its lot, which stays unsellable.",
+    "yes": "Yes",
+    "no": "No",
+    "dispositions": {
+      "restock": "Back into stock",
+      "discard": "Discard"
+    },
+    "reasons": {
+      "opened": "Opened",
+      "packaging_damaged": "Packaging damaged",
+      "expired": "Expired",
+      "recalled": "Recalled",
+      "cold_chain_doubt": "Cold chain doubt",
+      "other": "Other"
+    },
+    "refusals": {
+      "not_sealed": "Not sealed: discard only.",
+      "lot_expired": "Lot expired: discard only.",
+      "product_restricted": "This product never goes back into sellable stock."
+    },
+    "lotStatus": {
+      "blocked": "Lot blocked",
+      "recalled": "Lot recalled"
     }
   }
 }

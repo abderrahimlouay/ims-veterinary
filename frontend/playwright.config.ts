@@ -18,13 +18,15 @@ export default defineConfig({
   // J1 bootstraps the administrator's own password; the other journeys log in with it, so they run after J1.
   // J8 creates the first lots, so it runs after the journeys that expect none yet (J2's empty lot screens).
   // J12 (customers) adds a category, a product and a customer, after those journeys so none of them sees these.
-  // J4, J5, J9 and the sales part of J11 run last, on products of their own and without depending on each other.
+  // J4, J5, J9 and the sales part of J11 run after them, on products of their own and without depending on each other.
+  // J6 (returns) runs last, alone: it uses the administrator's cash session, which J4 opens.
   projects: [
     { name: 'j1', testMatch: /j1-.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
-    { name: 'chromium', testIgnore: /((j1|j3|j4|j5|j8|j9|j12)-|j11-sales).*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', testIgnore: /((j1|j3|j4|j5|j6|j8|j9|j12)-|j11-sales).*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
     { name: 'stock', testMatch: /(j3|j8)-.*\.spec\.ts/, dependencies: ['chromium'], use: { ...devices['Desktop Chrome'] } },
     { name: 'customers', testMatch: /j12-.*\.spec\.ts/, dependencies: ['stock'], use: { ...devices['Desktop Chrome'] } },
     { name: 'sales', testMatch: /(j4|j5|j9|j11-sales).*\.spec\.ts/, dependencies: ['customers'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'returns', testMatch: /j6-.*\.spec\.ts/, dependencies: ['sales'], use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: [
     {

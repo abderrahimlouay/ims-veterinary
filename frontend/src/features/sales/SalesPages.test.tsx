@@ -27,11 +27,12 @@ function aSale(overrides: Record<string, unknown> = {}) {
     notes: null,
     totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80' },
     lines: [
-      { id: 90, productId: 5, productName: 'Vermifuge Démo', lotId: 21, lotNumber: 'L-21', expiryDate: '2027-12-31', unitId: null, unitName: 'tablet', targetSpeciesId: null, quantity: '2.000', quantityBase: '2.000', unitPrice: '10.0000', discountPct: '0.00', vatRate: '9.00', lineHt: '20.00', lineVat: '1.80', lineTtc: '21.80', warnings: [] },
+      { id: 90, productId: 5, productName: 'Vermifuge Démo', lotId: 21, lotNumber: 'L-21', expiryDate: '2027-12-31', unitId: null, unitName: 'tablet', targetSpeciesId: null, quantity: '2.000', quantityBase: '2.000', unitPrice: '10.0000', discountPct: '0.00', vatRate: '9.00', lineHt: '20.00', lineVat: '1.80', lineTtc: '21.80', warnings: [], returnedQuantityBase: '0.000' },
     ],
     payments: [],
     cashSessionId: null,
     customerBalance: null,
+    returns: [],
     version: 2,
     ...overrides,
   }
@@ -86,6 +87,35 @@ describe('sales documents (frontend.md §4.8)', () => {
     expect(await screen.findByTestId('pos-customer')).toHaveTextContent('Ferme Démo')
     expect(await screen.findByTestId('pos-total')).toHaveTextContent('21,80')
     expect(body).toEqual({ targetType: 'invoice' })
+  })
+
+  it('offers a return on a confirmed receipt and lists its returns with what was returned', async () => {
+    serveMe(aUser({ permissions: ['sale.read', 'return.customer.create'] }))
+    serveSale(
+      aSale({
+        docType: 'receipt',
+        number: 'RCT-2026-000001',
+        customer: null,
+        creditSale: false,
+        lines: [{ ...(aSale().lines as object[])[0], returnedQuantityBase: '1.000' }],
+        returns: [{ id: 77, number: 'CR-2026-000001', creditNoteId: 310, creditNoteNumber: 'CN-2026-000001', creditNoteTtc: '10.90' }],
+      }),
+    )
+    renderApp('/sales/300')
+
+    expect(await screen.findByRole('link', { name: 'Retour de marchandise' })).toHaveAttribute('href', '/returns/customer/new?documentId=300')
+    expect(screen.getByRole('link', { name: 'CR-2026-000001' })).toHaveAttribute('href', '/returns/customer/77')
+    expect(screen.getByRole('link', { name: 'CN-2026-000001' })).toHaveAttribute('href', '/sales/310')
+    expect(screen.getByRole('columnheader', { name: 'Retourné' })).toBeInTheDocument()
+  })
+
+  it('offers no return on a delivery note nor without the permission', async () => {
+    serveMe(SELLER)
+    serveSale(aSale({ docType: 'invoice', number: 'INV-2026-000001' }))
+    renderApp('/sales/300')
+
+    expect(await screen.findByTestId('sale-status')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Retour de marchandise' })).not.toBeInTheDocument()
   })
 
   it('offers no conversion of an invoice and a quote can go to two types', async () => {

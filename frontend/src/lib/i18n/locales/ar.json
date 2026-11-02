@@ -24,7 +24,8 @@
     "customers": "الزبائن",
     "customerCategories": "فئات الزبائن",
     "pos": "الصندوق",
-    "sales": "مستندات البيع"
+    "sales": "مستندات البيع",
+    "customerReturns": "مرتجعات الزبائن"
   },
   "language": {
     "label": "اللغة",
@@ -126,7 +127,13 @@
     "SALE_NOT_CANCELLABLE": "لا يمكن إلغاء هذا المستند: استعمل إشعارًا دائنًا.",
     "FEFO_VIOLATION": "اختيار حصة أخرى يتطلب إذن تجاوز FEFO.",
     "CUSTOMER_REQUIRED_FOR_CREDIT": "البيع بالأجل يتطلب زبونًا.",
-    "CUSTOMER_INACTIVE": "هذا الزبون غير نشط."
+    "CUSTOMER_INACTIVE": "هذا الزبون غير نشط.",
+    "RETURN_QUANTITY_EXCEEDED": "أكثر مما تبقى للإرجاع من هذا السطر.",
+    "RETURN_NOT_RESTOCKABLE": "لا يمكن إعادة هذه البضاعة إلى المخزون: أتلفها مع ذكر السبب.",
+    "RETURN_REQUIRES_INVOICE": "فوتر وصل التسليم هذا أولًا، ثم قم بالإرجاع على الفاتورة.",
+    "RETURN_PERIOD_EXPIRED": "هذا البيع قديم جدًا للإرجاع.",
+    "REFUND_TOTAL_MISMATCH": "يجب أن يساوي الاسترداد مجموع الإشعار الدائن؛ البيع بالآجل لا يُسترد.",
+    "CASH_INSUFFICIENT": "لا يوجد نقد كافٍ في صندوقك لهذا الاسترداد: استرد بشيك أو تحويل."
   },
   "pager": {
     "label": "ترقيم الصفحات",
@@ -294,7 +301,8 @@
       "ingredient": "المادة الفعالة",
       "species": "النوع",
       "noMatch": "لا يوجد منتج مطابق للبحث.",
-      "inStockOnly": "المتوفر في المخزون فقط"
+      "inStockOnly": "المتوفر في المخزون فقط",
+      "returnRestockForbidden": "لا تعود الوحدات المرتجعة أبدًا إلى المخزون القابل للبيع (مثل سلسلة التبريد)"
     },
     "ingredients": {
       "none": "لا توجد مادة فعالة.",
@@ -401,7 +409,9 @@
     "NOT_ON_ORDER": "هذا المنتج ليس في هذا السطر من الأمر.",
     "NOT_ORDER_SUPPLIER": "مورد الاستلام هو مورد الأمر.",
     "OTHER_SUPPLIER": "استلمت هذه الحصة من مورد آخر.",
-    "PATTERN": "الصيغة غير صالحة."
+    "PATTERN": "الصيغة غير صالحة.",
+    "OTHER_DOCUMENT": "هذا السطر ينتمي إلى وثيقة أخرى.",
+    "NOT_ALLOWED": "غير مسموح هنا."
   },
   "lots": {
     "title": "الحصص",
@@ -1078,6 +1088,64 @@
       "balance": "الرصيد",
       "uninvoiced": "وصولات التسليم بالأجل غير المفوترة",
       "available": "الائتمان المتاح"
+    },
+    "returned": "المرتجع",
+    "returns": "المرتجعات",
+    "return": "إرجاع بضاعة"
+  },
+  "returns": {
+    "title": "مرتجعات الزبائن",
+    "new": "مرتجع زبون جديد",
+    "empty": "لا يوجد مرتجع.",
+    "document": "البيع",
+    "creditNote": "الإشعار الدائن",
+    "settlement": "التسوية",
+    "refunded": "مسترد",
+    "credited": "مقيد في الحساب",
+    "findDocument": "رقم الفاتورة أو التذكرة",
+    "find": "بحث",
+    "notFound": "لا توجد فاتورة أو تذكرة بهذا الرقم.",
+    "of": "إرجاع {{number}} — {{customer}} — {{date}}",
+    "refundRequired": "مدفوع في الشباك: يُسترد بالكامل",
+    "creditedToAccount": "يُقيد في حساب الزبون دون استرداد.",
+    "noLine": "أدخل كمية في سطر واحد على الأقل.",
+    "returnable": "المتبقي للإرجاع",
+    "quantity": "الكمية المرتجعة",
+    "quantityOf": "الكمية المرتجعة من {{name}} (الوحدة الأساسية)",
+    "sealed": "مختوم",
+    "sealedOf": "{{name}} مختوم",
+    "disposition": "المصير",
+    "dispositionOf": "مصير {{name}}",
+    "discardReasonOf": "سبب إتلاف {{name}}",
+    "discardNote": "توضيح",
+    "reason": "سبب الإرجاع",
+    "review": "مراجعة",
+    "creditTotal": "مجموع الإشعار الدائن",
+    "refund": "الاسترداد",
+    "confirm": "تأكيد الإرجاع",
+    "staysUnsellable": "يعود إلى حصته التي تبقى غير قابلة للبيع.",
+    "yes": "نعم",
+    "no": "لا",
+    "dispositions": {
+      "restock": "إعادة إلى المخزون",
+      "discard": "إتلاف"
+    },
+    "reasons": {
+      "opened": "مفتوح",
+      "packaging_damaged": "تغليف تالف",
+      "expired": "منتهي الصلاحية",
+      "recalled": "مسحوب",
+      "cold_chain_doubt": "شك في سلسلة التبريد",
+      "other": "آخر"
+    },
+    "refusals": {
+      "not_sealed": "غير مختوم: إتلاف فقط.",
+      "lot_expired": "حصة منتهية الصلاحية: إتلاف فقط.",
+      "product_restricted": "هذا المنتج لا يعود أبدًا إلى المخزون القابل للبيع."
+    },
+    "lotStatus": {
+      "blocked": "حصة محظورة",
+      "recalled": "حصة مسحوبة"
     }
   }
 }

@@ -24,7 +24,8 @@
     "customers": "Clients",
     "customerCategories": "Catégories de clients",
     "pos": "Caisse",
-    "sales": "Documents de vente"
+    "sales": "Documents de vente",
+    "customerReturns": "Retours clients"
   },
   "language": {
     "label": "Langue",
@@ -126,7 +127,13 @@
     "SALE_NOT_CANCELLABLE": "Ce document ne peut pas être annulé : utilisez un avoir.",
     "FEFO_VIOLATION": "Choisir un autre lot demande la permission de dérogation FEFO.",
     "CUSTOMER_REQUIRED_FOR_CREDIT": "Une vente à crédit demande un client.",
-    "CUSTOMER_INACTIVE": "Ce client est inactif."
+    "CUSTOMER_INACTIVE": "Ce client est inactif.",
+    "RETURN_QUANTITY_EXCEEDED": "Plus que ce qui reste à retourner sur cette ligne.",
+    "RETURN_NOT_RESTOCKABLE": "Ces produits ne peuvent pas revenir en stock : détruisez-les avec un motif.",
+    "RETURN_REQUIRES_INVOICE": "Facturez d’abord ce bon de livraison, puis faites le retour sur la facture.",
+    "RETURN_PERIOD_EXPIRED": "Cette vente est trop ancienne pour un retour.",
+    "REFUND_TOTAL_MISMATCH": "Le remboursement doit égaler le total de l’avoir ; une vente à crédit n’est pas remboursée.",
+    "CASH_INSUFFICIENT": "Pas assez d’espèces dans votre caisse pour ce remboursement : remboursez par chèque ou virement."
   },
   "pager": {
     "label": "Pagination",
@@ -294,7 +301,8 @@
       "ingredient": "Principe actif",
       "species": "Espèce",
       "noMatch": "Aucun produit ne correspond à la recherche.",
-      "inStockOnly": "En stock seulement"
+      "inStockOnly": "En stock seulement",
+      "returnRestockForbidden": "Les unités retournées ne reviennent jamais en stock vendable (ex. chaîne du froid)"
     },
     "ingredients": {
       "none": "Aucun principe actif.",
@@ -401,7 +409,9 @@
     "NOT_ON_ORDER": "Ce produit n'est pas sur cette ligne de la commande.",
     "NOT_ORDER_SUPPLIER": "Le fournisseur d'une réception est celui de sa commande.",
     "OTHER_SUPPLIER": "Ce lot a été reçu d'un autre fournisseur.",
-    "PATTERN": "Le format n'est pas valide."
+    "PATTERN": "Le format n'est pas valide.",
+    "OTHER_DOCUMENT": "Cette ligne appartient à un autre document.",
+    "NOT_ALLOWED": "Non autorisé ici."
   },
   "lots": {
     "title": "Lots",
@@ -1078,6 +1088,64 @@
       "balance": "Solde",
       "uninvoiced": "Bons de livraison à crédit non facturés",
       "available": "Crédit disponible"
+    },
+    "returned": "Retourné",
+    "returns": "Retours",
+    "return": "Retour de marchandise"
+  },
+  "returns": {
+    "title": "Retours clients",
+    "new": "Nouveau retour client",
+    "empty": "Aucun retour client.",
+    "document": "Vente",
+    "creditNote": "Avoir",
+    "settlement": "Règlement",
+    "refunded": "Remboursé",
+    "credited": "Porté au compte",
+    "findDocument": "Numéro de facture ou de ticket",
+    "find": "Rechercher",
+    "notFound": "Aucune facture ni aucun ticket avec ce numéro.",
+    "of": "Retour de {{number}} — {{customer}} — {{date}}",
+    "refundRequired": "payé au comptoir : remboursé en totalité",
+    "creditedToAccount": "Porté au compte du client, sans remboursement.",
+    "noLine": "Saisissez une quantité sur au moins une ligne.",
+    "returnable": "Reste à retourner",
+    "quantity": "Quantité retournée",
+    "quantityOf": "Quantité retournée de {{name}} (unité de base)",
+    "sealed": "Scellé",
+    "sealedOf": "{{name}} est scellé",
+    "disposition": "Devenir",
+    "dispositionOf": "Devenir de {{name}}",
+    "discardReasonOf": "Motif de destruction de {{name}}",
+    "discardNote": "Précision",
+    "reason": "Motif du retour",
+    "review": "Vérifier",
+    "creditTotal": "Total de l’avoir",
+    "refund": "Remboursement",
+    "confirm": "Confirmer le retour",
+    "staysUnsellable": "Revient dans son lot, qui reste invendable.",
+    "yes": "Oui",
+    "no": "Non",
+    "dispositions": {
+      "restock": "Remise en stock",
+      "discard": "Destruction"
+    },
+    "reasons": {
+      "opened": "Ouvert",
+      "packaging_damaged": "Emballage endommagé",
+      "expired": "Périmé",
+      "recalled": "Rappelé",
+      "cold_chain_doubt": "Doute sur la chaîne du froid",
+      "other": "Autre"
+    },
+    "refusals": {
+      "not_sealed": "Non scellé : destruction seulement.",
+      "lot_expired": "Lot périmé : destruction seulement.",
+      "product_restricted": "Ce produit ne revient jamais en stock vendable."
+    },
+    "lotStatus": {
+      "blocked": "Lot bloqué",
+      "recalled": "Lot rappelé"
     }
   }
 }
