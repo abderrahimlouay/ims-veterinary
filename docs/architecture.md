@@ -90,7 +90,7 @@ sequenceDiagram
 |---|---|---|
 | Confirm goods receipt | one tx: lots upsert, movements, PO status/received qty, audit | lot rows (if existing lot merges) |
 | Confirm sale / POS | one tx: lock lots (asc id) → validate → credit check → number → movements → payments → status → audit | lots, customer (if credit) |
-| Customer return | one tx: validate vs sold − returned, credit note, restock movement, payment/refund per OD-005 | original lines, lots |
+| Customer return | one tx: validate vs sold − returned under the original document's lock, credit note, `customer_return` (+) and for a discard `return_discard` (−), refund of an immediate sale (ADR-127…130) | original document, lots, cash session |
 | Supplier return | one tx: lock lots, validate, movement, record | lots |
 | Adjustment | one tx: lock lot, movement, audit | lot |
 | Count regularisation | one tx: lock all affected lots (asc id), movements, close | lots |

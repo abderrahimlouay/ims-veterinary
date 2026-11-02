@@ -138,32 +138,36 @@ Customer → Product Search → Lot Selection / FEFO → Sale → Stock Movement
 - **Audit:** price overrides (`PRICE_CHANGE`-type entry), FEFO overrides, discounts above entitlement `[REC]`. Cancellation: see W2b.
 
 ### 2b. Cancelling a confirmed document (ADR-119)
-Permission `sale.cancel` + reason, whole document only. Refused (`SALE_NOT_CANCELLABLE`) if a return, credit note or derived document exists or its cash session is closed; those cases use a credit note (W3). One transaction: `sale_cancellation` (+) movement for every posted line, recorded payments reversed and the cash part posted OUT on the same session, status `cancelled`, `cancelled_by/at`, number retained, audit `INVOICE_CANCEL` with old/new values.
+Permission `sale.cancel` + reason, whole document only. Refused (`SALE_NOT_CANCELLABLE`) if a return, credit note or derived document exists or its cash session is closed; those cases use a customer return and its credit note (W3). One transaction: `sale_cancellation` (+) movement for every posted line, recorded payments reversed and the cash part posted OUT on the same session, status `cancelled`, `cancelled_by/at`, number retained, audit `INVOICE_CANCEL` with old/new values.
 
 ---
 
 ## 3. W3 — Customer return
 
 ```text
-Customer Return → Validation → Product/Lot Verification → Restock or Discard → Stock Movement → Credit Note / Financial Adjustment
+Customer Return → Validation → Product/Lot Verification → Restock or Discard → Stock Movement → Credit Note → Refund or Account Credit
 ```
 
 | Item | Content |
 |---|---|
-| **Actors** | Pharmacist (decides disposition), Seller (receives the customer), customer |
-| **Preconditions** | Permission `return.customer.create`; the original confirmed sale document and line exist |
+| **Actors** | Pharmacist or Administrator (records the return and decides each disposition), Seller (receives the customer, cannot record the return), customer |
+| **Preconditions** | Permission `return.customer.create`; a confirmed invoice or receipt (an uninvoiced delivery note is invoiced first, ADR-131); for a cash refund, the user's own open cash session |
 
-1. User finds the original document (by number or customer) and selects returned lines and quantities (BR-RET-001).
-2. For each line the user states whether the product is **sealed** and the **reason**; the server checks lot state: restock is allowed only if sealed and the lot is not expired/blocked/recalled (BR-RET-002); otherwise only `discard`.
-3. **Confirm** (one transaction):
-   1. Numbers: return and credit note.
-   2. `restock` → `customer_return` movement (+) on the original lot; a `depleted` lot becomes `active` if allowed (BR-RET-003, BR-LOT-009). `discard` → **⚠ OD-005** (no movement vs. traceability pair).
-   3. Create credit note (`credit_note`, `parent_id` = original, amounts from original net prices, BR-RET-004).
-   4. Settlement: credit-sale customer → reduces balance; cash/anonymous sale → refund via cash movement OUT **⚠ OD-005** (BR-RET-006).
-   5. Audit entry `[REC]` (a return changes stock and money).
-- **DB changes:** `customer_returns`, `customer_return_lines`, `sales_documents` (credit note) + lines, `stock_movements`, `lots`, `document_sequences`, `cash_movements`/`customer_payments` (if refunded).
-- **Failure:** quantity beyond sold → `RETURN_QUANTITY_EXCEEDED`; restock not allowed → `RETURN_NOT_RESTOCKABLE`; original not confirmed → `INVALID_STATE_TRANSITION`.
-- **Audit:** `RETURN_CREATE` `[REC]`.
+1. User finds the original document (by number or customer). The server's **preview** (no write) lists each line with its sold, already returned and returnable quantity, and whether it may be restocked and why not (BR-RET-001, BR-RET-002, ADR-129).
+2. For each returned line the user enters the quantity (sold unit or base unit), states whether the goods are **sealed**, and chooses `restock` or `discard`; a discard needs a reason code (`opened`, `packaging_damaged`, `expired`, `recalled`, `cold_chain_doubt`, `other` with a text, BR-RET-010). The screen pre-selects `discard` and disables `restock` where it is not allowed; the server checks again and refuses (`RETURN_NOT_RESTOCKABLE`), it never switches a line by itself. The user enters the header reason.
+3. For an immediate sale the user enters the refund tenders (cash, cheque, transfer), which must equal the credit note's TTC shown by the preview; for a credit sale there is none (BR-RET-006).
+4. **Confirm** (one transaction, `Idempotency-Key`; lock order of ADR-130):
+   1. Lock the original document row; re-check its type, status, age (`customer_return_max_days`) and the returnable quantities.
+   2. Numbers: return `CR-YYYY-NNNNNN` and credit note `CN-YYYY-NNNNNN`.
+   3. Movements through `StockService`, lots in ascending id: `restock` → `customer_return` (+) on the original lot, whose status is unchanged (a blocked or recalled lot stays unsellable, ADR-129); `discard` → `customer_return` (+) then `return_discard` (−) on the original lot, both referencing the return line (ADR-127).
+   4. Raise `returned_quantity_base` of each sale line (CHECK ≤ sold).
+   5. Create the confirmed credit note (`parent_id` = original, same customer and credit status; amounts per ADR-130, the last return of a line crediting the exact remainder).
+   6. Settlement: credit sale → the credit note lowers the balance; immediate sale → `customer_refunds` rows for the tenders, the cash part posted OUT on the user's session under its lock, refused with `CASH_INSUFFICIENT` if the session's expected cash would fall below zero (ADR-128).
+   7. Audit `RETURN_CREATE` (lines, dispositions, discard reasons) and `REFUND_CREATE` per refund.
+- **DB changes:** `customer_returns`, `customer_return_lines`, `sales_document_lines.returned_quantity_base`, `sales_documents` (credit note) + lines, `stock_movements`, `lots`, `document_sequences`, `customer_refunds`, `cash_movements`, `idempotency_keys`, `audit_log`.
+- **Failure:** quantity beyond what remains → `RETURN_QUANTITY_EXCEEDED`; restock not allowed → `RETURN_NOT_RESTOCKABLE`; uninvoiced delivery note → `RETURN_REQUIRES_INVOICE`; original not a confirmed invoice or receipt → `INVALID_STATE_TRANSITION`; too old → `RETURN_PERIOD_EXPIRED`; tenders ≠ TTC, or tenders on a credit sale → `REFUND_TOTAL_MISMATCH`; cash without own open session → `CASH_SESSION_REQUIRED`; not enough cash → `CASH_INSUFFICIENT`; same key with another body → `IDEMPOTENCY_CONFLICT`. Any failure rolls everything back, numbering included.
+- **After confirmation:** the return and its credit note are immutable (BR-RET-007); the original can no longer be cancelled (BR-RET-008); restocked units later found unusable are adjusted through W7; a reversal workflow is OD-040 (not Phase 8).
+- **Audit:** `RETURN_CREATE`, `REFUND_CREATE` (ADR-128).
 
 ---
 
@@ -219,8 +223,8 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 
 1. Pharmacist selects lot and enters the reason.
 2. **One transaction:** lot → `recalled` (`blocked_reason/by/at`), audit `LOT_RECALL` (BR-LOT-008). `recalled` is final: nobody can unblock or un-recall the lot (ADR-060).
-3. System returns the **buyers list**: customer, phone, document number/date, quantity — including anonymous sales (customer unknown) and un-invoiced delivery notes (ADR-117). With no sale of the lot the screen says so.
-4. List is printable/exportable; remaining stock of the lot is no longer sellable and can be returned to the supplier (W4) or discarded by adjustment (W7).
+3. System returns the **buyers list**: customer, phone, document number/date, quantity — including anonymous sales (customer unknown) and un-invoiced delivery notes (ADR-117). From Phase 8 each row shows the sold, returned and net quantity; returns of a delivery note's invoice count on the note's row (ADR-131). With no sale of the lot the screen says so.
+4. List is printable/exportable; remaining stock of the lot is no longer sellable and can be returned to the supplier (W4) or discarded by adjustment (W7). Sealed units that customers bring back may be restocked into the recalled lot (still unsellable) so that they can follow the same way (ADR-129).
 - **Failure:** unknown lot → `NOT_FOUND`; already recalled → idempotent success; no permission → `ACCESS_DENIED`.
 
 ## 7. W7 — Manual stock adjustment

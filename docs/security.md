@@ -157,6 +157,8 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (ADR-120, BR-SALE-007) |
 | `CASH_VARIANCE` | a cash session closed with a non-zero variance | REC (W9) |
 
+**Phase 8 actions (ADR-128, ADR-129), added to the table above with the slice that implements them** (the table must equal `AuditAction`): `REFUND_CREATE` — a refund of a customer return (credit note, method, amount, original document and its payment methods, session); `PRODUCT_RETURN_POLICY_CHANGE` — a change of `return_restock_forbidden` (old and new value). `RETURN_CREATE` of a customer return records the lines, quantities, dispositions, sealed flags and discard reasons.
+
 Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD-102, BR-SEC-006). Passwords, tokens and hashes are never written to audit values.
 
 ## 8. Input validation and injection prevention
@@ -224,6 +226,7 @@ Never logged: passwords, tokens, hashes, full card/cheque details, full request 
 | Stock tampering to hide theft | Immutable ledger, mandatory reasons, audit of adjustments, reconciliation job (BR-STOCK-003/006/007) |
 | Price/discount fraud | `price.edit` / `sale.discount` permissions, audit of overrides |
 | Invoice cancellation abuse | `sale.cancel` permission, reason, audit, number retained |
+| Return or refund abuse (fictitious return, double refund, cash taken out) | `return.customer.create` (Administrator, Pharmacist only), mandatory reason, returned ≤ sold under lock and DB CHECK, refund only inside its return with `Idempotency-Key`, cash refund on the refunder's own session and never below zero, `RETURN_CREATE` / `REFUND_CREATE` audit (ADR-128, ADR-130) |
 | Privilege escalation | Server-side method security, no client-supplied permissions, role changes audited |
 | Credential stuffing / brute force | Throttling, generic errors, strong hashing |
 | Session/token theft | HttpOnly cookies / in-memory token, short lifetimes, TLS, CSP |

@@ -839,6 +839,60 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** keep the matrix, so Pharmacists make only credit, cheque and transfer sales (B).
 - **Consequences:** `security.md` §4 changes **with that migration**, because `PermissionMatrixSeedTest` requires the matrix to equal the seeded grants.
 
+## ADR-127 — Discarded returned goods enter the ledger and leave it at once (resolves OD-005 question 1, SD-107, DR-002)
+- **Status:** Accepted (user decision, 2026-11-02, Phase 8 preflight; Q1 option C, Q11).
+- **Decision:** A returned line with disposition `discard` posts, through `StockService`, **two movements on the original lot in the return's transaction**: `customer_return` (+) then the new type **`return_discard` (−)** for the same quantity. Both reference the return line (`reference_type = 'customer_return_line'`, its id), so the lot's balance is unchanged and the ledger shows the goods coming back and being destroyed. The pair is allowed whatever the lot's status (expired, blocked, recalled), because nothing remains in the lot. A discard carries a **mandatory reason code**: `opened`, `packaging_damaged`, `expired`, `recalled`, `cold_chain_doubt`, `other`; `other` requires an explanatory text (≤ 500 characters). The code and the text are stored on the return line, copied into the `return_discard` movement's `reason` and written in the `RETURN_CREATE` audit entry. The discarded quantity is a loss valued at the lot's unit cost, reported apart from expiry and breakage adjustments (Phase 11).
+- **Alternatives:** no movement (A): the loss disappears from the books and the goods waiting for destruction are invisible; `customer_return` + `adjustment_expiry` (B): wrong heading for opened or damaged goods, and DR-002 forbids reusing `adjustment_*`; a quarantine quantity destroyed later with a certificate (D): needs a quarantine concept that does not exist, can be built on top of this ADR later without migrating data.
+- **Consequences:** BR-STOCK-005, BR-RET-003, BR-RET-010, SD-107 (accepted), `database.md` movement CHECK, `workflows.md` W3, `testing.md` BR-RET-003/010. DR-002 resolved.
+
+## ADR-128 — Settlement of a customer return: refunded in full, or credited to the account (resolves OD-005 question 2)
+- **Status:** Accepted (user decision, 2026-11-02, Phase 8 preflight; Q2, Q3).
+- **Decision:**
+  1. A return on a **credit sale** issues its credit note and **no refund**: the credit note lowers the customer's balance (ADR-118 item 5). A balance below zero is an advance, handled in Phase 9.
+  2. A return on an **immediate sale** (a receipt, or an invoice not bought on credit) is **refunded in full in the return's transaction**: Σ refund tenders = the credit note's TTC exactly, several methods allowed, otherwise `REFUND_TOTAL_MISMATCH`. A refund smaller than its credit note is never recorded. A return on a credit sale with tenders gets the same code.
+  3. Methods: `cash`, `cheque`, `bank_transfer` (BR-PAY-001); **no card** (a card method needs a new ADR for payments and refunds together). The method need not be the original payment's; the screen proposes the original one and the audit records both. Cheque and transfer need a reference.
+  4. A **cash** refund needs the refunder's **own open cash session** (`CASH_SESSION_REQUIRED`), whatever session the original sale used (BR-CASH-004), and is posted as a `cash_movements` OUT row on it under the session-row lock. It is **refused** with `CASH_INSUFFICIENT` if it would bring the session's expected cash (BR-CASH-003) below zero.
+  5. Refunds are rows of a new append-only table **`customer_refunds`** (finance module, written through a port defined in `sales`, triggers as SD-102), linked to the credit note; `cash_movements.customer_refund_id` names the refund of a cash movement (SD-139). They are not negative payments and not payment reversals (a reversal cancels a whole payment, SD-138).
+  6. A refund exists only inside its return: there is no refund endpoint in Phase 8. The return's `Idempotency-Key` (ADR-104) makes a replay return the first result, so a refund cannot be paid twice.
+  7. **Store credit** (keeping the amount on the account of an identified customer who bought for cash) is deferred to Phase 9 with advances (OD-016).
+  8. Each refund is audited `REFUND_CREATE` (credit note, method, amount, original document and its payment methods, session) in the same transaction.
+- **Alternatives:** a refund made later through its own endpoint (B): an open liability to track and more ways to refund twice; store credit now (C): depends on the Phase 9 advances.
+- **Consequences:** BR-RET-006, BR-RET-011, BR-CASH-003 (refunds are cash OUT), `api.md` §5.8, `database.md` §3.8, `security.md` §7, `testing.md`. The expected cash of a session includes refunds automatically.
+
+## ADR-129 — Which returned goods go back to their lot (resolves OD-005 question 3; amends BR-RET-002)
+- **Status:** Accepted (user decision, 2026-11-02, Phase 8 preflight; Q4 with conditions, Q6, Q8).
+- **Decision:**
+  1. Disposition `restock` puts the goods **back into their original lot** with a `customer_return` (+) movement. It is allowed only if the goods are **sealed** (stated per line by the user), the lot is **not expired** on the return's business date (ADR-055), and the product allows it (item 3). Otherwise the request is refused with `RETURN_NOT_RESTOCKABLE` (`context.reason`: `not_sealed`, `lot_expired`, `product_restricted`): the server **never switches a line to discard by itself**. Expired goods are always discarded (FR-SALE-006).
+  2. Sealed goods of a **blocked or recalled** lot may be restocked into that lot. The return **never changes the lot's status**: the units stay unsellable (BR-LOT-004) and leave only through an authorised workflow — a supplier return (W4, `return.supplier.create`), a stock adjustment such as destruction (W7, `stock.adjust`) or an inventory regularisation. A blocked lot becomes sellable again only by the existing audited unblock (`lot.unblock`, BR-LOT-009); a recalled lot never does.
+  3. A product flag **`return_restock_forbidden`** (default `false`) keeps returned units of that product out of sellable stock: restocking it into an **active or blocked** lot is refused (`product_restricted`); returning sealed units to a **recalled** lot stays allowed, since that lot is never sellable again and the manufacturer may take them back. The flag is changed with `product.update` and audited `PRODUCT_RETURN_POLICY_CHANGE` (old and new value) in the same transaction (SD-142).
+  4. The server computes each line's eligibility for the screen (preview, `api.md` §5.8); the screen pre-selects `discard` and disables `restock` where it is not allowed. The UI is a convenience; the check is the server's (BR-SEC-002).
+  5. A **confirmed return is immutable**: its dispositions never change. Restocked units later found unusable are ordinary stock and are corrected by the existing adjustment workflow (W7) with a reason that may quote the return number; discarded units cannot come back.
+- **Alternatives:** recalled and blocked goods always discarded (BR-RET-002 as written): the manufacturer could not take recalled units back through W4; reclassifying a disposition after confirmation: more states for the same effect as W7; silently forcing `discard`: the user's request is changed without notice.
+- **Consequences:** BR-RET-002 (amended), BR-PROD-009, BR-LOT-004 (unchanged, now cited by returns), `database.md` products, `security.md` §7, `frontend.md` return wizard, `testing.md`.
+
+## ADR-130 — The returned quantity can never exceed the sold quantity; credit-note amounts (Phase 8)
+- **Status:** Accepted (user decision, 2026-11-02, Phase 8 preflight; Q9 in principle; the rest technical, approved with the report).
+- **Decision:**
+  1. **Invariant:** for every sale line, Σ returned `quantity_base` ≤ the line's `quantity_base` (BR-RET-001). The service checks it under the **original document's row lock** (`SELECT … FOR UPDATE`, the lock cancellation takes, ADR-119), so two returns of one document, or a return and a cancellation, run one after the other and the second re-reads what the first committed. The database backs it up: `sales_document_lines.returned_quantity_base` (default 0), raised in the return's transaction, with `CHECK (returned_quantity_base <= quantity_base)` (SD-140), like `lots.quantity_on_hand` for BR-STOCK-001. The integrity check compares it with Σ return lines.
+  2. **Lock order** (database.md §7): `idempotency_keys` → original `sales_documents` row → `document_sequences` (return `CR`, credit note `CN`) → lots by ascending id (`StockService`) → cash session row (cash refund). No new cycle.
+  3. The returned quantity is entered in the line's sold unit or in the product's base unit and stored in base units (ADR-049).
+  4. **Credit-note line amounts.** A credit-note line copies the original line's product, lot, unit, unit price, discount and VAT rate (BR-SALE-008: prices are never re-resolved). Its HT = `ROUND(original quantity × unit price × (1 − discount) × returned base ÷ sold base, 2)` (the pro-rata of the line's unrounded amount, HALF_UP) and its VAT = `ROUND(HT × rate, 2)` per line (ADR-115); a partial credit never takes the line's credited total above its original HT or VAT. **The return that brings a line's returned quantity to its sold quantity credits the exact remainder**: original `line_ht` − HT already credited, original `line_vat` − VAT already credited. So a fully returned line is credited exactly what was invoiced, and the credit notes of a document never exceed it. The credit-note line stores these amounts (`credited_ht`, `credited_vat`; the generated `line_ht`/`line_vat` take them when present, SD-140, ADR-016 parity kept).
+  5. **Accounting implication:** a partial credit note may differ by at most 0.01 per line from a recomputation of quantity × price; the difference is absorbed by the last return of the line. Per-line rounding on credit notes, the pro-rata and the remainder rule are part of **DR-040**: an accountant must confirm them with the invoice rounding before go-live.
+- **Alternatives:** only the service sum, without a database backstop; accept the rounding drift of partial returns (Q9 a).
+- **Consequences:** BR-RET-001, BR-RET-004, BR-RET-005, `database.md` §3.7 and §7, `testing.md` (concurrency), DR-040.
+
+## ADR-131 — What can be returned, the return document and its immutability (Phase 8)
+- **Status:** Accepted (user decision, 2026-11-02, Phase 8 preflight; Q5, Q7, Q10; numbering and reasons technical).
+- **Decision:**
+  1. A customer return is made against a **confirmed invoice or receipt**. A delivery note that is not invoiced is refused (`RETURN_REQUIRES_INVOICE`): it is invoiced first (ADR-125: its lines stay frozen), then the return is made against the invoice, whose lines carry the delivery note's lots. A quote, a credit note, a draft or a cancelled document is refused (`INVALID_STATE_TRANSITION`).
+  2. **Time limit:** the setting `customer_return_max_days` (default `off`); when it holds a number of days, a return later than that many days after the original's business date is refused (`RETURN_PERIOD_EXPIRED`). No override.
+  3. **The return document:** numbered `CR-YYYY-NNNNNN` (key `CR`, ADR-097), with a mandatory header reason (≤ 500 characters), permission `return.customer.create` (Administrator, Pharmacist), `Idempotency-Key`, audited `RETURN_CREATE`. It always issues exactly one credit note (`CN`, ADR-122), confirmed at once, `parent_id` = the original, same customer and credit status. A return of a sale bought by an anonymous customer stays anonymous.
+  4. **Immutability:** a confirmed return and its credit note can be neither edited nor cancelled in Phase 8 (BR-RET-007). A document with a return can no longer be cancelled (`SALE_NOT_CANCELLABLE`, `blockedBy: return`, BR-RET-008).
+  5. **Correcting a wrong return** is **not** assumed to be "make a new sale": a new sale would carry new prices, a new date, new lot choices and a new payment, and would not link the correction to the return. The future authorised reversal/correction workflow is registered as **OD-040** and is not built in Phase 8.
+  6. The recall buyers list (BR-LOT-008) shows, per document, the sold, returned and net quantity of the lot; the returns of an invoice made from a delivery note are counted on that note's row.
+- **Alternatives:** return against an uninvoiced delivery note (breaks ADR-125's frozen lines); ordinary cancellation of a return (Q10, refused).
+- **Consequences:** BR-RET-007/008/009, BR-SALE-014, BR-LOT-008, BR-DOC-001, `api.md` §5.7/§5.8, `database.md`, settings seed, OD-040.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -872,6 +926,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 7. **Related:** BR-SALE-014, ADR-008.
 
 ## OD-005 — Customer-return disposition and refund
+- **Status:** Resolved 2026-11-02 → **ADR-127** (question 1, option C), **ADR-128** (question 2), **ADR-129** (question 3: never forced, refused instead); the rest of the Phase 8 preflight: ADR-130, ADR-131, OD-040.
 - **Question:** (1) For `discard`, is there any stock movement? (2) How is a return on a **cash/anonymous** sale refunded (cash movement out)? (3) May restock be forced to `discard` automatically for expired/recalled lots?
 - **Options (1):** none (return never enters stock) vs. `customer_return` (+) immediately followed by `adjustment_expiry/breakage` (−) for full traceability.
 - **Blocks:** Phase 8. **Related:** BR-RET-002…006.
@@ -1062,6 +1117,13 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Leaning:** `[REC]` (A): the Pharmacist is a named actor of the counter workflow (W2).
 - **Blocks:** Phase 7. **Related:** ADR-037, BR-SALE-013, BR-PAY-006.
 
+## OD-040 — Authorised reversal or correction of a confirmed customer return
+- **Status:** OPEN (registered 2026-11-02, Phase 8 preflight Q10). **Not built in Phase 8.**
+- **Question:** How is a confirmed customer return that was wrong (wrong lot, quantity, disposition or refund) corrected, while keeping the whole financial and inventory trail? ADR-131 forbids editing or cancelling it, and a new sale is not a valid correction in general (new prices, date, lots and payment, no link to the return).
+- **Requirement to keep:** whatever is chosen must post new compensating rows only (movements, refund or payment rows, a document linked to the return and its credit note), never change or delete the return, its credit note, movements or refunds; it needs its own permission, a mandatory reason and an audit entry in the same transaction; it must respect stock that has meanwhile left the lot (BR-STOCK-001) and closed cash sessions (BR-CASH-004).
+- **Options (to be studied):** (A) a whole-return reversal document (`customer_return_reversal`): reverse movements, a debit document cancelling the credit note, the refund taken back; (B) a line-level correction document; (C) stay without one, with corrections only by adjustments and manual cash movements (Phase 9).
+- **Blocks:** nothing in Phase 8; to decide before go-live if the client needs it (Phase 9 or later). **Related:** ADR-127…131, BR-RET-007, BR-PAY-003.
+
 ---
 
 # Part C — Decision backlog by phase
@@ -1076,7 +1138,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 5 Purchasing | ~~OD-007~~ → ADR-093, ~~OD-014~~ → ADR-095, ~~OD-015~~ → ADR-096, ~~OD-017~~ → ADR-097 (ADR-011 accepted), ~~OD-029~~ → ADR-098; ADR-094, ADR-099…106 (all 2026-10-24) |
 | 6 Customers | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (both 2026-10-24); ADR-109…114 (2026-10-25) |
 | 7 Sales / POS | ~~OD-002~~ → ADR-117, ~~OD-003~~ → ADR-118, ~~OD-004~~ → ADR-119, ~~OD-010~~ → ADR-120, ~~OD-028 (screen)~~ → ADR-121, ~~OD-035~~ → ADR-122, ~~OD-036~~ → ADR-123, ~~OD-037~~ → ADR-124, ~~OD-038~~ → ADR-125, ~~OD-039~~ → ADR-126, ADR-115, ADR-116 (all 2026-10-31); ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (the credit check), ~~OD-033~~ → ADR-071 |
-| 8 Returns | OD-005 |
+| 8 Returns | ~~OD-005~~ → ADR-127, ADR-128, ADR-129; ADR-130, ADR-131 (all 2026-11-02); OD-040 registered, not blocking |
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, OD-016; ~~OD-011~~ → ADR-108 (payments in the balance) |
 | 10 Documents & Printing | OD-020, OD-026, OD-028, OD-008 |
 | 11 Reports & Audit | OD-021 (backup); margin scope follows ADR-117, ADR-118 |
