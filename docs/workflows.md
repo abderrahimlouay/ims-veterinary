@@ -84,13 +84,15 @@ Supplier → Purchase Order → Goods Receipt → Lot Creation → Stock Update 
 2. **Refused** with `RECEIPT_NOT_CANCELLABLE` (naming the lot and the later movement) if any of its lots has a movement after the receipt's own.
 3. **One transaction:** one `receipt_cancellation` (−) movement per line through `StockService`; PO lines' received quantities and PO status rolled back; receipt `cancelled` (number kept); audited `RECEIPT_CANCEL`. A lot created by the receipt stays with a zero balance and its supplier is cleared; otherwise the lot cost before the receipt is restored, and a lot the receipt blocked gets its previous status back only if its status was not changed since (audited `LOT_UNBLOCK`); an order closed by a forced close stays closed; price-history entries of the receipt are marked cancelled (ADR-106).
 
-### 1c. Supplier invoice and payment
-1. Accountant records the supplier invoice (number, receipt link optional, dates, total TTC, credit-note flag). Due date defaults to `invoice_date + payment_terms_days` (BR-PAY-008).
-2. Accountant records payments (method, amount, reference) against the invoice, or an **advance** without invoice (BR-PAY-009/010 **⚠ OD-016**). Cash payments create a `cash_movements` OUT row in the open cash session (BR-PAY-006).
-3. Remaining payable = invoice amount (negative if credit note) − Σ payments.
-- **DB:** `supplier_invoices`, `supplier_payments`, `cash_movements`.
-- **Failure:** duplicate invoice number → `DUPLICATE_RESOURCE`; amount > remaining → `PAYMENT_ALLOCATION_EXCEEDED`; cash without open session → `CASH_SESSION_REQUIRED`.
-- **Audit:** supplier payments are financial records, immutable (BR-PAY-003); reversals audited.
+### 1c. Supplier invoice and payment (Phase 9, ADR-132, ADR-133, ADR-135)
+1. Accountant records the supplier invoice (supplier's number, optional confirmed receipt of that supplier, dates, total TTC). Due date defaults to `invoice_date + payment_terms_days` (BR-PAY-008). A total different from the receipt's value is shown as a warning.
+2. A **supplier credit note** is recorded when the supplier's *avoir* arrives, optionally linked to a supplier return (BR-PAY-011). It lowers what we owe and may be applied to invoices of that supplier.
+3. Accountant records a **payment** (method, amount, reference) allocated to **one or several** invoices; the unallocated part is an **advance**, applicable to invoices later (BR-PAY-009/010). A **cash** payment is a `cash_movements` OUT row on the payer's own open session, refused beyond the expected cash (`CASH_INSUFFICIENT`).
+4. **Open amount** of an invoice = TTC − live payment allocations − credit-note applications; **supplier balance** = invoices − credit notes − live payments (BR-PAY-014). Payables are listed by due date.
+5. **Corrections:** a payment is reversed with a reason (BR-PAY-013); an invoice or credit note entered wrongly is cancelled with a reason only while nothing settles it, then entered again (BR-PAY-015).
+- **DB:** `supplier_invoices`, `supplier_payments`, `supplier_payment_allocations`, `supplier_credit_allocations`, `cash_movements`.
+- **Failure:** duplicate invoice number → `DUPLICATE_RESOURCE`; allocation > open amount → `PAYMENT_ALLOCATION_EXCEEDED`; cash without own open session → `CASH_SESSION_REQUIRED`; cash beyond the till → `CASH_INSUFFICIENT`; cancelling a settled invoice → `INVOICE_HAS_SETTLEMENTS`; inactive supplier → `SUPPLIER_INACTIVE`.
+- **Audit:** payments and allocations are append-only (BR-PAY-003); reversals `PAYMENT_REVERSE`; cancellations `SUPPLIER_INVOICE_CANCEL`.
 
 ---
 
@@ -184,7 +186,7 @@ Supplier Return → Lot Selection → Stock Reduction → Supplier Credit
 
 1. User selects supplier, lots of that supplier (or without supplier) and quantities, and enters the reason (BR-PURCH-009, ADR-101). Active, blocked, recalled and expired lots may be returned.
 2. **Confirm** (one transaction): number `SR-YYYY-NNNNNN`; `supplier_return` movements (−) through `StockService`; balances (a lot at 0 shows `depleted`); audited `RETURN_CREATE`.
-3. **Supplier credit:** not in Phase 5 (ADR-101); the link to a supplier credit note is decided in Phase 9 (OD-016, SD-109).
+3. **Supplier credit:** the return posts stock only (ADR-101). The supplier's credit note is recorded in Phase 9 when it arrives, optionally linked to the return (ADR-133, W1c step 2); nothing is generated from the return.
 - **DB changes:** `supplier_returns`, `supplier_return_lines`, `stock_movements`, `lots`, `document_sequences`, `audit_log`.
 - **Failure:** quantity > lot balance → `STOCK_INSUFFICIENT`; missing reason or lot of another supplier → `VALIDATION_FAILED` (`OTHER_SUPPLIER`).
 - **Audit:** `RETURN_CREATE` `[REC]`.
@@ -233,22 +235,23 @@ Inventory Session → Count → Difference Detection → Validation → Stock Ad
 2. **One transaction:** movement `adjustment_*` (−), balance update, audit `STOCK_CORRECTION` with old/new quantity.
 3. **Failure:** blank reason → `ADJUSTMENT_REASON_REQUIRED`; quantity > balance → `STOCK_INSUFFICIENT`.
 
-## 8. W8 — Customer payment and account statement
+## 8. W8 — Customer payment and account statement (Phase 9, ADR-134, ADR-135)
 
-1. Accountant/Seller selects the customer and records a payment (method, amount, reference). Cash payments require an open session (BR-PAY-006).
-2. The payment is **allocated** to one or several invoices (default: oldest first `[REC]`), each ≤ outstanding (BR-PAY-002); any remainder stays unallocated (advance on account) and lowers the balance (ADR-118).
-3. **One transaction:** `customer_payments`, `payment_allocations`, `cash_movements` IN (cash).
-4. **Account statement:** invoices, credit notes and payments in date order with running balance (BR-PAY-007; balance definition ADR-118), printable A4.
-5. **Corrections:** a mistaken payment is reversed by a counter-entry with reason, never edited (BR-PAY-003); audited.
-- **Failure:** allocation > outstanding → `PAYMENT_ALLOCATION_EXCEEDED`; customer inactive → `CUSTOMER_INACTIVE`.
+1. A user with `payment.customer.create` selects an **active** customer and records a payment on account (method, amount, reference). Cash needs the user's own open session (BR-PAY-006) and adds a `cash_movements` IN row.
+2. The payment is **allocated** to the customer's confirmed credit invoices: as chosen on screen, or oldest first (due date, then number) when none are given; each ≤ the open amount (BR-PAY-002). The remainder is an **advance** that lowers the balance and may be applied later to new invoices (BR-PAY-010, BR-PAY-012).
+3. **One transaction:** `customer_payments`, `payment_allocations`, `cash_movements` IN (cash), idempotent (`Idempotency-Key`).
+4. **Account statement** (`statement.read`): opening balance at the start date, then credit invoices, their credit notes, account payments and reversals in date order with a running balance (BR-PAY-007, balance ADR-118). Counter sales are not listed; uninvoiced credit delivery notes are shown as a separate total. On screen in Phase 9; PDF in Phase 10 (ADR-137).
+5. **Corrections:** a mistaken payment is reversed with a reason (BR-PAY-013): its allocations stop counting, its invoices reopen, and cash goes out of the reverser's own open session. Counter payments of immediate sales are corrected by cancellation or return, not here. Moving an allocation to another invoice is not built (OD-041).
+- **Failure:** allocation > open amount → `PAYMENT_ALLOCATION_EXCEEDED`; customer inactive → `CUSTOMER_INACTIVE`; cash without session → `CASH_SESSION_REQUIRED`; reversal beyond the till → `CASH_INSUFFICIENT`; reversed twice or a counter payment → `INVALID_STATE_TRANSITION`.
 
 ## 9. W9 — Cash session
 
 1. **Open:** cashier declares the opening amount; refused if the cashier already has an open session (BR-CASH-001).
-2. **During the day:** sales and payments in cash create IN/OUT movements linked to the session; other methods are recorded but excluded from expected cash (BR-CASH-003).
-3. **Close:** cashier enters the **counted amount**; the server computes expected and **variance** (BR-CASH-002); session becomes immutable (BR-CASH-004). A report is printed.
-- **Failure:** opening twice → `CASH_SESSION_ALREADY_OPEN`; posting to closed → `CASH_SESSION_CLOSED`.
-- **Audit:** non-zero variance at closing logged `[REC]`.
+2. **During the day:** cash sales, payments on account, refunds, supplier payments, reversals and **manual movements** (`cash.manage`, mandatory label, own session, BR-CASH-006) create IN/OUT movements linked to the session; cheques and transfers are recorded but excluded from expected cash (BR-CASH-003). No OUT may bring the expected cash below zero (`CASH_INSUFFICIENT`).
+3. **Close:** the owner, or a `cash.manage` holder for any open session, enters the **counted amount**; the server computes expected and **variance** (BR-CASH-002) and records who closed it; the session becomes immutable (BR-CASH-004). A non-zero variance is audited `CASH_VARIANCE`; no tolerance (ADR-136).
+4. **Report:** opening amount, movements by source, cheques and transfers apart, expected, counted, variance (BR-CASH-007); on screen in Phase 9, PDF in Phase 10.
+- **Failure:** opening twice → `CASH_SESSION_ALREADY_OPEN`; posting to closed → `CASH_SESSION_CLOSED`; another user's session without `cash.manage` → `ACCESS_DENIED`.
+- **Audit:** `CASH_VARIANCE`; manual movements `CASH_MOVEMENT_CREATE`.
 
 ## 10. W10 — Reorder proposal
 
