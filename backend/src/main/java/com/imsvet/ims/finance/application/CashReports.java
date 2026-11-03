@@ -93,7 +93,7 @@ public class CashReports {
     public CashReport report(long id) {
         CashSession session = sessions.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND,
                 "Cash session not found.", Map.of("id", id)));
-        if (session.cashierId() != actors.current().userId() && !Permissions.granted(MANAGE)) {
+        if (!session.cashierId().equals(actors.current().userId()) && !Permissions.granted(MANAGE)) {
             throw new AccessDeniedException("Another user's session report needs cash.manage");
         }
         Map<String, BigDecimal[]> totals = new LinkedHashMap<>();
