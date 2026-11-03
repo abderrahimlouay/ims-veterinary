@@ -2,6 +2,7 @@ package com.imsvet.ims.finance.infrastructure;
 
 import com.imsvet.ims.finance.domain.CustomerPayment;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -54,6 +55,9 @@ public interface CustomerPaymentRepository extends Repository<CustomerPayment, L
     Page<CustomerPayment> findAllByOrderByIdDesc(Pageable pageable);
 
     List<CustomerPayment> findByCustomerIdOrderByIdAsc(Long customerId);
+
+    /** What a user recorded in a period: the session report lists the non-cash ones (ADR-136). */
+    List<CustomerPayment> findByCreatedByAndPaidAtBetweenOrderByIdAsc(Long createdBy, Instant from, Instant to);
 
     /**
      * The customer's payments in force with a part not allocated: the advances (ADR-134), as

@@ -105,10 +105,13 @@ class CashSessionsTest {
         TestActor.signIn(sellerUser.id());
         long session = ledger.lockCurrentSession();
         assertThat(session).isEqualTo(id);
-        ledger.post(session, CashDirection.IN, PaymentMethod.CASH, new BigDecimal("45.50"), "vente", null);
-        ledger.post(session, CashDirection.OUT, PaymentMethod.CASH, new BigDecimal("20.00"), "sortie", null);
-        ledger.post(session, CashDirection.IN, PaymentMethod.CHEQUE, new BigDecimal("300.00"), "chèque", null);
-        ledger.post(session, CashDirection.IN, PaymentMethod.BANK_TRANSFER, new BigDecimal("50.00"), "virement", null);
+        ledger.post(session, CashDirection.IN, PaymentMethod.CASH, new BigDecimal("45.50"), "vente",
+                payment("cash", "45.50", session));
+        ledger.postManual(session, CashDirection.OUT, new BigDecimal("20.00"), "sortie");
+        ledger.post(session, CashDirection.IN, PaymentMethod.CHEQUE, new BigDecimal("300.00"), "chèque",
+                payment("cheque", "300.00", null));
+        ledger.post(session, CashDirection.IN, PaymentMethod.BANK_TRANSFER, new BigDecimal("50.00"), "virement",
+                payment("bank_transfer", "50.00", null));
         TestActor.signOut();
         seller.get("/api/cash-sessions/current").andExpect(jsonPath("$.expectedAmount").value("125.50"));
         close(seller, id, "120").andExpect(status().isOk())
@@ -178,12 +181,27 @@ class CashSessionsTest {
         assertThatThrownBy(() -> jdbc.update("INSERT INTO cash_sessions (cashier_id, opened_at) VALUES (?, NOW(6))",
                 sellerUser.id())).hasMessageContaining("uq_cash_sessions_open_cashier");
         assertThatThrownBy(() -> jdbc.update("INSERT INTO cash_movements (cash_session_id, direction, method, amount,"
-                + " created_by, created_at) VALUES (?, 'in', 'cash', 0, ?, NOW(6))", id, sellerUser.id()))
-                .hasMessageContaining("ck_cash_movements_amount");
+                + " label, manual, created_by, created_at) VALUES (?, 'in', 'cash', 0, 'x', TRUE, ?, NOW(6))", id,
+                sellerUser.id())).hasMessageContaining("ck_cash_movements_amount");
         assertThatThrownBy(() -> jdbc.update("INSERT INTO cash_movements (cash_session_id, direction, method, amount,"
-                + " created_by, created_at) VALUES (?, 'sideways', 'cash', 1, ?, NOW(6))", id, sellerUser.id()))
-                .hasMessageContaining("ck_cash_movements_direction");
+                + " label, manual, created_by, created_at) VALUES (?, 'sideways', 'cash', 1, 'x', TRUE, ?, NOW(6))", id,
+                sellerUser.id())).hasMessageContaining("ck_cash_movements_direction");
+        assertThatThrownBy(() -> jdbc.update("INSERT INTO cash_movements (cash_session_id, direction, method, amount,"
+                + " created_by, created_at) VALUES (?, 'in', 'cash', 1, ?, NOW(6))", id, sellerUser.id()))
+                .hasMessageContaining("ck_cash_movements_one_source");
+        assertThatThrownBy(() -> jdbc.update("INSERT INTO cash_movements (cash_session_id, direction, method, amount,"
+                + " label, manual, created_by, created_at) VALUES (?, 'in', 'cash', 1, ' ', TRUE, ?, NOW(6))", id,
+                sellerUser.id())).hasMessageContaining("ck_cash_movements_manual");
         entities.clear();
+    }
+
+    /** A payment row for a movement to name: every movement has exactly one source (SD-146). */
+    private long payment(String method, String amount, Long session) {
+        jdbc.update("""
+                INSERT INTO customer_payments (method, amount, reference, cash_session_id, paid_at, created_by)
+                VALUES (?, ?, ?, ?, NOW(6), ?)""", method, new BigDecimal(amount), "cash".equals(method) ? null : "REF",
+                session, sellerUser.id());
+        return jdbc.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
     }
 
     private ApiClient login(TestUser user, String ip) throws Exception {

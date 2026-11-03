@@ -93,4 +93,8 @@ public class CustomerRefund {
     public Long cashSessionId() {
         return cashSessionId;
     }
+
+    public Instant refundedAt() {
+        return refundedAt;
+    }
 }

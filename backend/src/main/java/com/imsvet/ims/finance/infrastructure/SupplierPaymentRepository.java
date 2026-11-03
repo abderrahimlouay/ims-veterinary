@@ -2,6 +2,7 @@ package com.imsvet.ims.finance.infrastructure;
 
 import com.imsvet.ims.finance.domain.SupplierPayment;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,8 @@ public interface SupplierPaymentRepository extends Repository<SupplierPayment, L
     Page<SupplierPayment> findBySupplierIdOrderByIdDesc(Long supplierId, Pageable pageable);
 
     Page<SupplierPayment> findAllByOrderByIdDesc(Pageable pageable);
+
+    List<SupplierPayment> findByCreatedByAndPaidAtBetweenOrderByIdAsc(Long createdBy, Instant from, Instant to);
 
     /** Payments of the supplier in force: neither a reversal nor reversed (ADR-135). */
     @Query("""

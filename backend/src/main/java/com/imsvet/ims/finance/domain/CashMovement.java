@@ -73,6 +73,9 @@ public class CashMovement {
     @Column(name = "supplier_payment_id", updatable = false)
     private Long supplierPaymentId;
 
+    @Column(nullable = false, updatable = false)
+    private boolean manual;
+
     @Column(name = "created_by", nullable = false, updatable = false)
     private Long createdBy;
 
@@ -112,8 +115,49 @@ public class CashMovement {
         return movement;
     }
 
+    /** A manual movement (ADR-136): cash only, its label mandatory, no other source. */
+    public static CashMovement manual(Long cashSessionId, CashDirection direction, BigDecimal amount, String label,
+            Long createdBy, Instant now) {
+        CashMovement movement = new CashMovement(cashSessionId, direction, PaymentMethod.CASH, amount, label, null,
+                createdBy, now);
+        movement.manual = true;
+        return movement;
+    }
+
     public Long id() {
         return id;
+    }
+
+    public CashDirection direction() {
+        return direction;
+    }
+
+    public PaymentMethod method() {
+        return method;
+    }
+
+    public String label() {
+        return label;
+    }
+
+    public Long customerPaymentId() {
+        return customerPaymentId;
+    }
+
+    public Long customerRefundId() {
+        return customerRefundId;
+    }
+
+    public Long supplierPaymentId() {
+        return supplierPaymentId;
+    }
+
+    public boolean manual() {
+        return manual;
+    }
+
+    public Instant createdAt() {
+        return createdAt;
     }
 
     public BigDecimal amount() {

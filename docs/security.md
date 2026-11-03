@@ -158,7 +158,8 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `SETTING_CHANGE` | alert thresholds, VAT default, company data | REC |
 | `BACKUP_RUN`, `BACKUP_DOWNLOAD` | backup operations | REC |
 | `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (ADR-120, BR-SALE-007) |
-| `CASH_VARIANCE` | a cash session closed with a non-zero variance | REC (W9) |
+| `CASH_VARIANCE` | a cash session closed with a non-zero variance; who closed it and whose session it was | REC (W9, ADR-136) |
+| `CASH_MOVEMENT_CREATE` | a manual cash movement: session, direction, amount, label | user decision 2026-11-03 (ADR-136) |
 
 **Phase 8 (ADR-131):** `RETURN_CREATE` of a customer return records the lines, quantities, dispositions, sealed flags and discard reasons.
 
