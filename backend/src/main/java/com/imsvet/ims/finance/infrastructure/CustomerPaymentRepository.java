@@ -3,6 +3,9 @@ package com.imsvet.ims.finance.infrastructure;
 import com.imsvet.ims.finance.domain.CustomerPayment;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 
@@ -41,4 +44,26 @@ public interface CustomerPaymentRepository extends Repository<CustomerPayment, L
               AND NOT EXISTS (SELECT 1 FROM customer_payments r WHERE r.reverses_payment_id = p.id)""",
             nativeQuery = true)
     BigDecimal allocatedTo(long documentId);
+
+    Optional<CustomerPayment> findById(Long id);
+
+    Optional<CustomerPayment> findByReversesPaymentId(Long paymentId);
+
+    Page<CustomerPayment> findByCustomerIdOrderByIdDesc(Long customerId, Pageable pageable);
+
+    Page<CustomerPayment> findAllByOrderByIdDesc(Pageable pageable);
+
+    /**
+     * The customer's payments in force with a part not allocated: the advances (ADR-134), as
+     * {@code [paymentId, unallocated]}, oldest first. A counter payment is allocated in full, so never listed.
+     */
+    @Query(value = """
+            SELECT p.id, p.amount - COALESCE(SUM(a.amount), 0) AS unallocated
+            FROM customer_payments p LEFT JOIN payment_allocations a ON a.payment_id = p.id
+            WHERE p.customer_id = :customerId AND p.reverses_payment_id IS NULL
+              AND NOT EXISTS (SELECT 1 FROM customer_payments r WHERE r.reverses_payment_id = p.id)
+            GROUP BY p.id, p.paid_at, p.amount
+            HAVING unallocated > 0
+            ORDER BY p.paid_at, p.id""", nativeQuery = true)
+    List<Object[]> advances(long customerId);
 }

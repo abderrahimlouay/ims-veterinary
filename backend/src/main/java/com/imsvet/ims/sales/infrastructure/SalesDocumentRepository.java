@@ -6,6 +6,7 @@ import com.imsvet.ims.sales.domain.SalesDocument;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -89,4 +90,24 @@ public interface SalesDocumentRepository extends Repository<SalesDocument, Long>
               AND d.docType = com.imsvet.ims.sales.domain.SalesDocType.CREDIT_NOTE
               AND d.status = com.imsvet.ims.sales.domain.SalesDocStatus.CONFIRMED""")
     BigDecimal creditNotedOn(long invoiceId);
+
+    /** The confirmed credit invoices of a customer, oldest due first, then by number (ADR-134). */
+    @Query("""
+            SELECT d FROM SalesDocument d
+            WHERE d.customerId = :customerId AND d.creditSale = TRUE
+              AND d.docType = com.imsvet.ims.sales.domain.SalesDocType.INVOICE
+              AND d.status = com.imsvet.ims.sales.domain.SalesDocStatus.CONFIRMED
+            ORDER BY d.dueDate, d.number, d.id""")
+    List<SalesDocument> creditInvoicesOf(long customerId);
+
+    /** Per credit invoice of the customer: the TTC of its confirmed credit notes, as {@code [invoiceId, total]}. */
+    @Query("""
+            SELECT d.parentId, SUM(d.totalTtc) FROM SalesDocument d
+            WHERE d.customerId = :customerId AND d.parentId IS NOT NULL
+              AND d.docType = com.imsvet.ims.sales.domain.SalesDocType.CREDIT_NOTE
+              AND d.status = com.imsvet.ims.sales.domain.SalesDocStatus.CONFIRMED
+            GROUP BY d.parentId""")
+    List<Object[]> creditNotedPerInvoice(long customerId);
+
+    List<SalesDocument> findAllByIdIn(Collection<Long> ids);
 }

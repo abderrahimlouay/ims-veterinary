@@ -102,4 +102,16 @@ public class CustomerPayment {
     public Long cashSessionId() {
         return cashSessionId;
     }
+
+    public Long customerId() {
+        return customerId;
+    }
+
+    public Long reversesPaymentId() {
+        return reversesPaymentId;
+    }
+
+    public Instant paidAt() {
+        return paidAt;
+    }
 }

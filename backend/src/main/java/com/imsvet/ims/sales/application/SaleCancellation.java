@@ -33,7 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code INVOICE_CANCEL}; one {@code sale_cancellation} per line that posted stock, back to its lot whatever its status;
  * the payments reversed, cash out of the same session; the number kept. The invoice of a delivery note posted nothing, so
  * it returns nothing, and the note can be invoiced again (ADR-125). A document with a customer return is refused
- * first, naming the return (BR-RET-008, ADR-131): its credit note is a later document too.
+ * first, naming the return (BR-RET-008, ADR-131): its credit note is a later document too. A credit invoice that a
+ * payment on account settles is refused, naming the payment, which is reversed first (ADR-119 as amended 2026-11-03).
  */
 @Service
 public class SaleCancellation {
@@ -104,6 +105,14 @@ public class SaleCancellation {
         if (documents.existsByParentIdAndStatusNot(document.id(), SalesDocStatus.CANCELLED)) {
             throw new BusinessException(ErrorCode.SALE_NOT_CANCELLABLE, "A later document exists; use a credit note.",
                     Map.of("blockedBy", "derived_document", "documentId", document.id()));
+        }
+        if (document.creditSale()) {
+            List<PaymentRecorder.PaymentInForce> paid = payments.inForceOn(document.id());
+            if (!paid.isEmpty()) {
+                throw new BusinessException(ErrorCode.SALE_NOT_CANCELLABLE,
+                        "A payment on account settles this invoice; reverse the payment first.",
+                        Map.of("blockedBy", "payment", "paymentId", paid.getFirst().id()));
+            }
         }
         Long session = document.cashSessionId();
         if (session != null && !payments.sessionOpen(session)) {
