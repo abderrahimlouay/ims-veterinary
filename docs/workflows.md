@@ -140,7 +140,7 @@ Customer → Product Search → Lot Selection / FEFO → Sale → Stock Movement
 - **Audit:** price overrides (`PRICE_CHANGE`-type entry), FEFO overrides, discounts above entitlement `[REC]`. Cancellation: see W2b.
 
 ### 2b. Cancelling a confirmed document (ADR-119)
-Permission `sale.cancel` + reason, whole document only. Refused (`SALE_NOT_CANCELLABLE`) if a return, credit note or derived document exists or its cash session is closed; those cases use a customer return and its credit note (W3). One transaction: `sale_cancellation` (+) movement for every posted line, recorded payments reversed and the cash part posted OUT on the same session, status `cancelled`, `cancelled_by/at`, number retained, audit `INVOICE_CANCEL` with old/new values.
+Permission `sale.cancel` + reason, whole document only. Refused (`SALE_NOT_CANCELLABLE`) if a return, credit note or derived document exists or its cash session is closed; those cases use a customer return and its credit note (W3). A credit invoice that a payment on account settles is refused too (`blockedBy: payment`): the payment is reversed first (W8 step 5). One transaction: `sale_cancellation` (+) movement for every posted line, the counter payments reversed and the cash part posted OUT on the same session, status `cancelled`, `cancelled_by/at`, number retained, audit `INVOICE_CANCEL` with old/new values.
 
 ---
 

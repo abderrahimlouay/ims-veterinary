@@ -295,7 +295,7 @@ class CreditSaleTest {
     }
 
     private void allocate(long payment, long document, String amount) {
-        jdbc.update("INSERT INTO payment_allocations (payment_id, invoice_id, amount) VALUES (?, ?, ?)", payment, document,
-                new BigDecimal(amount));
+        jdbc.update("INSERT INTO payment_allocations (payment_id, invoice_id, amount, created_at, created_by)"
+                + " VALUES (?, ?, ?, UTC_TIMESTAMP(6), ?)", payment, document, new BigDecimal(amount), operator);
     }
 }

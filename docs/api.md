@@ -89,7 +89,7 @@ Field codes (`errors[].code` of `VALIDATION_FAILED`, not error codes: they are n
 | `IDEMPOTENCY_CONFLICT` | 409 | key reused with different request | BR-SALE-016, BR-PURCH-013 |
 | `RECEIPT_NOT_CANCELLABLE` | 409 | a lot of the receipt has a movement after the receipt's own; `context`: `lotId`, `lotNumber`, `movementId`, `movementType`, `movementAt` (ADR-103) | BR-PURCH-012 |
 | `LOT_BLOCK_CONFIRMATION_REQUIRED` | 409 | a non-conforming receipt line would block a lot that already has stock; `context.lots[]`: `lotId`, `lotNumber`, `productId`, `quantityInStock` (ADR-095) | BR-PURCH-006 |
-| `SALE_NOT_CANCELLABLE` | 409 | a later document exists or the cash session is closed; `context`: `blockedBy` (`derived_document`, `cash_session`; `return` from Phase 8, checked first, with `returnId`, ADR-131) and its id | BR-SALE-014, ADR-119 |
+| `SALE_NOT_CANCELLABLE` | 409 | a later document exists or the cash session is closed; `context`: `blockedBy` (`derived_document`, `cash_session`; `return` from Phase 8, checked first, with `returnId`, ADR-131; `payment` from Phase 9, a credit invoice settled by a payment on account, with `paymentId`, ADR-119 as amended) and its id | BR-SALE-014, ADR-119 |
 | `INVENTORY_NOT_OPEN` | 409 | count is closed/cancelled | BR-INV-004 |
 | `OPENING_STOCK_CLOSED` | 409 | the opening-stock period is closed (setting `opening_stock_open`); use an inventory count | BR-STOCK-014, ADR-082 |
 | `INVENTORY_ALREADY_OPEN` | 409 | another full count is open | BR-INV-007 |

@@ -39,8 +39,8 @@ class PaymentLedgerAppendOnlyTest {
         jdbc.update("INSERT INTO customer_payments (method, amount, reference, paid_at, created_by)"
                 + " VALUES ('cheque', 10, 'C-1', NOW(6), ?)", user);
         payment = jdbc.queryForObject("SELECT MAX(id) FROM customer_payments", Long.class);
-        jdbc.update("INSERT INTO payment_allocations (payment_id, invoice_id, amount) VALUES (?, ?, 10)", payment,
-                document);
+        jdbc.update("INSERT INTO payment_allocations (payment_id, invoice_id, amount, created_at, created_by)"
+                + " VALUES (?, ?, 10, NOW(6), ?)", payment, document, user);
         jdbc.update("INSERT INTO customer_refunds (credit_note_id, method, amount, reference, refunded_at, created_by)"
                 + " VALUES (?, 'cheque', 10, 'C-2', NOW(6), ?)", document, user);
         refund = jdbc.queryForObject("SELECT MAX(id) FROM customer_refunds", Long.class);

@@ -75,7 +75,8 @@ public class CounterPayments implements PaymentRecorder {
             CustomerPayment payment = payments.saveAndFlush(new CustomerPayment(customerId, methods.get(i),
                     tender.amount().setScale(Tenders.MONEY_SCALE), Tenders.reference(tender), cash ? session : null,
                     actor, clock.instant()));
-            allocations.saveAndFlush(new PaymentAllocation(payment.id(), documentId, payment.amount()));
+            allocations.saveAndFlush(new PaymentAllocation(payment.id(), documentId, payment.amount(), actor,
+                    payment.paidAt()));
             if (cash) {
                 ledger.post(session, CashDirection.IN, PaymentMethod.CASH, payment.amount(), "sale " + documentId,
                         payment.id());
