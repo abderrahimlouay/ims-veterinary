@@ -30,13 +30,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 /**
  * CT-11 (BR-PAY-002, BR-PAY-010, ADR-134): payments allocating to the same invoice at the same time serialise on the
  * invoice row, and applications of the same advance on the customer row, so what payments in force allocate never
- * exceeds the invoice's open amount nor any payment.
+ * exceeds the invoice's open amount nor any payment. CT-12 (ADR-135): a payment reversed twice at once is reversed once,
+ * and an application racing its reversal leaves no allocation of a reversed payment counting.
  */
 @SpringBootTest
 @Import({ TestcontainersConfiguration.class, CommittedDataDatabase.class })
 class AccountPaymentConcurrencyTest {
 
-    private static final String[] PERMISSIONS = { "payment.customer.create", "payment.read" };
+    private static final String[] PERMISSIONS = { "payment.customer.create", "payment.read", "payment.reverse" };
 
     @Autowired
     private AccountPayments payments;
@@ -98,6 +99,60 @@ class AccountPaymentConcurrencyTest {
         assertThat(outcomes).filteredOn(o -> o != null).containsOnly(ErrorCode.PAYMENT_ALLOCATION_EXCEEDED);
         assertThat(jdbc.queryForObject("SELECT SUM(amount) FROM payment_allocations WHERE payment_id = ?",
                 BigDecimal.class, advance)).isEqualByComparingTo("40.00");
+    }
+
+    @RepeatedTest(10)
+    void aPaymentReversedTwiceAtOnceIsReversedOnce() throws Exception {
+        long user = new TestUsers(jdbc, encoder).create("Accountant").id();
+        long customer = customer();
+        long advance = advance(user, customer, "50");
+        List<Callable<ErrorCode>> racers = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            racers.add(() -> {
+                payments.reverse(advance, "Erreur", null);
+                return null;
+            });
+        }
+
+        List<ErrorCode> outcomes = race(user, racers);
+
+        assertThat(outcomes).containsExactlyInAnyOrder(null, ErrorCode.INVALID_STATE_TRANSITION);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM customer_payments WHERE reverses_payment_id = ?",
+                Integer.class, advance)).isEqualTo(1);
+    }
+
+    @RepeatedTest(10)
+    void anApplicationRacingTheReversalNeverLeavesTheInvoiceSettledByAReversedPayment() throws Exception {
+        long user = new TestUsers(jdbc, encoder).create("Accountant").id();
+        long customer = customer();
+        long invoice = invoice(customer, user, "100.00");
+        long advance = advance(user, customer, "50");
+
+        List<ErrorCode> outcomes = race(user, List.of(() -> {
+            payments.apply(advance, List.of(new AllocationInput(invoice, new BigDecimal("30"))), null);
+            return null;
+        }, () -> {
+            payments.reverse(advance, "Erreur", null);
+            return null;
+        }));
+
+        assertThat(outcomes.get(1)).isNull();
+        assertThat(outcomes.get(0)).isIn(null, ErrorCode.INVALID_STATE_TRANSITION);
+        assertThat(jdbc.queryForObject("""
+                SELECT COALESCE(SUM(a.amount), 0) FROM payment_allocations a
+                WHERE a.invoice_id = ? AND NOT EXISTS (SELECT 1 FROM customer_payments r
+                                                     WHERE r.reverses_payment_id = a.payment_id)""",
+                BigDecimal.class, invoice)).isEqualByComparingTo("0");
+    }
+
+    private long advance(long user, long customer, String amount) {
+        TestActor.signIn(user, PERMISSIONS);
+        try {
+            return payments.record(new PaymentInput(customer, "cheque", new BigDecimal(amount), "CHQ", List.of()), null)
+                    .id();
+        } finally {
+            TestActor.signOut();
+        }
     }
 
     private BigDecimal allocatedTo(long invoice) {

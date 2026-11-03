@@ -1,5 +1,7 @@
 package com.imsvet.ims.finance.application;
 
+import com.imsvet.ims.audit.application.AuditRecorder;
+import com.imsvet.ims.audit.domain.AuditAction;
 import com.imsvet.ims.common.actor.ActorProvider;
 import com.imsvet.ims.common.error.BusinessException;
 import com.imsvet.ims.common.error.ErrorCode;
@@ -53,6 +55,8 @@ public class AccountPayments {
 
     private static final String RECORD_ENDPOINT = "POST /api/payments/customers";
     private static final String APPLY_ENDPOINT = "POST /api/payments/customers/{id}/allocations";
+    private static final String REVERSE_ENDPOINT = "POST /api/payments/customers/{id}/reverse";
+    private static final int REASON_MAX = 500;
     private static final String PAYMENT_INVALID = "The payment is invalid.";
     private static final String ALLOCATIONS = "allocations";
     private static final Comparator<CreditInvoice> OLDEST_FIRST = Comparator
@@ -71,6 +75,9 @@ public class AccountPayments {
     private record ApplyKey(long paymentId, List<AllocationInput> allocations) {
     }
 
+    private record ReverseKey(long paymentId, String reason) {
+    }
+
     private record Planned(long invoiceId, BigDecimal amount) {
     }
 
@@ -81,11 +88,12 @@ public class AccountPayments {
     private final CashLedger ledger;
     private final IdempotencyKeys keys;
     private final ActorProvider actors;
+    private final AuditRecorder audit;
     private final Clock clock;
 
     public AccountPayments(CustomerPaymentRepository payments, PaymentAllocationRepository allocations,
             CreditDocuments documents, CreditAccounts accounts, CashLedger ledger,
-            IdempotencyKeys keys, ActorProvider actors, Clock clock) {
+            IdempotencyKeys keys, ActorProvider actors, AuditRecorder audit, Clock clock) {
         this.payments = payments;
         this.allocations = allocations;
         this.documents = documents;
@@ -93,6 +101,7 @@ public class AccountPayments {
         this.ledger = ledger;
         this.keys = keys;
         this.actors = actors;
+        this.audit = audit;
         this.clock = clock;
     }
 
@@ -146,13 +155,69 @@ public class AccountPayments {
         if (payment.customerId() != null) {
             documents.lockHolder(payment.customerId());
         }
-        requireAccountPayment(payment);
+        requireAccountPayment(payment, "allocate", "This payment has no advance to apply.");
         BigDecimal unallocated = payment.amount().subtract(allocations.allocatedFrom(paymentId));
         List<Planned> planned = plan(payment.customerId(), unallocated, requested);
         long actor = actors.current().userId();
         Instant now = clock.instant();
         planned.forEach(p -> allocations.saveAndFlush(new PaymentAllocation(paymentId, p.invoiceId(), p.amount(),
                 actor, now)));
+        claim.complete(paymentId);
+        return detail(paymentId);
+    }
+
+    /**
+     * ADR-135, BR-PAY-013: a payment on account is reversed once, by a new row with the reason; its allocations stop
+     * counting, so its invoices reopen and the balance goes back up. Cash goes out of the reverser's own open session,
+     * refused beyond its expected cash. Audited {@code PAYMENT_REVERSE}. Lock order: idempotency key, the customer, the
+     * cash session. Returns the reversed payment, with {@code reversedBy}.
+     */
+    @PreAuthorize("hasAuthority('payment.reverse')")
+    @Transactional
+    public PaymentDetail reverse(long paymentId, String reason, String idempotencyKey) {
+        String why = reason == null ? "" : reason.trim();
+        if (why.isEmpty()) {
+            throw new ValidationException("The reversal is invalid.",
+                    List.of(new Violation("reason", "REQUIRED", "A reversal needs its reason.")));
+        }
+        if (why.length() > REASON_MAX) {
+            throw new ValidationException("The reversal is invalid.",
+                    List.of(new Violation("reason", "SIZE", "At most " + REASON_MAX + " characters.")));
+        }
+        long actor = actors.current().userId();
+        Claim claim = keys.claim(actor, REVERSE_ENDPOINT, idempotencyKey, new ReverseKey(paymentId, why),
+                "customer_payment");
+        if (claim.replayed().isPresent()) {
+            return detail(claim.replayed().get());
+        }
+        CustomerPayment payment = payments.findById(paymentId).orElseThrow(() -> notFound(paymentId));
+        if (payment.customerId() != null) {
+            documents.lockHolder(payment.customerId());
+        }
+        requireAccountPayment(payment, "reverse", "This payment cannot be reversed here.");
+        Long session = null;
+        if (payment.method() == PaymentMethod.CASH) {
+            session = ledger.lockCurrentSession();
+            ledger.requireAvailable(session, payment.amount());
+        }
+        CustomerPayment reversal = payments.saveAndFlush(payment.reversal(why, actor, clock.instant(), session));
+        if (session != null) {
+            ledger.post(session, CashDirection.OUT, PaymentMethod.CASH, payment.amount(),
+                    "reversal of payment " + paymentId, reversal.id());
+        }
+        List<PaymentAllocation> made = allocations.findByPaymentIdOrderByIdAsc(paymentId);
+        Map<String, Object> old = new LinkedHashMap<>();
+        old.put("customerId", payment.customerId());
+        old.put("method", payment.method().code());
+        old.put("amount", payment.amount().toPlainString());
+        old.put("cashSessionId", payment.cashSessionId());
+        old.put("allocations", made.stream().map(a -> Map.of("invoiceId", a.invoiceId(), "amount",
+                a.amount().toPlainString())).toList());
+        Map<String, Object> now = new LinkedHashMap<>();
+        now.put("reversalId", reversal.id());
+        now.put("reason", why);
+        now.put("cashSessionId", session);
+        audit.record(AuditAction.PAYMENT_REVERSE, "customer_payments", paymentId, old, now);
         claim.complete(paymentId);
         return detail(paymentId);
     }
@@ -267,8 +332,11 @@ public class AccountPayments {
         return open;
     }
 
-    /** Only a payment on account still in force has an advance to apply; a counter payment never does (ADR-134 item 5). */
-    private void requireAccountPayment(CustomerPayment payment) {
+    /**
+     * Only a payment on account still in force has an advance to apply or may be reversed here; a counter payment never
+     * (ADR-134 item 5, ADR-135 item 4). Call it under the customer's lock.
+     */
+    private void requireAccountPayment(CustomerPayment payment, String action, String message) {
         String refusal = null;
         if (payment.customerId() == null || payment.reversesPaymentId() != null) {
             refusal = payment.customerId() == null ? "counter_payment" : "reversal";
@@ -282,8 +350,8 @@ public class AccountPayments {
             }
         }
         if (refusal != null) {
-            throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, "This payment has no advance to apply.",
-                    Map.of("paymentId", payment.id(), "action", "allocate", "state", refusal));
+            throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, message,
+                    Map.of("paymentId", payment.id(), "action", action, "state", refusal));
         }
     }
 
@@ -332,8 +400,8 @@ public class AccountPayments {
                 payment.cashSessionId(), payment.paidAt(), payment.reversesPaymentId(), reversedBy,
                 made.stream().map(a -> new AllocationView(a.id(), a.invoiceId(), numbers.get(a.invoiceId()), a.amount(),
                         a.createdAt())).toList(),
-                payment.reversesPaymentId() == null ? payment.amount().subtract(allocated) : BigDecimal.ZERO
-                        .setScale(Tenders.MONEY_SCALE),
+                payment.reversesPaymentId() == null && reversedBy == null ? payment.amount().subtract(allocated)
+                        : BigDecimal.ZERO.setScale(Tenders.MONEY_SCALE),
                 balance);
     }
 

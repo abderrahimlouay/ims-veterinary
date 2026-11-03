@@ -84,7 +84,7 @@ CT-01, CT-02, CT-04 and CT-05 run with real sales in `SaleConfirmationConcurrenc
 | CT-09 | two cash sessions opened concurrently by same cashier | one succeeds |
 | CT-10 | two simultaneous blocks of the same lot | one succeeds, the other `INVALID_STATE_TRANSITION`; one `LOT_BLOCK` audit entry (`LotActionConcurrencyTest`, Phase 3) |
 | CT-11 | parallel payments (customer and supplier) allocating to the same invoice, and parallel applications of one advance | Σ live allocations ≤ the invoice's open amount and ≤ each payment (Phase 9, ADR-132, ADR-134; customers: `AccountPaymentConcurrencyTest`, 5 payments and 4 applications, 10 repetitions each) |
-| CT-12 | a payment reversed twice in parallel; a cash reversal and a cash refund on the same session | one reversal; expected cash never below zero (Phase 9, ADR-135) |
+| CT-12 | a payment reversed twice in parallel; an application racing the reversal; a cash reversal and a cash refund on the same session | one reversal; no allocation of a reversed payment counts; expected cash never below zero (Phase 9, ADR-135; customers: `AccountPaymentConcurrencyTest`, 10 repetitions each; cash out serialises on the session row as in `RefundConcurrencyTest`) |
 
 Each runs repeatedly (≥ 20 iterations) in CI to expose flakiness.
 
@@ -230,7 +230,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-PAY-010 | S | Advance (customer and supplier) recorded, lowers the balance, later applied by new rows; a counter payment is never offered as an advance |
 | BR-PAY-011 | S | Supplier credit note lowers the balance; applied to invoices of the same supplier only; optional return of that supplier |
 | BR-PAY-012 | S,A | Payment on account: oldest-first allocation when none given; `[]` = all advance; inactive customer → CUSTOMER_INACTIVE; cash into the own session; idempotent replay (`AccountPaymentsTest`) |
-| BR-PAY-013 | S,A | Reversal: invoices reopen, balance back up, cash the other way on the reverser's session; twice or a counter payment → INVALID_STATE_TRANSITION; PAYMENT_REVERSE audit |
+| BR-PAY-013 | S,A | Reversal: invoices reopen, balance back up, cash the other way on the reverser's session, refused beyond its cash; twice, a reversal or a counter payment → INVALID_STATE_TRANSITION; reason required; PAYMENT_REVERSE audit; the invoice can then be cancelled (customers: `AccountPaymentsTest`) |
 | BR-PAY-014 | S | Supplier balance and payables by due date, with credit notes and advances |
 | BR-PAY-015 | S,A | Cancelling a settled supplier invoice → INVOICE_HAS_SETTLEMENTS; after reversing its payments it can be cancelled; audited |
 | BR-CASH-001 | R,S | Second open session for same cashier → CASH_SESSION_ALREADY_OPEN (unique via generated column) (`CashSessionsTest`, CT-09 `CashSessionConcurrencyTest`) |

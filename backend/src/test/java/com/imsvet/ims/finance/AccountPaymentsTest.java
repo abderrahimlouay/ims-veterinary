@@ -32,7 +32,9 @@ import tools.jackson.databind.json.JsonMapper;
  * advance that lowers the balance and is applied later by new rows; explicit allocations within each invoice's open
  * amount (TTC − credit notes − payments in force) and the payment; only confirmed credit invoices of that customer; cash
  * through the user's own open session; an inactive customer refused; an idempotent replay; a counter payment never has
- * an advance; and a credit invoice that a payment settles can no longer be cancelled (ADR-119 as amended).
+ * an advance; and a credit invoice that a payment settles can no longer be cancelled (ADR-119 as amended). Reversal
+ * (ADR-135, BR-PAY-013): once, with a reason, audited; the invoices reopen and the balance goes back up; cash goes out of
+ * the reverser's own open session, refused beyond its expected cash; never a counter payment.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -232,6 +234,94 @@ class AccountPaymentsTest {
                 .isEqualTo("confirmed");
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM customer_payments WHERE reverses_payment_id = ?",
                 Integer.class, payment)).isZero();
+    }
+
+    @Test
+    void aReversalReopensTheInvoicesRaisesTheBalanceAndHappensOnce() throws Exception {
+        long invoice = invoice("INV-R", today, "100.00");
+        long payment = id(pay(body("80", "[{\"invoiceId\":" + invoice + ",\"amount\":\"60\"}]"), null)
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.customerBalance").value("20.00")));
+
+        reverse(payment, "{}").andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors[0].field").value("reason"))
+                .andExpect(jsonPath("$.errors[0].code").value("REQUIRED"));
+        long reversal = JSON.readTree(reverse(payment, "{\"reason\":\" Chèque impayé \"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(payment))
+                .andExpect(jsonPath("$.reversedBy").isNumber())
+                .andExpect(jsonPath("$.unallocated").value("0.00"))
+                .andExpect(jsonPath("$.customerBalance").value("100.00"))
+                .andReturn().getResponse().getContentAsString()).get("reversedBy").asLong();
+
+        accountant.get("/api/payments/customers/" + reversal).andExpect(jsonPath("$.reverses").value(payment))
+                .andExpect(jsonPath("$.amount").value("80.00"));
+        accountant.get("/api/customers/" + customer + "/open-invoices")
+                .andExpect(jsonPath("$.invoices[0].open").value("100.00"))
+                .andExpect(jsonPath("$.advances").isEmpty());
+        assertThat(jdbc.queryForObject("SELECT reversal_reason FROM customer_payments WHERE id = ?", String.class,
+                reversal)).isEqualTo("Chèque impayé");
+        String audit = jdbc.queryForObject("SELECT new_values FROM audit_log WHERE action = 'PAYMENT_REVERSE'"
+                + " AND entity = 'customer_payments' AND entity_id = ?", String.class, payment);
+        assertThat(audit).contains("\"reversalId\": " + reversal).contains("Chèque impayé");
+        reverse(payment, "{\"reason\":\"Encore\"}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVALID_STATE_TRANSITION"))
+                .andExpect(jsonPath("$.context.state").value("reversed"));
+        reverse(reversal, "{\"reason\":\"Encore\"}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.context.state").value("reversal"));
+        apply(payment, "[{\"invoiceId\":" + invoice + ",\"amount\":\"1\"}]", null).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.context.state").value("reversed"));
+        admin.post("/api/sales/" + invoice + "/cancel", "{\"reason\":\"Erreur\"}").andExpect(status().isOk());
+    }
+
+    @Test
+    void aCashReversalGoesOutOfTheReversersOwnSessionWithinItsCash() throws Exception {
+        long first = id(accountant.post("/api/cash-sessions/open", "{\"openingAmount\":\"0\"}")
+                .andExpect(status().isCreated()));
+        long payment = id(pay("{\"customerId\":" + customer + ",\"method\":\"cash\",\"amount\":\"15\"}", null)
+                .andExpect(status().isCreated()));
+        accountant.post("/api/cash-sessions/" + first + "/close", "{\"countedAmount\":\"15\"}")
+                .andExpect(status().isOk());
+
+        String reason = "{\"reason\":\"Erreur de client\"}";
+        reverse(payment, reason).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CASH_SESSION_REQUIRED"));
+        long second = id(accountant.post("/api/cash-sessions/open", "{\"openingAmount\":\"10\"}")
+                .andExpect(status().isCreated()));
+        reverse(payment, reason).andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("CASH_INSUFFICIENT"))
+                .andExpect(jsonPath("$.context.expected").value("10.00"));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM customer_payments WHERE reverses_payment_id = ?",
+                Integer.class, payment)).isZero();
+        accountant.post("/api/cash-sessions/" + second + "/close", "{\"countedAmount\":\"10\"}")
+                .andExpect(status().isOk());
+        long third = id(accountant.post("/api/cash-sessions/open", "{\"openingAmount\":\"20\"}")
+                .andExpect(status().isCreated()));
+
+        reverse(payment, reason).andExpect(status().isOk());
+
+        assertThat(jdbc.queryForObject("SELECT cash_session_id FROM customer_payments WHERE reverses_payment_id = ?",
+                Long.class, payment)).isEqualTo(third);
+        accountant.get("/api/cash-sessions/current").andExpect(jsonPath("$.expectedAmount").value("5.00"));
+        assertThat(jdbc.queryForObject("SELECT expected_amount FROM cash_sessions WHERE id = ?", BigDecimal.class,
+                first)).isEqualByComparingTo("15.00");
+    }
+
+    @Test
+    void aCounterPaymentIsNotReversedHere() throws Exception {
+        long receipt = document("receipt", "RCT-Z", customer, null, false, null, "10.00");
+        jdbc.update("""
+                INSERT INTO customer_payments (customer_id, method, amount, reference, paid_at, created_by)
+                VALUES (?, 'cheque', 10, 'C', UTC_TIMESTAMP(6), ?)""", customer, operator);
+        long counter = jdbc.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        jdbc.update("INSERT INTO payment_allocations (payment_id, invoice_id, amount, created_at, created_by)"
+                + " VALUES (?, ?, 10, UTC_TIMESTAMP(6), ?)", counter, receipt, operator);
+
+        reverse(counter, "{\"reason\":\"Erreur\"}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVALID_STATE_TRANSITION"))
+                .andExpect(jsonPath("$.context.action").value("reverse"))
+                .andExpect(jsonPath("$.context.state").value("counter_payment"));
+    }
+
+    private ResultActions reverse(long payment, String body) throws Exception {
+        return accountant.post("/api/payments/customers/" + payment + "/reverse", body);
     }
 
     private ResultActions pay(String body, String key) throws Exception {
