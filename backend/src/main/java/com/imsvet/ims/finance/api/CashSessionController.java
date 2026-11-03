@@ -1,15 +1,21 @@
 package com.imsvet.ims.finance.api;
 
+import com.imsvet.ims.common.idempotency.IdempotencyKeys;
 import com.imsvet.ims.common.paging.PageResponse;
+import com.imsvet.ims.finance.application.CashReports.CashReport;
+import com.imsvet.ims.finance.application.CashReports;
 import com.imsvet.ims.finance.application.CashSessionView;
+import com.imsvet.ims.finance.application.CashSessions.MovementInput;
 import com.imsvet.ims.finance.application.CashSessions;
 import java.math.BigDecimal;
 import java.net.URI;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,10 +31,15 @@ class CashSessionController {
     record CloseRequest(BigDecimal countedAmount) {
     }
 
-    private final CashSessions sessions;
+    record MovementRequest(String direction, BigDecimal amount, String label) {
+    }
 
-    CashSessionController(CashSessions sessions) {
+    private final CashSessions sessions;
+    private final CashReports reports;
+
+    CashSessionController(CashSessions sessions, CashReports reports) {
         this.sessions = sessions;
+        this.reports = reports;
     }
 
     @PostMapping("/open")
@@ -57,5 +68,18 @@ class CashSessionController {
     @GetMapping("/{id}")
     CashSessionView get(@PathVariable long id) {
         return sessions.get(id);
+    }
+
+    @PostMapping("/{id}/movements")
+    ResponseEntity<CashSessionView> addMovement(@PathVariable long id, @RequestBody MovementRequest body,
+            @RequestHeader(name = IdempotencyKeys.HEADER, required = false) String idempotencyKey) {
+        CashSessionView session = sessions.addMovement(id, new MovementInput(body.direction(), body.amount(),
+                body.label()), idempotencyKey);
+        return ResponseEntity.status(HttpStatus.CREATED).body(session);
+    }
+
+    @GetMapping("/{id}/report")
+    CashReport report(@PathVariable long id) {
+        return reports.report(id);
     }
 }

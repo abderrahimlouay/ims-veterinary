@@ -1,6 +1,7 @@
 package com.imsvet.ims.finance.infrastructure;
 
 import com.imsvet.ims.finance.domain.CustomerRefund;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.data.repository.Repository;
 
@@ -10,4 +11,6 @@ public interface CustomerRefundRepository extends Repository<CustomerRefund, Lon
     CustomerRefund saveAndFlush(CustomerRefund refund);
 
     List<CustomerRefund> findByCreditNoteIdOrderByIdAsc(Long creditNoteId);
+
+    List<CustomerRefund> findByCreatedByAndRefundedAtBetweenOrderByIdAsc(Long createdBy, Instant from, Instant to);
 }

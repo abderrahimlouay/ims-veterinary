@@ -35,8 +35,8 @@ class CashMovementAppendOnlyTest {
         jdbc.update("UPDATE cash_sessions SET status = 'closed' WHERE cashier_id = ?", user);
         jdbc.update("INSERT INTO cash_sessions (cashier_id, opened_at) VALUES (?, NOW(6))", user);
         session = jdbc.queryForObject("SELECT MAX(id) FROM cash_sessions WHERE cashier_id = ?", Long.class, user);
-        jdbc.update("INSERT INTO cash_movements (cash_session_id, direction, method, amount, created_by, created_at)"
-                + " VALUES (?, 'in', 'cash', 10, ?, NOW(6))", session, user);
+        jdbc.update("INSERT INTO cash_movements (cash_session_id, direction, method, amount, label, manual, created_by,"
+                + " created_at) VALUES (?, 'in', 'cash', 10, 'Fonds', TRUE, ?, NOW(6))", session, user);
     }
 
     @Test

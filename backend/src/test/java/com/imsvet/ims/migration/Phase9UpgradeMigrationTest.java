@@ -33,7 +33,7 @@ import org.testcontainers.mysql.MySQLContainer;
 class Phase9UpgradeMigrationTest {
 
     private static final String SCHEMA = "ims_upgrade_check_9";
-    private static final String LAST = "09.006";
+    private static final String LAST = "09.007";
 
     @Autowired
     private MySQLContainer mysql;

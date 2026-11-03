@@ -123,6 +123,24 @@ public class CashLedger {
                 supplierPaymentId, actors.current().userId(), clock.instant()));
     }
 
+    /**
+     * A manual movement (ADR-136, BR-CASH-006) under the session's row lock: refused on a closed session, and an OUT
+     * beyond the expected cash.
+     */
+    @Transactional
+    public CashMovement postManual(long sessionId, CashDirection direction, BigDecimal amount, String label) {
+        CashSession session = locks.lock(sessionId).orElseThrow();
+        if (!session.open()) {
+            throw new BusinessException(ErrorCode.CASH_SESSION_CLOSED, "This cash session is closed.",
+                    Map.of("id", sessionId));
+        }
+        if (direction == CashDirection.OUT) {
+            requireAvailable(sessionId, amount);
+        }
+        return movements.saveAndFlush(CashMovement.manual(sessionId, direction, amount, label,
+                actors.current().userId(), clock.instant()));
+    }
+
     private static Supplier<BusinessException> ledgerRefusal(long cashier) {
         return () -> new BusinessException(ErrorCode.CASH_SESSION_REQUIRED, "A cash payment needs an open cash session.",
                 Map.of("cashierId", cashier));

@@ -238,8 +238,8 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-CASH-003 | U,S | Expected = opening + cash in − cash out (cash only); a cash sale with change posts the sale total, never the amount tendered (ADR-118, `SaleConfirmationTest.aCashSaleWithChangeKeepsTheTotalNotTheTendered`) |
 | BR-CASH-004 | A | Modify closed session → CASH_SESSION_CLOSED; movements append-only (`CashSessionsTest`, `CashMovementAppendOnlyTest`) |
 | BR-CASH-005 | S | Movement amount ≤ 0 / wrong direction rejected |
-| BR-CASH-006 | S,A | Manual movement: label required, own open session only, OUT beyond expected → CASH_INSUFFICIENT, `cash.manage` only, audited |
-| BR-CASH-007 | S,A | `cash.manage` closes another user's session, closer recorded; the owner without it cannot; report totals by source equal the expected cash |
+| BR-CASH-006 | S,A | Manual movement: label required, own open session only (another's → CASH_SESSION_REQUIRED, closed → CASH_SESSION_CLOSED), OUT beyond expected → CASH_INSUFFICIENT, `cash.manage` only, audited `CASH_MOVEMENT_CREATE`; every movement has exactly one source and a manual one a label (`CashManagementTest`, `CashSessionsTest`) |
+| BR-CASH-007 | S,A | `cash.manage` closes another user's session, closer recorded and named in `CASH_VARIANCE` with the cashier; a user without it cannot; the report totals the cash by source, lists cheques and transfers apart, and is open to `cash.manage` or the cashier (`CashManagementTest`) |
 | BR-SEC-001 | SEC | Every endpoint (enumerated) without credential → 401 |
 | BR-SEC-002 | SEC | Permission matrix test: each endpoint × role → expected 200/403 |
 | BR-SEC-003 | SEC,U | Password policy; stored hash never plaintext; never in logs/responses |
