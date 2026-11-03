@@ -191,6 +191,8 @@ class EndpointPermissionMatrixTest {
                     "{\"customerId\":999999,\"method\":\"cheque\",\"amount\":\"1\",\"reference\":\"M\"}"),
             new Endpoint(HttpMethod.POST, "/api/payments/customers/999999/allocations", "payment.customer.create",
                     "{\"allocations\":[]}"),
+            new Endpoint(HttpMethod.POST, "/api/payments/customers/999999/reverse", "payment.reverse",
+                    "{\"reason\":\"Matrix\"}"),
             new Endpoint(HttpMethod.GET, "/api/payments/customers", "payment.read"),
             new Endpoint(HttpMethod.GET, "/api/payments/customers/999999", "payment.read"),
             new Endpoint(HttpMethod.GET, "/api/customers/999999/open-invoices", "payment.read"),

@@ -30,6 +30,9 @@ class CustomerPaymentController {
     record AllocationsRequest(List<AllocationInput> allocations) {
     }
 
+    record ReverseRequest(String reason) {
+    }
+
     private final AccountPayments payments;
     private final AccountStatements statements;
 
@@ -49,6 +52,12 @@ class CustomerPaymentController {
     PaymentDetail apply(@PathVariable long id, @RequestBody AllocationsRequest request,
             @RequestHeader(name = IdempotencyKeys.HEADER, required = false) String idempotencyKey) {
         return payments.apply(id, request.allocations(), idempotencyKey);
+    }
+
+    @PostMapping("/api/payments/customers/{id}/reverse")
+    PaymentDetail reverse(@PathVariable long id, @RequestBody ReverseRequest request,
+            @RequestHeader(name = IdempotencyKeys.HEADER, required = false) String idempotencyKey) {
+        return payments.reverse(id, request.reason(), idempotencyKey);
     }
 
     @GetMapping("/api/payments/customers")

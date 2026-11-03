@@ -83,6 +83,14 @@ public class CustomerPayment {
         return reversal;
     }
 
+    /** A reversal whose cash, if any, goes through {@code sessionId}: the reverser's own open session (ADR-135). */
+    public CustomerPayment reversal(String reason, Long by, Instant now, Long sessionId) {
+        CustomerPayment reversal = new CustomerPayment(customerId, method, amount, reference, sessionId, by, now);
+        reversal.reversesPaymentId = id;
+        reversal.reversalReason = reason;
+        return reversal;
+    }
+
     public Long id() {
         return id;
     }

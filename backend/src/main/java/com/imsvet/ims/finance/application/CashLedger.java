@@ -69,8 +69,8 @@ public class CashLedger {
     }
 
     /**
-     * BR-RET-011: refuses with {@code CASH_INSUFFICIENT} if paying {@code amount} out of the session would bring its
-     * expected cash (BR-CASH-003) below zero. Call it under the session's lock, before writing anything.
+     * BR-RET-011, ADR-135: refuses with {@code CASH_INSUFFICIENT} if paying {@code amount} out of the session would
+     * bring its expected cash (BR-CASH-003) below zero. Call it under the session's lock, before writing anything.
      */
     @Transactional(readOnly = true)
     public void requireAvailable(long sessionId, BigDecimal amount) {
@@ -83,7 +83,7 @@ public class CashLedger {
             context.put("cashSessionId", sessionId);
             context.put("expected", expected.setScale(2).toPlainString());
             context.put("requested", amount.setScale(2).toPlainString());
-            throw new BusinessException(ErrorCode.CASH_INSUFFICIENT, "Not enough cash in the session for this refund.",
+            throw new BusinessException(ErrorCode.CASH_INSUFFICIENT, "Not enough cash in the session for this payment out.",
                     context);
         }
     }
