@@ -133,7 +133,8 @@
     "RETURN_REQUIRES_INVOICE": "Invoice this delivery note first, then return against the invoice.",
     "RETURN_PERIOD_EXPIRED": "This sale is too old to be returned.",
     "REFUND_TOTAL_MISMATCH": "The refund must equal the credit note total; a credit sale is not refunded.",
-    "CASH_INSUFFICIENT": "Not enough cash in your session for this refund: refund by cheque or transfer."
+    "CASH_INSUFFICIENT": "Not enough cash in your session for this payment out: use a cheque or a transfer.",
+    "INVOICE_HAS_SETTLEMENTS": "This document is settled (payment or credit note): reverse the payment first."
   },
   "pager": {
     "label": "Pagination",
@@ -899,7 +900,8 @@
     "tabs": {
       "overview": "Overview",
       "prices": "Prices",
-      "history": "History"
+      "history": "History",
+      "account": "Account"
     },
     "errors": {
       "phoneFormat": "A phone number has at most 15 digits.",
@@ -1147,5 +1149,44 @@
       "blocked": "Lot blocked",
       "recalled": "Lot recalled"
     }
+  },
+  "account": {
+    "pay": "Record a payment",
+    "openInvoices": "Open credit invoices",
+    "noOpenInvoice": "No open invoice.",
+    "open": "Left to pay",
+    "advances": "Advances",
+    "advanceOf": "Advance of {{date}}",
+    "apply": "Apply",
+    "applyTitle": "Apply an advance of {{amount}}",
+    "statement": "Account statement",
+    "from": "From",
+    "to": "To",
+    "entry": "Entry",
+    "debit": "Debit",
+    "credit": "Credit",
+    "balance": "Balance",
+    "opening": "Opening balance",
+    "closing": "Closing balance",
+    "kinds": {
+      "invoice": "Invoice",
+      "credit_note": "Credit note",
+      "payment": "Payment",
+      "reversal": "Payment reversal"
+    },
+    "reverse": "Reverse the payment",
+    "reverseTitle": "Reverse a payment",
+    "reverseHint": "A reversal row is recorded; the payment is never changed. Its invoices are due again; in cash, the amount leaves your session.",
+    "reason": "Reason",
+    "method": "Payment method",
+    "amount": "Amount",
+    "reference": "Reference (cheque or transfer number)",
+    "split": "Split",
+    "oldestFirst": "Automatic: oldest invoices first",
+    "chooseInvoices": "Choose the invoices",
+    "allocateTo": "{{number}} (left to pay {{open}})",
+    "allAdvance": "No open invoice: the whole payment will be an advance.",
+    "restIsAdvance": "What is not allocated stays as an advance on the customer's account.",
+    "record": "Record"
   }
 }

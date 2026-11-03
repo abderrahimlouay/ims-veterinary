@@ -133,7 +133,8 @@
     "RETURN_REQUIRES_INVOICE": "Facturez d’abord ce bon de livraison, puis faites le retour sur la facture.",
     "RETURN_PERIOD_EXPIRED": "Cette vente est trop ancienne pour un retour.",
     "REFUND_TOTAL_MISMATCH": "Le remboursement doit égaler le total de l’avoir ; une vente à crédit n’est pas remboursée.",
-    "CASH_INSUFFICIENT": "Pas assez d’espèces dans votre caisse pour ce remboursement : remboursez par chèque ou virement."
+    "CASH_INSUFFICIENT": "Pas assez d’espèces dans votre caisse pour cette sortie : utilisez un chèque ou un virement.",
+    "INVOICE_HAS_SETTLEMENTS": "Ce document est réglé (paiement ou avoir) : annulez d’abord le paiement."
   },
   "pager": {
     "label": "Pagination",
@@ -899,7 +900,8 @@
     "tabs": {
       "overview": "Aperçu",
       "prices": "Prix",
-      "history": "Historique"
+      "history": "Historique",
+      "account": "Compte"
     },
     "errors": {
       "phoneFormat": "Un numéro de téléphone compte au plus 15 chiffres.",
@@ -1147,5 +1149,44 @@
       "blocked": "Lot bloqué",
       "recalled": "Lot rappelé"
     }
+  },
+  "account": {
+    "pay": "Enregistrer un paiement",
+    "openInvoices": "Factures à crédit ouvertes",
+    "noOpenInvoice": "Aucune facture ouverte.",
+    "open": "Reste dû",
+    "advances": "Avances",
+    "advanceOf": "Avance du {{date}}",
+    "apply": "Imputer",
+    "applyTitle": "Imputer une avance de {{amount}}",
+    "statement": "Relevé de compte",
+    "from": "Du",
+    "to": "Au",
+    "entry": "Écriture",
+    "debit": "Débit",
+    "credit": "Crédit",
+    "balance": "Solde",
+    "opening": "Solde d’ouverture",
+    "closing": "Solde de clôture",
+    "kinds": {
+      "invoice": "Facture",
+      "credit_note": "Avoir",
+      "payment": "Paiement",
+      "reversal": "Annulation de paiement"
+    },
+    "reverse": "Annuler le paiement",
+    "reverseTitle": "Annuler un paiement",
+    "reverseHint": "Une ligne d’annulation est enregistrée ; le paiement n’est jamais modifié. Ses factures redeviennent dues ; en espèces, le montant sort de votre caisse.",
+    "reason": "Motif",
+    "method": "Mode de paiement",
+    "amount": "Montant",
+    "reference": "Référence (n° de chèque ou de virement)",
+    "split": "Répartition",
+    "oldestFirst": "Automatique : les factures les plus anciennes d’abord",
+    "chooseInvoices": "Choisir les factures",
+    "allocateTo": "{{number}} (reste dû {{open}})",
+    "allAdvance": "Aucune facture ouverte : tout le paiement sera une avance.",
+    "restIsAdvance": "Ce qui n’est pas imputé reste une avance sur le compte du client.",
+    "record": "Enregistrer"
   }
 }

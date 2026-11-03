@@ -10,6 +10,7 @@ import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { hasPermission, useCurrentUser } from '../auth'
 import { CreditLimitDialog, CreditLimitLabel } from './CreditLimitDialog'
+import { CustomerAccountPanel } from '../finance'
 import { CustomerBalance, CustomerSalesPanel } from '../sales'
 import { CustomerPricesPanel } from './CustomerPricesPanel'
 import {
@@ -48,11 +49,12 @@ export function NewCustomerPage() {
   )
 }
 
-type Tab = 'overview' | 'prices' | 'history'
+type Tab = 'overview' | 'account' | 'prices' | 'history'
 
 /**
- * `/customers/:id` (frontend.md §4.6): Overview (record, balance, credit limit, deactivate), Prices and History tabs. Each control
- * appears only with its permission; the server refuses anyway (BR-SEC-002).
+ * `/customers/:id` (frontend.md §4.6): Overview (record, balance, credit limit, deactivate), Account (payments, statement;
+ * `payment.read` or `statement.read`, Phase 9), Prices and History tabs. Each control appears only with its permission;
+ * the server refuses anyway (BR-SEC-002).
  */
 export function CustomerPage() {
   const { t } = useTranslation()
@@ -65,6 +67,12 @@ export function CustomerPage() {
   const manage = hasPermission(current, 'customer.manage')
   const manageCredit = hasPermission(current, 'customer.credit.manage')
   const managePrices = hasPermission(current, 'customer.price.manage')
+  const tabs: Tab[] = [
+    'overview',
+    ...(hasPermission(current, 'payment.read') || hasPermission(current, 'statement.read') ? (['account'] as const) : []),
+    'prices',
+    ...(hasPermission(current, 'sale.read') ? (['history'] as const) : []),
+  ]
 
   if (customer.isPending) {
     return (
@@ -90,7 +98,7 @@ export function CustomerPage() {
       </div>
       {setActive.error instanceof ApiError && <Alert tone="danger">{problemMessage(setActive.error.problem, t)}</Alert>}
       <div role="tablist" aria-label={data.name} className="flex gap-2 border-b border-line">
-        {(hasPermission(current, 'sale.read') ? (['overview', 'prices', 'history'] as const) : (['overview', 'prices'] as const)).map((k) => (
+        {tabs.map((k) => (
           <button
             key={k}
             type="button"
@@ -119,6 +127,10 @@ export function CustomerPage() {
           <CustomerBalance customerId={id} />
           {creditOpen && <CreditLimitDialog customer={data} onClose={() => setCreditOpen(false)} />}
           {manage ? <CustomerForm key={data.version} customer={data} onSaved={() => undefined} /> : <CustomerFacts customer={data} />}
+        </div>
+      ) : tab === 'account' ? (
+        <div role="tabpanel">
+          <CustomerAccountPanel customerId={id} />
         </div>
       ) : tab === 'history' ? (
         <div role="tabpanel">
