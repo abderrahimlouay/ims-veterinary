@@ -194,6 +194,7 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/payments/customers", "payment.read"),
             new Endpoint(HttpMethod.GET, "/api/payments/customers/999999", "payment.read"),
             new Endpoint(HttpMethod.GET, "/api/customers/999999/open-invoices", "payment.read"),
+            new Endpoint(HttpMethod.GET, "/api/customers/999999/statement", "statement.read"),
             new Endpoint(HttpMethod.GET, "/api/returns/customer", "return.read"),
             new Endpoint(HttpMethod.GET, "/api/returns/customer/999999", "return.read"),
             new Endpoint(HttpMethod.POST, "/api/returns/customer/preview", "return.customer.create",

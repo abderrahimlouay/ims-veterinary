@@ -24,6 +24,11 @@ public class BusinessCalendar {
         return LocalDate.now(clock.withZone(business.timeZone()));
     }
 
+    /** The business date of an instant. */
+    public LocalDate dateOf(Instant instant) {
+        return LocalDate.ofInstant(instant, business.timeZone());
+    }
+
     /** The instant a business date begins. */
     public Instant startOf(LocalDate date) {
         return date.atStartOfDay(business.timeZone()).toInstant();

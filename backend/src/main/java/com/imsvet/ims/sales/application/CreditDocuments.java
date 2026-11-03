@@ -14,6 +14,7 @@ import com.imsvet.ims.sales.infrastructure.SalesDocumentRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -48,6 +49,10 @@ public class CreditDocuments {
         public BigDecimal beforePayments() {
             return totalTtc.subtract(creditNoted);
         }
+    }
+
+    /** What the statement lists (BR-PAY-007): a credit invoice or a credit note of one, confirmed. */
+    public record CreditEntry(long id, String kind, String number, Instant issuedAt, BigDecimal totalTtc, Long parentId) {
     }
 
     private final SalesDocumentRepository documents;
@@ -109,6 +114,20 @@ public class CreditDocuments {
     private static boolean creditInvoiceOf(SalesDocument d, long customerId) {
         return d.customerId() != null && d.customerId() == customerId && d.creditSale()
                 && d.docType() == SalesDocType.INVOICE && d.status() == SalesDocStatus.CONFIRMED;
+    }
+
+    /**
+     * The documents in the balance of ADR-118, in no order: the customer's confirmed credit invoices and their confirmed
+     * credit notes. A cancelled document counts in neither (ADR-119).
+     */
+    @Transactional(readOnly = true)
+    public List<CreditEntry> creditEntries(long customerId) {
+        ArrayList<CreditEntry> entries = new ArrayList<>();
+        documents.creditInvoicesOf(customerId).forEach(d -> entries.add(new CreditEntry(d.id(), "invoice", d.number(),
+                d.issuedAt(), d.totalTtc(), null)));
+        documents.creditNotesOfCreditInvoices(customerId).forEach(d -> entries.add(new CreditEntry(d.id(),
+                "credit_note", d.number(), d.issuedAt(), d.totalTtc(), d.parentId())));
+        return entries;
     }
 
     /** Document numbers by id, for the views of payments; a draft has none. */

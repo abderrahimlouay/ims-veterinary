@@ -110,4 +110,14 @@ public interface SalesDocumentRepository extends Repository<SalesDocument, Long>
     List<Object[]> creditNotedPerInvoice(long customerId);
 
     List<SalesDocument> findAllByIdIn(Collection<Long> ids);
+
+    /** Confirmed credit notes of the customer's credit invoices: those that touch the balance (ADR-118). */
+    @Query("""
+            SELECT d FROM SalesDocument d
+            WHERE d.customerId = :customerId
+              AND d.docType = com.imsvet.ims.sales.domain.SalesDocType.CREDIT_NOTE
+              AND d.status = com.imsvet.ims.sales.domain.SalesDocStatus.CONFIRMED
+              AND d.parentId IN (SELECT p.id FROM SalesDocument p WHERE p.creditSale = TRUE
+                  AND p.docType = com.imsvet.ims.sales.domain.SalesDocType.INVOICE)""")
+    List<SalesDocument> creditNotesOfCreditInvoices(long customerId);
 }
