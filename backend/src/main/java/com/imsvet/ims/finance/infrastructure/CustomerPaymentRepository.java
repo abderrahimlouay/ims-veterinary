@@ -53,6 +53,8 @@ public interface CustomerPaymentRepository extends Repository<CustomerPayment, L
 
     Page<CustomerPayment> findAllByOrderByIdDesc(Pageable pageable);
 
+    List<CustomerPayment> findByCustomerIdOrderByIdAsc(Long customerId);
+
     /**
      * The customer's payments in force with a part not allocated: the advances (ADR-134), as
      * {@code [paymentId, unallocated]}, oldest first. A counter payment is allocated in full, so never listed.
