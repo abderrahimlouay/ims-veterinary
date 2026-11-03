@@ -13,9 +13,11 @@ import com.imsvet.ims.common.paging.PageRequests;
 import com.imsvet.ims.common.paging.PageResponse;
 import com.imsvet.ims.finance.domain.SupplierCreditAllocation;
 import com.imsvet.ims.finance.domain.SupplierInvoice;
+import com.imsvet.ims.finance.domain.SupplierPaymentAllocation;
 import com.imsvet.ims.finance.infrastructure.SupplierCreditAllocationRepository;
 import com.imsvet.ims.finance.infrastructure.SupplierInvoiceLocks;
 import com.imsvet.ims.finance.infrastructure.SupplierInvoiceRepository;
+import com.imsvet.ims.finance.infrastructure.SupplierPaymentAllocationRepository;
 import com.imsvet.ims.purchasing.application.SupplierAccounts;
 import com.imsvet.ims.purchasing.application.SupplierAccounts.ReceiptRef;
 import com.imsvet.ims.purchasing.application.SupplierAccounts.ReturnRef;
@@ -41,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Supplier invoices and credit notes (ADR-133, W1c, BR-PAY-008/011/015): recorded as the supplier issued them, never
  * edited; a credit note lowers what is owed and may be applied to invoices of the same supplier; a wrong entry is
- * cancelled with its reason while nothing settles it. Lock order (database.md §7): idempotency key, the supplier, the
+ * cancelled with its reason while nothing settles it (a credit-note application, or a payment in force). Lock order (database.md §7): idempotency key, the supplier, the
  * supplier invoices in ascending id order.
  */
 @Service
@@ -73,6 +75,10 @@ public class SupplierInvoices {
     public record ApplicationView(long id, long otherId, String otherNumber, BigDecimal amount, Instant createdAt) {
     }
 
+    /** An allocation of a supplier payment in force on this invoice. */
+    public record PaymentView(long id, long paymentId, BigDecimal amount, Instant createdAt) {
+    }
+
     public record Warning(String code, Map<String, Object> context) {
     }
 
@@ -80,7 +86,7 @@ public class SupplierInvoices {
     public record SupplierInvoiceDetail(long id, Ref supplier, String invoiceNumber, boolean creditNote,
             DocumentRef receipt, DocumentRef supplierReturn, LocalDate invoiceDate, LocalDate dueDate,
             BigDecimal totalTtc, BigDecimal open, String status, List<ApplicationView> applications,
-            String cancelReason, Long cancelledBy, Instant cancelledAt, Long createdBy, Instant createdAt,
+            List<PaymentView> payments, String cancelReason, Long cancelledBy, Instant cancelledAt, Long createdBy, Instant createdAt,
             List<Warning> warnings) {
     }
 
@@ -91,7 +97,9 @@ public class SupplierInvoices {
 
     private final SupplierInvoiceRepository invoices;
     private final SupplierCreditAllocationRepository applications;
+    private final SupplierPaymentAllocationRepository payments;
     private final SupplierInvoiceLocks locks;
+    private final SupplierOpenAmounts openAmounts;
     private final SupplierAccounts suppliers;
     private final IdempotencyKeys keys;
     private final ActorProvider actors;
@@ -99,11 +107,14 @@ public class SupplierInvoices {
     private final Clock clock;
 
     public SupplierInvoices(SupplierInvoiceRepository invoices, SupplierCreditAllocationRepository applications,
-            SupplierInvoiceLocks locks, SupplierAccounts suppliers, IdempotencyKeys keys, ActorProvider actors,
+            SupplierPaymentAllocationRepository payments, SupplierInvoiceLocks locks, SupplierOpenAmounts openAmounts,
+            SupplierAccounts suppliers, IdempotencyKeys keys, ActorProvider actors,
             AuditRecorder audit, Clock clock) {
         this.invoices = invoices;
         this.applications = applications;
+        this.payments = payments;
         this.locks = locks;
+        this.openAmounts = openAmounts;
         this.suppliers = suppliers;
         this.keys = keys;
         this.actors = actors;
@@ -279,6 +290,14 @@ public class SupplierInvoices {
             throw new BusinessException(ErrorCode.INVALID_STATE_TRANSITION, "This document is already cancelled.",
                     Map.of("id", id, "action", "cancel", "status", invoice.status()));
         }
+        if (!invoice.creditNote()) {
+            List<SupplierPaymentAllocation> paid = payments.inForceOn(id);
+            if (!paid.isEmpty()) {
+                throw new BusinessException(ErrorCode.INVOICE_HAS_SETTLEMENTS,
+                        "A payment settles this invoice; reverse the payment first.", Map.of("invoiceId", id,
+                                "blockedBy", "payment", "paymentId", paid.getFirst().paymentId()));
+            }
+        }
         List<SupplierCreditAllocation> settling = applications.findByInvoiceIdOrCreditNoteIdOrderByIdAsc(id, id);
         if (!settling.isEmpty()) {
             SupplierCreditAllocation first = settling.getFirst();
@@ -318,15 +337,8 @@ public class SupplierInvoices {
                         i.totalTtc(), open(i), i.status()));
     }
 
-    /** Never below zero; 0 once cancelled. */
-    BigDecimal open(SupplierInvoice invoice) {
-        if (!invoice.recorded()) {
-            return BigDecimal.ZERO.setScale(MONEY_SCALE);
-        }
-        BigDecimal settled = invoice.creditNote() ? applications.appliedFrom(invoice.id())
-                : applications.creditedTo(invoice.id());
-        BigDecimal left = invoice.totalTtc().subtract(settled);
-        return (left.signum() > 0 ? left : BigDecimal.ZERO).setScale(MONEY_SCALE);
+    private BigDecimal open(SupplierInvoice invoice) {
+        return openAmounts.open(invoice);
     }
 
     private SupplierInvoiceDetail detail(SupplierInvoice invoice, List<Warning> warnings) {
@@ -346,7 +358,9 @@ public class SupplierInvoices {
         }).toList();
         return new SupplierInvoiceDetail(invoice.id(), new Ref(supplier.id(), supplier.name()),
                 invoice.invoiceNumber(), invoice.creditNote(), receipt, returned, invoice.invoiceDate(),
-                invoice.dueDate(), invoice.totalTtc(), open(invoice), invoice.status(), views, invoice.cancelReason(),
+                invoice.dueDate(), invoice.totalTtc(), open(invoice), invoice.status(), views,
+                payments.inForceOn(invoice.id()).stream().map(a -> new PaymentView(a.id(), a.paymentId(), a.amount(),
+                        a.createdAt())).toList(), invoice.cancelReason(),
                 invoice.cancelledBy(), invoice.cancelledAt(), invoice.createdBy(), invoice.createdAt(), warnings);
     }
 

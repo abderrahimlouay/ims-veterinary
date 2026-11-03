@@ -33,7 +33,7 @@ import org.testcontainers.mysql.MySQLContainer;
 class Phase9UpgradeMigrationTest {
 
     private static final String SCHEMA = "ims_upgrade_check_9";
-    private static final String LAST = "09.003";
+    private static final String LAST = "09.006";
 
     @Autowired
     private MySQLContainer mysql;
@@ -109,7 +109,8 @@ class Phase9UpgradeMigrationTest {
                 .isEqualByComparingTo("40.00");
 
         assertThat(db.queryForObject("SELECT (SELECT COUNT(*) FROM supplier_invoices)"
-                + " + (SELECT COUNT(*) FROM supplier_credit_allocations)", Integer.class)).isZero();
+                + " + (SELECT COUNT(*) FROM supplier_credit_allocations) + (SELECT COUNT(*) FROM supplier_payments)"
+                + " + (SELECT COUNT(*) FROM supplier_payment_allocations)", Integer.class)).isZero();
         db.update("""
                 INSERT INTO payment_allocations (payment_id, invoice_id, amount, created_at, created_by)
                 VALUES (?, ?, 20.00, UTC_TIMESTAMP(6), ?)""", account, invoice, user);

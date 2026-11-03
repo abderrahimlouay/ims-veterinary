@@ -20,6 +20,13 @@ public interface SupplierInvoiceRepository extends Repository<SupplierInvoice, L
 
     boolean existsBySupplierIdAndInvoiceNumber(Long supplierId, String invoiceNumber);
 
+    /** The supplier's recorded invoices (or credit notes), by due date then id. */
+    @Query("""
+            SELECT i FROM SupplierInvoice i WHERE i.supplierId = :supplierId AND i.creditNote = :creditNote
+              AND i.status = 'recorded'
+            ORDER BY i.dueDate, i.id""")
+    List<SupplierInvoice> recordedOf(long supplierId, boolean creditNote);
+
     /**
      * Every filter optional; {@code openOnly}: recorded documents with something left (an invoice not fully settled, a
      * credit note not fully applied). By due date, then id.
@@ -31,7 +38,9 @@ public interface SupplierInvoiceRepository extends Repository<SupplierInvoice, L
               AND (:dueBefore IS NULL OR i.dueDate < :dueBefore)
               AND (:openOnly = FALSE OR (i.status = 'recorded' AND i.totalTtc > COALESCE(
                   (SELECT SUM(a.amount) FROM SupplierCreditAllocation a
-                   WHERE a.invoiceId = i.id OR a.creditNoteId = i.id), 0)))
+                   WHERE a.invoiceId = i.id OR a.creditNoteId = i.id), 0) + COALESCE(
+                  (SELECT SUM(pa.amount) FROM SupplierPaymentAllocation pa WHERE pa.invoiceId = i.id
+                   AND NOT EXISTS (SELECT 1 FROM SupplierPayment r WHERE r.reversesPaymentId = pa.paymentId)), 0)))
             ORDER BY i.dueDate, i.id""")
     Page<SupplierInvoice> search(Long supplierId, Boolean creditNote, LocalDate dueBefore, boolean openOnly,
             Pageable pageable);

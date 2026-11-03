@@ -70,6 +70,9 @@ public class CashMovement {
     @Column(name = "customer_refund_id", updatable = false)
     private Long customerRefundId;
 
+    @Column(name = "supplier_payment_id", updatable = false)
+    private Long supplierPaymentId;
+
     @Column(name = "created_by", nullable = false, updatable = false)
     private Long createdBy;
 
@@ -97,6 +100,15 @@ public class CashMovement {
         CashMovement movement = new CashMovement(cashSessionId, CashDirection.OUT, PaymentMethod.CASH, amount, label,
                 null, createdBy, now);
         movement.customerRefundId = customerRefundId;
+        return movement;
+    }
+
+    /** The cash of a supplier payment (OUT) or of its reversal (IN) (ADR-132, ADR-135). */
+    public static CashMovement supplierPayment(Long cashSessionId, CashDirection direction, BigDecimal amount,
+            String label, Long supplierPaymentId, Long createdBy, Instant now) {
+        CashMovement movement = new CashMovement(cashSessionId, direction, PaymentMethod.CASH, amount, label, null,
+                createdBy, now);
+        movement.supplierPaymentId = supplierPaymentId;
         return movement;
     }
 

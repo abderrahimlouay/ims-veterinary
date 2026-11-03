@@ -17,8 +17,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * BR-PAY-003, SD-102, SD-139, SD-144: payments, allocations, refunds and supplier credit-note applications cannot be
- * changed or removed, even by the migration account; a supplier invoice's cancellation columns go together and only a
+ * BR-PAY-003, SD-102, SD-139, SD-143, SD-144, SD-146: payments, allocations, refunds, supplier payments, their
+ * allocations and supplier credit-note applications cannot be changed or removed, even by the migration account; a
+ * cash movement has at most one source; a supplier invoice's cancellation columns go together and only a
  * credit note names a supplier return.
  */
 @SpringBootTest
@@ -34,6 +35,7 @@ class PaymentLedgerAppendOnlyTest {
     private long payment;
     private long refund;
     private long creditApplication;
+    private long supplierPayment;
     private long supplier;
     private long user;
 
@@ -60,6 +62,36 @@ class PaymentLedgerAppendOnlyTest {
                 INSERT INTO supplier_credit_allocations (credit_note_id, invoice_id, amount, created_at, created_by)
                 VALUES (?, ?, 5, NOW(6), ?)""", note, invoice, user);
         creditApplication = jdbc.queryForObject("SELECT MAX(id) FROM supplier_credit_allocations", Long.class);
+        jdbc.update("""
+                INSERT INTO supplier_payments (supplier_id, method, amount, reference, paid_at, created_by)
+                VALUES (?, 'cheque', 5, 'C', NOW(6), ?)""", supplier, user);
+        supplierPayment = jdbc.queryForObject("SELECT MAX(id) FROM supplier_payments", Long.class);
+        jdbc.update("""
+                INSERT INTO supplier_payment_allocations (payment_id, invoice_id, amount, created_at, created_by)
+                VALUES (?, ?, 5, NOW(6), ?)""", supplierPayment, invoice, user);
+    }
+
+    @Test
+    void supplierPaymentsAndTheirAllocationsAreAppendOnly() {
+        assertSignal("UPDATE supplier_payments SET amount = 999 WHERE id = " + supplierPayment);
+        assertSignal("DELETE FROM supplier_payments WHERE id = " + supplierPayment);
+        assertSignal("UPDATE supplier_payment_allocations SET amount = 999 WHERE payment_id = " + supplierPayment);
+        assertSignal("DELETE FROM supplier_payment_allocations WHERE payment_id = " + supplierPayment);
+    }
+
+    @Test
+    void aCashMovementHasAtMostOneSource() {
+        jdbc.update("INSERT INTO cash_sessions (cashier_id, opening_amount, opened_at) VALUES (?, 0, NOW(6))", user);
+        long session = jdbc.queryForObject("SELECT MAX(id) FROM cash_sessions", Long.class);
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO cash_movements (cash_session_id, direction, method, amount, customer_payment_id,
+                    supplier_payment_id, created_by, created_at)
+                VALUES (?, 'out', 'cash', 5, ?, ?, ?, NOW(6))""", session, payment, supplierPayment, user))
+                .isInstanceOf(DataAccessException.class).hasMessageContaining("ck_cash_movements_one_source");
+        jdbc.update("""
+                INSERT INTO cash_movements (cash_session_id, direction, method, amount, supplier_payment_id,
+                    created_by, created_at)
+                VALUES (?, 'out', 'cash', 5, ?, ?, NOW(6))""", session, supplierPayment, user);
     }
 
     @Test
