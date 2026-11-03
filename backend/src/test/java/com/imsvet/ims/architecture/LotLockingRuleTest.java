@@ -45,6 +45,7 @@ class LotLockingRuleTest {
         noClasses().that().doNotHaveSimpleName("LotLocks").and().doNotHaveSimpleName("ProposalLocks")
                 .and().doNotHaveSimpleName("OrderLocks").and().doNotHaveSimpleName("CustomerLocks")
                 .and().doNotHaveSimpleName("CashSessionLocks").and().doNotHaveSimpleName("SalesDocumentLocks")
+                .and().doNotHaveSimpleName("SupplierLocks").and().doNotHaveSimpleName("SupplierInvoiceLocks")
                 .should().callMethod(EntityManager.class, "refresh", Object.class, LockModeType.class)
                 .orShould().callMethod(EntityManager.class, "lock", Object.class, LockModeType.class)
                 .orShould().callMethod(EntityManager.class, "find", Class.class, Object.class, LockModeType.class)
@@ -53,7 +54,8 @@ class LotLockingRuleTest {
     }
 
     /**
-     * The other lock helpers are allowed by class name for their own rows only (customers, proposals, orders, cash sessions): none
+     * The other lock helpers are allowed by class name for their own rows only (customers, proposals, orders, cash sessions,
+     * sales documents, suppliers, supplier invoices): none
      * of them may even refer to a lot, so a lock or a query on lots from them fails here.
      */
     @Test

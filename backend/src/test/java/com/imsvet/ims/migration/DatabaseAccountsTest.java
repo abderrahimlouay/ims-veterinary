@@ -66,7 +66,7 @@ class DatabaseAccountsTest {
                     SELECT privilege_type FROM information_schema.table_privileges
                     WHERE table_schema = DATABASE() AND table_name = ? AND grantee = ?""", String.class, table, grantee);
             if (List.of("audit_log", "cash_movements", "customer_payments", "customer_refunds", "payment_allocations",
-                    "stock_movements")
+                    "stock_movements", "supplier_credit_allocations")
                     .contains(table)) {
                 assertThat(privileges).as(table).containsExactlyInAnyOrder("SELECT", "INSERT");
             } else {

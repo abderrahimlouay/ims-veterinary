@@ -29,7 +29,7 @@ public class ApplicationAccountGrants implements Callback {
 
     /** Ledgers whose rows are never changed or removed (ADR-017, BR-STOCK-003, BR-AUDIT-002). */
     static final Set<String> APPEND_ONLY = Set.of("audit_log", "cash_movements", "customer_payments",
-            "customer_refunds", "payment_allocations", "stock_movements");
+            "customer_refunds", "payment_allocations", "stock_movements", "supplier_credit_allocations");
 
     private static final Pattern ACCOUNT_PART = Pattern.compile("[A-Za-z0-9_.%-]{1,64}");
 
