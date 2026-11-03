@@ -161,6 +161,8 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 
 **Phase 8 (ADR-131):** `RETURN_CREATE` of a customer return records the lines, quantities, dispositions, sealed flags and discard reasons.
 
+**Phase 9 (ADR-133, ADR-135, ADR-136):** `PAYMENT_REVERSE` covers customer and supplier payment reversals (payment, amount, method, reason, session of the cash counter-movement). Two actions are added to the table and to `AuditAction` with their slices: `SUPPLIER_INVOICE_CANCEL` (a supplier invoice or credit note cancelled, with the reason) and `CASH_MOVEMENT_CREATE` (a manual cash movement: session, direction, amount, label). `CASH_VARIANCE` records who closed the session when it is not the owner.
+
 Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD-102, BR-SEC-006). Passwords, tokens and hashes are never written to audit values.
 
 ## 8. Input validation and injection prevention

@@ -854,7 +854,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
   4. A **cash** refund needs the refunder's **own open cash session** (`CASH_SESSION_REQUIRED`), whatever session the original sale used (BR-CASH-004), and is posted as a `cash_movements` OUT row on it under the session-row lock. It is **refused** with `CASH_INSUFFICIENT` if it would bring the session's expected cash (BR-CASH-003) below zero.
   5. Refunds are rows of a new append-only table **`customer_refunds`** (finance module, written through a port defined in `sales`, triggers as SD-102), linked to the credit note; `cash_movements.customer_refund_id` names the refund of a cash movement (SD-139). They are not negative payments and not payment reversals (a reversal cancels a whole payment, SD-138).
   6. A refund exists only inside its return: there is no refund endpoint in Phase 8. The return's `Idempotency-Key` (ADR-104) makes a replay return the first result, so a refund cannot be paid twice.
-  7. **Store credit** (keeping the amount on the account of an identified customer who bought for cash) is deferred to Phase 9 with advances (OD-016).
+  7. **Store credit** (keeping the amount on the account of an identified customer who bought for cash) is deferred to Phase 9 with advances (OD-016). **Phase 9 (ADR-137): stays out** until the client asks for it.
   8. Each refund is audited `REFUND_CREATE` (credit note, method, amount, original document and its payment methods, session) in the same transaction.
 - **Alternatives:** a refund made later through its own endpoint (B): an open liability to track and more ways to refund twice; store credit now (C): depends on the Phase 9 advances.
 - **Consequences:** BR-RET-006, BR-RET-011, BR-CASH-003 (refunds are cash OUT), `api.md` §5.8, `database.md` §3.8, `security.md` §7, `testing.md`. The expected cash of a session includes refunds automatically.
@@ -892,6 +892,65 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
   6. The recall buyers list (BR-LOT-008) shows, per document, the sold, returned and net quantity of the lot; the returns of an invoice made from a delivery note are counted on that note's row.
 - **Alternatives:** return against an uninvoiced delivery note (breaks ADR-125's frozen lines); ordinary cancellation of a return (Q10, refused).
 - **Consequences:** BR-RET-007/008/009, BR-SALE-014, BR-LOT-008, BR-DOC-001, `api.md` §5.7/§5.8, `database.md`, settings seed, OD-040.
+
+## ADR-132 — Supplier payments settle several invoices through allocations (resolves OD-016 questions 1 and 2, supplier side)
+- **Status:** Accepted (user decision, 2026-11-03, Phase 9 preflight; Q1 B, Q2 B, Q11).
+- **Decision:**
+  1. A supplier payment is allocated to **one or several** supplier invoices through a new append-only table **`supplier_payment_allocations`** (`id`, `payment_id`, `invoice_id`, `amount > 0`, `created_at`, `created_by`), built like the customer side (SD-143). `supplier_payments` has **no `invoice_id` and no `is_advance`**: the part of a payment not allocated is the **advance**, derived, never flagged.
+  2. Allocations are written when the payment is recorded, or **later**, by applying the unallocated part of an existing payment to invoices (new rows, nothing edited). Σ allocations of a payment ≤ its amount; each allocation ≤ the invoice's open amount (BR-PAY-009, `PAYMENT_ALLOCATION_EXCEEDED`). The payment row, then the invoice rows in ascending id order, are locked `FOR UPDATE` while allocating.
+  3. **Open amount of a supplier invoice** = `total_ttc` − live payment allocations − credit-note applications (ADR-133). **Supplier balance (what we owe)** = Σ recorded invoices − Σ recorded credit notes − Σ live payments, allocated or not. "Live" excludes reversed payments (ADR-135).
+  4. A supplier payment: amount > 0, method `cash` / `cheque` / `bank_transfer`, reference required for cheque and transfer (BR-PAY-001), active supplier (`SUPPLIER_INACTIVE`), `Idempotency-Key`, permission `payment.supplier.create`. A **cash** payment is a `cash_movements` OUT row on the payer's **own open session** (`CASH_SESSION_REQUIRED`), refused with `CASH_INSUFFICIENT` if the session's expected cash would go below zero (as ADR-128 item 4).
+- **Alternatives:** one payment per invoice, as the Source schema (A): a cheque covering three invoices becomes three fictitious payments.
+- **Consequences:** BR-PAY-009/010, W1c, `api.md` §4.12, `database.md` (supplier finance), SD-143, SD-146, DR-009. The Source view `v_supplier_payables` is not ported; its definition is replaced by item 3.
+
+## ADR-133 — Supplier invoices and credit notes; correcting a wrong entry (resolves OD-016 question 3, SD-109)
+- **Status:** Accepted (user decision, 2026-11-03, Phase 9 preflight; Q3 A, Q10 A).
+- **Decision:**
+  1. A **supplier invoice** is recorded by the accountant (`supplierinvoice.manage`): supplier, supplier's invoice number (unique per supplier, `DUPLICATE_RESOURCE`), invoice date, due date (default `invoice_date + suppliers.payment_terms_days`), total TTC ≥ 0, optional link to a **confirmed goods receipt of that supplier**. A total that differs from the receipt's value is a **warning** in the response, never a refusal (the supplier's invoice is the reference).
+  2. A **supplier credit note** is a `supplier_invoices` row with `is_credit_note = TRUE`, recorded when the supplier's *avoir* arrives, with an **optional link to a supplier return** of that supplier (`supplier_return_id`, only on credit notes; SD-109 resolved, SD-144). Nothing is generated from the return: the amount is the supplier's.
+  3. A credit note lowers what we owe; it can be **applied** to invoices of the same supplier through **`supplier_credit_allocations`** (`id`, `credit_note_id`, `invoice_id`, `amount > 0`; append-only), with the same limits and locks as payments (ADR-132 item 2). An unapplied credit note still lowers the supplier balance.
+  4. **No edit.** A wrong entry is **cancelled with a mandatory reason** and entered again, audited `SUPPLIER_INVOICE_CANCEL` (action added with the slice). Cancelling is allowed **only while nothing settles the document**: no live payment allocation and no credit-note application on it, and for a credit note, none of its applications; otherwise `INVOICE_HAS_SETTLEMENTS` (new code, added with the slice). The payments are reversed first (ADR-135). A cancelled document leaves the balance and keeps its number for the uniqueness check.
+- **Alternatives:** credit note generated from the supplier return (B): our return has no agreed supplier price; editable until the first payment (Q10 B): breaks "confirmed means immutable".
+- **Consequences:** BR-PAY-008/011, BR-PAY-015, W1c, W4 step 3, `api.md` §4.6, `database.md`, SD-109, SD-144, DR-009 resolved.
+
+## ADR-134 — Customer payments on account, allocations and advances (resolves OD-016 question 2, customer side; completes ADR-118)
+- **Status:** Accepted (user decision, 2026-11-03, Phase 9 preflight; Q2 B, Q5).
+- **Decision:**
+  1. A **payment on account** (`payment.customer.create`, `Idempotency-Key`) is a `customer_payments` row for an **active** customer (`CUSTOMER_INACTIVE`): amount > 0, method, reference for cheque and transfer. **Cash** needs the user's own open session and adds a `cash_movements` IN row (BR-PAY-006).
+  2. It is allocated to the customer's **confirmed credit invoices** with an open amount. When the request gives no allocations, the server allocates **oldest first** (due date, then number); the screen proposes the same split and the user may change it. Σ allocations ≤ amount, each ≤ the invoice's open amount (`PAYMENT_ALLOCATION_EXCEEDED`). Whatever remains is an **advance** on account. A payment with no open invoice is allowed (all advance).
+  3. **Later application:** the unallocated part of an existing payment may be applied to invoices later, by new allocation rows (permission `payment.customer.create`). `payment_allocations` therefore gets a surrogate `id`, and the same payment may be allocated to the same invoice twice (SD-145, a change to a Phase 7 table: the existing rows are kept).
+  4. **Open amount of a credit invoice** = TTC − its credit notes − live allocations; never below zero (a credit note after full payment leaves an advance, through the balance). **Balance** stays ADR-118 item 5: confirmed credit invoices − their credit notes − live account payments, allocated or not. One query computes it, for the credit-limit check (under the customer-row lock) and the statement (DR-006).
+  5. Counter payments of immediate sales are allocated to their own document at confirmation (ADR-118) and are **never** offered for later application or as advances.
+  6. **Account statement** (`statement.read`) for a period: opening balance at the start date, then credit invoices, their credit notes, account payments and reversals in date order with a running balance (BR-PAY-007). Counter sales and their payments are not listed. Uninvoiced credit delivery notes are shown as a separate total (they count in the credit check, not in the balance, ADR-117).
+- **Alternatives:** allocation only when recording the payment (Q2 A): advances paid before the invoice could never settle it.
+- **Consequences:** BR-PAY-002/004/007, BR-PAY-012, W8, `api.md` §4.9/§4.12/§5.9, SD-145, DR-006 resolved.
+
+## ADR-135 — Reversing a payment (Phase 9)
+- **Status:** Accepted (user decision, 2026-11-03, Phase 9 preflight; Q6).
+- **Decision:**
+  1. A customer or supplier **payment is reversed, never edited or deleted** (BR-PAY-003): a new row with `reverses_payment_id` (unique: a payment is reversed once, otherwise `INVALID_STATE_TRANSITION`), the same amount and method, and a **mandatory reason**; permission `payment.reverse`; audited `PAYMENT_REVERSE` in the same transaction.
+  2. The reversed payment and its allocations **stop counting**: its invoices reopen by the allocated amounts, and the balance goes back up. Allocation rows are not touched.
+  3. **Cash:** the reversal posts the opposite cash movement (customer payment → OUT, supplier payment → IN) on the **reverser's own open session** (`CASH_SESSION_REQUIRED`), whatever session the original used (BR-CASH-004). A reversal that takes cash out is refused with `CASH_INSUFFICIENT` if the session's expected cash would go below zero.
+  4. **Counter payments of immediate sales cannot be reversed** through this path (`INVALID_STATE_TRANSITION`): they are corrected by cancelling the sale (ADR-119) or by a customer return (ADR-128). Refunds (`customer_refunds`) are not payments and are not reversed here.
+- **Alternatives:** a negative payment (breaks `amount > 0` and the audit trail).
+- **Consequences:** BR-PAY-003, BR-PAY-013, W1c, W8 step 5, `api.md` §4.12, SD-138 (already in place for customers), SD-146.
+
+## ADR-136 — Cash: manual movements, closing another user's session, the session report (Phase 9; completes ADR-118 item 8)
+- **Status:** Accepted (user decision, 2026-11-03, Phase 9 preflight; Q8, Q9, Q7 for the report).
+- **Decision:**
+  1. **Manual cash movement** (`cash.manage`): direction in/out, method **cash**, amount > 0, **mandatory label** (≤ 200), posted only on the user's **own open session** (`CASH_SESSION_REQUIRED`; a closed one: `CASH_SESSION_CLOSED`). A movement out is refused with `CASH_INSUFFICIENT` if the expected cash would go below zero. Audited `CASH_MOVEMENT_CREATE` (action added with the slice). `cash_movements` gets a `manual` source in its one-source CHECK (SD-146).
+  2. **Closing another user's session:** a `cash.manage` holder may close any open session (for example one left open overnight) with the counted amount; the owner closes only their own (`cash.open`). Every close records who closed it; a non-zero variance is audited `CASH_VARIANCE` as today. **No tolerance threshold.**
+  3. **Session report** (`cash.manage`, and the owner for their own session): opening amount, movements grouped by source (sales, account payments, refunds, supplier payments, reversals, manual), cheques and transfers listed apart (not in expected cash), expected, counted, variance. **On screen in Phase 9**; `format=pdf` comes with printing (Phase 10, OD-020).
+- **Alternatives:** manual movements on any open session (Q8 alternative); a variance tolerance setting (Q9 option).
+- **Consequences:** BR-CASH-002/003/004, BR-CASH-006/007, W9, `api.md` §4.12, `security.md` §7, SD-146.
+
+## ADR-137 — Phase 9 scope: no store credit, statements and reports on screen only
+- **Status:** Accepted (user decision, 2026-11-03, Phase 9 preflight; Q4 B, Q7).
+- **Decision:**
+  1. **Store credit stays out** (ADR-128 item 7): a return on an immediate sale is refunded in full (BR-RET-006); keeping its value on the account of a customer who paid cash needs a new ADR if the client asks for it.
+  2. The **account statement** and the **cash-session report** are screens in Phase 9; their PDFs (`format=pdf`) come with Phase 10 (OD-020).
+  3. Correcting a **mistaken allocation** (moving an allocation to another invoice) is not built: a mistaken payment is reversed and recorded again (ADR-135); a mistaken credit-note application has no correction in Phase 9 and is registered as **OD-041**.
+- **Consequences:** `roadmap.md` Phase 9 and 10, `api.md` (statement and report `format=pdf` marked Phase 10), OD-041.
 
 # Part B — Open Decisions
 
@@ -983,6 +1042,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 5. **Related:** BR-PURCH-004.
 
 ## OD-016 — Supplier settlements
+- **Status:** Resolved 2026-11-03 → **ADR-132** (several invoices per payment, advances applied later), **ADR-133** (credit notes, optional link to the supplier return), **ADR-134** (customer advances).
 - **Question:** `supplier_payments.invoice_id` is single-valued: can one payment settle several invoices? How are *advances* (`invoice_id NULL`) later applied to invoices? Should a supplier return generate/link a supplier credit note (no link exists in the schema)?
 - **Blocks:** Phase 9. **Related:** BR-PAY-009…011, DR-009.
 
@@ -1124,6 +1184,12 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Options (to be studied):** (A) a whole-return reversal document (`customer_return_reversal`): reverse movements, a debit document cancelling the credit note, the refund taken back; (B) a line-level correction document; (C) stay without one, with corrections only by adjustments and manual cash movements (Phase 9).
 - **Blocks:** nothing in Phase 8; to decide before go-live if the client needs it (Phase 9 or later). **Related:** ADR-127…131, BR-RET-007, BR-PAY-003.
 
+## OD-041 — Correcting a mistaken allocation
+- **Status:** OPEN (registered 2026-11-03, Phase 9 preflight, ADR-137 item 3). **Not built in Phase 9.**
+- **Question:** A payment or a supplier credit note applied to the wrong invoice: may an allocation be undone (a counter-row) and applied again, by whom, with what audit? In Phase 9 a mistaken payment is reversed and recorded again (ADR-135); a mistaken credit-note application cannot be corrected.
+- **Options:** (A) allocation counter-rows with a reason and a permission; (B) keep reversal of the whole payment only, and allow cancelling a credit note's applications by cancelling and re-entering the credit note.
+- **Blocks:** nothing in Phase 9; to be answered before go-live if the accountant needs it. **Related:** BR-PAY-002, ADR-132…135.
+
 ---
 
 # Part C — Decision backlog by phase
@@ -1139,7 +1205,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 6 Customers | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (both 2026-10-24); ADR-109…114 (2026-10-25) |
 | 7 Sales / POS | ~~OD-002~~ → ADR-117, ~~OD-003~~ → ADR-118, ~~OD-004~~ → ADR-119, ~~OD-010~~ → ADR-120, ~~OD-028 (screen)~~ → ADR-121, ~~OD-035~~ → ADR-122, ~~OD-036~~ → ADR-123, ~~OD-037~~ → ADR-124, ~~OD-038~~ → ADR-125, ~~OD-039~~ → ADR-126, ADR-115, ADR-116 (all 2026-10-31); ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (the credit check), ~~OD-033~~ → ADR-071 |
 | 8 Returns | ~~OD-005~~ → ADR-127, ADR-128, ADR-129; ADR-130, ADR-131 (all 2026-11-02); OD-040 registered, not blocking |
-| 9 Payments / Finance | ~~OD-003~~ → ADR-118, OD-016; ~~OD-011~~ → ADR-108 (payments in the balance) |
+| 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | OD-020, OD-026, OD-028, OD-008 |
 | 11 Reports & Audit | OD-021 (backup); margin scope follows ADR-117, ADR-118 |
 | 12 Testing, Security, Deployment | OD-021, ADR-036 hardening review |

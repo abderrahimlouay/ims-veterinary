@@ -8,9 +8,10 @@
 |---|---|---|
 | Active ingredient (DCI / INN) | DCI – Dénomination Commune Internationale | The pharmacologically active substance; used for search and substitutes (FR-PROD-004). |
 | Adjustment | Ajustement | Manual stock correction with a mandatory reason (breakage, expiry, theft, internal use). |
-| Advance | Acompte | Payment made to a supplier before invoicing/delivery. |
+| Advance | Acompte / avance | The unallocated part of a customer or supplier payment, derived, never flagged; it lowers the balance and can be applied to invoices later (ADR-132, ADR-134). |
 | Alert level | Niveau d'alerte | Expiry classification (expired, critical, warning, notice) from configurable thresholds. |
-| Allocation (payment) | Imputation / affectation | Assignment of part of a payment to a specific invoice. |
+| Allocation (payment) | Imputation / affectation | Assignment of part of a payment to a specific invoice; append-only, it stops counting when its payment is reversed (ADR-134, ADR-135). |
+| Application (credit note) | Imputation d'avoir | Assignment of part of a supplier credit note to an invoice of the same supplier (ADR-133). |
 | Audit log | Journal d'audit | Immutable record of sensitive actions with user, time and before/after values. |
 | Balance (customer) | Solde client | Amount a customer owes: confirmed credit invoices − their credit notes − account payments (ADR-118). |
 | Balance (lot) | Quantité en stock du lot | Maintained quantity on hand of a lot; must equal the sum of its movements. |
@@ -22,7 +23,7 @@
 | Discount entitlement | Remise accordée | The discount a customer gets without `sale.discount`: the category discount, or 0 when the customer has an own price for the product (ADR-113); a manual discount replaces it, never adds to it. |
 | Credit limit | Plafond de crédit | Maximum customer debt allowed; empty = no limit, 0 = cash only (ADR-108). |
 | Credit note (customer) | Avoir | Document created by a customer return (`CN`): lowers the balance of a credit sale, or is refunded for an immediate sale (ADR-128). |
-| Credit note (supplier) | Avoir fournisseur | Document received from a supplier reducing a payable. |
+| Credit note (supplier) | Avoir fournisseur | Document received from a supplier reducing what we owe, recorded as a `supplier_invoices` row, optionally linked to a supplier return (ADR-133). |
 | Credit sale | Vente à crédit | Sale paid later; requires an identified customer. |
 | Customer category | Catégorie de clientèle | Segment carrying default discount/price conditions. |
 | Delivery note | Bon de livraison (BL) | Document accompanying goods delivered; moves stock when confirmed; its invoice posts no second movement (ADR-117). |

@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–8 complete (tags `phase-0-done` … `phase-8-done`); Phases 9–13 not started
+> **Status:** Phases 0–8 complete (tags `phase-0-done` … `phase-8-done`); Phase 9 (Payments & finance) current: decisions ADR-132…137 (2026-11-03); Phases 10–13 not started
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-11-02
 
@@ -27,7 +27,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 6 | Customers | customers, categories, prices, credit-limit data | ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 |
 | 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | ~~OD-002, OD-003, OD-004, OD-010~~ → ADR-117…120, ADR-115/116/121…126 |
 | 8 | Returns | customer returns, credit notes, restock/discard, refunds | ADR-127…131 (was OD-005) |
-| 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | ~~OD-003~~ → ADR-118, OD-016 (ADR-108: payments enter the credit balance) |
+| 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132…134; ADR-135…137 (ADR-108: payments enter the credit balance) |
 | 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | OD-020, OD-026, OD-028 |
 | 11 | Reports & audit | reports, exports, backup | OD-021 |
 | 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | OD-021, ADR-036 hardening |
@@ -142,13 +142,14 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 9 — Payments & finance
 - **Objective:** know who owes what, and what is in the till.
-- **Prerequisites:** Phases 7–8; ADR-118, OD-016; ADR-108 (payments enter the credit balance).
-- **Features:** customer payments with allocations and reversal; balance and statement; credit-limit enforcement; supplier invoices, payments, advances, credit notes; cash sessions, movements, variance.
-- **Database work:** payments, allocations, supplier invoices, cash sessions/movements, corrected balance view/query (DR-006), unique open-session constraint (ADR-015).
-- **Backend work:** `finance` module implementing `CreditLimitPort`, `BalanceQuery`; reversal; session close.
-- **Frontend work:** payment dialog, statements, cash screens, supplier payables.
-- **Tests:** BR-PAY-*, BR-CASH-*; CT-06, CT-09; e2e J7, J10.
-- **Completion criteria:** FR-FIN-001..008 done; balance equals the definition in ADR-118 on fixtures; payments never edited or deleted.
+- **Prerequisites:** Phases 7–8; ADR-118, ADR-108 (payments enter the credit balance); decided 2026-11-03: ADR-132 (supplier allocations and advances), ADR-133 (supplier invoices and credit notes, cancellation), ADR-134 (customer payments on account, advances, statement), ADR-135 (reversal), ADR-136 (cash), ADR-137 (scope); was OD-016. OD-041 (correcting a mistaken allocation) is registered and **not built** in Phase 9.
+- **Features:** customer payments on account with allocations (oldest first by default) and advances applied later; balance and statement on screen; payment reversal (customers and suppliers); supplier invoices, credit notes (optional link to a supplier return) and their application, payments with allocations and advances, payables by due date, cancellation of a wrong entry; manual cash movements, closing another user's session, the session report on screen.
+- **Database work:** `supplier_invoices`, `supplier_payments`, `supplier_payment_allocations`, `supplier_credit_allocations` (append-only except the invoice's cancellation); surrogate id on `payment_allocations` (SD-145); `cash_movements` sources (SD-146); no balance or payables view (DR-006: service query).
+- **Backend work:** `finance` module: payments on account, allocation and later application under locks (payment, then invoices ascending), balance query shared by `CreditLimitPort` and the statement, reversal, supplier invoices and payments, manual movements, session close by a manager and the report.
+- **Frontend work:** payment dialog with the proposed split, customer statement, supplier invoices and payables, supplier payment dialog, cash screens (movements, report, sessions list).
+- **Tests:** BR-PAY-*, BR-CASH-*; CT-06, CT-09, CT-11, CT-12; balance parity (DR-006); `Phase9UpgradeMigrationTest`; e2e J7, J10.
+- **Completion criteria:** FR-FIN-001..008 done; balance equals the definition in ADR-118 on fixtures; payments and allocations never edited or deleted.
+- **Not in Phase 9 (ADR-137):** store credit on returns of cash sales; PDFs of the statement and the session report (Phase 10, OD-020); moving an allocation (OD-041).
 
 ## Phase 10 — Documents & printing
 - **Objective:** produce the printable documents.

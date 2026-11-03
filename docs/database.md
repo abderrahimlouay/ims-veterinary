@@ -61,19 +61,21 @@ Totals (`total_ht`, `total_discount`, `total_vat`, `total_ttc`) are computed by 
 
 ### 2.6 Returns
 - **Customer return:** `customer_returns` references the original sales document (`document_id`: an invoice or a receipt, ADR-131); each `customer_return_lines` row references the **original sale line** (`sale_line_id`), a `quantity_base`, and a `disposition` (restock | discard). The automatically issued credit note is a `sales_documents` row with `doc_type = 'credit_note'` linked by `credit_note_id`. Stock effects: restock ⇒ `customer_return` movement `+qty` on the original lot, whatever its status (a blocked or recalled lot stays unsellable, ADR-129); discard ⇒ `customer_return` `+qty` then `return_discard` `−qty` on the original lot (ADR-127). Refunds of immediate sales are `customer_refunds` rows (ADR-128). The returned quantity of each sale line is kept in `sales_document_lines.returned_quantity_base` (ADR-130).
-- **Supplier return:** `supplier_returns` + `supplier_return_lines(lot_id, quantity_base)`; stock effect: `supplier_return` movement `−qty`. Supplier credit linkage: **OD-016** (SD-109).
+- **Supplier return:** `supplier_returns` + `supplier_return_lines(lot_id, quantity_base)`; stock effect: `supplier_return` movement `−qty`. A supplier credit note may name the return it settles (`supplier_invoices.supplier_return_id`, ADR-133, SD-109).
 
 ### 2.7 Payments and financial balances
 - **Customer payments:** `customer_payments(customer, method, amount, reference, cash_session)`; `payment_allocations(payment_id, invoice_id, amount)` split a payment across invoices. Every immediate sale, anonymous ones included, creates a payment and allocations (ADR-118).
-- **Supplier payments:** `supplier_payments` optionally linked to one `supplier_invoices` row; `invoice_id IS NULL` + `is_advance` = advance (acompte); `supplier_invoices.is_credit_note = TRUE` is a supplier *avoir* stored as a positive amount and treated as negative in payables.
+- **Customer advances (Phase 9, ADR-134):** the unallocated part of an account payment; it may be applied later by new `payment_allocations` rows (surrogate `id`, SD-145).
+- **Supplier payments (Phase 9, ADR-132, ADR-133):** `supplier_payments` are split across invoices by `supplier_payment_allocations`; the unallocated part is the advance (no `invoice_id`, no `is_advance`, SD-143). `supplier_invoices.is_credit_note = TRUE` is a supplier *avoir* stored as a positive amount; it lowers what we owe and is applied to invoices by `supplier_credit_allocations` (SD-144). A wrong invoice is cancelled (status), never edited (BR-PAY-015).
 - **Cash:** `cash_sessions` (open/close, expected vs counted, generated `variance_amount`) and `cash_movements` (in/out, by method, optionally linked to a customer or supplier payment).
 - **Balances are derived, never stored** (no balance column anywhere):
 
 | Balance | Definition | Status |
 |---|---|---|
-| Invoice outstanding | `total_ttc − Σ payment_allocations.amount` for that invoice | `[REC]` |
+| Invoice open amount (customer) | `total_ttc − its credit notes − Σ live payment_allocations`, never below 0 (live = payment not reversed) | ADR-134 |
 | Customer balance (Source) | `Σ confirmed credit invoices − Σ confirmed credit notes − Σ customer_payments` | **Defective as written** (DR-006); final definition **ADR-118**: confirmed credit invoices − their credit notes − account payments |
-| Supplier payable (per invoice) | `±total_ttc − Σ supplier_payments(invoice)` | Source view `v_supplier_payables`; advances not netted (OD-016) |
+| Supplier invoice open amount | `total_ttc − Σ live supplier_payment_allocations − Σ supplier_credit_allocations` | ADR-132 (replaces `v_supplier_payables`) |
+| Supplier balance (what we owe) | `Σ recorded invoices − Σ recorded credit notes − Σ live supplier_payments`, allocated or not | ADR-132 (BR-PAY-014) |
 | Expected cash in session | `opening_amount + Σ cash-method IN − Σ cash-method OUT` for the session | `[REC]` (BR-CASH-003) |
 
 ## 3. Table catalogue
@@ -233,10 +235,12 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 ### 3.7 Finance (module 6)
 
 **customer_payments** — `id`, `customer_id NULL FK` (anonymous sale, ADR-118), `method VARCHAR(30) NOT NULL` (cash | cheque | bank_transfer), `amount DECIMAL(14,2) CK > 0`, `reference VARCHAR(80) NULL`, `cash_session_id NULL FK` (required when cash), `reverses_payment_id NULL FK UQ`, `reversal_reason NULL` (a reversal is a new row, SD-138), `paid_at`, `created_by FK`; a reference is required unless cash. Append-only (SD-102, ADR-118).
-**payment_allocations** — append-only; `payment_id FK` (no cascade: never deleted), `invoice_id FK→sales_documents`, `amount DECIMAL(14,2) CK > 0`, `PK(payment_id, invoice_id)`.
-**supplier_invoices** — `id`, `supplier_id FK`, `invoice_number VARCHAR(60) NOT NULL`, `receipt_id NULL FK→goods_receipts`, `invoice_date DATE`, `due_date DATE`, `total_ttc DECIMAL(14,2) CK ≥ 0`, `is_credit_note BOOLEAN NOT NULL DEFAULT FALSE`, `UQ(supplier_id, invoice_number)`.
-**supplier_payments** — `id`, `supplier_id FK`, `invoice_id NULL FK→supplier_invoices` (NULL = advance), `method`, `amount CK > 0`, `is_advance BOOLEAN NOT NULL DEFAULT FALSE`, `reference VARCHAR(80)`, `paid_at`, `created_by FK`.
-**cash_movements** — `id`, `cash_session_id NULL FK`, `direction VARCHAR(30)` (in | out), `method`, `amount CK > 0`, `label VARCHAR(200)`, `customer_payment_id NULL FK`, `customer_refund_id NULL FK` (Phase 8, SD-139), `supplier_payment_id NULL FK` (Phase 9), `created_by FK`, `created_at`.
+**payment_allocations** — append-only; `payment_id FK` (no cascade: never deleted), `invoice_id FK→sales_documents`, `amount DECIMAL(14,2) CK > 0`. Phase 7: `PK(payment_id, invoice_id)`; Phase 9 (SD-145): surrogate `id` PK, `created_at`, `created_by`, indexes `(payment_id)` and `(invoice_id)`, so an advance may be applied to the same invoice again later.
+**supplier_invoices** (Phase 9, ADR-133) — `id`, `supplier_id FK`, `invoice_number VARCHAR(60) NOT NULL`, `receipt_id NULL FK→goods_receipts`, `supplier_return_id NULL FK→supplier_returns` (credit notes only, CHECK; SD-144), `invoice_date DATE NOT NULL`, `due_date DATE NOT NULL`, `total_ttc DECIMAL(14,2) CK ≥ 0`, `is_credit_note BOOLEAN NOT NULL DEFAULT FALSE`, `status VARCHAR(30) NOT NULL` (recorded | cancelled), `cancel_reason`, `cancelled_by`, `cancelled_at` (all set together, CHECK), `created_by FK`, `created_at`, `UQ(supplier_id, invoice_number)`; never edited except the cancellation (BR-PAY-015).
+**supplier_payments** (Phase 9, ADR-132, SD-143) — `id`, `supplier_id FK`, `method`, `amount DECIMAL(14,2) CK > 0`, `reference VARCHAR(80)` (required unless cash), `cash_session_id NULL FK` (required when cash), `reverses_payment_id NULL FK UQ`, `reversal_reason` (as SD-138), `paid_at`, `created_by FK`. No `invoice_id`, no `is_advance`. Append-only.
+**supplier_payment_allocations** (Phase 9, SD-143) — `id`, `payment_id FK`, `invoice_id FK→supplier_invoices`, `amount DECIMAL(14,2) CK > 0`, `created_at`, `created_by FK`. Append-only.
+**supplier_credit_allocations** (Phase 9, SD-144) — `id`, `credit_note_id FK→supplier_invoices`, `invoice_id FK→supplier_invoices`, `amount DECIMAL(14,2) CK > 0`, `created_at`, `created_by FK`; same supplier and kinds checked by the service. Append-only.
+**cash_movements** — `id`, `cash_session_id NULL FK`, `direction VARCHAR(30)` (in | out), `method`, `amount CK > 0`, `label VARCHAR(200)`, `customer_payment_id NULL FK`, `customer_refund_id NULL FK` (Phase 8, SD-139), `supplier_payment_id NULL FK` (Phase 9), `manual BOOLEAN` (Phase 9: a manual movement, which needs a label), exactly one source (CHECK `ck_cash_movements_one_source`, SD-146), `created_by FK`, `created_at`.
 **customer_refunds** (Phase 8, ADR-128, SD-139) — `id`, `credit_note_id NOT NULL FK→sales_documents`, `customer_id NULL FK` (anonymous sale), `method VARCHAR(30) NOT NULL` (cash | cheque | bank_transfer), `amount DECIMAL(14,2) CK > 0`, `reference VARCHAR(80) NULL` (required unless cash), `cash_session_id NULL FK` (required when cash), `refunded_at`, `created_by FK`. Append-only (triggers, SD-102); index `(credit_note_id)`. Σ amounts per credit note = its TTC (service, same transaction).
 
 ## 4. Indexing and search strategy
@@ -263,8 +267,8 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 | `v_reorder_needed` | products at/below reorder point | Not created: computed by the service (ADR-076, ADR-080) |
 | `v_expiring_lots` | expiry alert list | Not created: the list and its levels are computed by the service from settings (ADR-056, DR-019) |
 | `v_sale_withdrawal_warnings` | printable withdrawal warnings | Keep; printing applicability OD-028 (screen: ADR-121) |
-| `v_customer_balance` | customer running balance | **Do not use as written** (DR-006); redefine per ADR-118 (Phase 9) |
-| `v_supplier_payables` | outstanding per supplier invoice | Keep; advances OD-016 |
+| `v_customer_balance` | customer running balance | **Not created** (DR-006): one service query per ADR-118 / ADR-134 (Phase 9) |
+| `v_supplier_payables` | outstanding per supplier invoice | **Not created**: computed by the service per ADR-132 (Phase 9) |
 | `v_stock_valuation` | value at cost and at sale price | Keep |
 | `v_sales_margin` | revenue / cost / margin by day, product, zone, customer | **Fix** (credit notes, delivery notes — DR-007, ADR-117) |
 
@@ -281,8 +285,8 @@ Rule (ADR-014): views are read models for listings/reports; decisions inside tra
 | **Ledger reconciliation** | lots, stock_movements | `lots.quantity_on_hand = SUM(stock_movements.quantity)` per lot; any difference is a Critical defect (BR-STOCK-007) |
 | **Reorder candidates** | lots, products | `reorder_point > 0 AND sellable_qty ≤ reorder_point`, not archived (ADR-076), computed by the service |
 | **Withdrawal warnings for document D** | sales_document_lines, product_withdrawal_periods, animal_species | match species when specified |
-| **Customer account statement** | sales_documents, payment_allocations, customer_payments | chronological, running balance (definition ADR-118) |
-| **Supplier payables** | supplier_invoices, supplier_payments | open amount per invoice, ordered by `due_date` |
+| **Customer account statement** | sales_documents, customer_payments | opening balance, then credit invoices, their credit notes, account payments and reversals, running balance (ADR-118, ADR-134) |
+| **Supplier payables** | supplier_invoices, supplier_payment_allocations, supplier_credit_allocations, supplier_payments | open amount per invoice, ordered by `due_date` (ADR-132) |
 | **Expected cash for session S** | cash_movements | cash method only (BR-CASH-003) |
 | **Stock valuation** | lots, products | at cost: `Σ qty × lots.unit_cost`; at price: `Σ qty × products.sale_price` |
 | **Margin** | sales_document_lines, sales_documents | `Σ line_ht − Σ quantity_base × unit_cost`, net of credit notes (ADR-118) |

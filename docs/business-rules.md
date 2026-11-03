@@ -166,21 +166,27 @@ Per ADR-007 every rule marked `SVC` is authoritative in the backend; `UI` is a c
 | ID | Name | Description | Applies to | Trigger | Validation | Enforcement | Error | Basis |
 |---|---|---|---|---|---|---|---|---|
 | BR-PAY-001 | Payment validity | Amount > 0; method ∈ {cash, cheque, bank_transfer}; reference required for cheque and transfer; customer must be active. | customer / supplier payment | create | bounds, method | DB (CHECK) + API + SVC | VALIDATION_FAILED | SRC FR-FIN-006 + REC |
-| BR-PAY-002 | Allocation limits | Σ allocations of a payment ≤ payment amount; each allocation ≤ the invoice's outstanding amount; one allocation row per (payment, invoice). | payment allocation | allocate | sums | DB (PK) + SVC | PAYMENT_ALLOCATION_EXCEEDED | SCH + REC |
+| BR-PAY-002 | Allocation limits | Σ allocations of a payment ≤ payment amount; each allocation ≤ the invoice's open amount (TTC − its credit notes − live allocations); only confirmed credit invoices of that customer; the payment row then the invoice rows (ascending id) locked while allocating. Allocations are append-only rows with their own id: the same payment may be applied to the same invoice again later (ADR-134). | payment allocation | allocate | sums | SVC + DB (CHECK) | PAYMENT_ALLOCATION_EXCEEDED | SCH + REC · ADR-134 |
 | BR-PAY-003 | Financial history preserved | Payments, allocations, cash movements and supplier payments are never edited or deleted; errors are corrected by reversing entries with a reason, audited. | finance records | edit/delete attempt | — | SVC (+ DB triggers proposed SD-102) | DOCUMENT_IMMUTABLE | REC (brief) |
 | BR-PAY-004 | Customer balance | The balance is derived, never stored: confirmed credit invoices − their credit notes − account payments, allocated or not; counter payments of immediate sales never count (ADR-118). | customer | read | — | SVC / read model | — | SRC FR-FIN-002 · ADR-118 |
 | BR-PAY-005 | Credit-limit enforcement | Confirming a credit sale requires `balance + uninvoiced credit delivery notes + the sale's TTC ≤ credit_limit` (the balance per BR-PAY-004, drafts not counted; ADR-117), evaluated with the customer row locked; `NULL` = no limit, `0` = no credit sale; overdue invoices block only when `credit_overdue_block_days` is on (default off) (ADR-108). The check comes with sales (Phase 7). | credit invoice | confirm | balance check | SVC (via `CreditLimitPort`) | CREDIT_LIMIT_EXCEEDED | SRC FR-FIN-002 · ADR-108 |
 | BR-PAY-006 | Cash payment needs an open session | A cash-method payment recorded at the counter requires the cashier's open session. | payment | create | open session | SVC | CASH_SESSION_REQUIRED | REC |
 | BR-PAY-007 | Account statement | Chronological list of invoices, credit notes and payments with running balance. | customer | read | — | SVC | — | SRC FR-FIN-003 |
-| BR-PAY-008 | Supplier invoice | Unique per (supplier, invoice number); `due_date` defaults to `invoice_date + payment_terms_days`; total ≥ 0. | supplier invoice | create | uniqueness | DB (UNIQUE) + SVC | DUPLICATE_RESOURCE | SRC FR-FIN-004 |
-| BR-PAY-009 | Supplier payment limits | A payment on an invoice ≤ its remaining amount; a payment without invoice is an advance. | supplier payment | create | remaining | SVC | PAYMENT_ALLOCATION_EXCEEDED | REC |
-| BR-PAY-010 | Advances | Advances are recorded with `is_advance`; how they are later applied to invoices: OD-016. | supplier payment | create | — | SVC | — | SRC FR-FIN-005 · OD-016 |
-| BR-PAY-011 | Supplier credit notes | Supplier credit notes (`is_credit_note`) reduce payables; linkage with supplier returns: OD-016. | supplier invoice | create | — | SVC | — | SRC FR-FIN-005 · OD-016 |
+| BR-PAY-008 | Supplier invoice | Unique per (supplier, invoice number), cancelled ones included; `due_date` defaults to `invoice_date + payment_terms_days`; total ≥ 0; an optional receipt must be a confirmed receipt of that supplier; a total different from the receipt's value is a warning, not a refusal (ADR-133). | supplier invoice | create | uniqueness | DB (UNIQUE) + SVC | DUPLICATE_RESOURCE | SRC FR-FIN-004 · ADR-133 |
+| BR-PAY-009 | Supplier payment allocations | A supplier payment is allocated to one or several invoices of that supplier (`supplier_payment_allocations`); Σ allocations ≤ the payment; each ≤ the invoice's open amount (TTC − live payment allocations − credit-note applications); locks as BR-PAY-002. Cash: OUT on the payer's own open session, refused beyond the expected cash. | supplier payment | create / apply | remaining | SVC | PAYMENT_ALLOCATION_EXCEEDED, CASH_SESSION_REQUIRED, CASH_INSUFFICIENT | REC · ADR-132 |
+| BR-PAY-010 | Advances | An advance is the unallocated part of a payment, derived, never flagged (customers and suppliers). It lowers the balance and may be applied to invoices later by new allocation rows, within BR-PAY-002/009. Counter payments of immediate sales are never advances. | customer / supplier payment | create / apply | — | SVC | PAYMENT_ALLOCATION_EXCEEDED | SRC FR-FIN-005 · ADR-132, ADR-134 |
+| BR-PAY-011 | Supplier credit notes | A supplier credit note (`is_credit_note`) is recorded from the supplier's *avoir*, optionally linked to a supplier return of that supplier; it lowers what we owe and may be applied to that supplier's invoices (`supplier_credit_allocations`, limits as BR-PAY-009). Nothing is generated from a return. | supplier invoice | create / apply | supplier match | SVC | PAYMENT_ALLOCATION_EXCEEDED | SRC FR-FIN-005 · ADR-133 |
+| BR-PAY-012 | Payment on account | A customer payment on account: active customer, amount > 0, method and reference (BR-PAY-001), `Idempotency-Key`; allocated as given or, when none are given, oldest first (due date, then number); the rest is an advance. | customer payment | create | — | SVC | CUSTOMER_INACTIVE, PAYMENT_ALLOCATION_EXCEEDED | SRC FR-FIN-008 · ADR-134 |
+| BR-PAY-013 | Payment reversal | A customer or supplier payment is reversed once by a counter-row with a reason (`payment.reverse`, audited `PAYMENT_REVERSE`); its allocations stop counting and its invoices reopen; cash goes the other way on the reverser's own open session, refused beyond the expected cash; counter payments of immediate sales are not reversible this way. | payment | reverse | not reversed, not a counter payment | DB (UNIQUE) + SVC | INVALID_STATE_TRANSITION, CASH_SESSION_REQUIRED, CASH_INSUFFICIENT | REC · ADR-135 |
+| BR-PAY-014 | Supplier balance | What we owe a supplier, derived: recorded invoices − recorded credit notes − live payments, allocated or not; payables are listed per invoice by due date with their open amount. | supplier | read | — | SVC / read model | — | SRC FR-FIN-004 · ADR-132 |
+| BR-PAY-015 | Supplier invoice correction | A supplier invoice or credit note is never edited; it is cancelled with a reason (audited) only while no live payment allocation or credit-note application settles it (or, for a credit note, none of its applications exists), then entered again. | supplier invoice | cancel | no settlement | SVC | INVOICE_HAS_SETTLEMENTS | REC · ADR-133 |
 | BR-CASH-001 | One open session per cashier | A cashier cannot hold two open sessions. | cash session | open | uniqueness | DB (unique generated column) + SVC | CASH_SESSION_ALREADY_OPEN | SCH |
 | BR-CASH-002 | Closing and variance | Closing requires the counted amount; the server computes expected; variance = counted − expected is stored. | cash session | close | counted ≥ 0 | SVC + DB (generated) | VALIDATION_FAILED | SRC FR-FIN-007 |
 | BR-CASH-003 | Expected-cash definition | Expected = opening amount + Σ cash-method IN − Σ cash-method OUT of the session (cheques and transfers excluded). | cash session | close | — | SVC | — | REC |
 | BR-CASH-004 | Closed session immutable | No posting to a closed session; late corrections are posted to the current session with a reason. | cash session | post | status = open | SVC | CASH_SESSION_CLOSED | REC |
 | BR-CASH-005 | Cash movement validity | Amount > 0; direction ∈ {in, out}; method ∈ payment methods. | cash movement | create | bounds | DB (CHECK) | VALIDATION_FAILED | SCH |
+| BR-CASH-006 | Manual cash movement | `cash.manage`; cash only; amount > 0; mandatory label; on the user's own open session; an OUT may not bring the expected cash below zero; audited. | cash movement | create | open own session, expected ≥ 0 | SVC + DB (CHECK) | CASH_SESSION_REQUIRED, CASH_SESSION_CLOSED, CASH_INSUFFICIENT | SRC FR-FIN-006 · ADR-136 |
+| BR-CASH-007 | Closing another session; report | A `cash.manage` holder may close any open session with the counted amount; the closer is recorded; no variance tolerance. The session report lists movements by source, cheques and transfers apart, expected, counted and variance (on screen in Phase 9). | cash session | close / read | — | SVC | ACCESS_DENIED | SRC FR-FIN-007 · ADR-136 |
 
 ## 8. Security, audit, reports, backup (SEC, AUDIT, RPT, BKP)
 
@@ -205,14 +211,14 @@ Per ADR-007 every rule marked `SVC` is authoritative in the backend; `UI` is a c
 
 | Family | Count | Family | Count |
 |---|---|---|---|
-| PROD | 9 | PAY | 11 |
-| UNIT | 5 | CASH | 5 |
+| PROD | 9 | PAY | 15 |
+| UNIT | 5 | CASH | 7 |
 | LOT | 12 | SEC | 6 |
 | STOCK | 14 | AUDIT | 3 |
 | INV | 8 | RPT | 3 |
 | PURCH | 13 | BKP | 2 |
 | DOC | 1 | CUST | 7 |
 | SALE | 16 | RET | 11 |
-| **Total** | **126** | | |
+| **Total** | **132** | | |
 
 Rules that depend on an Open Decision (`OD-…` in the Basis column) must be treated as **hypotheses** until the decision is recorded in `decisions.md`.

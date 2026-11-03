@@ -130,7 +130,7 @@ Open points on values: the discard of returned goods is `return_discard` (ADR-12
 | `v_expiring_lots` | D | Not created: the service lists expiring lots and computes the level from configured thresholds (ADR-056, DR-019). |
 | `v_sale_withdrawal_warnings` | A | Direct. Printing applicability **OD-028**; screen ADR-121. |
 | `v_customer_balance` | B + **defect** | Do not reuse as-is; definition **ADR-118** (DR-006). |
-| `v_supplier_payables` | A/B | Direct; ignores advances (OD-016). |
+| `v_supplier_payables` | D | Not created: open amounts and the supplier balance are computed by the service (ADR-132). |
 | `v_stock_valuation` | A | Direct; "at sale price" uses `products.sale_price` per base unit. |
 | `v_sales_margin` | B + **defect** | `date_trunc(...)::date` → `DATE(...)`; ignores credit notes (DR-007, ADR-118). |
 | `next_doc_number` | D | `NumberingService` (ADR-011). |
@@ -215,7 +215,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-106 | `product_target_species` (target species) | ADR-047 | Accepted 2026-10-21 |
 | SD-107 | New `movement_type` value for discard: `return_discard` (−), always right after a `customer_return` (+) of the same return line | OD-005 → ADR-127 | Accepted 2026-11-02 (cancellation: SD-135) |
 | SD-108 | `customer_payments.customer_id` nullable; every immediate sale creates a payment | ADR-118 | Accepted 2026-10-31 |
-| SD-109 | Link supplier return ↔ supplier credit note | OD-016 | Open |
+| SD-109 | Link supplier return ↔ supplier credit note: optional `supplier_invoices.supplier_return_id` on credit notes only | OD-016 → ADR-133 | Accepted 2026-11-03 (column: SD-144) |
 | SD-110 | Company profile / document header data | OD-026 | Open |
 | SD-111 | Spring Session JDBC tables (no refresh-token or login-attempt table) | ADR-036, ADR-038 | Accepted 2026-10-20 |
 | SD-114 | `users.must_change_password` | ADR-039 | Accepted 2026-10-20 |
@@ -249,6 +249,10 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-140 | `sales_document_lines.returned_quantity_base` with `CHECK (≤ quantity_base)`; `credited_ht` / `credited_vat` on credit-note lines, taken by the generated `line_ht` / `line_vat` | ADR-130 | Accepted 2026-11-02 |
 | SD-141 | `customer_returns.document_id` (was `invoice_id`), `credit_note_id NOT NULL`, mandatory `reason`; `customer_return_lines` gain `lot_id`, `product_id`, `sealed`, `discard_reason`, `discard_note`, `credit_note_line_id`, no cascade; numbering key `CR` | ADR-127, ADR-131 | Accepted 2026-11-02 |
 | SD-142 | `products.return_restock_forbidden BOOLEAN NOT NULL DEFAULT FALSE` | ADR-129 | Accepted 2026-11-02 |
+| SD-143 | `supplier_payments` without `invoice_id` and `is_advance` (the advance is derived), with `cash_session_id` and reversal columns as SD-138; new append-only `supplier_payment_allocations` | ADR-132 | Accepted 2026-11-03 |
+| SD-144 | `supplier_invoices` gain `supplier_return_id` (credit notes only), `status` with cancellation columns, `created_by`, `created_at`, `invoice_date` and `due_date` NOT NULL; new append-only `supplier_credit_allocations` | ADR-133 | Accepted 2026-11-03 |
+| SD-145 | `payment_allocations` gets a surrogate `id` PK, `created_at`, `created_by` (existing rows kept, filled from their payment); the `(payment_id, invoice_id)` key is dropped | ADR-134 | Accepted 2026-11-03 |
+| SD-146 | `cash_movements.supplier_payment_id` and `manual`; `ck_cash_movements_one_source` extended to exactly one of customer payment, refund, supplier payment, manual | ADR-132, ADR-135, ADR-136 | Accepted 2026-11-03 |
 
 ## 9. Operational requirements for MySQL
 

@@ -238,9 +238,11 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET/PUT | `/api/suppliers/{id}` | view / update | `supplier.read` / `supplier.manage` | `SupplierDetail {id, name, kind, taxId, phone, email, address, paymentTermsDays, active, createdAt, updatedAt, version}`; PUT with `version` (`CONCURRENT_MODIFICATION`); `VALIDATION_FAILED` (`name` `REQUIRED`/`SIZE`, `kind` `UNKNOWN`, `paymentTermsDays` `RANGE`, `email` `EMAIL`) |
 | POST | `/api/suppliers/{id}/deactivate` · `/activate` | toggle, allowed with open orders (their receipts are then refused, ADR-100) | `supplier.manage` | → `SupplierDetail` |
 | GET/POST | `/api/suppliers/{id}/prices` | price & discount history (`productId`) / add a manual entry | `supplier.read` / `supplier.manage` | `{productId, unitPrice (per base unit, 4 decimals), discountPct (0–100), validFrom}`; receipts append entries when the price or discount changes (BR-PURCH-008); each entry `PriceEntry {id, product: {id, sku, commercialName, baseUnit}, unitPrice, discountPct, validFrom, createdAt, createdBy: {id, fullName}}`, newest first, plus `receiptId` (the receipt that appended it, else `null`) and `cancelled` (ADR-106); `validFrom` defaults to the business date; `PRODUCT_ARCHIVED`, `VALIDATION_FAILED` (`productId` `REQUIRED`/`UNKNOWN`, `unitPrice` `REQUIRED`/`NOT_NEGATIVE`/`SCALE`, `discountPct` `RANGE`/`SCALE`) |
-| GET | `/api/suppliers/{id}/payables` | open invoices and remaining — **Phase 9** | `payment.read` | list with `remaining` |
-| GET/POST | `/api/supplier-invoices` | list / record — **Phase 9** | `supplierinvoice.manage` | `{supplierId, invoiceNumber, receiptId?, invoiceDate, dueDate?, totalTtc, creditNote}`; `DUPLICATE_RESOURCE` |
-| GET | `/api/supplier-invoices/{id}` | detail with payments — **Phase 9** | `supplierinvoice.manage` | |
+| GET | `/api/suppliers/{id}/payables` | open invoices by due date, unapplied credit notes and advances, supplier balance (BR-PAY-014) — **Phase 9** | `payment.read` | `{balance, invoices: [{id, invoiceNumber, invoiceDate, dueDate, totalTtc, open}], creditNotes: [{id, invoiceNumber, totalTtc, unapplied}], advances: [{paymentId, paidAt, unallocated}]}` |
+| GET/POST | `/api/supplier-invoices` | list (`supplierId`, `creditNote`, `open`, `dueBefore`) / record — **Phase 9** (ADR-133) | `supplierinvoice.manage` | `{supplierId, invoiceNumber, receiptId?, supplierReturnId? (credit notes only), invoiceDate, dueDate?, totalTtc, creditNote}` → 201 with `warnings` (`RECEIPT_TOTAL_DIFFERS`); `DUPLICATE_RESOURCE`, `SUPPLIER_INACTIVE`, `VALIDATION_FAILED` (`receiptId` `OTHER_SUPPLIER`/`NOT_CONFIRMED`, `supplierReturnId` `OTHER_SUPPLIER`/`NOT_ALLOWED`) |
+| GET | `/api/supplier-invoices/{id}` | detail with its open amount, payment allocations and credit-note applications — **Phase 9** | `supplierinvoice.manage` | |
+| POST | `/api/supplier-invoices/{id}/cancel` | cancel a wrong entry, only while nothing settles it — **Phase 9** (BR-PAY-015) | `supplierinvoice.manage` | `{reason}`; `INVOICE_HAS_SETTLEMENTS`; audited `SUPPLIER_INVOICE_CANCEL` |
+| POST | `/api/supplier-invoices/{id}/applications` ● | apply a credit note to invoices of its supplier — **Phase 9** (ADR-133) | `supplierinvoice.manage` | `{allocations: [{invoiceId, amount}]}`; `PAYMENT_ALLOCATION_EXCEEDED`, `INVALID_STATE_TRANSITION` (not a credit note, cancelled) |
 
 ### 4.7 `/api/purchase-orders`
 
@@ -276,8 +278,8 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | PUT | `/api/customers/{id}/credit-limit` | change credit limit under the customer-row lock, audited `CREDIT_LIMIT_CHANGE` (old and new value, also to and from `null`) | `customer.credit.manage` | `{creditLimit, version}` — `creditLimit` must be present: `null` = no limit, `"0.00"` = cash only, else ≥ 0 with 2 decimals (ADR-108) → `CustomerDetail`; `VALIDATION_FAILED` (`creditLimit` `REQUIRED` / `FORMAT` / `NOT_NEGATIVE` / `SCALE` / `RANGE`), `CONCURRENT_MODIFICATION` (stale version, or a parallel change), `NOT_FOUND` |
 | POST | `/api/customers/{id}/deactivate` · `/activate` | toggle | `customer.manage` | |
 | GET | `/api/customers/{id}/balance` | balance, limit, available credit | `customer.read` | definition ADR-118; `{balance, uninvoicedDeliveryNotes, creditLimit, availableCredit}` — the last two `null` without a limit, available = limit − balance − uninvoiced delivery notes, never below 0 |
-| GET | `/api/customers/{id}/statement` | account statement `?from&to` (+ `format=pdf`) | `statement.read` | chronological lines + running balance |
-| GET | `/api/customers/{id}/open-invoices` | invoices with outstanding amount (for allocation) | `payment.read` | |
+| GET | `/api/customers/{id}/statement` | account statement `?from&to` — **Phase 9** (ADR-134; `format=pdf` in Phase 10, ADR-137) | `statement.read` | `{openingBalance, lines: [{date, kind: invoice\|credit_note\|payment\|reversal, documentId?, paymentId?, number, debit, credit, balance}], closingBalance, uninvoicedDeliveryNotes}` |
+| GET | `/api/customers/{id}/open-invoices` | confirmed credit invoices with an open amount, oldest first, and the unallocated part of each account payment — **Phase 9** | `payment.read` | `{invoices: [{id, number, issuedAt, dueDate, totalTtc, open}], advances: [{paymentId, paidAt, unallocated}]}` |
 | GET | `/api/customers/{id}/sales` | sales history, newest first | `sale.read` | page of `SaleSummary` |
 | GET | `/api/customers/{id}/prices` | the customer's prices, by product name | `customer.read` | `[CustomerPriceView {product: {id, sku, commercialName, baseUnit, archived}, unitPrice, updatedAt, version}]` (per base unit) |
 | PUT | `/api/customers/{id}/prices/{productId}` | set (`version` null) or change (current `version`) one price (ADR-111), audited `PRICE_CHANGE` (old and new value) | `customer.price.manage` | `{unitPrice, version}` — `unitPrice` > 0, 4 decimals → `CustomerPriceView`; `VALIDATION_FAILED` (`unitPrice` `REQUIRED` / `POSITIVE` / `SCALE` / `RANGE`), `PRODUCT_ARCHIVED` (no price is set for an archived product; existing ones are kept), `CONCURRENT_MODIFICATION` (stale or missing version, or a parallel creation of the same price), `NOT_FOUND`. An **inactive customer's prices can still be edited** |
@@ -317,16 +319,18 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 |---|---|---|---|---|
 | POST | `/api/payments/customers` ● | record customer payment + allocations | `payment.customer.create` | see §5.9 |
 | GET | `/api/payments/customers` · `/{id}` | list / detail | `payment.read` | |
-| POST | `/api/payments/customers/{id}/reverse` | reverse (counter-entry) | `payment.reverse` | `{reason}`; audited |
-| POST | `/api/payments/suppliers` | record supplier payment (or advance) | `payment.supplier.create` | `{supplierId, invoiceId?, method, amount, reference?, advance}`; `PAYMENT_ALLOCATION_EXCEEDED` |
+| POST | `/api/payments/customers/{id}/allocations` ● | apply the unallocated part of a payment on account to invoices later — Phase 9 (ADR-134) | `payment.customer.create` | `{allocations: [{invoiceId, amount}]}`; `PAYMENT_ALLOCATION_EXCEEDED`, `INVALID_STATE_TRANSITION` (reversed, or a counter payment) |
+| POST | `/api/payments/customers/{id}/reverse` ● | reverse (counter-entry) — Phase 9 (ADR-135) | `payment.reverse` | `{reason}`; cash: OUT on the reverser's own session; `INVALID_STATE_TRANSITION` (already reversed, a counter payment), `CASH_SESSION_REQUIRED`, `CASH_INSUFFICIENT`; audited `PAYMENT_REVERSE` |
+| POST | `/api/payments/suppliers` ● | record a supplier payment with allocations; the rest is an advance — Phase 9 (ADR-132) | `payment.supplier.create` | `{supplierId, method, amount, reference?, allocations: [{invoiceId, amount}]}`; `PAYMENT_ALLOCATION_EXCEEDED`, `SUPPLIER_INACTIVE`, `CASH_SESSION_REQUIRED`, `CASH_INSUFFICIENT` |
 | GET | `/api/payments/suppliers` · `/{id}` | list / detail | `payment.read` | |
-| POST | `/api/payments/suppliers/{id}/reverse` | reverse | `payment.reverse` | |
+| POST | `/api/payments/suppliers/{id}/allocations` ● | apply an advance to invoices later — Phase 9 (ADR-132) | `payment.supplier.create` | as customers |
+| POST | `/api/payments/suppliers/{id}/reverse` ● | reverse — Phase 9 (ADR-135) | `payment.reverse` | `{reason}`; cash: IN on the reverser's own session; audited `PAYMENT_REVERSE` |
 | POST | `/api/cash-sessions/open` | open own session | `cash.open` | `{openingAmount}` → 201; `CASH_SESSION_ALREADY_OPEN` |
 | GET | `/api/cash-sessions/current` | own open session with running expected amount | `cash.open` | 204 when there is none |
 | POST | `/api/cash-sessions/{id}/close` ● | close with counted amount | `cash.open` (own) / `cash.manage` | `{countedAmount}` → `CashSessionDetail` (variance) |
 | GET | `/api/cash-sessions` · `/{id}` | all sessions | `cash.manage` | |
-| POST | `/api/cash-sessions/{id}/movements` | manual cash in/out, Phase 9 (ADR-118) | `cash.manage` | `{direction, method, amount, label}`; `CASH_SESSION_CLOSED` |
-| GET | `/api/cash-sessions/{id}/report` | session report (`format=pdf`), Phase 9 (ADR-118) | `cash.manage` | |
+| POST | `/api/cash-sessions/{id}/movements` ● | manual cash in/out on the user's own open session, Phase 9 (ADR-136) | `cash.manage` | `{direction, amount, label}` (method cash); `CASH_SESSION_REQUIRED` (not the user's own), `CASH_SESSION_CLOSED`, `CASH_INSUFFICIENT`; audited `CASH_MOVEMENT_CREATE` |
+| GET | `/api/cash-sessions/{id}/report` | session report on screen, Phase 9 (ADR-136; `format=pdf` in Phase 10) | `cash.manage`, or the owner | `{session, openingAmount, bySource: [{source, in, out}], nonCash: [{method, reference, amount, source}], expected, counted, variance, closedBy}` |
 
 ### 4.13 `/api/reports` (read-only; `?format=json\|csv\|pdf`)
 
@@ -426,9 +430,9 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ### 5.9 Customer payment
 - **POST `/api/payments/customers`** — **Permission:** `payment.customer.create`. **Header:** `Idempotency-Key`.
-- **Request:** `{ "customerId": 55, "method": "cheque", "amount": "300.00", "reference": "CHQ-0412", "allocations": [ {"invoiceId": 4400, "amount": "200.00"}, {"invoiceId": 4421, "amount": "100.00"} ] }` (an unallocated remainder lowers the balance as an advance, ADR-118).
+- **Request:** `{ "customerId": 55, "method": "cheque", "amount": "300.00", "reference": "CHQ-0412", "allocations": [ {"invoiceId": 4400, "amount": "200.00"}, {"invoiceId": 4421, "amount": "100.00"} ] }` (an unallocated remainder lowers the balance as an advance, ADR-118). Without `allocations`, the server allocates oldest first (due date, then number) (ADR-134); with `"allocations": []`, the whole payment is an advance.
 - **Response 201:** `{ id, customerId, method, amount, allocations[…], unallocated, customerBalance }`
-- **Validation:** amount > 0; Σ allocations ≤ amount; each ≤ outstanding; reference required for cheque/transfer (BR-PAY-001/002); cash needs open session.
+- **Validation:** amount > 0; Σ allocations ≤ amount; each ≤ the open amount of a confirmed credit invoice of that customer; reference required for cheque/transfer (BR-PAY-001/002, BR-PAY-012); cash needs the user's own open session.
 - **Errors:** `PAYMENT_ALLOCATION_EXCEEDED`, `CASH_SESSION_REQUIRED`, `CUSTOMER_INACTIVE`, `VALIDATION_FAILED`.
 
 ### 5.10 Manual stock adjustment
