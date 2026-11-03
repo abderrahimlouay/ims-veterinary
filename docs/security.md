@@ -150,6 +150,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `RETURN_CREATE` | customer / supplier returns | REC |
 | `PO_CANCEL`, `PO_CLOSE` | purchase-order cancellation and forced close, with the reason (ADR-096, ADR-105) | user decision 2026-10-24 |
 | `RECEIPT_CANCEL` | cancellation of a whole goods receipt, with the reason (ADR-103) | user decision 2026-10-24 |
+| `SUPPLIER_INVOICE_CANCEL` | a supplier invoice or credit note cancelled, with the reason (ADR-133, BR-PAY-015) | user decision 2026-11-03 |
 | `PAYMENT_REVERSE` | reversal of a payment/cash entry | REC |
 | `REFUND_CREATE` | a refund of a customer return: credit note, method, amount, original document and its payment methods, session | REC (ADR-128) |
 | `CREDIT_LIMIT_CHANGE` | customer credit-limit change | REC |
@@ -161,7 +162,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 
 **Phase 8 (ADR-131):** `RETURN_CREATE` of a customer return records the lines, quantities, dispositions, sealed flags and discard reasons.
 
-**Phase 9 (ADR-133, ADR-135, ADR-136):** `PAYMENT_REVERSE` covers customer and supplier payment reversals (payment, amount, method, reason, session of the cash counter-movement). Two actions are added to the table and to `AuditAction` with their slices: `SUPPLIER_INVOICE_CANCEL` (a supplier invoice or credit note cancelled, with the reason) and `CASH_MOVEMENT_CREATE` (a manual cash movement: session, direction, amount, label). `CASH_VARIANCE` records who closed the session when it is not the owner.
+**Phase 9 (ADR-133, ADR-135, ADR-136):** `PAYMENT_REVERSE` covers customer and supplier payment reversals (payment, amount, method, reason, session of the cash counter-movement). `SUPPLIER_INVOICE_CANCEL` is in the table (slice 4); `CASH_MOVEMENT_CREATE` is added to the table and to `AuditAction` with its slice (a manual cash movement: session, direction, amount, label). `CASH_VARIANCE` records who closed the session when it is not the owner.
 
 Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD-102, BR-SEC-006). Passwords, tokens and hashes are never written to audit values.
 

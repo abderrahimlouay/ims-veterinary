@@ -25,15 +25,15 @@ import org.testcontainers.mysql.MySQLContainer;
  * Phase 8 (V08_008) and filled with Phase 8 data (a credit invoice, an account payment allocated to it and a counter
  * receipt paid at once), then upgraded with every Phase 9 migration. Nothing fails; every allocation keeps its payment,
  * invoice and amount with a new id, dated and attributed as its payment (SD-145); the balance of the customer is the
- * same; the same payment may now be applied to the same invoice again; allocations stay append-only. Fictional data
- * only (ADR-114).
+ * same; the same payment may now be applied to the same invoice again; allocations stay append-only; the supplier
+ * invoice tables start empty. Fictional data only (ADR-114).
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class Phase9UpgradeMigrationTest {
 
     private static final String SCHEMA = "ims_upgrade_check_9";
-    private static final String LAST = "09.001";
+    private static final String LAST = "09.003";
 
     @Autowired
     private MySQLContainer mysql;
@@ -108,6 +108,8 @@ class Phase9UpgradeMigrationTest {
         assertThat(db.queryForObject(balance, BigDecimal.class, customer, customer)).isEqualByComparingTo(before)
                 .isEqualByComparingTo("40.00");
 
+        assertThat(db.queryForObject("SELECT (SELECT COUNT(*) FROM supplier_invoices)"
+                + " + (SELECT COUNT(*) FROM supplier_credit_allocations)", Integer.class)).isZero();
         db.update("""
                 INSERT INTO payment_allocations (payment_id, invoice_id, amount, created_at, created_by)
                 VALUES (?, ?, 20.00, UTC_TIMESTAMP(6), ?)""", account, invoice, user);
