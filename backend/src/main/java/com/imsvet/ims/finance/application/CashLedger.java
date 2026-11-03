@@ -104,6 +104,25 @@ public class CashLedger {
                 actors.current().userId(), clock.instant()));
     }
 
+    /**
+     * The cash of a supplier payment (OUT, refused beyond the expected cash) or of its reversal (IN), under the
+     * session's row lock; refused on a closed session (ADR-132, ADR-135, BR-CASH-004).
+     */
+    @Transactional
+    public CashMovement postSupplierPayment(long sessionId, CashDirection direction, BigDecimal amount, String label,
+            long supplierPaymentId) {
+        CashSession session = locks.lock(sessionId).orElseThrow();
+        if (!session.open()) {
+            throw new BusinessException(ErrorCode.CASH_SESSION_CLOSED, "This cash session is closed.",
+                    Map.of("id", sessionId));
+        }
+        if (direction == CashDirection.OUT) {
+            requireAvailable(sessionId, amount);
+        }
+        return movements.saveAndFlush(CashMovement.supplierPayment(sessionId, direction, amount, label,
+                supplierPaymentId, actors.current().userId(), clock.instant()));
+    }
+
     private static Supplier<BusinessException> ledgerRefusal(long cashier) {
         return () -> new BusinessException(ErrorCode.CASH_SESSION_REQUIRED, "A cash payment needs an open cash session.",
                 Map.of("cashierId", cashier));
