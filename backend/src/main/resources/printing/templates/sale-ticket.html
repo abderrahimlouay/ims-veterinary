@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title th:text="${doc.title} + ' ' + ${doc.number}">Ticket</title>
+<style th:inline="text">
+  @page { size: 80mm [[${pageHeightMm}]]mm; margin: 3mm 4mm; }
+  body { font-family: 'Noto Sans', 'Noto Naskh Arabic'; font-size: 8pt; color: #000; }
+  .center { text-align: center; }
+  .name { font-size: 10pt; font-weight: 700; }
+  .rule { border-top: 0.6pt dashed #000; margin: 2mm 0; }
+  table { width: 100%; border-collapse: collapse; }
+  td { vertical-align: top; padding: 0.4mm 0; }
+  .num { text-align: right; white-space: nowrap; }
+  .grand td { font-weight: 700; font-size: 10pt; }
+  .cancelled { font-weight: 700; font-size: 12pt; text-align: center; }
+</style>
+</head>
+<body>
+<div class="center">
+  <th:block th:if="${company != null}">
+    <div class="name" th:text="${company.name}">Pharmacie</div>
+    <div th:each="line : ${company.lines}" th:text="${line}">Adresse</div>
+  </th:block>
+  <div th:if="${company == null}">Identité de l'entreprise non renseignée</div>
+</div>
+<div class="rule"></div>
+<div class="cancelled" th:if="${doc.cancelled}">*** ANNULÉ ***</div>
+<div class="center"><b th:text="${doc.title}">TICKET</b> <span th:text="${doc.number}">RCT</span></div>
+<div class="center" th:text="${doc.issuedAt}">Date</div>
+<div class="center" th:if="${doc.parentNumber != null}" th:text="${doc.parentLabel} + ' ' + ${doc.parentNumber}">Origine</div>
+<div class="center" th:if="${customer != null}" th:text="${customer.name}">Client</div>
+<div class="rule"></div>
+<table>
+  <th:block th:each="l : ${lines}">
+    <tr><td colspan="2" th:text="${l.product}">Produit</td></tr>
+    <tr><td th:text="${l.quantity} + (${l.lot} != null ? ' · lot ' + ${l.lot} : '')">1</td><td class="num" th:text="${l.ttc}">0,00</td></tr>
+  </th:block>
+</table>
+<div class="rule"></div>
+<table>
+  <tr><td>Total HT</td><td class="num" th:text="${totals.ht}">0,00</td></tr>
+  <tr><td>TVA</td><td class="num" th:text="${totals.vat}">0,00</td></tr>
+  <tr class="grand"><td>TOTAL TTC</td><td class="num" th:text="${totals.ttc}">0,00</td></tr>
+</table>
+<div th:each="p : ${payments}" th:text="${p}">Espèces</div>
+<th:block th:if="${!warnings.isEmpty()}">
+  <div class="rule"></div>
+  <b>Délais d'attente</b>
+  <div th:each="w : ${warnings}" th:text="${w}">Produit</div>
+</th:block>
+<div class="rule"></div>
+<div class="center" th:if="${company != null and company.footer != null}" th:text="${company.footer}">Merci</div>
+</body>
+</html>

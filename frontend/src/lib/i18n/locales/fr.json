@@ -1130,7 +1130,9 @@
     },
     "returned": "Retourné",
     "returns": "Retours",
-    "return": "Retour de marchandise"
+    "return": "Retour de marchandise",
+    "pdf": "PDF (A4)",
+    "printTicket": "Imprimer le ticket"
   },
   "returns": {
     "title": "Retours clients",

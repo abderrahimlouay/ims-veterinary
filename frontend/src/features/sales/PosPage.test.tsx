@@ -104,6 +104,8 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
 
     expect(await screen.findByText('Document RCT-2026-000001')).toBeInTheDocument()
     expect(screen.getByText(/Monnaie à rendre/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Imprimer le ticket' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'PDF (A4)' })).toHaveAttribute('href', '/api/sales/300/pdf?format=a4')
     expect(body).toEqual({ payments: [{ method: 'cash', amount: '21.80', reference: null }] })
     expect(key).toMatch(/^[0-9a-f-]{36}$/)
   })

@@ -173,6 +173,7 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/sales", "sale.read"),
             new Endpoint(HttpMethod.POST, "/api/sales", "sale.create", "{\"docType\":\"receipt\"}"),
             new Endpoint(HttpMethod.GET, "/api/sales/999999", "sale.read"),
+            new Endpoint(HttpMethod.GET, "/api/sales/999999/pdf", "sale.read"),
             new Endpoint(HttpMethod.PUT, "/api/sales/999999", "sale.create", "{\"version\":0}"),
             new Endpoint(HttpMethod.DELETE, "/api/sales/999999", "sale.create"),
             new Endpoint(HttpMethod.POST, "/api/sales/999999/lines", "sale.create",

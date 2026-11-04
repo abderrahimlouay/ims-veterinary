@@ -184,5 +184,39 @@ describe('sales documents (frontend.md §4.8)', () => {
     renderApp('/sales/300')
 
     expect(await screen.findByRole('link', { name: 'Terminer en caisse' })).toHaveAttribute('href', '/pos?draft=300')
+    expect(screen.queryByRole('link', { name: 'PDF (A4)' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Imprimer le ticket' })).toBeNull()
+  })
+
+  it('opens the A4 PDF in a new tab and prints the ticket through a hidden frame (ADR-139)', async () => {
+    serveMe(SELLER)
+    serveSale(aSale())
+    renderApp('/sales/300')
+
+    const pdf = await screen.findByRole('link', { name: 'PDF (A4)' })
+    expect(pdf).toHaveAttribute('href', '/api/sales/300/pdf?format=a4')
+    expect(pdf).toHaveAttribute('target', '_blank')
+    let requested: string | undefined
+    server.use(
+      http.get('/api/sales/300/pdf', ({ request }) => {
+        requested = request.url
+        return new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), { headers: { 'Content-Type': 'application/pdf' } })
+      }),
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Imprimer le ticket' }))
+    const frame = await screen.findByTestId('print-frame')
+    expect(frame.getAttribute('src')).toMatch(/^blob:/)
+    expect(new URL(requested ?? '').searchParams.get('format')).toBe('ticket')
+    frame.remove()
+  })
+
+  it('shows why a ticket cannot be printed', async () => {
+    serveMe(SELLER)
+    serveSale(aSale({ status: 'cancelled' }))
+    server.use(http.get('/api/sales/300/pdf', () => problem(403, 'ACCESS_DENIED')))
+    renderApp('/sales/300')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Imprimer le ticket' }))
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 })
