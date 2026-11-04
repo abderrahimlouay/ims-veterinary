@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -20,7 +21,15 @@ import org.springframework.stereotype.Repository;
 public class SalesFigures {
 
     /** One document's net revenue and cost; the caller buckets it by business date. */
-    public record DocumentFigure(Instant issuedAt, BigDecimal revenueHt, BigDecimal cost) {
+    public record DocumentFigure(Instant issuedAt, boolean creditNote, BigDecimal revenueHt, BigDecimal cost) {
+    }
+
+    /**
+     * Sales statistics by customer or zone: {@code id} is the customer id ({@code null} for counter sales without a
+     * customer), {@code code} the wilaya when grouped by commune; {@code documents} counts invoices and receipts, not
+     * credit notes.
+     */
+    public record StatisticFigure(Long id, String code, String name, long documents, BigDecimal revenueHt) {
     }
 
     /** {@code id} and {@code name} are {@code null} for products without a category. */
@@ -31,21 +40,53 @@ public class SalesFigures {
     public record Uninvoiced(long count, BigDecimal totalHt) {
     }
 
+    private static final String STATISTICS = """
+                   COUNT(DISTINCT CASE WHEN doc_type <> 'credit_note' THEN document_id END) AS documents,
+                   SUM(revenue_ht) AS revenue_ht
+            FROM v_sales_margin
+            WHERE issued_at >= :from AND issued_at < :to
+              AND (:customerType IS NULL OR customer_type = :customerType)
+            """;
+
     private final NamedParameterJdbcTemplate jdbc;
 
     SalesFigures(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
-    public List<DocumentFigure> byDocument(Instant from, Instant to) {
+    /** {@code customerType} {@code null} = every sale, counter sales without a customer included. */
+    public List<DocumentFigure> byDocument(Instant from, Instant to, String customerType) {
         return jdbc.query("""
-                SELECT issued_at, SUM(revenue_ht) AS revenue_ht, SUM(cost) AS cost
+                SELECT issued_at, doc_type, SUM(revenue_ht) AS revenue_ht, SUM(cost) AS cost
                 FROM v_sales_margin
                 WHERE issued_at >= :from AND issued_at < :to
-                GROUP BY document_id, issued_at
-                ORDER BY issued_at, document_id""", range(from, to),
-                (rs, i) -> new DocumentFigure(rs.getObject("issued_at", LocalDateTime.class).toInstant(ZoneOffset.UTC), rs.getBigDecimal("revenue_ht"),
+                  AND (:customerType IS NULL OR customer_type = :customerType)
+                GROUP BY document_id, issued_at, doc_type
+                ORDER BY issued_at, document_id""", range(from, to, customerType),
+                (rs, i) -> new DocumentFigure(rs.getObject("issued_at", LocalDateTime.class).toInstant(ZoneOffset.UTC),
+                        "credit_note".equals(rs.getString("doc_type")), rs.getBigDecimal("revenue_ht"),
                         rs.getBigDecimal("cost")));
+    }
+
+    public List<StatisticFigure> byCustomer(Instant from, Instant to, String customerType) {
+        return jdbc.query("""
+                SELECT customer_id AS id, NULL AS code, customer_name AS name,
+                """ + STATISTICS + """
+                GROUP BY customer_id, customer_name""", range(from, to, customerType), (rs, i) -> statistic(rs));
+    }
+
+    public List<StatisticFigure> byWilaya(Instant from, Instant to, String customerType) {
+        return jdbc.query("""
+                SELECT NULL AS id, NULL AS code, wilaya AS name,
+                """ + STATISTICS + """
+                GROUP BY wilaya""", range(from, to, customerType), (rs, i) -> statistic(rs));
+    }
+
+    public List<StatisticFigure> byCommune(Instant from, Instant to, String customerType) {
+        return jdbc.query("""
+                SELECT NULL AS id, wilaya AS code, commune AS name,
+                """ + STATISTICS + """
+                GROUP BY wilaya, commune""", range(from, to, customerType), (rs, i) -> statistic(rs));
     }
 
     public List<GroupFigure> byProduct(Instant from, Instant to) {
@@ -79,6 +120,19 @@ public class SalesFigures {
         return new GroupFigure(key, product ? rs.getString("code") : null, rs.getString("name"),
                 product ? rs.getBigDecimal("quantity_base") : null, rs.getBigDecimal("revenue_ht"),
                 rs.getBigDecimal("cost"));
+    }
+
+    private static StatisticFigure statistic(ResultSet rs) throws SQLException {
+        long id = rs.getLong("id");
+        Long key = rs.wasNull() ? null : id;
+        return new StatisticFigure(key, rs.getString("code"), rs.getString("name"), rs.getLong("documents"),
+                rs.getBigDecimal("revenue_ht"));
+    }
+
+    private static Map<String, Object> range(Instant from, Instant to, String customerType) {
+        Map<String, Object> params = new HashMap<>(range(from, to));
+        params.put("customerType", customerType);
+        return params;
     }
 
     private static Map<String, Object> range(Instant from, Instant to) {

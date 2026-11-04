@@ -252,7 +252,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-AUDIT-002 | SEC,R | Audit rows cannot be updated or deleted; contain required fields |
 | BR-AUDIT-003 | S | Force audit failure → business action rolled back |
 | BR-RPT-001 | S,R | Revenue and margin net of credit notes; delivery notes through their invoice, uninvoiced apart; quotes and cancelled documents out (`SalesReportsTest`) |
-| BR-RPT-002 | S | Valuation by cost vs sale price on known fixture |
+| BR-RPT-002 | S | Valuation by cost vs sale price on known fixture; expired, blocked lots apart, an empty lot absent; cost basis refused without `report.margin` (`StockReportsTest`) |
 | BR-RPT-003 | SEC | Report endpoints require their permissions (permission matrix; margin refused to a Seller, `SalesReportsTest`) |
 | BR-BKP-001 | S | Backup job produces log entry; failure recorded; retention keeps the last N successful files (ADR-144, ADR-145) |
 | BR-BKP-002 | S,A | Exports (CSV/PDF) respect permissions and filters |
