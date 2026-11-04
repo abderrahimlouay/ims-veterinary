@@ -9,6 +9,7 @@ import { SelectField } from '../../components/SelectField'
 import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { hasPermission, useCurrentUser } from '../auth'
+import { SupplierPayablesPanel } from '../finance/SupplierPayablesPanel'
 import { PriceHistoryPanel } from './PriceHistoryPanel'
 import { SUPPLIER_KINDS, useSaveSupplier, useSetSupplierActive, useSupplier, type SupplierDetail, type SupplierKind } from './supplierApi'
 
@@ -27,9 +28,12 @@ export function NewSupplierPage() {
   )
 }
 
+type Tab = 'overview' | 'payables'
+
 /**
  * `/suppliers/:id` (frontend.md §4.5): edit with the current version, deactivate / activate (an inactive supplier
- * cannot be ordered from or received, BR-PURCH-011), and the price history with manual entries (ADR-100).
+ * cannot be ordered from or received, BR-PURCH-011), and the price history with manual entries (ADR-100); the
+ * Payables tab with `payment.read` (Phase 9, ADR-132).
  */
 export function SupplierPage() {
   const { t } = useTranslation()
@@ -38,6 +42,8 @@ export function SupplierPage() {
   const supplier = useSupplier(id)
   const setActive = useSetSupplierActive(id)
   const manage = hasPermission(current, 'supplier.manage')
+  const [tab, setTab] = useState<Tab>('overview')
+  const tabs: Tab[] = ['overview', ...(hasPermission(current, 'payment.read') ? (['payables'] as const) : [])]
 
   if (supplier.isPending) {
     return (
@@ -62,8 +68,32 @@ export function SupplierPage() {
         )}
       </div>
       {setActive.error instanceof ApiError && <Alert tone="danger">{problemMessage(setActive.error.problem, t)}</Alert>}
-      {manage ? <SupplierForm key={data.version} supplier={data} onSaved={() => undefined} /> : <SupplierFacts supplier={data} />}
-      <PriceHistoryPanel supplierId={id} manage={manage} />
+      {tabs.length > 1 && (
+        <div role="tablist" aria-label={data.name} className="flex gap-2 border-b border-line">
+          {tabs.map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={tab === k}
+              onClick={() => setTab(k)}
+              className={`px-3 py-2 text-sm -mb-px border-b-2 ${tab === k ? 'border-brand text-ink font-medium' : 'border-transparent text-mute'}`}
+            >
+              {t(`purchasing.suppliers.tabs.${k}`)}
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === 'payables' ? (
+        <div role="tabpanel">
+          <SupplierPayablesPanel supplierId={id} />
+        </div>
+      ) : (
+        <>
+          {manage ? <SupplierForm key={data.version} supplier={data} onSaved={() => undefined} /> : <SupplierFacts supplier={data} />}
+          <PriceHistoryPanel supplierId={id} manage={manage} />
+        </>
+      )}
     </section>
   )
 }

@@ -25,7 +25,9 @@
     "customerCategories": "Catégories de clients",
     "pos": "Caisse",
     "sales": "Documents de vente",
-    "customerReturns": "Retours clients"
+    "customerReturns": "Retours clients",
+    "supplierInvoices": "Factures fournisseurs",
+    "cashSessions": "Sessions de caisse"
   },
   "language": {
     "label": "Langue",
@@ -119,11 +121,11 @@
     "LOT_BLOCKED": "Ce lot est bloqué et ne peut pas être vendu.",
     "LOT_EXPIRED": "Ce lot est périmé et ne peut pas être vendu.",
     "LOT_REQUIRED": "Chaque ligne doit avoir un lot.",
-    "CASH_SESSION_REQUIRED": "Ouvrez une session de caisse pour encaisser des espèces.",
+    "CASH_SESSION_REQUIRED": "Ouvrez votre session de caisse pour tout mouvement d’espèces.",
     "CASH_SESSION_ALREADY_OPEN": "Vous avez déjà une session de caisse ouverte.",
     "CASH_SESSION_CLOSED": "Cette session de caisse est fermée.",
     "PAYMENT_TOTAL_MISMATCH": "Les paiements doivent égaler le total, et ce document peut n'en accepter aucun.",
-    "PAYMENT_ALLOCATION_EXCEEDED": "Les paiements dépassent le total.",
+    "PAYMENT_ALLOCATION_EXCEEDED": "Les montants dépassent ce qui reste à régler ou à répartir.",
     "SALE_NOT_CANCELLABLE": "Ce document ne peut pas être annulé : utilisez un avoir.",
     "FEFO_VIOLATION": "Choisir un autre lot demande la permission de dérogation FEFO.",
     "CUSTOMER_REQUIRED_FOR_CREDIT": "Une vente à crédit demande un client.",
@@ -412,7 +414,8 @@
     "OTHER_SUPPLIER": "Ce lot a été reçu d'un autre fournisseur.",
     "PATTERN": "Le format n'est pas valide.",
     "OTHER_DOCUMENT": "Cette ligne appartient à un autre document.",
-    "NOT_ALLOWED": "Non autorisé ici."
+    "NOT_ALLOWED": "Non autorisé ici.",
+    "NOT_CONFIRMED": "Ce document n’est pas confirmé."
   },
   "lots": {
     "title": "Lots",
@@ -740,7 +743,11 @@
       "inactive": "Désactivé",
       "activate": "Réactiver",
       "deactivate": "Désactiver",
-      "saved": "Fournisseur enregistré."
+      "saved": "Fournisseur enregistré.",
+      "tabs": {
+        "overview": "Fiche",
+        "payables": "Dettes"
+      }
     },
     "prices": {
       "title": "Historique des prix",
@@ -1188,5 +1195,106 @@
     "allAdvance": "Aucune facture ouverte : tout le paiement sera une avance.",
     "restIsAdvance": "Ce qui n’est pas imputé reste une avance sur le compte du client.",
     "record": "Enregistrer"
+  },
+  "supplierInvoices": {
+    "title": "Factures fournisseurs",
+    "new": "Saisir une facture",
+    "kind": "Type",
+    "kinds": {
+      "invoice": "Facture",
+      "creditNote": "Avoir"
+    },
+    "dueBefore": "Échéance avant le",
+    "openOnly": "Restant à régler seulement",
+    "empty": "Aucune facture fournisseur.",
+    "number": "N° fournisseur",
+    "invoiceDate": "Date de facture",
+    "dueDate": "Échéance",
+    "totalTtc": "Total TTC",
+    "statuses": {
+      "recorded": "Enregistrée",
+      "cancelled": "Annulée"
+    },
+    "newInvoice": "Nouvelle facture fournisseur",
+    "newCreditNote": "Nouvel avoir fournisseur",
+    "dueDateOptional": "Échéance (facultative)",
+    "receipt": "Réception",
+    "supplierReturn": "Retour fournisseur",
+    "none": "Aucun",
+    "dueDateHint": "Sans échéance, elle suit les conditions de paiement du fournisseur.",
+    "record": "Enregistrer",
+    "apply": "Imputer sur des factures",
+    "cancel": "Annuler la saisie",
+    "receiptDiffers": "Le total diffère de la valeur de la réception ({{value}}) : vérifiez la saisie, annulez-la si elle est fausse.",
+    "unapplied": "Reste à imputer",
+    "cancelReason": "Motif d’annulation",
+    "appliedTo": "Imputé sur",
+    "creditNotesApplied": "Avoirs imputés",
+    "payments": "Paiements",
+    "cancelTitle": "Annuler cette saisie",
+    "applyTitle": "Imputer l’avoir ({{amount}} restants)"
+  },
+  "supplierPayments": {
+    "number": "Paiement n° {{id}}",
+    "balance": "Solde dû au fournisseur",
+    "pay": "Enregistrer un paiement",
+    "creditNotes": "Avoirs à imputer",
+    "reversalOf": "annule le paiement n° {{id}}",
+    "reversed": "annulé",
+    "cashHint": "Les espèces sortent de votre session de caisse ouverte.",
+    "reverseTitle": "Annuler le paiement"
+  },
+  "cash": {
+    "title": "Sessions de caisse",
+    "you": "Vous",
+    "userId": "Utilisateur n° {{id}}",
+    "movement": "Mouvement manuel",
+    "report": "Rapport de ma session",
+    "noOwnSession": "Vous n’avez pas de session ouverte.",
+    "empty": "Aucune session.",
+    "session": "Session",
+    "cashier": "Caissier",
+    "openedAt": "Ouverte le",
+    "closedAt": "Fermée le",
+    "expected": "Attendu",
+    "counted": "Compté",
+    "variance": "Écart",
+    "number": "Session n° {{id}}",
+    "statuses": {
+      "open": "Ouverte",
+      "closed": "Fermée"
+    },
+    "closedBy": "par {{name}}",
+    "cash": "Espèces",
+    "source": "Origine",
+    "in": "Entrées",
+    "out": "Sorties",
+    "opening": "Fond de caisse",
+    "sources": {
+      "sales": "Ventes",
+      "account_payments": "Règlements clients",
+      "refunds": "Remboursements",
+      "supplier_payments": "Paiements fournisseurs",
+      "reversals": "Annulations",
+      "manual": "Mouvements manuels"
+    },
+    "nonCash": "Chèques et virements",
+    "nonCashHint": "Enregistrés pendant la session ; ils ne sont pas dans les espèces attendues.",
+    "noNonCash": "Aucun chèque ni virement.",
+    "kind": "Nature",
+    "kinds": {
+      "customer_payment": "Règlement client",
+      "customer_refund": "Remboursement client",
+      "supplier_payment": "Paiement fournisseur"
+    },
+    "reversal": "annulation",
+    "direction": "Sens",
+    "directions": {
+      "in": "Entrée",
+      "out": "Sortie"
+    },
+    "label": "Libellé",
+    "post": "Enregistrer",
+    "closeTitle": "Fermer la session n° {{id}}"
   }
 }

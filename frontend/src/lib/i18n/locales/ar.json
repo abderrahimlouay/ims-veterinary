@@ -25,7 +25,9 @@
     "customerCategories": "فئات الزبائن",
     "pos": "الصندوق",
     "sales": "مستندات البيع",
-    "customerReturns": "مرتجعات الزبائن"
+    "customerReturns": "مرتجعات الزبائن",
+    "supplierInvoices": "فواتير الموردين",
+    "cashSessions": "جلسات الصندوق"
   },
   "language": {
     "label": "اللغة",
@@ -119,11 +121,11 @@
     "LOT_BLOCKED": "هذه الحصة محظورة ولا يمكن بيعها.",
     "LOT_EXPIRED": "انتهت صلاحية هذه الحصة ولا يمكن بيعها.",
     "LOT_REQUIRED": "يجب أن يكون لكل سطر حصة.",
-    "CASH_SESSION_REQUIRED": "افتح جلسة صندوق لقبض النقد.",
+    "CASH_SESSION_REQUIRED": "افتح جلسة صندوقك لأي حركة نقدية.",
     "CASH_SESSION_ALREADY_OPEN": "لديك جلسة صندوق مفتوحة.",
     "CASH_SESSION_CLOSED": "جلسة الصندوق هذه مغلقة.",
     "PAYMENT_TOTAL_MISMATCH": "يجب أن تساوي المدفوعات المجموع، وقد لا يقبل هذا المستند أي دفع.",
-    "PAYMENT_ALLOCATION_EXCEEDED": "المدفوعات تتجاوز المجموع.",
+    "PAYMENT_ALLOCATION_EXCEEDED": "المبالغ تتجاوز ما تبقى للتسوية أو للتوزيع.",
     "SALE_NOT_CANCELLABLE": "لا يمكن إلغاء هذا المستند: استعمل إشعارًا دائنًا.",
     "FEFO_VIOLATION": "اختيار حصة أخرى يتطلب إذن تجاوز FEFO.",
     "CUSTOMER_REQUIRED_FOR_CREDIT": "البيع بالأجل يتطلب زبونًا.",
@@ -412,7 +414,8 @@
     "OTHER_SUPPLIER": "استلمت هذه الحصة من مورد آخر.",
     "PATTERN": "الصيغة غير صالحة.",
     "OTHER_DOCUMENT": "هذا السطر ينتمي إلى وثيقة أخرى.",
-    "NOT_ALLOWED": "غير مسموح هنا."
+    "NOT_ALLOWED": "غير مسموح هنا.",
+    "NOT_CONFIRMED": "هذه الوثيقة غير مؤكدة."
   },
   "lots": {
     "title": "الحصص",
@@ -740,7 +743,11 @@
       "inactive": "معطل",
       "activate": "إعادة التفعيل",
       "deactivate": "تعطيل",
-      "saved": "تم حفظ المورد."
+      "saved": "تم حفظ المورد.",
+      "tabs": {
+        "overview": "البطاقة",
+        "payables": "المستحقات"
+      }
     },
     "prices": {
       "title": "سجل الأسعار",
@@ -1188,5 +1195,106 @@
     "allAdvance": "لا توجد فاتورة مفتوحة: ستكون الدفعة كلها تسبيقًا.",
     "restIsAdvance": "ما لا يُخصَّص يبقى تسبيقًا في حساب الزبون.",
     "record": "تسجيل"
+  },
+  "supplierInvoices": {
+    "title": "فواتير الموردين",
+    "new": "تسجيل فاتورة",
+    "kind": "النوع",
+    "kinds": {
+      "invoice": "فاتورة",
+      "creditNote": "إشعار دائن"
+    },
+    "dueBefore": "الاستحقاق قبل",
+    "openOnly": "غير المسددة فقط",
+    "empty": "لا توجد فاتورة مورد.",
+    "number": "رقم المورد",
+    "invoiceDate": "تاريخ الفاتورة",
+    "dueDate": "تاريخ الاستحقاق",
+    "totalTtc": "المجموع شامل الضريبة",
+    "statuses": {
+      "recorded": "مسجلة",
+      "cancelled": "ملغاة"
+    },
+    "newInvoice": "فاتورة مورد جديدة",
+    "newCreditNote": "إشعار دائن جديد من المورد",
+    "dueDateOptional": "تاريخ الاستحقاق (اختياري)",
+    "receipt": "الاستلام",
+    "supplierReturn": "مرتجع المورد",
+    "none": "لا شيء",
+    "dueDateHint": "بدون تاريخ استحقاق، تُطبق شروط الدفع الخاصة بالمورد.",
+    "record": "تسجيل",
+    "apply": "خصم من الفواتير",
+    "cancel": "إلغاء الإدخال",
+    "receiptDiffers": "المجموع يختلف عن قيمة الاستلام ({{value}}): تحقق من الإدخال وألغه إن كان خاطئًا.",
+    "unapplied": "المتبقي للخصم",
+    "cancelReason": "سبب الإلغاء",
+    "appliedTo": "مخصوم من",
+    "creditNotesApplied": "الإشعارات الدائنة المخصومة",
+    "payments": "المدفوعات",
+    "cancelTitle": "إلغاء هذا الإدخال",
+    "applyTitle": "خصم الإشعار الدائن (المتبقي {{amount}})"
+  },
+  "supplierPayments": {
+    "number": "الدفعة رقم {{id}}",
+    "balance": "الرصيد المستحق للمورد",
+    "pay": "تسجيل دفعة",
+    "creditNotes": "إشعارات دائنة للخصم",
+    "reversalOf": "تلغي الدفعة رقم {{id}}",
+    "reversed": "ملغاة",
+    "cashHint": "يخرج النقد من جلسة صندوقك المفتوحة.",
+    "reverseTitle": "إلغاء الدفعة"
+  },
+  "cash": {
+    "title": "جلسات الصندوق",
+    "you": "أنت",
+    "userId": "المستخدم رقم {{id}}",
+    "movement": "حركة يدوية",
+    "report": "تقرير جلستي",
+    "noOwnSession": "ليست لديك جلسة مفتوحة.",
+    "empty": "لا توجد جلسة.",
+    "session": "الجلسة",
+    "cashier": "أمين الصندوق",
+    "openedAt": "فُتحت في",
+    "closedAt": "أُغلقت في",
+    "expected": "المتوقع",
+    "counted": "المعدود",
+    "variance": "الفرق",
+    "number": "الجلسة رقم {{id}}",
+    "statuses": {
+      "open": "مفتوحة",
+      "closed": "مغلقة"
+    },
+    "closedBy": "بواسطة {{name}}",
+    "cash": "النقد",
+    "source": "المصدر",
+    "in": "الداخل",
+    "out": "الخارج",
+    "opening": "رصيد الافتتاح",
+    "sources": {
+      "sales": "المبيعات",
+      "account_payments": "تسديدات الزبائن",
+      "refunds": "المبالغ المستردة",
+      "supplier_payments": "مدفوعات الموردين",
+      "reversals": "الإلغاءات",
+      "manual": "الحركات اليدوية"
+    },
+    "nonCash": "الشيكات والتحويلات",
+    "nonCashHint": "سُجلت خلال الجلسة، وليست ضمن النقد المتوقع.",
+    "noNonCash": "لا شيك ولا تحويل.",
+    "kind": "الطبيعة",
+    "kinds": {
+      "customer_payment": "تسديد زبون",
+      "customer_refund": "استرداد زبون",
+      "supplier_payment": "دفعة مورد"
+    },
+    "reversal": "إلغاء",
+    "direction": "الاتجاه",
+    "directions": {
+      "in": "دخول",
+      "out": "خروج"
+    },
+    "label": "البيان",
+    "post": "تسجيل",
+    "closeTitle": "إغلاق الجلسة رقم {{id}}"
   }
 }

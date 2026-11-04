@@ -15,3 +15,11 @@ export const SELLER = {
   initialPassword: 'E2e-seller-initial-2026', // gitleaks:allow
   newPassword: 'E2e-seller-chosen-2026', // gitleaks:allow
 }
+
+/** Created through the users page by J10; opens a cash session that a manager then closes. */
+export const CASHIER = {
+  username: 'e2e.cashier',
+  fullName: 'E2E Cashier',
+  initialPassword: 'E2e-cashier-initial-2026', // gitleaks:allow
+  newPassword: 'E2e-cashier-chosen-2026', // gitleaks:allow
+}

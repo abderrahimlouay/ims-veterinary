@@ -18,7 +18,7 @@ test('J11 sales: a Seller sells but cannot cancel nor return', async ({ page }) 
 
   await logIn(page, SELLER.username, SELLER.newPassword)
   await expect(page.getByRole('heading', { level: 1, name: 'Tableau de bord' })).toBeVisible()
-  await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('link', { name: 'Caisse' }).click()
+  await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('link', { name: 'Caisse', exact: true }).click()
   await addToCart(page, 'E2E Sellerval', '1')
   await expect(page.getByTestId('pos-line')).toHaveCount(1)
   const number = await payByCheque(page)

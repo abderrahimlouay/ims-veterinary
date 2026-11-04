@@ -25,7 +25,9 @@
     "customerCategories": "Customer categories",
     "pos": "Counter",
     "sales": "Sales documents",
-    "customerReturns": "Customer returns"
+    "customerReturns": "Customer returns",
+    "supplierInvoices": "Supplier invoices",
+    "cashSessions": "Cash sessions"
   },
   "language": {
     "label": "Language",
@@ -119,11 +121,11 @@
     "LOT_BLOCKED": "This lot is blocked and cannot be sold.",
     "LOT_EXPIRED": "This lot has expired and cannot be sold.",
     "LOT_REQUIRED": "Every line needs a lot.",
-    "CASH_SESSION_REQUIRED": "Open a cash session to take cash.",
+    "CASH_SESSION_REQUIRED": "Open your cash session for any cash movement.",
     "CASH_SESSION_ALREADY_OPEN": "You already have an open cash session.",
     "CASH_SESSION_CLOSED": "This cash session is closed.",
     "PAYMENT_TOTAL_MISMATCH": "The payments must equal the total, and this document may take none.",
-    "PAYMENT_ALLOCATION_EXCEEDED": "The payments exceed the total.",
+    "PAYMENT_ALLOCATION_EXCEEDED": "The amounts exceed what is left to settle or to allocate.",
     "SALE_NOT_CANCELLABLE": "This document cannot be cancelled: use a credit note.",
     "FEFO_VIOLATION": "Choosing another lot needs the FEFO override permission.",
     "CUSTOMER_REQUIRED_FOR_CREDIT": "A credit sale needs a customer.",
@@ -412,7 +414,8 @@
     "OTHER_SUPPLIER": "This lot was received from another supplier.",
     "PATTERN": "The format is not valid.",
     "OTHER_DOCUMENT": "This line belongs to another document.",
-    "NOT_ALLOWED": "Not allowed here."
+    "NOT_ALLOWED": "Not allowed here.",
+    "NOT_CONFIRMED": "This document is not confirmed."
   },
   "lots": {
     "title": "Lots",
@@ -740,7 +743,11 @@
       "inactive": "Deactivated",
       "activate": "Reactivate",
       "deactivate": "Deactivate",
-      "saved": "Supplier saved."
+      "saved": "Supplier saved.",
+      "tabs": {
+        "overview": "Overview",
+        "payables": "Payables"
+      }
     },
     "prices": {
       "title": "Price history",
@@ -1188,5 +1195,106 @@
     "allAdvance": "No open invoice: the whole payment will be an advance.",
     "restIsAdvance": "What is not allocated stays as an advance on the customer's account.",
     "record": "Record"
+  },
+  "supplierInvoices": {
+    "title": "Supplier invoices",
+    "new": "Record an invoice",
+    "kind": "Type",
+    "kinds": {
+      "invoice": "Invoice",
+      "creditNote": "Credit note"
+    },
+    "dueBefore": "Due before",
+    "openOnly": "Open only",
+    "empty": "No supplier invoice.",
+    "number": "Supplier number",
+    "invoiceDate": "Invoice date",
+    "dueDate": "Due date",
+    "totalTtc": "Total incl. tax",
+    "statuses": {
+      "recorded": "Recorded",
+      "cancelled": "Cancelled"
+    },
+    "newInvoice": "New supplier invoice",
+    "newCreditNote": "New supplier credit note",
+    "dueDateOptional": "Due date (optional)",
+    "receipt": "Goods receipt",
+    "supplierReturn": "Supplier return",
+    "none": "None",
+    "dueDateHint": "Without a due date, the supplier’s payment terms apply.",
+    "record": "Record",
+    "apply": "Apply to invoices",
+    "cancel": "Cancel the entry",
+    "receiptDiffers": "The total differs from the receipt value ({{value}}): check the entry and cancel it if it is wrong.",
+    "unapplied": "Left to apply",
+    "cancelReason": "Cancellation reason",
+    "appliedTo": "Applied to",
+    "creditNotesApplied": "Credit notes applied",
+    "payments": "Payments",
+    "cancelTitle": "Cancel this entry",
+    "applyTitle": "Apply the credit note ({{amount}} left)"
+  },
+  "supplierPayments": {
+    "number": "Payment #{{id}}",
+    "balance": "Balance owed to the supplier",
+    "pay": "Record a payment",
+    "creditNotes": "Credit notes to apply",
+    "reversalOf": "reverses payment #{{id}}",
+    "reversed": "reversed",
+    "cashHint": "Cash leaves your open cash session.",
+    "reverseTitle": "Reverse the payment"
+  },
+  "cash": {
+    "title": "Cash sessions",
+    "you": "You",
+    "userId": "User #{{id}}",
+    "movement": "Manual movement",
+    "report": "My session report",
+    "noOwnSession": "You have no open session.",
+    "empty": "No session.",
+    "session": "Session",
+    "cashier": "Cashier",
+    "openedAt": "Opened",
+    "closedAt": "Closed",
+    "expected": "Expected",
+    "counted": "Counted",
+    "variance": "Variance",
+    "number": "Session #{{id}}",
+    "statuses": {
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "closedBy": "by {{name}}",
+    "cash": "Cash",
+    "source": "Source",
+    "in": "In",
+    "out": "Out",
+    "opening": "Opening float",
+    "sources": {
+      "sales": "Sales",
+      "account_payments": "Customer payments",
+      "refunds": "Refunds",
+      "supplier_payments": "Supplier payments",
+      "reversals": "Reversals",
+      "manual": "Manual movements"
+    },
+    "nonCash": "Cheques and transfers",
+    "nonCashHint": "Recorded during the session; they are not in the expected cash.",
+    "noNonCash": "No cheque or transfer.",
+    "kind": "Kind",
+    "kinds": {
+      "customer_payment": "Customer payment",
+      "customer_refund": "Customer refund",
+      "supplier_payment": "Supplier payment"
+    },
+    "reversal": "reversal",
+    "direction": "Direction",
+    "directions": {
+      "in": "In",
+      "out": "Out"
+    },
+    "label": "Label",
+    "post": "Record",
+    "closeTitle": "Close session #{{id}}"
   }
 }

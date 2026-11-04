@@ -3,6 +3,7 @@ import { AuditPage, NewUserPage, RolesPage, SettingsPage, UserDetailPage, UsersP
 import { NewProductPage, ProductDetailPage, ProductsPage, ReferencesPage } from '../features/catalog'
 import { CustomerCategoriesPage, CustomerPage, CustomersPage, NewCustomerPage } from '../features/customers'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
+import { CashSessionPage, CashSessionsPage, NewSupplierInvoicePage, SupplierInvoicePage, SupplierInvoicesPage } from '../features/finance'
 import {
   AdjustmentPage,
   CountPage,
@@ -89,6 +90,11 @@ export const routes: RouteObject[] = [
       { path: 'supplier-returns', element: <RequirePermission code="return.read"><SupplierReturnsPage /></RequirePermission> },
       { path: 'supplier-returns/new', element: <RequirePermission code="return.supplier.create"><NewSupplierReturnPage /></RequirePermission> },
       { path: 'supplier-returns/:id', element: <RequirePermission code="return.read"><SupplierReturnPage /></RequirePermission> },
+      { path: 'supplier-invoices', element: <RequirePermission code="supplierinvoice.manage"><SupplierInvoicesPage /></RequirePermission> },
+      { path: 'supplier-invoices/new', element: <RequirePermission code="supplierinvoice.manage"><NewSupplierInvoicePage /></RequirePermission> },
+      { path: 'supplier-invoices/:id', element: <RequirePermission code="supplierinvoice.manage"><SupplierInvoicePage /></RequirePermission> },
+      { path: 'cash-sessions', element: <RequirePermission code="cash.manage"><CashSessionsPage /></RequirePermission> },
+      { path: 'cash-sessions/:id', element: <RequirePermission code="cash.open"><CashSessionPage /></RequirePermission> },
       { path: 'sales', element: <RequirePermission code="sale.read"><SalesPage /></RequirePermission> },
       { path: 'sales/:id', element: <RequirePermission code="sale.read"><SaleDetailPage /></RequirePermission> },
       { path: 'returns/customer', element: <RequirePermission code="return.read"><CustomerReturnsPage /></RequirePermission> },
