@@ -100,7 +100,7 @@ Format: **Column | MySQL type | Null / default | Notes**. `PK`, `FK→`, `UQ`, `
 
 **SPRING_SESSION**, **SPRING_SESSION_ATTRIBUTES** — Spring Session JDBC tables for server-side sessions (SD-111, ADR-036), created by a Flyway migration from the MySQL schema shipped with Spring Session; not business data.
 
-**backup_log** — `id BIGINT AI PK`, `file_path TEXT NOT NULL`, `size_bytes BIGINT NULL`, `status VARCHAR(20) NOT NULL DEFAULT 'success'`, `created_at`. Mechanism: OD-021.
+**backup_log** — `id BIGINT AI PK`, `file_path TEXT NOT NULL`, `size_bytes BIGINT NULL`, `status VARCHAR(20) NOT NULL DEFAULT 'success'`, `created_at`. Mechanism: ADR-144 (taken by the application), retention ADR-145.
 
 ### 3.2 Product catalogue (module 1)
 
@@ -325,7 +325,7 @@ Roles (4), animal species (7), therapeutic categories (5), dosage forms (5), set
 | Stock movements, audit log | Append-only; retained indefinitely (retention policy OD-021) |
 | Sales/purchase documents | Never physically deleted; cancelled documents keep their numbers |
 | Drafts | Purchase orders are numbered at creation and never deleted (cancelled instead, ADR-097); sales documents are numbered at confirmation, an abandoned draft stays cancelled without a number (ADR-122) |
-| Backups | `backup_log` records each run (mechanism OD-021) |
+| Backups | `backup_log` records each run (ADR-144); the last 30 successful files kept (ADR-145) |
 
 ## 10. Items awaiting decisions
 

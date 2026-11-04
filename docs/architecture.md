@@ -140,7 +140,7 @@ Flyway, forward-only, small scripts (MySQL DDL is non-transactional, ADR-018). E
 
 ## 12. Deployment (conceptual only)
 
-- Single Linux host (VM or bare metal) running: reverse proxy (TLS) → Spring Boot JAR; MySQL on the same or a separate host; static SPA served by the proxy; scheduled backup job and off-host copy (OD-021).
+- Single Linux host (VM or bare metal) running: reverse proxy (TLS) → Spring Boot JAR; MySQL on the same or a separate host; static SPA served by the proxy; the backup job of the application (ADR-144) and its off-host copy by manual download (ADR-146).
 - Environments: dev (developer machine), test/CI (Testcontainers), production. Staging recommended `[REC]`.
 - Time: servers on UTC; business time zone `Africa/Algiers` in settings (ADR-033).
 - Containers/orchestration are **not** specified in this phase (no Docker artefacts to be written).
@@ -155,7 +155,7 @@ Backend = trust boundary; TLS everywhere; hashed passwords; permission-based RBA
 |---|---|---|
 | Correctness of stock | zero negative / drifting balances | ledger + CHECK + locks + integrity check |
 | Performance | search < 1 s, confirm sale < 2 s `[REC]` at ~50 k products | indexes, contains-search on 50,000-product reference dataset (ADR-048), short tx |
-| Availability | business hours; restore RTO/RPO per OD-021 | backups |
+| Availability | business hours; RPO one business day (ADR-145); RTO per OD-021 (Phase 12) | backups |
 | Maintainability | module boundaries tested | architecture tests, ADRs |
 | Auditability | all sensitive actions traced | audit module |
 | Portability | MySQL specifics isolated in migrations/repositories | `database-migration.md` |

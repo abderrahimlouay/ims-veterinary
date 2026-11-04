@@ -254,7 +254,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-RPT-001 | S,R | Revenue and margin net of credit notes |
 | BR-RPT-002 | S | Valuation by cost vs sale price on known fixture |
 | BR-RPT-003 | SEC | Report endpoints require their permissions |
-| BR-BKP-001 | S | Backup job produces log entry; failure recorded (OD-021) |
+| BR-BKP-001 | S | Backup job produces log entry; failure recorded; retention keeps the last N successful files (ADR-144, ADR-145) |
 | BR-BKP-002 | S,A | Exports (CSV/PDF) respect permissions and filters |
 
 ## 10. Architecture and quality gates
