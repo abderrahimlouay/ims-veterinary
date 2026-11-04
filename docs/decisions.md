@@ -953,6 +953,60 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
   3. Correcting a **mistaken allocation** (moving an allocation to another invoice) is not built: a mistaken payment is reversed and recorded again (ADR-135); a mistaken credit-note application has no correction in Phase 9 and is registered as **OD-041**.
 - **Consequences:** `roadmap.md` Phase 9 and 10, `api.md` (statement and report `format=pdf` marked Phase 10), OD-041.
 
+## ADR-138 — Printing engine: HTML templates to PDF, rendered on request (resolves OD-020, engine and storage)
+- **Status:** Accepted (user decision, 2026-11-04, Phase 10 preflight; Q1 A, Q3 A, Q5 A).
+- **Decision:**
+  1. The `printing` module renders **server-side HTML templates** (Thymeleaf) to PDF with **openhtmltopdf** (the maintained `io.github.openhtmltopdf` fork, on PDFBox). The fonts ship inside the application (**Noto Sans**, and **Noto Naskh Arabic** for Arabic text, with the library's bidi and shaping support); no font comes from the network.
+  2. Documents are printed **in French** (ADR-033: the business locale is `fr-DZ`), whatever the user's interface language. Text entered in Arabic (a customer's name, an address) is rendered correctly, right to left inside its field.
+  3. A PDF is **rendered on request** from the stored, immutable document and the company profile version in force on its issue date (ADR-140); **nothing is stored**. The same document always gives the same content; a template change shows on later prints.
+  4. Printing needs the **permission that reads the document** (`sale.read`, `return.read`, `purchase.read`, `statement.read`, `cash.manage` or the session's owner, `lot.recall`); it writes nothing and is not audited. A PDF is rendered in **under 2 s** server side.
+  5. The UI never composes a legal document; templates are tested by their **extracted text** against fixtures (testing.md).
+- **Alternatives:** OpenPDF with pages built in code (rigid layouts, weak Arabic support); JasperReports (heavy, separate designer); storing each PDF at confirmation (an archive to back up, and nothing a re-render of immutable data does not give).
+- **Consequences:** `backend.md` (printing), `architecture.md` (printing reads the settings module's company profile), `api.md` (PDF endpoints), `testing.md`, NFR-003.
+
+## ADR-139 — Thermal tickets and print flows (resolves OD-020, tickets)
+- **Status:** Accepted (user decision, 2026-11-04, Phase 10 preflight; Q2 A, Q12 A).
+- **Decision:**
+  1. A thermal **ticket is an 80 mm-wide PDF** (page height following the content), printed by the browser through the till's printer driver. No ESC/POS, no local agent. Any confirmed sales document can be printed as A4 or as a ticket (`format=a4|ticket`); the counter prints tickets.
+  2. In the UI, a **PDF** button opens the document in a new tab, where the browser's print dialog prints it. At the counter, after a confirmation, **"Imprimer le ticket"** prints the ticket at once through a hidden frame. Nothing prints automatically.
+- **Alternatives:** 58 mm; a width setting; ESC/POS commands through a local agent; printing automatically on confirmation.
+- **Consequences:** `frontend.md` §13, `api.md` `/api/sales/{id}/pdf`, NFR-003 (checked by hand on the client's printers before Phase 10 is done).
+
+## ADR-140 — Company profile, versioned (resolves OD-026, SD-110, DR-021)
+- **Status:** Accepted (user decision, 2026-11-04, Phase 10 preflight; Q4 A).
+- **Decision:**
+  1. The pharmacy's identity lives in a new append-only table **`company_profiles`** (SD-147): `id`, `legal_name`, `legal_form`, `address`, `wilaya`, `phone`, `email`, `nif`, `nis`, `rc`, `ai` (article d'imposition), `approval_number` (veterinary approval), `bank_account` (RIB), `footer_text`, `logo` (PNG or JPEG, at most 256 KB) and `logo_type`, `effective_from DATETIME(6)`, `created_by`. Every field is optional except `legal_name`.
+  2. A change **adds a version**, never edits one; the current profile is the latest version. A document prints the version **in force at its issue time** (`effective_from ≤ issued_at`, the latest such); a document issued before any version prints the oldest one. So a reprint never changes. A statement, a cash-session report and a recall buyers list print the version current when they are printed.
+  3. The profile belongs to the `settings` module; reading the current one needs authentication; a new version needs `settings.manage` and is audited `SETTING_CHANGE` (old and new values, without the logo bytes).
+  4. Until a first version exists, documents print without the identity block and with the mention "Identité de l'entreprise non renseignée".
+- **Alternatives:** one row edited in place (old invoices would reprint with the new identity); keys in `app_settings` (no logo, no history).
+- **Consequences:** `database.md`, SD-110 accepted, SD-147, `api.md` (company profile), `security.md`, DR-021 resolved.
+
+## ADR-141 — Legal mentions on invoices and credit notes; customer legal numbers; stamp duty
+- **Status:** Accepted (user decision, 2026-11-04, Phase 10 preflight; Q6 A, Q7 A, Q8 A).
+- **Decision:**
+  1. An **invoice** and a **credit note** print: the company identity (ADR-140); the customer's name, address, wilaya and legal numbers when known (item 2); the number and issue date; the due date of a credit invoice; the payment method(s) of an immediate sale; the lines (product, lot, quantity and unit, unit price, discount, total excl. tax, VAT rate); the VAT by rate; totals excl. tax, VAT and incl. tax; and the **amount in words in French** ("Arrêtée la présente facture à la somme de : …", "… le présent avoir …"), dinars and centimes. Other documents print the same header and lines without the amount in words.
+  2. Customers gain three optional legal numbers, **`nis`, `rc`, `ai`** (SD-148), next to `tax_id` (the NIF), entered on the customer form with `customer.manage` and printed when present.
+  3. **Stamp duty** (droit de timbre) on invoices paid in cash is **not computed** in Phase 10.
+  4. The accountant confirms the list of mentions and the stamp-duty question **before go-live** (DR-043, next to DR-040); another answer means a new ADR before any real invoice is printed.
+- **Alternatives:** no amount in words; computing stamp duty now (its rate and cap are not confirmed); printing the NIF only.
+- **Consequences:** `database.md` (customers), `api.md` (customer fields), `frontend.md` (customer form), DR-043.
+
+## ADR-142 — Printed withdrawal-period warnings (resolves OD-028 for printing)
+- **Status:** Accepted (user decision, 2026-11-04, Phase 10 preflight; Q9 A).
+- **Decision:** Printed documents follow the **on-screen rule** (ADR-121): for **any customer**, anonymous included, every line whose product has withdrawal periods prints its warning — for the line's target species, or **every species of the product** when none is given — once per product and species, as `/api/sales/{id}/withdrawal-warnings` returns them. They print on invoices, delivery notes, receipts (A4 and ticket) and quotes. A product without withdrawal data prints nothing.
+- **Alternatives:** breeders only (an anonymous buyer or a veterinarian would carry no warning).
+- **Consequences:** BR-SALE-010, FR-SALE-008, `testing.md`.
+
+## ADR-143 — Phase 10 documents, reprints, drafts and cancelled documents
+- **Status:** Accepted (user decision, 2026-11-04, Phase 10 preflight; Q10 A, Q11 A, Q13 A).
+- **Decision:**
+  1. Documents printed in Phase 10: **invoice, quote, delivery note, receipt** (A4 and ticket), **credit note** (of a customer return), **purchase order**, **customer statement**, **cash-session report**, and the **recall buyers list**. Supplier-return slips are not printed; report PDFs come with Phase 11.
+  2. Every print of a document is **identical**: no "DUPLICATA" mark, no print counter, no audit of printing.
+  3. Only **confirmed** documents print (`INVALID_STATE_TRANSITION` for a draft); a **cancelled** document prints with a diagonal **"ANNULÉ"** watermark and its cancellation reason. A purchase order prints once validated; a draft order is refused the same way.
+- **Alternatives:** the roadmap's list without the cash report and the recall list; "DUPLICATA" from the second print, with each print audited; drafts printed with a "BROUILLON" watermark.
+- **Consequences:** `api.md` (PDF endpoints), `roadmap.md` Phase 10, `frontend.md`.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1064,6 +1118,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 3. **Related:** FR-PROD-003, DR-011.
 
 ## OD-020 — Printing approach
+- **Status:** Resolved 2026-11-04 → **ADR-138**, **ADR-139** (legal mentions: ADR-141).
 - **Question:** PDF generation library; thermal ticket width (58/80 mm) and method (PDF printed by browser vs. ESC/POS); templates; legal mentions on invoices; who owns document layout.
 - **Blocks:** Phase 10. **Related:** NFR-003.
 
@@ -1092,6 +1147,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 3. **Related:** ADR-024.
 
 ## OD-026 — Company identity and document header data
+- **Status:** Resolved 2026-11-04 → **ADR-140**.
 - **Question:** The pharmacy's own legal identity (name, address, tax ids, logo, footer text) required on invoices is not in the schema. Store in `app_settings` or a dedicated `company_profile` table?
 - **Blocks:** Phase 10.
 
@@ -1101,7 +1157,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 3. **Related:** BR-LOT-009.
 
 ## OD-028 — Applicability of withdrawal-period warnings
-- **Status:** On-screen warnings resolved 2026-10-31 → **ADR-121**. **Still open for printing** (Phase 10).
+- **Status:** Resolved: on screen 2026-10-31 → **ADR-121**; printing 2026-11-04 → **ADR-142**.
 - **Question:** Print warnings only on documents for customers of type *breeder*, or on all documents containing products that have withdrawal periods? What when `target_species_id` is not specified on the line (Source view then lists all species)?
 - **Blocks:** Phase 10. **Related:** BR-SALE-010.
 
@@ -1207,7 +1263,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 7 Sales / POS | ~~OD-002~~ → ADR-117, ~~OD-003~~ → ADR-118, ~~OD-004~~ → ADR-119, ~~OD-010~~ → ADR-120, ~~OD-028 (screen)~~ → ADR-121, ~~OD-035~~ → ADR-122, ~~OD-036~~ → ADR-123, ~~OD-037~~ → ADR-124, ~~OD-038~~ → ADR-125, ~~OD-039~~ → ADR-126, ADR-115, ADR-116 (all 2026-10-31); ~~OD-006~~ → ADR-107, ~~OD-011~~ → ADR-108 (the credit check), ~~OD-033~~ → ADR-071 |
 | 8 Returns | ~~OD-005~~ → ADR-127, ADR-128, ADR-129; ADR-130, ADR-131 (all 2026-11-02); OD-040 registered, not blocking |
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
-| 10 Documents & Printing | OD-020, OD-026, OD-028, OD-008 |
+| 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | OD-021 (backup); margin scope follows ADR-117, ADR-118 |
 | 12 Testing, Security, Deployment | OD-021, ADR-036 hardening review |
 | 13 Dark theme | ADR-069 (decided 2026-10-22) |

@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–9 complete (tags `phase-0-done` … `phase-9-done`); Phases 10–13 not started
+> **Status:** Phases 0–9 complete (tags `phase-0-done` … `phase-9-done`); Phase 10 (Documents & printing) current: decisions ADR-138…143 (2026-11-04); Phases 11–13 not started
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-11-02
 
@@ -28,7 +28,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 7 | Sales / POS | quotes, delivery notes, invoices, counter sale, FEFO selling | ~~OD-002, OD-003, OD-004, OD-010~~ → ADR-117…120, ADR-115/116/121…126 |
 | 8 | Returns | customer returns, credit notes, restock/discard, refunds | ADR-127…131 (was OD-005) |
 | 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132…134; ADR-135…137 (ADR-108: payments enter the credit balance) |
-| 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | OD-020, OD-026, OD-028 |
+| 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | ADR-138…143 (were OD-020, OD-026, OD-028) |
 | 11 | Reports & audit | reports, exports, backup | OD-021 |
 | 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | OD-021, ADR-036 hardening |
 | 13 | Dark theme `[REC]` | user-selectable theme (system / light / dark), contrast verified | ADR-069 (decided 2026-10-22) |
@@ -154,12 +154,12 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 10 — Documents & printing
 - **Objective:** produce the printable documents.
-- **Prerequisites:** Phase 7–9; OD-020 (printing), OD-026 (company identity), OD-028 (withdrawal-warning applicability when printing).
-- **Features:** A4 invoices/quotes/delivery notes/credit notes/PO, thermal tickets, statements; withdrawal-period warnings printed; company identity on documents.
-- **Database work:** settings for company identity; none else.
-- **Backend work:** `printing` module, templates, generation after commit.
-- **Frontend work:** PDF buttons, print flows.
-- **Tests:** document content snapshot tests; withdrawal rule coverage.
+- **Prerequisites:** Phases 7–9; decided 2026-11-04: ADR-138 (HTML templates to PDF with openhtmltopdf, bundled fonts, French, rendered on request, nothing stored; was OD-020), ADR-139 (80 mm ticket PDF printed by the browser, print flows; was OD-020), ADR-140 (versioned company profile; was OD-026), ADR-141 (legal mentions, amount in words, customer NIS/RC/AI, no stamp duty; DR-043), ADR-142 (printed withdrawal warnings, the screen rule; was OD-028), ADR-143 (documents in scope, identical reprints, drafts refused, cancelled watermarked).
+- **Features:** A4 invoices, quotes, delivery notes, receipts and credit notes, thermal tickets, purchase orders, the customer statement, the cash-session report and the recall buyers list; withdrawal-period warnings printed; company identity on documents; the company profile page; customer NIS/RC/AI.
+- **Database work:** `company_profiles` (append-only, SD-147); `customers.nis`, `rc`, `ai` (SD-148).
+- **Backend work:** `printing` module (templates, fonts, amount in words, watermark), PDF endpoints, the company profile in `settings`.
+- **Frontend work:** PDF buttons, the ticket at the counter, the company profile page, the customer legal numbers.
+- **Tests:** extracted-text tests per document type against fixtures; withdrawal rule coverage; amount in words; drafts refused; PDF < 2 s; `Phase10UpgradeMigrationTest`.
 - **Completion criteria:** NFR-003 met on target printers (manual check); FR-SALE-003, 008 fully done.
 
 ## Phase 11 — Reports & audit

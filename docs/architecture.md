@@ -51,7 +51,7 @@ purchasing -> catalog, inventory, numbering, settings, audit, users (user-name r
 sales -> catalog, inventory, numbering, settings, audit, [CreditLimitPort]
 finance -> sales(read ports), purchasing(read ports), numbering, audit, settings   (implements CreditLimitPort)
 reporting -> read-only views over all
-printing -> read ports of purchasing/sales/finance
+printing -> read ports of purchasing/sales/finance/inventory, settings (company profile, ADR-140)
 backup -> settings, audit
 ```
 

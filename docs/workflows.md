@@ -122,7 +122,7 @@ Customer → Product Search → Lot Selection / FEFO → Sale → Stock Movement
    4. Post `sale` movements (−) and update balances; a lot at 0 shows `depleted`, a computed status (ADR-059, BR-STOCK-002).
    5. Record payment and allocations, and a cash movement for the cash part (ADR-118).
    6. Mark document `confirmed`. Delivery notes, receipts and invoices not derived from a delivery note post movements; an invoice from a delivery note reuses its lots and posts none (ADR-117; commercial rules ADR-125).
-7. **Output:** thermal ticket (receipt) or A4 invoice/delivery note PDF with withdrawal-period warnings for breeders (BR-SALE-010 **⚠ OD-028**, Phase 10).
+7. **Output:** thermal ticket (receipt) or A4 invoice/delivery note PDF with withdrawal-period warnings for any customer, by species (BR-SALE-010, ADR-142, Phase 10); the ticket prints from the success screen (ADR-139).
 - **DB changes:** `sales_documents`, `sales_document_lines`, `lots`, `stock_movements`, `document_sequences`, `customer_payments`/`payment_allocations`/`cash_movements` (ADR-118).
 - **Failure cases:**
 

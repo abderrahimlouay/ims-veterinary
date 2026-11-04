@@ -21,6 +21,7 @@
 | Cash session | Session de caisse | Period during which a cashier handles the till, from opening to counted closing. |
 | Cash variance | Écart de caisse | Counted amount minus expected amount at closing. |
 | Discount entitlement | Remise accordée | The discount a customer gets without `sale.discount`: the category discount, or 0 when the customer has an own price for the product (ADR-113); a manual discount replaces it, never adds to it. |
+| Company profile | Identité de l'entreprise | The pharmacy's legal identity printed on documents (name, NIF, NIS, RC, AI, approval number, logo…); versioned, a document prints the version in force at its issue (ADR-140). |
 | Credit limit | Plafond de crédit | Maximum customer debt allowed; empty = no limit, 0 = cash only (ADR-108). |
 | Credit note (customer) | Avoir | Document created by a customer return (`CN`): lowers the balance of a credit sale, or is refunded for an immediate sale (ADR-128). |
 | Credit note (supplier) | Avoir fournisseur | Document received from a supplier reducing what we owe, recorded as a `supplier_invoices` row, optionally linked to a supplier return (ADR-133). |
@@ -30,6 +31,7 @@
 | Depleted (lot) | Lot épuisé | Lot with zero quantity. |
 | Disposition (return) | Devenir du retour | Outcome of returned goods: `restock` (back into the original lot, sellable only if the lot is) or `discard` (logged in and destroyed at once, `return_discard`, with a reason) (ADR-127, ADR-129). |
 | Document number | Numéro de document | Unique human-readable number of an order, invoice, etc. (BR-DOC-001). |
+| Droit de timbre | Droit de timbre | Stamp duty on invoices paid in cash; not computed in Phase 10, to be confirmed by the accountant (ADR-141, DR-043). |
 | Dosage form | Forme galénique | Form of the medicine (injectable, powder, tablet…). |
 | Expiry date | Date de péremption (DLC) | Last date the lot may be used/sold: sellable on this date, expired from the next day (ADR-055); `MM/YYYY` = last day of the month. |
 | FEFO | Premier expiré, premier sorti | First-Expired-First-Out lot selection rule. |
