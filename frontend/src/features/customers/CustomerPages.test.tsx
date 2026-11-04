@@ -34,6 +34,9 @@ function aCustomer(overrides: Record<string, unknown> = {}) {
     phone: PHONE,
     email: null,
     taxId: null,
+    nis: null,
+    rc: null,
+    ai: null,
     paymentTermsDays: 30,
     veterinarian: null,
     creditLimit: '0.00',
@@ -126,6 +129,8 @@ describe('customers (frontend.md §4.6)', () => {
     expect(await screen.findByText(/commence en « Comptant uniquement »/)).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Nom'), NAME)
     await userEvent.type(screen.getByLabelText('Téléphone'), PHONE)
+    await userEvent.type(screen.getByLabelText('NIS'), ' NIS-DEMO-1 ')
+    await userEvent.type(screen.getByLabelText('RC (registre du commerce)'), 'RC-DEMO-1')
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     const warning = await screen.findByRole('alert')
@@ -136,6 +141,7 @@ describe('customers (frontend.md §4.6)', () => {
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/customers/12'))
     expect(created).not.toHaveProperty('creditLimit')
+    expect(created).toMatchObject({ nis: 'NIS-DEMO-1', rc: 'RC-DEMO-1', ai: null })
     expect(await screen.findByTestId('credit-limit')).toHaveTextContent('Comptant uniquement')
   })
 

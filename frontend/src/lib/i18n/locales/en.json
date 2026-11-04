@@ -218,6 +218,33 @@
       "oldValues": "Before",
       "newValues": "After",
       "empty": "No entry matches."
+    },
+    "company": {
+      "title": "Company identity",
+      "none": "No identity recorded yet: documents will say so.",
+      "version": "Version in force since {{date}}",
+      "hint": "Each save creates a new version; documents already issued keep the identity in force on their date.",
+      "saved": "New version saved.",
+      "save": "Save a new version",
+      "logo": "Logo (PNG or JPEG, at most 256 KB)",
+      "currentLogo": "Current logo",
+      "keepLogo": "Keep the current logo",
+      "logoTooLarge": "The logo is larger than 256 KB.",
+      "fields": {
+        "legalName": "Legal name",
+        "legalForm": "Legal form",
+        "address": "Address",
+        "wilaya": "Wilaya",
+        "phone": "Phone",
+        "email": "Email",
+        "nif": "NIF",
+        "nis": "NIS",
+        "rc": "RC (trade register)",
+        "ai": "AI (tax article)",
+        "approvalNumber": "Veterinary approval number",
+        "bankAccount": "Bank account (RIB)",
+        "footerText": "Footer text"
+      }
     }
   },
   "reference": {
@@ -973,7 +1000,10 @@
       "edit": "Edit",
       "editOf": "Edit {{name}}",
       "add": "New category"
-    }
+    },
+    "nis": "NIS",
+    "rc": "RC (trade register)",
+    "ai": "AI (tax article)"
   },
   "pos": {
     "title": "Counter",

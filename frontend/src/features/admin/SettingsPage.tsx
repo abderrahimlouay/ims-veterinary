@@ -7,6 +7,7 @@ import { TextField } from '../../components/TextField'
 import { problemMessage } from '../../lib/errors'
 import { formatDateTime } from '../../lib/format'
 import { useSettings, useUpdateSetting, type Setting } from './api'
+import { CompanyProfileSection } from './CompanyProfileSection'
 
 /** Early, local checks mirroring ADR-044 formats; the server validates and normalises. */
 const LOCAL_CHECKS: Record<string, (value: string) => boolean> = {
@@ -21,7 +22,10 @@ const LOCAL_CHECKS: Record<string, (value: string) => boolean> = {
   credit_overdue_block_days: (v) => /^(off|\d+)$/i.test(v.trim()),
 }
 
-/** `/admin/settings` (FR-SEC-003, ADR-044): one form per setting; currency and time zone are read-only. */
+/**
+ * `/admin/settings` (FR-SEC-003, ADR-044): the company profile (ADR-140), then one form per setting; currency and time
+ * zone are read-only.
+ */
 export function SettingsPage() {
   const { t } = useTranslation()
   const settings = useSettings()
@@ -35,6 +39,7 @@ export function SettingsPage() {
   return (
     <section className="flex flex-col gap-6 max-w-2xl">
       <h1 className="text-2xl font-semibold">{t('admin.settings.title')}</h1>
+      <CompanyProfileSection />
       {settings.data.map((s) => (
         <SettingRow key={`${s.key}-${s.updatedAt}`} setting={s} />
       ))}

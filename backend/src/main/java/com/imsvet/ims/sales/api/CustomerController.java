@@ -42,11 +42,12 @@ class CustomerController {
     record CustomerRequest(@NotBlank @Size(max = 150) String name, String customerType, Integer categoryId,
             @Size(max = 100) String farmingType, @Size(max = 60) String wilaya, @Size(max = 80) String commune,
             @Size(max = 2000) String address, @Size(max = 40) String phone, @Email @Size(max = 150) String email,
-            @Size(max = 40) String taxId, Integer paymentTermsDays, Long veterinarianId, Long version) {
+            @Size(max = 40) String taxId, @Size(max = 40) String nis, @Size(max = 40) String rc,
+            @Size(max = 40) String ai, Integer paymentTermsDays, Long veterinarianId, Long version) {
 
         CustomerDirectory.CustomerInput input() {
             return new CustomerDirectory.CustomerInput(name, customerType, categoryId, farmingType, wilaya, commune,
-                    address, phone, email, taxId, paymentTermsDays, veterinarianId);
+                    address, phone, email, taxId, nis, rc, ai, paymentTermsDays, veterinarianId);
         }
     }
 

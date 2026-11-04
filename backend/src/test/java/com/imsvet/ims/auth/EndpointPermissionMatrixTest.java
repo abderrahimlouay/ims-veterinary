@@ -50,6 +50,8 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/settings", "settings.manage"),
             new Endpoint(HttpMethod.GET, "/api/settings/default_vat_rate", "settings.manage"),
             new Endpoint(HttpMethod.PUT, "/api/settings/default_vat_rate", "settings.manage", "{\"value\":\"9.00\"}"),
+            new Endpoint(HttpMethod.GET, "/api/company-profile", AUTHENTICATED),
+            new Endpoint(HttpMethod.GET, "/api/company-profile/logo", AUTHENTICATED),
             new Endpoint(HttpMethod.GET, "/api/users", "user.read"),
             new Endpoint(HttpMethod.GET, "/api/users/999999", "user.read"),
             new Endpoint(HttpMethod.POST, "/api/users", "user.manage",

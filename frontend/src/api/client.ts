@@ -14,6 +14,8 @@ export class ApiError extends Error {
 export type ApiInit = Omit<RequestInit, 'body'> & {
   /** Serialised as the JSON request body. Decimals must already be strings (ADR-021). */
   json?: unknown
+  /** Sent as `multipart/form-data`; the browser sets the boundary (ADR-140's logo). */
+  form?: FormData
 }
 
 /** ADR-036: the CSRF token arrives in a readable cookie and goes back in a header on state changes. */
@@ -55,7 +57,7 @@ async function readBody(response: Response): Promise<unknown> {
  * (`undefined` for 204) or rejects with an {@link ApiError}.
  */
 export async function apiFetch<T = void>(path: string, init: ApiInit = {}): Promise<T> {
-  const { json, headers, ...rest } = init
+  const { json, form, headers, ...rest } = init
   const requestHeaders = new Headers(headers)
   requestHeaders.set('Accept', 'application/json, application/problem+json')
   if (!SAFE_METHODS.has((rest.method ?? 'GET').toUpperCase())) {
@@ -64,10 +66,12 @@ export async function apiFetch<T = void>(path: string, init: ApiInit = {}): Prom
       requestHeaders.set(CSRF_HEADER, token)
     }
   }
-  let body: string | undefined
+  let body: string | FormData | undefined
   if (json !== undefined) {
     requestHeaders.set('Content-Type', 'application/json')
     body = JSON.stringify(json)
+  } else if (form !== undefined) {
+    body = form
   }
 
   let response: Response

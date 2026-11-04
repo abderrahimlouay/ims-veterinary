@@ -26,8 +26,8 @@ import {
   type SimilarCustomer,
 } from './customerApi'
 
-type Field = 'name' | 'customerType' | 'categoryId' | 'farmingType' | 'wilaya' | 'commune' | 'address' | 'phone' | 'email' | 'taxId' | 'paymentTermsDays' | 'veterinarianId'
-const FIELDS: readonly Field[] = ['name', 'customerType', 'categoryId', 'farmingType', 'wilaya', 'commune', 'address', 'phone', 'email', 'taxId', 'paymentTermsDays', 'veterinarianId']
+type Field = 'name' | 'customerType' | 'categoryId' | 'farmingType' | 'wilaya' | 'commune' | 'address' | 'phone' | 'email' | 'taxId' | 'nis' | 'rc' | 'ai' | 'paymentTermsDays' | 'veterinarianId'
+const FIELDS: readonly Field[] = ['name', 'customerType', 'categoryId', 'farmingType', 'wilaya', 'commune', 'address', 'phone', 'email', 'taxId', 'nis', 'rc', 'ai', 'paymentTermsDays', 'veterinarianId']
 
 /** Field codes whose generic message would mislead on a customer form (api.md §3 field codes). */
 const CUSTOMER_FIELD_CODES: Partial<Record<string, string>> = {
@@ -154,6 +154,9 @@ function CustomerFacts({ customer }: { customer: CustomerDetail }) {
     [t('customers.place'), [customer.commune, customer.wilaya].filter(Boolean).join(', ') || '—'],
     [t('customers.phone'), customer.phone ?? '—'],
     [t('customers.taxId'), customer.taxId ?? '—'],
+    [t('customers.nis'), customer.nis ?? '—'],
+    [t('customers.rc'), customer.rc ?? '—'],
+    [t('customers.ai'), customer.ai ?? '—'],
     [t('customers.paymentTermsDays'), String(customer.paymentTermsDays)],
     [t('customers.veterinarian'), customer.veterinarian?.name ?? '—'],
   ]
@@ -186,6 +189,9 @@ function CustomerForm({ customer, onSaved }: { customer?: CustomerDetail; onSave
     phone: customer?.phone ?? '',
     email: customer?.email ?? '',
     taxId: customer?.taxId ?? '',
+    nis: customer?.nis ?? '',
+    rc: customer?.rc ?? '',
+    ai: customer?.ai ?? '',
     paymentTermsDays: String(customer?.paymentTermsDays ?? 0),
     veterinarianId: customer?.veterinarian ? String(customer.veterinarian.id) : '',
   })
@@ -217,6 +223,9 @@ function CustomerForm({ customer, onSaved }: { customer?: CustomerDetail; onSave
           phone: blank(values.phone),
           email: blank(values.email),
           taxId: blank(values.taxId),
+          nis: blank(values.nis),
+          rc: blank(values.rc),
+          ai: blank(values.ai),
           paymentTermsDays: values.paymentTermsDays.trim() === '' ? null : Number(values.paymentTermsDays),
           veterinarianId: values.veterinarianId === '' ? null : Number(values.veterinarianId),
         },
@@ -316,6 +325,9 @@ function CustomerForm({ customer, onSaved }: { customer?: CustomerDetail; onSave
       <TextField label={t('customers.phone')} type="tel" dir="ltr" value={values.phone} error={errors.phone} onChange={(e) => set('phone')(e.target.value)} />
       <TextField label={t('customers.email')} type="email" dir="ltr" value={values.email} error={errors.email} onChange={(e) => set('email')(e.target.value)} />
       <TextField label={t('customers.taxId')} dir="ltr" value={values.taxId} error={errors.taxId} onChange={(e) => set('taxId')(e.target.value)} />
+      <TextField label={t('customers.nis')} dir="ltr" value={values.nis} error={errors.nis} onChange={(e) => set('nis')(e.target.value)} />
+      <TextField label={t('customers.rc')} dir="ltr" value={values.rc} error={errors.rc} onChange={(e) => set('rc')(e.target.value)} />
+      <TextField label={t('customers.ai')} dir="ltr" value={values.ai} error={errors.ai} onChange={(e) => set('ai')(e.target.value)} />
       <TextField
         label={t('customers.paymentTermsDays')}
         inputMode="numeric"

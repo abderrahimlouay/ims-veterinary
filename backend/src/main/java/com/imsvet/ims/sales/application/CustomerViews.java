@@ -21,8 +21,8 @@ public final class CustomerViews {
     }
 
     public record CustomerDetail(long id, String name, String customerType, CategoryRef category, String farmingType,
-            String wilaya, String commune, String address, String phone, String email, String taxId,
-            int paymentTermsDays, CustomerRef veterinarian, BigDecimal creditLimit, boolean active, Instant createdAt,
+            String wilaya, String commune, String address, String phone, String email, String taxId, String nis,
+            String rc, String ai, int paymentTermsDays, CustomerRef veterinarian, BigDecimal creditLimit, boolean active, Instant createdAt,
             Instant updatedAt, long version) {
     }
 
