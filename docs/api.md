@@ -347,7 +347,7 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 | GET | `/api/reports/cash-sessions` | variances over a period | `report.finance` |
 | GET | `/api/reports/lot-traceability` | `lotId` → upstream receipt and downstream sales | `lot.recall` |
 
-Scope of revenue/margin per ADR-117 / ADR-118 and BR-RPT-001 (net of credit notes).
+Scope of revenue/margin per ADR-117 / ADR-118, ADR-147 and BR-RPT-001: invoices and receipts at their issue date, net of credit notes; uninvoiced delivery notes apart.
 
 ### 4.14 Administration
 
@@ -361,7 +361,7 @@ Scope of revenue/margin per ADR-117 / ADR-118 and BR-RPT-001 (net of credit note
 | POST | `/api/company-profile` | a new version (never an edit) — **Phase 10** (ADR-140) | `settings.manage` | `multipart/form-data`: the fields above (`legalName` required) and an optional `logo` (PNG or JPEG ≤ 256 KB) or `keepLogo=true` → 201 `CompanyProfile`; `VALIDATION_FAILED` (`legalName` `REQUIRED`/`SIZE`, `logo` `SIZE`/`UNKNOWN`, `email` `EMAIL`); audited `SETTING_CHANGE` |
 | GET | `/api/company-profile/logo` | the current logo — **Phase 10** | authenticated | `image/png` or `image/jpeg`; 404 when none |
 | GET | `/api/backups` | backup log | `backup.manage` | page |
-| POST | `/api/backups` | run a backup now **[OPEN OD-021]** | `backup.manage` | → `BackupRecord` |
+| POST | `/api/backups` | run a backup now (ADR-144) | `backup.manage` | → `BackupRecord`; one at a time, else `INVALID_STATE_TRANSITION`; audited `BACKUP_RUN` |
 | GET | `/api/backups/{id}/download` | download (audited) | `backup.manage` | stream |
 
 ## 5. Detailed contracts (critical endpoints)
@@ -466,4 +466,4 @@ Template: **Method · Endpoint · Purpose · Authentication · Required permissi
 
 ## 7. Open API items
 
-OD-021 (backup run).
+None (the backup run was OD-021, decided by ADR-144).

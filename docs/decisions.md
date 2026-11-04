@@ -1007,6 +1007,42 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** the roadmap's list without the cash report and the recall list; "DUPLICATA" from the second print, with each print audited; drafts printed with a "BROUILLON" watermark.
 - **Consequences:** `api.md` (PDF endpoints), `roadmap.md` Phase 10, `frontend.md`.
 
+## ADR-144 — Backups are taken by the application (resolves OD-021, mechanism)
+- **Status:** Accepted (user decision, 2026-11-04, Phase 11 preflight; Q1 A).
+- **Decision:**
+  1. The `backup` module runs the backup itself: `mysqldump` with `--single-transaction`, the routines and the triggers, under the dedicated read-only `backup` database account (BR-SEC-006), its output compressed (gzip) into the backup folder. The folder, the `mysqldump` path and the account's credentials come from **environment variables**, never from settings or the repository; the folder lies outside anything the web server serves.
+  2. Every run, scheduled (ADR-145) or started with **Run now** (`POST /api/backups`, `backup.manage`, audited `BACKUP_RUN`), records one `backup_log` row: status (success or failed), file name, size, start and end; a failure records its reason (never a secret) and logs an error. One backup runs at a time; a request while one runs is refused (`INVALID_STATE_TRANSITION`).
+  3. A backup is downloaded by its record id (`GET /api/backups/{id}/download`, `backup.manage`), never by a path; each download is audited `BACKUP_DOWNLOAD` (BR-BKP-002).
+  4. The application does **not** restore. Restoring is a written procedure (import into an empty database with the migration account, then start the application, which checks the Flyway history), rehearsed in Phase 11 and carried by the deployment procedure of Phase 12.
+- **Alternatives:** an operating-system job with the application only showing the log; both mechanisms.
+- **Consequences:** `backend.md` (jobs, `backup`), `api.md` §4.14, `business-rules.md` BR-BKP-001/002, `database.md` (`backup_log`), `security.md` (environment variables, audit), README (`mysqldump` on the server). Hosting, availability, RTO and who operates the server stay in OD-021 for Phase 12.
+
+## ADR-145 — Backup schedule and retention (resolves OD-021, frequency)
+- **Status:** Accepted (user decision, 2026-11-04, Phase 11 preflight; Q2 A).
+- **Decision:**
+  1. One backup per business day, at the first tick at or after the setting `backup_time` (default `02:00`, business time zone; catches up the same day after downtime), like the other daily jobs.
+  2. The last `backup_retention_count` (default 30) **successful** backups are kept; after a successful run the older files are deleted. Their `backup_log` rows stay, marked as removed (a download then answers `NOT_FOUND`). A failed run deletes nothing.
+  3. The data lost in the worst case (RPO) is one business day.
+- **Alternatives:** 7 daily, 8 weekly and 12 monthly; twice a day for 14 days.
+- **Consequences:** settings `backup_time`, `backup_retention_count` (validated, audited like every setting); `backend.md` jobs table.
+
+## ADR-146 — The off-site copy is a manual download (resolves OD-021, off-site copy)
+- **Status:** Accepted (user decision, 2026-11-04, Phase 11 preflight; Q3 A).
+- **Decision:**
+  1. The application keeps its backups on the server only; the copy away from it is a backup an administrator downloads (for example weekly, to a removable disk kept off the premises).
+  2. The backups page shows the date of the last download and warns when none happened for `backup_download_reminder_days` (default 7), and when the last backup failed or is older than a day.
+- **Alternatives:** a copy to a second configured folder (network share, external disk); an upload to S3-compatible storage.
+- **Consequences:** setting `backup_download_reminder_days`; `frontend.md` (backups page); the deployment procedure (Phase 12) states who downloads and where the copies are kept.
+
+## ADR-147 — Revenue and margin count invoices and receipts, net of credit notes (resolves DR-007 scope)
+- **Status:** Accepted (user decision, 2026-11-04, Phase 11 preflight; Q4 A).
+- **Decision:**
+  1. Revenue and gross margin count confirmed (not cancelled) **invoices and receipts** at their issue date in the business time zone, **less their credit notes** at the credit note's issue date (BR-RPT-001). Quotes never count.
+  2. A delivery note counts once invoiced, at the invoice's date, and only through its invoice. Confirmed delivery notes not yet invoiced are shown **apart**, as a separate total, never in revenue.
+  3. Cost of sales is the cost snapshot of each sold line (`sales_document_lines.unit_cost`, per base unit); a credit note takes back the revenue and the cost of the quantity it credits. Goods discarded on return are a stock loss (`return_discard`, ADR-127), not a margin item.
+- **Alternatives:** counting a delivery note at its own date, its invoice then not counted.
+- **Consequences:** the rewritten views (ADR-014, DR-007), `business-rules.md` BR-RPT-001, `api.md` §4.13.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1123,6 +1159,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 10. **Related:** NFR-003.
 
 ## OD-021 — Hosting, availability and backup policy
+- **Status:** Backup resolved 2026-11-04 → **ADR-144** (mechanism), **ADR-145** (schedule, retention), **ADR-146** (off-site copy). **Still open for Phase 12:** hosting (on premises or cloud), availability target and hours, RTO, who operates and restores.
 - **Question:** On-premises server vs. cloud; availability target; backup frequency/retention/RPO/RTO; where backups are stored; who restores; is the backup performed by the application or by an external operating-system job (the app then only records `backup_log`)?
 - **Blocks:** Phase 12 (deployment); backup design touches Phase 11. **Related:** FR-AUD-002, NFR-004.
 
@@ -1264,8 +1301,8 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 8 Returns | ~~OD-005~~ → ADR-127, ADR-128, ADR-129; ADR-130, ADR-131 (all 2026-11-02); OD-040 registered, not blocking |
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
-| 11 Reports & Audit | OD-021 (backup); margin scope follows ADR-117, ADR-118 |
-| 12 Testing, Security, Deployment | OD-021, ADR-036 hardening review |
+| 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); margin scope follows ADR-117, ADR-118 |
+| 12 Testing, Security, Deployment | OD-021 (hosting, availability, RTO, operations), ADR-036 hardening review |
 | 13 Dark theme | ADR-069 (decided 2026-10-22) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**
