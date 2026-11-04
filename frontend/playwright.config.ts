@@ -22,11 +22,12 @@ export default defineConfig({
   // J6 (returns) runs last, alone: it uses the administrator's cash session, which J4 opens.
   projects: [
     { name: 'j1', testMatch: /j1-.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
-    { name: 'chromium', testIgnore: /((j1|j3|j4|j5|j6|j8|j9|j12)-|j11-sales).*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', testIgnore: /((j1|j3|j4|j5|j6|j7|j8|j9|j12)-|j11-sales).*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
     { name: 'stock', testMatch: /(j3|j8)-.*\.spec\.ts/, dependencies: ['chromium'], use: { ...devices['Desktop Chrome'] } },
     { name: 'customers', testMatch: /j12-.*\.spec\.ts/, dependencies: ['stock'], use: { ...devices['Desktop Chrome'] } },
     { name: 'sales', testMatch: /(j4|j5|j9|j11-sales).*\.spec\.ts/, dependencies: ['customers'], use: { ...devices['Desktop Chrome'] } },
     { name: 'returns', testMatch: /j6-.*\.spec\.ts/, dependencies: ['sales'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'payments', testMatch: /j7-.*\.spec\.ts/, dependencies: ['returns'], use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: [
     {
