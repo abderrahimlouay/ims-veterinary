@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title th:text="'Rappel du lot ' + ${lot.lotNumber}">Rappel</title>
+<style th:replace="~{common :: style}"></style>
+</head>
+<body>
+<table class="header">
+  <tr>
+    <td th:replace="~{common :: company(${company})}"></td>
+    <td>
+      <div class="title">RAPPEL DE LOT</div>
+      <div class="right">Acheteurs à prévenir</div>
+      <div class="right" th:text="'Édité le ' + ${printedAt}">Date</div>
+    </td>
+  </tr>
+</table>
+<table class="boxes">
+  <tr>
+    <td class="box">
+      <b th:text="${lot.product}">Produit</b>
+      <div th:text="'Lot ' + ${lot.lotNumber} + ' · expire le ' + ${lot.expiry}">Lot</div>
+      <div class="muted" th:text="'Rappelé le ' + ${lot.recalledAt}">Rappelé</div>
+      <div class="muted" th:if="${lot.reason != null}" th:text="'Motif : ' + ${lot.reason}">Motif</div>
+    </td>
+    <td class="box">
+      <b>Stock restant</b>
+      <div th:text="${remaining}">0</div>
+    </td>
+  </tr>
+</table>
+<table class="lines">
+  <thead>
+    <tr><th>Client</th><th>Téléphone</th><th>Document</th><th>Date</th><th class="num">Vendu</th><th class="num">Retourné</th><th class="num">Détenu</th></tr>
+  </thead>
+  <tbody>
+    <tr th:each="b : ${buyers}">
+      <td th:text="${b.customer}">Client</td><td th:text="${b.phone}">—</td><td th:text="${b.document}">INV</td>
+      <td th:text="${b.date}">Date</td><td class="num" th:text="${b.sold}">0</td><td class="num" th:text="${b.returned}">0</td>
+      <td class="num" th:text="${b.held}">0</td>
+    </tr>
+    <tr th:if="${buyers.isEmpty()}"><td colspan="7" class="muted">Aucun client identifié.</td></tr>
+  </tbody>
+</table>
+<th:block th:if="${!anonymous.isEmpty()}">
+  <h3>Ventes au comptoir sans client</h3>
+  <table class="lines">
+    <thead><tr><th>Document</th><th>Date</th><th class="num">Vendu</th><th class="num">Retourné</th><th class="num">Détenu</th></tr></thead>
+    <tbody>
+      <tr th:each="a : ${anonymous}">
+        <td th:text="${a.document}">RCT</td><td th:text="${a.date}">Date</td><td class="num" th:text="${a.sold}">0</td>
+        <td class="num" th:text="${a.returned}">0</td><td class="num" th:text="${a.held}">0</td>
+      </tr>
+    </tbody>
+  </table>
+</th:block>
+</body>
+</html>

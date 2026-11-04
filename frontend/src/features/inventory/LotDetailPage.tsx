@@ -12,6 +12,7 @@ import { AlertBadge, LotStatusBadge } from './LotBadges'
 import { useLot, useLotAction, useRecallReport, type LotAction, type LotDetail, type RecallReport } from './lotApi'
 import { MovementsTable } from './MovementsTable'
 import { useMovements } from './stockApi'
+import { PdfLink } from '../../components/PdfLink'
 
 /** The stored status behind the effective one (ADR-059): only blocked and recalled are stored besides active. */
 function storedStatus(lot: LotDetail): 'active' | 'blocked' | 'recalled' {
@@ -239,6 +240,7 @@ function RecallReportView({ report, baseUnit }: { report: RecallReport; baseUnit
   return (
     <section className="flex flex-col gap-2 border-t border-line pt-4">
       <h2 className="text-lg font-semibold">{t('lots.report.title')}</h2>
+      <PdfLink href={`/api/lots/${report.lot.id}/recall-report?format=pdf`}>{t('lots.report.pdf')}</PdfLink>
       <p className="text-sm">{t('lots.report.remaining', { quantity: `${formatQuantity(report.remainingStockBase)} ${baseUnit}` })}</p>
       {none ? (
         <p className="text-mute">{t('lots.report.noSales')}</p>

@@ -509,7 +509,8 @@
       "date": "Date",
       "customer": "Customer",
       "document": "Document",
-      "anonymous": "Counter sale"
+      "anonymous": "Counter sale",
+      "pdf": "Printable list (PDF)"
     },
     "widget": {
       "title": "Lot expiry",
@@ -842,7 +843,8 @@
         "cancelled": "Cancelled by {{by}}",
         "closed": "Closed"
       },
-      "receive": "Receive"
+      "receive": "Receive",
+      "pdf": "PDF"
     },
     "receipts": {
       "statuses": {
@@ -1187,7 +1189,8 @@
     "lotStatus": {
       "blocked": "Lot blocked",
       "recalled": "Lot recalled"
-    }
+    },
+    "creditNotePdf": "Credit note (PDF)"
   },
   "account": {
     "pay": "Record a payment",

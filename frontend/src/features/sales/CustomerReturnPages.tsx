@@ -25,6 +25,7 @@ import {
   type ReturnPreview,
 } from './returnApi'
 import { PAYMENT_METHODS, type PaymentMethod, type SaleSummary } from './saleApi'
+import { PdfLink } from '../../components/PdfLink'
 
 /** `/returns/customer` (frontend.md §4.8): returns newest first, by document; each opens its detail. */
 export function CustomerReturnsPage() {
@@ -486,6 +487,7 @@ export function CustomerReturnPage() {
           {` · ${formatMoney(r.creditNote.totalTtc)}`}
         </dd>
       </dl>
+      <PdfLink href={`/api/returns/customer/${r.id}/pdf`}>{t('returns.creditNotePdf')}</PdfLink>
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b border-line">

@@ -196,6 +196,7 @@ describe('lot detail and actions (ADR-060, W6)', () => {
     expect(screen.getByText('0550000001')).toBeInTheDocument()
     expect(screen.getByText('DN-2026-000001')).toBeInTheDocument()
     expect(screen.getByText('RCT-2026-000001')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Liste à imprimer (PDF)' })).toHaveAttribute('href', '/api/lots/21/recall-report?format=pdf')
   })
 
   it('reopens the recall report of a recalled lot', async () => {

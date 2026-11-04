@@ -98,6 +98,7 @@ describe('customer returns (frontend.md §4.8, W3)', () => {
       refund: [{ method: 'cash', amount: '21.80', reference: null }],
     })
     expect(screen.getByTestId('credit-note')).toHaveTextContent('CN-2026-000001')
+    expect(screen.getByRole('link', { name: 'Avoir (PDF)' })).toHaveAttribute('href', expect.stringMatching(/^\/api\/returns\/customer\/\d+\/pdf$/))
     expect(screen.getByText(/Destruction · Périmé/)).toBeInTheDocument()
   })
 

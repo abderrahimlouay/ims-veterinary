@@ -6,8 +6,10 @@ import com.imsvet.ims.common.security.InternalService;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.sales.application.SalesViews.SaleWarning;
 import com.imsvet.ims.sales.domain.Customer;
+import com.imsvet.ims.sales.domain.CustomerReturn;
 import com.imsvet.ims.sales.domain.SalesDocument;
 import com.imsvet.ims.sales.infrastructure.CustomerRepository;
+import com.imsvet.ims.sales.infrastructure.CustomerReturnRepository;
 import com.imsvet.ims.sales.infrastructure.SalesDocumentRepository;
 import java.util.List;
 import java.util.Map;
@@ -35,11 +37,14 @@ public class PrintableSales {
     private final SalesDocumentRepository documents;
     private final CustomerRepository customers;
     private final SaleViewer viewer;
+    private final CustomerReturnRepository returns;
 
-    PrintableSales(SalesDocumentRepository documents, CustomerRepository customers, SaleViewer viewer) {
+    PrintableSales(SalesDocumentRepository documents, CustomerRepository customers, SaleViewer viewer,
+            CustomerReturnRepository returns) {
         this.documents = documents;
         this.customers = customers;
         this.viewer = viewer;
+        this.returns = returns;
     }
 
     @Transactional(readOnly = true)
@@ -51,6 +56,13 @@ public class PrintableSales {
         String parent = document.parentId() == null ? null
                 : documents.findById(document.parentId()).map(SalesDocument::number).orElse(null);
         return new SalePrint(viewer.detail(document), customer, parent, viewer.withdrawalWarnings(document));
+    }
+
+    /** The credit note a customer return issued (ADR-143: printed with {@code return.read}). */
+    @Transactional(readOnly = true)
+    public long creditNoteOfReturn(long returnId) {
+        return returns.findById(returnId).map(CustomerReturn::creditNoteId).orElseThrow(() -> new BusinessException(
+                ErrorCode.NOT_FOUND, "Unknown customer return.", Map.of("id", returnId)));
     }
 
     private static PrintedCustomer printed(Customer c) {
