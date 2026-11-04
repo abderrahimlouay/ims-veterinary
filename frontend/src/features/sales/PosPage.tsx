@@ -36,6 +36,8 @@ import {
   type SaleLine,
   type SaleWarning,
 } from './saleApi'
+import { salePdfUrl } from './printing'
+import { PrintTicketButton } from './PrintTicketButton'
 
 const DOC_TYPES: readonly DocType[] = ['receipt', 'invoice', 'delivery_note', 'quote']
 
@@ -212,6 +214,12 @@ export function PosPage() {
         <p>{t('pos.total', { amount: formatMoney(done.sale.totals.ttc) })}</p>
         {done.change !== null && Number(done.change) >= 0 && <p>{t('pos.change', { amount: formatMoney(done.change) })}</p>}
         {done.sale.customerBalance !== null && <p>{t('pos.balance', { amount: formatMoney(done.sale.customerBalance) })}</p>}
+        <div className="flex flex-wrap gap-2">
+          <PrintTicketButton saleId={done.sale.id} />
+          <a href={salePdfUrl(done.sale.id)} target="_blank" rel="noopener" className="h-10 px-4 inline-flex items-center rounded-ctl border border-control text-sm font-medium">
+            {t('sales.pdf')}
+          </a>
+        </div>
         <Button type="button" onClick={reset}>
           {t('pos.done.next')}
         </Button>

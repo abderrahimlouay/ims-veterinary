@@ -20,6 +20,7 @@
     <properties>
         <java.version>21</java.version>
         <archunit.version>1.5.1</archunit.version>
+        <openhtmltopdf.version>1.1.108</openhtmltopdf.version>
     </properties>
 
     <dependencies>
@@ -54,6 +55,21 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-session-jdbc</artifactId>
+        </dependency>
+        <!-- Printing (ADR-138): HTML templates to PDF; LGPL 2.1+, used as unmodified libraries. -->
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>${openhtmltopdf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-rtl-support</artifactId>
+            <version>${openhtmltopdf.version}</version>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>

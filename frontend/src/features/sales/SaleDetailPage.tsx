@@ -9,6 +9,8 @@ import { formatDate, formatDateTime, formatMoney, formatQuantity, formatUnitPric
 import { hasPermission, useCurrentUser } from '../auth'
 import { ReasonDialog } from '../purchasing'
 import { useAbandonSale, useCancelSale, useConvertSale, useSale, type DocType, type SaleDetail } from './saleApi'
+import { salePdfUrl } from './printing'
+import { PrintTicketButton } from './PrintTicketButton'
 
 /** BR-SALE-001 and W11: what the server would accept; it decides anyway. */
 function conversions(sale: SaleDetail): DocType[] {
@@ -165,6 +167,14 @@ export function SaleDetailPage() {
         </section>
       )}
       <div className="flex flex-wrap gap-2">
+        {data.status !== 'draft' && (
+          <>
+            <a href={salePdfUrl(data.id)} target="_blank" rel="noopener" className="h-10 px-4 inline-flex items-center rounded-ctl border border-control text-sm font-medium">
+              {t('sales.pdf')}
+            </a>
+            <PrintTicketButton saleId={data.id} />
+          </>
+        )}
         {hasPermission(current, 'return.customer.create') && returnable && (
           <Link to={`/returns/customer/new?documentId=${data.id}`} className="h-10 px-4 inline-flex items-center rounded-ctl bg-brand text-brand-ink text-sm font-medium">
             {t('sales.return')}
