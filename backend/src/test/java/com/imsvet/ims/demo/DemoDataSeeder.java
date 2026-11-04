@@ -12,7 +12,14 @@ import com.imsvet.ims.catalog.application.ProductViews.UnitView;
 import com.imsvet.ims.catalog.application.ReferenceItemView;
 import com.imsvet.ims.catalog.application.ReferenceLists;
 import com.imsvet.ims.catalog.domain.ReferenceList;
+import com.imsvet.ims.finance.application.AccountPayments;
 import com.imsvet.ims.finance.application.CashSessions;
+import com.imsvet.ims.finance.application.CashSessions.MovementInput;
+import com.imsvet.ims.finance.application.SupplierInvoices;
+import com.imsvet.ims.finance.application.SupplierInvoices.ApplicationInput;
+import com.imsvet.ims.finance.application.SupplierInvoices.InvoiceInput;
+import com.imsvet.ims.finance.application.SupplierInvoices.SupplierInvoiceDetail;
+import com.imsvet.ims.finance.application.SupplierPayments;
 import com.imsvet.ims.inventory.application.CountRegularisation;
 import com.imsvet.ims.inventory.application.CountViews.CountDetail;
 import com.imsvet.ims.inventory.application.CountViews.Line;
@@ -39,6 +46,7 @@ import com.imsvet.ims.purchasing.application.SupplierDirectory;
 import com.imsvet.ims.purchasing.application.SupplierDirectory.SupplierInput;
 import com.imsvet.ims.purchasing.application.SupplierPrices;
 import com.imsvet.ims.purchasing.application.SupplierPrices.PriceInput;
+import com.imsvet.ims.purchasing.application.SupplierAccounts;
 import com.imsvet.ims.purchasing.application.SupplierReturns;
 import com.imsvet.ims.purchasing.application.SupplierReturns.ReturnInput;
 import com.imsvet.ims.purchasing.application.SupplierReturns.ReturnedLine;
@@ -92,7 +100,10 @@ import org.springframework.stereotype.Component;
  * and others; own prices; limits "cash only", "no limit" and amounts; one inactive; an Arabic and an accented name);
  * sales documents of every kind with a closed cash session, a cancelled sale, a draft, and a recalled lot with buyers;
  * customer returns: a counter receipt with a restock, a discard and a cash refund, and a credit invoice credited to the
- * account; the vaccines never go back into sellable stock after a return (BR-PROD-009).
+ * account; the vaccines never go back into sellable stock after a return (BR-PROD-009); supplier invoices for the three
+ * order receipts (one settled with a credit note of the supplier return and a transfer, one partly paid after a cheque
+ * reversed, one overdue and partly paid in cash), an advance to a supplier, a customer cheque on account settling the
+ * oldest invoice, and a manual cash out in the session (Phase 9).
  * Every name is fictional and every phone number is in the reserved fake range {@code 0100 00 xx xx} (testing.md
  * §3, ADR-114). Dates are relative to today (the
  * {@link DemoClock} is pinned to each moment); quantities that vary come from a fixed seed. Runs once: a database
@@ -145,12 +156,18 @@ class DemoDataSeeder {
     private final SaleCancellation cancellation;
     private final CashSessions sessions;
     private final CustomerReturns customerReturns;
+    private final SupplierAccounts supplierAccounts;
+    private final SupplierInvoices supplierInvoices;
+    private final SupplierPayments supplierPayments;
+    private final AccountPayments accountPayments;
 
     private final Random random = new Random(20261024L);
     private final LocalDate today;
     private final Map<String, Long> products = new HashMap<>();
     private final Map<String, Long> lots = new HashMap<>();
     private final Map<String, Long> supplierIds = new HashMap<>();
+    private final Map<String, Long> receiptOfSupplier = new HashMap<>();
+    private long supplierReturnId;
     private int barcodeSequence = 1;
 
     DemoDataSeeder(Environment environment, JdbcTemplate jdbc, DemoClock clock, UserAdministration users,
@@ -161,7 +178,8 @@ class DemoDataSeeder {
             ReorderProposals reorder, IntegrityChecks integrity, CustomerCategories customerCategories,
             CustomerDirectory customers, CustomerCredit credit, CustomerPrices customerPrices, SalesDocuments documents,
             SaleLines lines, SaleConfirmation confirmation, SaleConversion conversion, SaleCancellation cancellation,
-            CashSessions sessions, CustomerReturns customerReturns) {
+            CashSessions sessions, CustomerReturns customerReturns, SupplierAccounts supplierAccounts,
+            SupplierInvoices supplierInvoices, SupplierPayments supplierPayments, AccountPayments accountPayments) {
         this.environment = environment;
         this.jdbc = jdbc;
         this.clock = clock;
@@ -194,6 +212,10 @@ class DemoDataSeeder {
         this.cancellation = cancellation;
         this.sessions = sessions;
         this.customerReturns = customerReturns;
+        this.supplierAccounts = supplierAccounts;
+        this.supplierInvoices = supplierInvoices;
+        this.supplierPayments = supplierPayments;
+        this.accountPayments = accountPayments;
         this.today = LocalDate.now(BUSINESS);
     }
 
@@ -236,6 +258,7 @@ class DemoDataSeeder {
                 new BigDecimal("1000"), null, new BigDecimal("0.0110"))).lot().id());
         purchasing();
         stockActivity();
+        payables();
         at(-2, 9, 0);
         createCustomers();
         at(-1, 6, 0);
@@ -463,6 +486,7 @@ class DemoDataSeeder {
         ReceiptDetail receipt = receipts.confirm(new ReceiptInput(null, order.id(), "BL-" + order.number().substring(3),
                 null, confirmBlocking, onOrder), UUID.nameUUIDFromBytes(order.number().getBytes()).toString());
         receipt.lines().forEach(l -> lots.put(l.lotNumber(), l.lotId()));
+        receiptOfSupplier.put(receipt.supplier().name(), receipt.id());
     }
 
     /** After the reorder run, so it proposes from the stock before these sales; the session ends closed. */
@@ -511,8 +535,71 @@ class DemoDataSeeder {
 
         at(-1, 16, 0);
         lotActions.recall(lots.get("IOD-2309"), "Rappel du fabricant (avis de démonstration n° 13)");
+        at(-1, 17, 0);
+        counterFinance(session.id(), kaci);
         at(-1, 18, 0);
         sessions.close(session.id(), sessions.current().orElseThrow().expectedAmount().subtract(new BigDecimal("10.00")));
+    }
+
+    /**
+     * Phase 9 (ADR-132, ADR-133, ADR-135): an invoice per order receipt at the receipt's own value; Distrimed settled
+     * by the credit note of its return and a transfer; Pharmavet's cheque reversed, then a transfer for part of it;
+     * Atlas overdue; an advance to Medivet, which has no invoice.
+     */
+    private void payables() {
+        at(-94, 10, 0);
+        SupplierInvoiceDetail distrimed = invoice("Distrimed Ouest", "DMO-F-0118", null);
+        at(-54, 10, 0);
+        invoice("Pharmavet Grossiste Centre", "PGC-5521", null);
+        at(-40, 11, 0);
+        long cheque = supplierPayment("Pharmavet Grossiste Centre", "cheque", new BigDecimal("800.00"),
+                "CHQ-DEMO-4411", null);
+        at(-38, 9, 0);
+        supplierPayments.reverse(cheque, "Chèque rejeté par la banque (démonstration)", null);
+        at(-37, 10, 0);
+        invoice("Laboratoires Atlas Vét", "ATV-0307", today.minusDays(7));
+        at(-35, 10, 0);
+        supplierPayment("Pharmavet Grossiste Centre", "bank_transfer", new BigDecimal("800.00"), "VIR-DEMO-0912",
+                null);
+        at(-29, 10, 0);
+        SupplierInvoiceDetail creditNote = supplierInvoices.record(new InvoiceInput(supplierIds.get("Distrimed Ouest"),
+                "DMO-AV-0031", null, supplierReturnId, businessDate(), null, new BigDecimal("5.36"), true));
+        supplierInvoices.apply(creditNote.id(), List.of(new ApplicationInput(distrimed.id(), creditNote.totalTtc())),
+                null);
+        at(-28, 10, 0);
+        supplierPayment("Distrimed Ouest", "bank_transfer",
+                supplierInvoices.get(distrimed.id()).open(), "VIR-DEMO-0880", null);
+        at(-15, 10, 0);
+        supplierPayment("Medivet Méditerranée", "bank_transfer", new BigDecimal("300.00"), "VIR-DEMO-1007",
+                List.of());
+    }
+
+    /** In the open session: a supplier paid in cash, a manual cash out, a customer cheque on account (ADR-134, ADR-136). */
+    private void counterFinance(long sessionId, long customer) {
+        supplierPayment("Laboratoires Atlas Vét", "cash", new BigDecimal("150.00"), null, null);
+        sessions.addMovement(sessionId, new MovementInput("out", new BigDecimal("40.00"),
+                "Achat de fournitures de bureau (démonstration)"), null);
+        BigDecimal oldest = accountPayments.openItems(customer).invoices().getFirst().open();
+        accountPayments.record(new AccountPayments.PaymentInput(customer, "cheque", oldest, "CHQ-DEMO-7720", null),
+                null);
+    }
+
+    private SupplierInvoiceDetail invoice(String supplier, String number, LocalDate dueDate) {
+        long receipt = receiptOfSupplier.get(supplier);
+        return supplierInvoices.record(new InvoiceInput(supplierIds.get(supplier), number,
+                receipt, null, businessDate(), dueDate, supplierAccounts.receipt(receipt).orElseThrow().valueTtc(),
+                false));
+    }
+
+    /** {@code allocations} {@code null}: oldest due first; empty: all of it an advance (ADR-132). */
+    private long supplierPayment(String supplier, String method, BigDecimal amount, String reference,
+            List<SupplierPayments.AllocationInput> allocations) {
+        return supplierPayments.record(new SupplierPayments.PaymentInput(supplierIds.get(supplier), method, amount,
+                reference, allocations), null).id();
+    }
+
+    private LocalDate businessDate() {
+        return LocalDate.ofInstant(clock.instant(), BUSINESS);
     }
 
     private SaleDetail quote(long customer) {
@@ -554,8 +641,9 @@ class DemoDataSeeder {
 
     private void stockActivity() {
         at(-30, 10, 0);
-        returns.create(new ReturnInput(supplierIds.get("Distrimed Ouest"), "Flacons abîmés pendant le transport",
-                List.of(new ReturnedLine(lots.get("OXY-2405"), new BigDecimal("100"), null))));
+        supplierReturnId = returns.create(new ReturnInput(supplierIds.get("Distrimed Ouest"),
+                "Flacons abîmés pendant le transport",
+                List.of(new ReturnedLine(lots.get("OXY-2405"), new BigDecimal("100"), null)))).id();
 
         at(-10, 8, 0);
         CountDetail count = counts.open(new OpenInput("cycle", null, List.of(products.get("melox"),

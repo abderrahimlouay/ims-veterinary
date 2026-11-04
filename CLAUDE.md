@@ -1,6 +1,6 @@
 # CLAUDE.md — IMS Vétérinaire
 
-> **Project phase: Phase 9 (Payments & finance) current, decisions ADR-132…137 (Phase 8 tagged `phase-8-done`).** Build/test commands are in `README.md`.
+> **Project phase: Phase 9 (Payments & finance) delivered, awaiting the user's approval (close PR); decisions ADR-132…137 (Phase 8 tagged `phase-8-done`). Phase 10 does not start until the user sends it.** Build/test commands are in `README.md`.
 
 ## 1. Project
 Stock, purchasing, sales and finance application for a veterinary-medicine pharmacy/wholesaler (lots, expiry, FEFO, withdrawal periods, credit sales, recalls). Source of intent: the functional Spec (`said_project.md`). Everything you need is in `docs/`; start with `docs/roadmap.md` and `docs/development-workflow.md`.
