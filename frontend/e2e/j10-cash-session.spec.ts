@@ -30,10 +30,11 @@ test('J10: manual movements, a supplier paid in cash, the session report, a mana
   await expect(page.getByRole('heading', { level: 1, name: 'Tableau de bord' })).toBeVisible()
 
   // The administrator's own session: J4 opened it; open one if it is not there.
+  // Decided by the server's answer: while it loads, the bar already offers to open a session.
+  const current = page.waitForResponse((r) => r.url().endsWith('/api/cash-sessions/current'))
   await page.goto('/pos')
   const bar = page.getByTestId('cash-session')
-  await expect(bar.getByRole('button')).toBeVisible()
-  if (await bar.getByRole('button', { name: 'Ouvrir la session' }).isVisible()) {
+  if ((await current).status() === 204) {
     await bar.getByRole('button', { name: 'Ouvrir la session' }).click()
     await page.getByRole('dialog').getByLabel('Fonds de caisse').fill('0')
     await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la session' }).click()
