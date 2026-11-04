@@ -10,6 +10,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder;
@@ -67,7 +68,7 @@ public final class ApiClient {
         return cookies.get(name);
     }
 
-    public ResultActions perform(MockHttpServletRequestBuilder request, boolean withCsrfHeader) throws Exception {
+    public ResultActions perform(AbstractMockHttpServletRequestBuilder<?> request, boolean withCsrfHeader) throws Exception {
         if (withCsrfHeader && !cookies.containsKey(CSRF_COOKIE)) {
             send(MockMvcRequestBuilders.get("/api/auth/me"));
         }
@@ -77,7 +78,7 @@ public final class ApiClient {
         return send(request);
     }
 
-    private ResultActions send(MockHttpServletRequestBuilder request) throws Exception {
+    private ResultActions send(AbstractMockHttpServletRequestBuilder<?> request) throws Exception {
         request.with(r -> {
             r.setRemoteAddr(clientIp);
             return r;

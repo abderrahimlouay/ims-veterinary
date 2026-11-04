@@ -248,6 +248,26 @@ class CustomersTest {
         return (int) id(manager.post("/api/customer-categories", "{\"name\":\"" + name + "\",\"discountPct\":\"5\"}"));
     }
 
+    @Test
+    void theLegalNumbersAreKeptTrimmedAndClearedWhenBlank() throws Exception {
+        long id = id(create("{\"name\":\"Ferme Démo Légale\",\"taxId\":\"NIF-DEMO-77\",\"nis\":\" NIS-DEMO-77 \","
+                + "\"rc\":\"RC-DEMO-77\",\"ai\":\"AI-DEMO-77\"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.nis").value("NIS-DEMO-77"))
+                .andExpect(jsonPath("$.rc").value("RC-DEMO-77"))
+                .andExpect(jsonPath("$.ai").value("AI-DEMO-77")));
+        update(id, "{\"name\":\"Ferme Démo Légale\",\"taxId\":\"NIF-DEMO-77\",\"nis\":\"\",\"rc\":\"RC-DEMO-78\","
+                + "\"version\":0}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nis").isEmpty())
+                .andExpect(jsonPath("$.rc").value("RC-DEMO-78"))
+                .andExpect(jsonPath("$.ai").isEmpty());
+        create("{\"name\":\"Ferme Démo Trop Longue\",\"ai\":\"" + "9".repeat(41) + "\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("ai"))
+                .andExpect(jsonPath("$.errors[0].code").value("SIZE"));
+    }
+
     private ResultActions create(String body) throws Exception {
         return seller.post("/api/customers", body);
     }

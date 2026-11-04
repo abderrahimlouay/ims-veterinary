@@ -24,8 +24,8 @@ public class Customer {
 
     /** The editable fields, already validated. */
     public record Details(String name, CustomerType type, Integer categoryId, String farmingType, String wilaya,
-            String commune, String address, String phone, String email, String taxId, int paymentTermsDays,
-            Long veterinarianId) {
+            String commune, String address, String phone, String email, String taxId, String nis, String rc,
+            String ai, int paymentTermsDays, Long veterinarianId) {
     }
 
     @Converter
@@ -79,6 +79,15 @@ public class Customer {
 
     @Column(name = "tax_id", length = 40)
     private String taxId;
+
+    @Column(length = 40)
+    private String nis;
+
+    @Column(length = 40)
+    private String rc;
+
+    @Column(length = 40)
+    private String ai;
 
     @Column(name = "payment_terms_days", nullable = false)
     private int paymentTermsDays;
@@ -140,6 +149,9 @@ public class Customer {
         this.phoneKey = CustomerKeys.phoneKey(d.phone());
         this.email = d.email();
         this.taxId = CustomerKeys.taxKey(d.taxId());
+        this.nis = d.nis();
+        this.rc = d.rc();
+        this.ai = d.ai();
         this.paymentTermsDays = d.paymentTermsDays();
         this.veterinarianId = d.veterinarianId();
     }
@@ -190,6 +202,19 @@ public class Customer {
 
     public String taxId() {
         return taxId;
+    }
+
+    /** NIS, RC and AI: printed on invoices when present (ADR-141). */
+    public String nis() {
+        return nis;
+    }
+
+    public String rc() {
+        return rc;
+    }
+
+    public String ai() {
+        return ai;
     }
 
     public int paymentTermsDays() {

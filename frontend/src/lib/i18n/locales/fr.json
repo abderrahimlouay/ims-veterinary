@@ -218,6 +218,33 @@
       "oldValues": "Avant",
       "newValues": "Après",
       "empty": "Aucune entrée ne correspond."
+    },
+    "company": {
+      "title": "Identité de l'entreprise",
+      "none": "Aucune identité enregistrée : les documents l'indiqueront.",
+      "version": "Version en vigueur depuis le {{date}}",
+      "hint": "Chaque enregistrement crée une nouvelle version ; les documents déjà émis gardent l'identité en vigueur à leur date.",
+      "saved": "Nouvelle version enregistrée.",
+      "save": "Enregistrer une nouvelle version",
+      "logo": "Logo (PNG ou JPEG, 256 Ko au plus)",
+      "currentLogo": "Logo actuel",
+      "keepLogo": "Garder le logo actuel",
+      "logoTooLarge": "Le logo dépasse 256 Ko.",
+      "fields": {
+        "legalName": "Raison sociale",
+        "legalForm": "Forme juridique",
+        "address": "Adresse",
+        "wilaya": "Wilaya",
+        "phone": "Téléphone",
+        "email": "E-mail",
+        "nif": "NIF",
+        "nis": "NIS",
+        "rc": "RC (registre du commerce)",
+        "ai": "AI (article d'imposition)",
+        "approvalNumber": "N° d'agrément vétérinaire",
+        "bankAccount": "RIB",
+        "footerText": "Texte de pied de page"
+      }
     }
   },
   "reference": {
@@ -973,7 +1000,10 @@
       "edit": "Modifier",
       "editOf": "Modifier {{name}}",
       "add": "Nouvelle catégorie"
-    }
+    },
+    "nis": "NIS",
+    "rc": "RC (registre du commerce)",
+    "ai": "AI (article d'imposition)"
   },
   "pos": {
     "title": "Caisse",

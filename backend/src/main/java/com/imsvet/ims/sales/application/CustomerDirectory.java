@@ -42,10 +42,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CustomerDirectory {
 
-    /** Lengths and the e-mail format are checked by the API layer. */
+    /** Lengths and the e-mail format are checked by the API layer; {@code nis}, {@code rc}, {@code ai}: ADR-141. */
     public record CustomerInput(String name, String customerType, Integer categoryId, String farmingType,
-            String wilaya, String commune, String address, String phone, String email, String taxId,
-            Integer paymentTermsDays, Long veterinarianId) {
+            String wilaya, String commune, String address, String phone, String email, String taxId, String nis,
+            String rc, String ai, Integer paymentTermsDays, Long veterinarianId) {
+
+        /** Without the legal numbers other than the NIF. */
+        public CustomerInput(String name, String customerType, Integer categoryId, String farmingType, String wilaya,
+                String commune, String address, String phone, String email, String taxId, Integer paymentTermsDays,
+                Long veterinarianId) {
+            this(name, customerType, categoryId, farmingType, wilaya, commune, address, phone, email, taxId, null,
+                    null, null, paymentTermsDays, veterinarianId);
+        }
     }
 
     private static final int MAX_TERMS = Short.MAX_VALUE;
@@ -177,7 +185,8 @@ public class CustomerDirectory {
         }
         return new Customer.Details(name, type, in.categoryId(), blankToNull(in.farmingType()), blankToNull(in.wilaya()),
                 blankToNull(in.commune()), blankToNull(in.address()), blankToNull(in.phone()), blankToNull(in.email()),
-                blankToNull(in.taxId()), terms, in.veterinarianId());
+                blankToNull(in.taxId()), blankToNull(in.nis()), blankToNull(in.rc()), blankToNull(in.ai()), terms,
+                in.veterinarianId());
     }
 
     /** ADR-110: the other customer's id and the field only; never its data. */
@@ -216,7 +225,8 @@ public class CustomerDirectory {
         CustomerRef vet = c.veterinarianId() == null ? null : customers.findById(c.veterinarianId())
                 .map(v -> new CustomerRef(v.id(), v.name())).orElse(null);
         return new CustomerDetail(c.id(), c.name(), c.type().code(), category, c.farmingType(), c.wilaya(),
-                c.commune(), c.address(), c.phone(), c.email(), c.taxId(), c.paymentTermsDays(), vet, c.creditLimit(),
+                c.commune(), c.address(), c.phone(), c.email(), c.taxId(), c.nis(), c.rc(), c.ai(),
+                c.paymentTermsDays(), vet, c.creditLimit(),
                 c.active(), c.createdAt(), c.updatedAt(), c.version());
     }
 

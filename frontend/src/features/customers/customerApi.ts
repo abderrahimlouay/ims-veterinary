@@ -29,6 +29,10 @@ export interface CustomerDetail extends CustomerSummary {
   address: string | null
   email: string | null
   taxId: string | null
+  /** Optional legal numbers printed on invoices next to the NIF (ADR-141). */
+  nis: string | null
+  rc: string | null
+  ai: string | null
   paymentTermsDays: number
   veterinarian: { id: number; name: string } | null
   creditLimit: string | null
@@ -48,6 +52,9 @@ export interface CustomerWrite {
   phone: string | null
   email: string | null
   taxId: string | null
+  nis: string | null
+  rc: string | null
+  ai: string | null
   paymentTermsDays: number | null
   veterinarianId: number | null
 }
