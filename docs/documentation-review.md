@@ -1,6 +1,6 @@
 # Documentation Review — Cross-Document Consistency Audit
 
-> **Status:** Phases 0–8 delivered and tagged (`phase-8-done`)
+> **Status:** Phases 0–9 delivered and tagged (`phase-9-done`)
 > **Purpose:** record every inconsistency, gap, ambiguity and risk found while reading the four inputs (Spec `said_project.md`, Source Schema `ims_veterinaire_schema_v2.sql`, design prototype, master brief) and while producing the documentation set. Nothing here is silently resolved.
 > **Last updated:** 2026-10-23 (audit re-run at the Phase 4 close, §3.3)
 
