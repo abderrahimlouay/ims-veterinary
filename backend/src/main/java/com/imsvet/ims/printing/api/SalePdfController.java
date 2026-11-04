@@ -1,10 +1,6 @@
 package com.imsvet.ims.printing.api;
 
 import com.imsvet.ims.printing.application.SalePdfs;
-import com.imsvet.ims.printing.application.SalePdfs.Pdf;
-import org.springframework.http.CacheControl;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,10 +20,6 @@ class SalePdfController {
 
     @GetMapping(value = "/api/sales/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     ResponseEntity<byte[]> pdf(@PathVariable long id, @RequestParam(required = false) String format) {
-        Pdf pdf = pdfs.render(id, format);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename(pdf.fileName()).build()
-                        .toString())
-                .cacheControl(CacheControl.noStore()).body(pdf.bytes());
+        return DocumentPdfController.inline(pdfs.render(id, format));
     }
 }

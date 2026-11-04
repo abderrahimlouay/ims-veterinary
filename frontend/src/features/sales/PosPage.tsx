@@ -38,6 +38,7 @@ import {
 } from './saleApi'
 import { salePdfUrl } from './printing'
 import { PrintTicketButton } from './PrintTicketButton'
+import { PdfLink } from '../../components/PdfLink'
 
 const DOC_TYPES: readonly DocType[] = ['receipt', 'invoice', 'delivery_note', 'quote']
 
@@ -216,9 +217,7 @@ export function PosPage() {
         {done.sale.customerBalance !== null && <p>{t('pos.balance', { amount: formatMoney(done.sale.customerBalance) })}</p>}
         <div className="flex flex-wrap gap-2">
           <PrintTicketButton saleId={done.sale.id} />
-          <a href={salePdfUrl(done.sale.id)} target="_blank" rel="noopener" className="h-10 px-4 inline-flex items-center rounded-ctl border border-control text-sm font-medium">
-            {t('sales.pdf')}
-          </a>
+          <PdfLink href={salePdfUrl(done.sale.id)}>{t('sales.pdf')}</PdfLink>
         </div>
         <Button type="button" onClick={reset}>
           {t('pos.done.next')}

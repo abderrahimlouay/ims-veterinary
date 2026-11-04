@@ -509,7 +509,8 @@
       "date": "التاريخ",
       "customer": "الزبون",
       "document": "الوثيقة",
-      "anonymous": "بيع في الشباك"
+      "anonymous": "بيع في الشباك",
+      "pdf": "قائمة للطباعة (PDF)"
     },
     "widget": {
       "title": "انتهاء صلاحية الحصص",
@@ -842,7 +843,8 @@
         "cancelled": "ألغاه {{by}}",
         "closed": "أغلق"
       },
-      "receive": "استلام"
+      "receive": "استلام",
+      "pdf": "PDF"
     },
     "receipts": {
       "statuses": {
@@ -1187,7 +1189,8 @@
     "lotStatus": {
       "blocked": "حصة محظورة",
       "recalled": "حصة مسحوبة"
-    }
+    },
+    "creditNotePdf": "الإشعار الدائن (PDF)"
   },
   "account": {
     "pay": "تسجيل دفعة",

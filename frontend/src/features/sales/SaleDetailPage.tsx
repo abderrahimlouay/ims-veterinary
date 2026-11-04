@@ -11,6 +11,7 @@ import { ReasonDialog } from '../purchasing'
 import { useAbandonSale, useCancelSale, useConvertSale, useSale, type DocType, type SaleDetail } from './saleApi'
 import { salePdfUrl } from './printing'
 import { PrintTicketButton } from './PrintTicketButton'
+import { PdfLink } from '../../components/PdfLink'
 
 /** BR-SALE-001 and W11: what the server would accept; it decides anyway. */
 function conversions(sale: SaleDetail): DocType[] {
@@ -169,9 +170,7 @@ export function SaleDetailPage() {
       <div className="flex flex-wrap gap-2">
         {data.status !== 'draft' && (
           <>
-            <a href={salePdfUrl(data.id)} target="_blank" rel="noopener" className="h-10 px-4 inline-flex items-center rounded-ctl border border-control text-sm font-medium">
-              {t('sales.pdf')}
-            </a>
+            <PdfLink href={salePdfUrl(data.id)}>{t('sales.pdf')}</PdfLink>
             <PrintTicketButton saleId={data.id} />
           </>
         )}

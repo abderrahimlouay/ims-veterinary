@@ -61,7 +61,17 @@ public class SalePdfs {
     @PreAuthorize("hasAuthority('sale.read')")
     @Transactional(readOnly = true)
     public Pdf render(long id, String format) {
-        Paper paper = paper(format);
+        return document(id, paper(format));
+    }
+
+    /** The credit note of a customer return, in A4 (`/api/returns/customer/{id}/pdf`, ADR-143). */
+    @PreAuthorize("hasAuthority('return.read')")
+    @Transactional(readOnly = true)
+    public Pdf renderReturn(long returnId) {
+        return document(sales.creditNoteOfReturn(returnId), Paper.A4);
+    }
+
+    private Pdf document(long id, Paper paper) {
         SalePrint print = sales.of(id);
         SaleDetail d = print.detail();
         if ("draft".equals(d.status())) {

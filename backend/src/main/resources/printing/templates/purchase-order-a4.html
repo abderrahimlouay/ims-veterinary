@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title th:text="'Bon de commande ' + ${doc.number}">Bon de commande</title>
+<style th:replace="~{common :: style}"></style>
+</head>
+<body>
+<div class="watermark" th:if="${doc.cancelled}">ANNULÉ</div>
+<table class="header">
+  <tr>
+    <td th:replace="~{common :: company(${company})}"></td>
+    <td>
+      <div class="title">BON DE COMMANDE</div>
+      <div class="right">N° <b th:text="${doc.number}">PO</b></div>
+      <div class="right" th:text="'Date : ' + ${doc.orderDate}">Date</div>
+      <div class="right" th:if="${doc.expectedDate != null}" th:text="'Livraison souhaitée : ' + ${doc.expectedDate}">Livraison</div>
+    </td>
+  </tr>
+</table>
+<div class="cancelled" th:if="${doc.cancelled}" th:text="'Commande annulée' + (${doc.cancelReason} != null ? ' : ' + ${doc.cancelReason} : '')">Annulée</div>
+<table class="boxes">
+  <tr>
+    <td class="box">
+      <b>Fournisseur</b>
+      <div th:text="${supplier.name}">Fournisseur</div>
+      <div class="muted" th:each="line : ${supplier.lines}" th:text="${line}">Adresse</div>
+    </td>
+    <td style="width: 50%"></td>
+  </tr>
+</table>
+<table class="lines">
+  <thead>
+    <tr>
+      <th>Réf.</th><th>Désignation</th><th class="num">Qté</th><th class="num">P.U. HT</th><th class="num">Remise</th>
+      <th class="num">TVA</th><th class="num">Total HT</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr th:each="l : ${lines}">
+      <td th:text="${l.sku}">SKU</td>
+      <td th:text="${l.product}">Produit</td>
+      <td class="num" th:text="${l.quantity}">1</td>
+      <td class="num" th:text="${l.unitPrice}">0,00</td>
+      <td class="num" th:text="${l.discount}">—</td>
+      <td class="num" th:text="${l.vatRate}">9 %</td>
+      <td class="num" th:text="${l.ht}">0,00</td>
+    </tr>
+  </tbody>
+</table>
+<table style="width: 45%; margin: 4mm 0 0 auto; border-collapse: collapse">
+  <tr><td>Total HT</td><td class="num" th:text="${totals.ht}">0,00</td></tr>
+  <tr><td>TVA</td><td class="num" th:text="${totals.vat}">0,00</td></tr>
+  <tr class="grand"><td>Total TTC</td><td class="num" th:text="${totals.ttc}">0,00</td></tr>
+</table>
+<div class="footer" th:if="${company != null and company.footer != null}" th:text="${company.footer}">Pied</div>
+</body>
+</html>

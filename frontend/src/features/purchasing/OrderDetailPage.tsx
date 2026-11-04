@@ -10,6 +10,7 @@ import { problemMessage } from '../../lib/errors'
 import { formatDate, formatDateTime, formatMoney, formatQuantity, formatUnitPrice } from '../../lib/format'
 import { hasPermission, useCurrentUser } from '../auth'
 import { ACTIONS_BY_STATUS, useOrder, useOrderAction, type OrderAction, type PurchaseOrderDetail } from './orderApi'
+import { PdfLink } from '../../components/PdfLink'
 
 /**
  * `/purchase-orders/:id` (frontend.md §4.5): lines with the server's amounts per line and totals (ADR-093), received
@@ -45,6 +46,7 @@ export function OrderDetailPage() {
         <h1 className="text-2xl font-semibold">{o.number}</h1>
         <span className="rounded-ctl border border-line px-2 py-1 text-sm">{t(`purchasing.orders.statuses.${o.status}`)}</span>
         <div className="ms-auto flex gap-2">
+          {o.status !== 'draft' && <PdfLink href={`/api/purchase-orders/${o.id}/pdf`}>{t('purchasing.orders.pdf')}</PdfLink>}
           {(o.status === 'sent' || o.status === 'partially_received') && hasPermission(current, 'receipt.create') && (
             <Link to={`/goods-receipts/new?orderId=${o.id}`} className="h-10 px-4 inline-flex items-center rounded-ctl bg-brand text-brand-ink text-sm font-medium">
               {t('purchasing.orders.receive')}

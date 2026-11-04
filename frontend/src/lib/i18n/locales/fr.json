@@ -509,7 +509,8 @@
       "date": "Date",
       "customer": "Client",
       "document": "Document",
-      "anonymous": "Vente au comptoir"
+      "anonymous": "Vente au comptoir",
+      "pdf": "Liste à imprimer (PDF)"
     },
     "widget": {
       "title": "Péremption des lots",
@@ -842,7 +843,8 @@
         "cancelled": "Annulé par {{by}}",
         "closed": "Clôturé"
       },
-      "receive": "Réceptionner"
+      "receive": "Réceptionner",
+      "pdf": "PDF"
     },
     "receipts": {
       "statuses": {
@@ -1187,7 +1189,8 @@
     "lotStatus": {
       "blocked": "Lot bloqué",
       "recalled": "Lot rappelé"
-    }
+    },
+    "creditNotePdf": "Avoir (PDF)"
   },
   "account": {
     "pay": "Enregistrer un paiement",
