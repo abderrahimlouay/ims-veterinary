@@ -96,6 +96,9 @@ public class ApplicationAccountGrants implements Callback {
                         sql.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON " + target + " TO " + grantee);
                     }
                 }
+                for (String view : views(connection)) {
+                    sql.execute("GRANT SELECT ON `" + view + "` TO " + grantee);
+                }
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Granting the application account failed (ADR-087)", e);
@@ -120,6 +123,19 @@ public class ApplicationAccountGrants implements Callback {
             }
         }
         return tables;
+    }
+
+    /** The report views (ADR-014): read only, SQL SECURITY INVOKER over tables the account already reads. */
+    private static List<String> views(Connection connection) throws SQLException {
+        List<String> views = new ArrayList<>();
+        try (Statement sql = connection.createStatement(); ResultSet rows = sql.executeQuery("""
+                SELECT table_name FROM information_schema.tables
+                WHERE table_schema = DATABASE() AND table_type = 'VIEW'""")) {
+            while (rows.next()) {
+                views.add(rows.getString(1));
+            }
+        }
+        return views;
     }
 
     private static String version(Connection connection) throws SQLException {

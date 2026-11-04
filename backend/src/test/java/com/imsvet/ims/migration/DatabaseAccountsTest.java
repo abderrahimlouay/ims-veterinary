@@ -18,7 +18,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 /**
  * ADR-087, BR-SEC-006: the application connects with a restricted account; Flyway ran with the migration account,
  * whose callback granted the application account its rights on every table: no {@code UPDATE}/{@code DELETE} on the
- * append-only tables and no DDL anywhere. ADR-012: application connections wait at most 5 s for a row lock.
+ * append-only tables and no DDL anywhere; the report views read only (ADR-014). ADR-012: application connections wait at most 5 s for a row lock.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -74,6 +74,26 @@ class DatabaseAccountsTest {
             }
         }
         assertThat(tables).contains("audit_log", "products", "lots", "users");
+    }
+
+    /** ADR-014: the report views are read-only for the application, and run with its own rights (SQL SECURITY INVOKER). */
+    @Test
+    void everyReportViewIsGrantedForReadingOnly() {
+        List<String> views = migration.jdbc().queryForList("""
+                SELECT table_name FROM information_schema.views WHERE table_schema = DATABASE()""", String.class);
+        String grantee = "'" + MySqlContainerConfiguration.APP_USER + "'@'%'";
+
+        for (String view : views) {
+            assertThat(app.queryForList("""
+                    SELECT privilege_type FROM information_schema.table_privileges
+                    WHERE table_schema = DATABASE() AND table_name = ? AND grantee = ?""", String.class, view, grantee))
+                    .as(view).containsExactly("SELECT");
+            assertThat(migration.jdbc().queryForObject("""
+                    SELECT security_type FROM information_schema.views WHERE table_schema = DATABASE() AND table_name = ?""",
+                    String.class, view)).as(view).isEqualTo("INVOKER");
+        }
+        assertThat(views).contains("v_sales_margin", "v_uninvoiced_delivery_notes");
+        assertDenied(() -> app.update("DELETE FROM v_sales_margin WHERE document_id = -1"));
     }
 
     @Test
