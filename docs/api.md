@@ -349,6 +349,11 @@ Format: **Method · Path · Purpose · Permission · Contract (request → respo
 
 Scope of revenue/margin per ADR-117 / ADR-118, ADR-147 and BR-RPT-001: invoices and receipts at their issue date, net of credit notes; uninvoiced delivery notes apart.
 
+**Period and grouping (every report with a period):** `from`, `to` business dates, both inclusive; `to` absent = today, `from` absent = the first day of `to`'s month; `from` after `to` → `VALIDATION_FAILED` `from` `RANGE`; an unknown `groupBy` → `VALIDATION_FAILED` `groupBy` `UNKNOWN`. Amounts HT, 2 decimals.
+
+- **Revenue** (Phase 11): `groupBy` default `month` → `{from, to, groupBy, rows: [{key, code, label, revenueHt}], totalHt, uninvoicedDeliveryNotes: {count, totalHt}}`; `key` = `2026-11-04` (day), `2026-11` (month), or the product or category id (`null` for products without a category); `code` = the SKU for products; `label` = the product or category name. Dates ascending; products and categories by revenue, highest first.
+- **Margin** (Phase 11): `groupBy` `category` (default) or `product` → `{from, to, groupBy, rows: [{key, code, label, quantityBase, revenueHt, cost, margin, marginRate}], totalRevenueHt, totalCost, totalMargin, marginRate}`; `cost` = Σ quantity × the line's cost snapshot; `marginRate` = margin / revenue × 100, `null` when the revenue is 0; `quantityBase` only by product.
+
 ### 4.14 Administration
 
 | Method | Path | Purpose | Permission | Contract |

@@ -272,9 +272,10 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 | `v_customer_balance` | customer running balance | **Not created** (DR-006): one service query per ADR-118 / ADR-134 (Phase 9) |
 | `v_supplier_payables` | outstanding per supplier invoice | **Not created**: computed by the service per ADR-132 (Phase 9) |
 | `v_stock_valuation` | value at cost and at sale price | Keep |
-| `v_sales_margin` | revenue / cost / margin by day, product, zone, customer | **Fix** (credit notes, delivery notes — DR-007, ADR-117) |
+| `v_sales_margin` | revenue / cost / margin by day, product, zone, customer | **Rewritten** (V11_001, SD-149): signed rows of confirmed invoices, receipts and credit notes (ADR-147) |
+| `v_uninvoiced_delivery_notes` | confirmed delivery notes without a confirmed invoice | **New** (V11_002, SD-149; ADR-147) |
 
-Rule (ADR-014): views are read models for listings/reports; decisions inside transactions use locking queries.
+Rule (ADR-014): views are read models for listings/reports; decisions inside transactions use locking queries. Views are `SQL SECURITY INVOKER`; the application account has `SELECT` only on them; the `reporting` module reads views, never tables (`ModuleSqlBoundaryTest`).
 
 ## 6. Important queries (conceptual)
 

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  * architecture.md §3 rule 2 and its documented exception (ADR-090): a module's SQL and JPQL text never names
  * another module's tables or entities, except the one named port implementation that hands the catalog its stock
  * conditions ({@code inventory/application/ProductStockConditions}). Checked on the string literals of the sources;
- * URL paths (literals starting with {@code /}) are not queries.
+ * URL paths (literals starting with {@code /}) are not queries. The {@code reporting} module reads views only.
  */
 class ModuleSqlBoundaryTest {
 
@@ -38,6 +38,14 @@ class ModuleSqlBoundaryTest {
                     + "|archived|commercialName|sku)\\b");
 
     private static final Set<String> ALLOWED_IN_INVENTORY = Set.of("inventory/application/ProductStockConditions.java");
+
+    /** ADR-014: reports read the views of {@code reporting} (named {@code v_…}), never another module's tables. */
+    private static final Pattern NON_VIEW_SOURCE = Pattern.compile("\\b(FROM|JOIN)\\s+(?!v_)[a-z_]+\\b");
+
+    @Test
+    void reportingReadsViewsOnly() throws IOException {
+        assertThat(offending(MAIN.resolve("reporting"), NON_VIEW_SOURCE, Set.of())).isEmpty();
+    }
 
     @Test
     void theCatalogNeverNamesInventoryTables() throws IOException {

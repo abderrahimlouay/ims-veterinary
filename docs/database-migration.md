@@ -255,6 +255,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-146 | `cash_movements.supplier_payment_id` and `manual`; `ck_cash_movements_one_source` extended to exactly one of customer payment, refund, supplier payment, manual | ADR-132, ADR-135, ADR-136 | Accepted 2026-11-03 |
 | SD-147 | New append-only `company_profiles` (identity fields, logo ≤ 256 KB, `effective_from`, `created_by`); no Source equivalent | ADR-140 | Accepted 2026-11-04 |
 | SD-148 | `customers` gain optional `nis`, `rc`, `ai` (the NIF stays `tax_id`) | ADR-141 | Accepted 2026-11-04 |
+| SD-149 | `v_sales_margin` rewritten: one signed row per line of confirmed invoices, receipts and credit notes (credit notes negative), cost from the line's snapshot, `SQL SECURITY INVOKER`; new view `v_uninvoiced_delivery_notes`; the application account is granted `SELECT` only on views | ADR-014, ADR-147, DR-007 | Accepted 2026-11-04 |
 
 ## 9. Operational requirements for MySQL
 
