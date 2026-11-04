@@ -193,7 +193,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-SALE-007 | U,SEC | Discount above entitlement needs sale.discount; no stacking (ADR-113); a manual price needs price.edit; the rights come from the signed-in user — `PriceResolverTest`, `CustomerPricingTest` |
 | BR-SALE-008 | U,I | Server totals identical for same input; client totals ignored; generated columns equal the formula with 4-decimal prices (`SaleLinesTest`, ADR-016, ADR-115, ADR-123) |
 | BR-SALE-009 | S | Line stores unit cost snapshot equal to lot cost (`SaleConfirmationTest`) |
-| BR-SALE-010 | S | On screen: warnings for any customer, by species, every species when none is given, none when no data (ADR-121, `WithdrawalWarningsTest`, `SaleLinesTest`); printing from Phase 10 (OD-028) |
+| BR-SALE-010 | S | On screen: warnings for any customer, by species, every species when none is given, none when no data (ADR-121, `WithdrawalWarningsTest`, `SaleLinesTest`); printed by the same rule (ADR-142): the text of an invoice, a ticket and a quote holds the warnings once per product and species |
 | BR-SALE-011 | S | Archived product in sale → PRODUCT_ARCHIVED; non-sellable unit → UNIT_NOT_SELLABLE (`SaleLinesTest`) |
 | BR-SALE-012 | S,R | Credit sale without customer; inactive customer → errors; anonymous only on a receipt; DB CHECKs (`SalesDraftsTest`, re-checked at confirmation) |
 | BR-SALE-013 | S | A payment with a cash part needs an open session; cheque, transfer and credit sales do not (ADR-118) |

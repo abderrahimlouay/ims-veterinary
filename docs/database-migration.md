@@ -128,7 +128,7 @@ Open points on values: the discard of returned goods is `return_discard` (ADR-12
 | `v_product_stock` | D | Not created: sellable stock needs the business date in the business time zone (ADR-055) and the single Java predicate (BR-STOCK-011); stock levels are computed by the service (ADR-080). |
 | `v_reorder_needed` | D | Not created: sellable stock depends on the business date and expiry policy, so the service computes stock levels and reorder candidates (ADR-076, ADR-080). |
 | `v_expiring_lots` | D | Not created: the service lists expiring lots and computes the level from configured thresholds (ADR-056, DR-019). |
-| `v_sale_withdrawal_warnings` | A | Direct. Printing applicability **OD-028**; screen ADR-121. |
+| `v_sale_withdrawal_warnings` | A | Direct. Screen ADR-121; printing ADR-142 (same rule). |
 | `v_customer_balance` | B + **defect** | Do not reuse as-is; definition **ADR-118** (DR-006). |
 | `v_supplier_payables` | D | Not created: open amounts and the supplier balance are computed by the service (ADR-132). |
 | `v_stock_valuation` | A | Direct; "at sale price" uses `products.sale_price` per base unit. |
@@ -216,7 +216,7 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-107 | New `movement_type` value for discard: `return_discard` (−), always right after a `customer_return` (+) of the same return line | OD-005 → ADR-127 | Accepted 2026-11-02 (cancellation: SD-135) |
 | SD-108 | `customer_payments.customer_id` nullable; every immediate sale creates a payment | ADR-118 | Accepted 2026-10-31 |
 | SD-109 | Link supplier return ↔ supplier credit note: optional `supplier_invoices.supplier_return_id` on credit notes only | OD-016 → ADR-133 | Accepted 2026-11-03 (column: SD-144) |
-| SD-110 | Company profile / document header data | OD-026 | Open |
+| SD-110 | Company profile / document header data | OD-026 → ADR-140 | Accepted 2026-11-04 (table: SD-147) |
 | SD-111 | Spring Session JDBC tables (no refresh-token or login-attempt table) | ADR-036, ADR-038 | Accepted 2026-10-20 |
 | SD-114 | `users.must_change_password` | ADR-039 | Accepted 2026-10-20 |
 | SD-112 | Uniqueness of one *pending* reorder proposal per product (generated-column technique) | ADR-079 | Accepted 2026-10-22 |
@@ -253,6 +253,8 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-144 | `supplier_invoices` gain `supplier_return_id` (credit notes only), `status` with cancellation columns, `created_by`, `created_at`, `invoice_date` and `due_date` NOT NULL; new append-only `supplier_credit_allocations` | ADR-133 | Accepted 2026-11-03 |
 | SD-145 | `payment_allocations` gets a surrogate `id` PK, `created_at`, `created_by` (existing rows kept, filled from their payment); the `(payment_id, invoice_id)` key is dropped | ADR-134 | Accepted 2026-11-03 |
 | SD-146 | `cash_movements.supplier_payment_id` and `manual`; `ck_cash_movements_one_source` extended to exactly one of customer payment, refund, supplier payment, manual | ADR-132, ADR-135, ADR-136 | Accepted 2026-11-03 |
+| SD-147 | New append-only `company_profiles` (identity fields, logo ≤ 256 KB, `effective_from`, `created_by`); no Source equivalent | ADR-140 | Accepted 2026-11-04 |
+| SD-148 | `customers` gain optional `nis`, `rc`, `ai` (the NIF stays `tax_id`) | ADR-141 | Accepted 2026-11-04 |
 
 ## 9. Operational requirements for MySQL
 

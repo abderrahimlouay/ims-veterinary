@@ -147,7 +147,7 @@ Read-only; implemented as native/JPQL queries or the rewritten MySQL views (ADR-
 
 ## 14. Printing
 
-`printing` renders PDFs from server-side templates (engine per OD-020), called after commit with the persisted document, so the output is reproducible from stored data.
+`printing` renders PDFs from server-side Thymeleaf templates with openhtmltopdf and bundled Noto fonts (ADR-138), on request, from the persisted document and the company profile version in force at its issue (ADR-140), so the output is reproducible from stored data; nothing is stored. It reads the other modules through their read ports and the `settings` module's company profile.
 
 ## 15. Logging
 
@@ -163,4 +163,4 @@ Constructor injection; no field injection; no static state; small services per u
 
 ## 18. Open backend items
 
-OD-020/021 (OD-002 → ADR-117, OD-003 → ADR-118, OD-006 → ADR-107, OD-007 → ADR-093, OD-011 → ADR-108; OD-012/013/015/017 resolved). (OD-024 resolved by ADR-032.)
+OD-021 (OD-020 → ADR-138/139, OD-026 → ADR-140, OD-028 → ADR-142; OD-002 → ADR-117, OD-003 → ADR-118, OD-006 → ADR-107, OD-007 → ADR-093, OD-011 → ADR-108; OD-012/013/015/017 resolved). (OD-024 resolved by ADR-032.)

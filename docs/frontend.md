@@ -138,7 +138,7 @@ Layout: left = product search + scan field + quick results; centre = cart lines 
 | Override FEFO | visible only with `sale.override_fefo`; opens lot picker, reason mandatory; non-sellable lots are not offered (ADR-120) |
 | Customer | optional for cash; mandatory for credit (`CUSTOMER_REQUIRED_FOR_CREDIT`); credit-limit state shown |
 | Confirm | one button, disabled while request in flight, sends `Idempotency-Key`; on `STOCK_INSUFFICIENT`/`LOT_*` the offending line is highlighted and refreshed from `context` |
-| After confirm | success screen with number, print A4/ticket (OD-020), "new sale" |
+| After confirm | success screen with number, "Imprimer le ticket" (prints at once through a hidden frame) and the A4 PDF in a new tab (ADR-139, Phase 10), "new sale" |
 | Offline | not supported (no offline requirement in the Spec `[REC]`); a banner blocks sale when API unreachable |
 | Cash session | if no open session and payments need one → modal to open it (`CASH_SESSION_REQUIRED`) |
 
@@ -238,7 +238,7 @@ Target WCAG 2.1 AA: semantic landmarks, labelled controls, visible focus, keyboa
 
 ## 13. Printing and documents
 
-Server generates PDFs (`/api/sales/{id}/pdf`, reports); the UI opens them in a new tab / print dialog. Formats (A4 invoice, thermal ticket) and engine per **OD-020**. The UI never composes legal documents itself. Print stylesheets only for simple lists (e.g. lot recall buyers).
+Server generates PDFs (ADR-138, rendered on request, in French); the UI never composes legal documents itself. A **PDF** button opens the document in a new tab, where the browser prints it; at the counter "Imprimer le ticket" prints the 80 mm ticket at once through a hidden frame; nothing prints automatically (ADR-139). Buttons (Phase 10, ADR-143): on a confirmed or cancelled sales document (A4, and ticket), a customer return (its credit note), a validated purchase order, the customer statement (with its period), a cash-session report and a recall buyers list; a draft has none. The company profile is edited on the administration settings page (`settings.manage`): each save is a new version (ADR-140), with the logo (PNG or JPEG, ≤ 256 KB). The customer form gains NIS, RC and AI (ADR-141). Print stylesheets only for simple lists (e.g. lot recall buyers).
 
 ## 14. Security (frontend side)
 
@@ -254,4 +254,4 @@ Component tests for primitives and forms (RTL), API-mocked page tests (MSW) incl
 
 ## 17. Open frontend items
 
-OD-020 (print formats); DR-014 (theme switch, Phase 13), DR-015 (hard-coded thresholds).
+DR-014 (theme switch, Phase 13), DR-015 (hard-coded thresholds).

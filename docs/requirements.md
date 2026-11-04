@@ -263,7 +263,7 @@ Module numbering follows the Spec (§2.1 … §2.7). Module codes: `PROD`, `LOT`
 |---|---|---|---|
 | NFR-001 | **Data integrity:** stock can never be negative; invoice/order numbering is strictly unique. | `[SRC §3.1]` | BR-STOCK-001, BR-DOC-001 |
 | NFR-002 | **Ergonomics:** instant search (**< 1 second**) so counter service is not slowed. | `[SRC §3.2]` | **ADR-048** (search technique, 50,000-product dataset) |
-| NFR-003 | **Printing:** compatible with **thermal printers** (tickets) and standard printers (**A4 PDF**). | `[SRC §3.3]` | **OD-020** (printing approach) |
+| NFR-003 | **Printing:** compatible with **thermal printers** (tickets) and standard printers (**A4 PDF**). | `[SRC §3.3]` | ADR-138, ADR-139 (was OD-020) |
 | NFR-004 | Heading "Disponibilité et Impression" implies availability matters, but **no availability figure is given**. | `[SRC §3.3]` gap | **OD-021** |
 | NFR-005 | Passwords hashed (bcrypt/argon2); never stored in clear. | `[SCH]` | BR-SEC-003 |
 | NFR-006 | Backend is the authoritative security boundary. | User brief | `security.md` |
@@ -280,7 +280,7 @@ The Spec does not describe the following. They must **not** be implemented unles
 - Loyalty programs, promotions engine beyond category discount and per-customer prices.
 - Accounting ledger / general-ledger export; tax declaration forms.
 - E-commerce, customer portal, mobile app, offline mode.
-- Direct ESC/POS printer drivers (see **OD-020**).
+- Direct ESC/POS printer drivers (ADR-139: tickets are 80 mm PDFs printed by the browser).
 - Email/SMS notifications (alerts are *visual*, `[SRC §2.2]`).
 - Barcode generation/printing of labels.
 
