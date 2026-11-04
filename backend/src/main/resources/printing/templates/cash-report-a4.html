@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title th:text="'Rapport de caisse ' + ${session.id}">Caisse</title>
+<style th:replace="~{common :: style}"></style>
+</head>
+<body>
+<table class="header">
+  <tr>
+    <td th:replace="~{common :: company(${company})}"></td>
+    <td>
+      <div class="title">RAPPORT DE CAISSE</div>
+      <div class="right" th:text="'Session n° ' + ${session.id}">Session</div>
+      <div class="right" th:text="'Édité le ' + ${printedAt}">Date</div>
+    </td>
+  </tr>
+</table>
+<table class="boxes">
+  <tr>
+    <td class="box">
+      <b th:text="'Caissier : ' + ${session.cashier}">Caissier</b>
+      <div th:text="'Ouverte le ' + ${session.openedAt}">Ouverte</div>
+      <div th:if="${!session.open}" th:text="'Clôturée le ' + ${session.closedAt} + (${session.closedBy} != null ? ' par ' + ${session.closedBy} : '')">Clôturée</div>
+      <div class="cancelled" th:if="${session.open}">Session ouverte : montants à l'instant de l'édition</div>
+    </td>
+    <td class="box">
+      <div th:text="'Fond de caisse : ' + ${opening}">Fond</div>
+      <div th:text="'Attendu : ' + ${expected}">Attendu</div>
+      <div th:text="'Compté : ' + ${counted}">Compté</div>
+      <b th:text="'Écart : ' + ${variance}">Écart</b>
+    </td>
+  </tr>
+</table>
+<h3>Espèces par origine</h3>
+<table class="lines">
+  <thead><tr><th>Origine</th><th class="num">Entrées</th><th class="num">Sorties</th></tr></thead>
+  <tbody>
+    <tr th:each="s : ${sources}">
+      <td th:text="${s.label}">Ventes</td><td class="num" th:text="${s.in}">0</td><td class="num" th:text="${s.out}">0</td>
+    </tr>
+  </tbody>
+</table>
+<h3>Chèques et virements (hors caisse)</h3>
+<table class="lines">
+  <thead><tr><th>Date</th><th>Opération</th><th>Mode</th><th>Référence</th><th class="num">Entrée</th><th class="num">Sortie</th></tr></thead>
+  <tbody>
+    <tr th:each="e : ${nonCash}">
+      <td th:text="${e.date}">Date</td><td th:text="${e.kind}">Règlement</td><td th:text="${e.method}">Chèque</td>
+      <td th:text="${e.reference}">—</td><td class="num" th:text="${e.in}">0</td><td class="num" th:text="${e.out}">0</td>
+    </tr>
+    <tr th:if="${nonCash.isEmpty()}"><td colspan="6" class="muted">Aucun.</td></tr>
+  </tbody>
+</table>
+</body>
+</html>

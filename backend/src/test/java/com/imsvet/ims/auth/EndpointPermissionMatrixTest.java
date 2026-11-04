@@ -196,6 +196,7 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.POST, "/api/cash-sessions/999999/movements", "cash.manage",
                     "{\"direction\":\"in\",\"amount\":\"1\",\"label\":\"M\"}"),
             new Endpoint(HttpMethod.GET, "/api/cash-sessions/999999/report", "cash.open"),
+            new Endpoint(HttpMethod.GET, "/api/cash-sessions/999999/report?format=pdf", "cash.open"),
             new Endpoint(HttpMethod.POST, "/api/payments/customers", "payment.customer.create",
                     "{\"customerId\":999999,\"method\":\"cheque\",\"amount\":\"1\",\"reference\":\"M\"}"),
             new Endpoint(HttpMethod.POST, "/api/payments/customers/999999/allocations", "payment.customer.create",
@@ -206,6 +207,7 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/payments/customers/999999", "payment.read"),
             new Endpoint(HttpMethod.GET, "/api/customers/999999/open-invoices", "payment.read"),
             new Endpoint(HttpMethod.GET, "/api/customers/999999/statement", "statement.read"),
+            new Endpoint(HttpMethod.GET, "/api/customers/999999/statement?format=pdf", "statement.read"),
             new Endpoint(HttpMethod.POST, "/api/supplier-invoices", "supplierinvoice.manage",
                     "{\"supplierId\":999999,\"invoiceNumber\":\"M\",\"invoiceDate\":\"2026-10-01\","
                             + "\"totalTtc\":\"1\"}"),

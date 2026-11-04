@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title th:text="'Relevé de compte ' + ${customer.name}">Relevé</title>
+<style th:replace="~{common :: style}"></style>
+</head>
+<body>
+<table class="header">
+  <tr>
+    <td th:replace="~{common :: company(${company})}"></td>
+    <td>
+      <div class="title">RELEVÉ DE COMPTE</div>
+      <div class="right" th:text="${period}">Période</div>
+      <div class="right" th:text="'Édité le ' + ${printedAt}">Date</div>
+    </td>
+  </tr>
+</table>
+<table class="boxes">
+  <tr>
+    <td class="box">
+      <b th:text="${customer.name}">Client</b>
+      <div class="muted" th:each="line : ${customer.lines}" th:text="${line}">Adresse</div>
+    </td>
+    <td class="box">
+      <b>Solde au terme de la période</b>
+      <div class="grand" th:text="${closing}">0,00 DA</div>
+      <div class="muted" th:if="${uninvoiced != null}" th:text="'Bons de livraison à crédit non facturés : ' + ${uninvoiced}">BL</div>
+    </td>
+  </tr>
+</table>
+<table class="lines">
+  <thead>
+    <tr><th>Date</th><th>Opération</th><th>Pièce</th><th class="num">Débit</th><th class="num">Crédit</th><th class="num">Solde</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td></td><td colspan="4"><b>Solde d'ouverture</b></td><td class="num" th:text="${opening}">0,00</td>
+    </tr>
+    <tr th:each="l : ${lines}">
+      <td th:text="${l.date}">Date</td><td th:text="${l.kind}">Facture</td><td th:text="${l.piece}">INV</td>
+      <td class="num" th:text="${l.debit}">0</td><td class="num" th:text="${l.credit}">0</td>
+      <td class="num" th:text="${l.balance}">0</td>
+    </tr>
+    <tr th:if="${lines.isEmpty()}"><td colspan="6" class="muted">Aucune opération sur la période.</td></tr>
+    <tr class="grand">
+      <td></td><td colspan="2">Totaux de la période</td><td class="num" th:text="${totalDebit}">0</td>
+      <td class="num" th:text="${totalCredit}">0</td><td></td>
+    </tr>
+  </tbody>
+</table>
+<div class="footer" th:if="${company != null and company.footer != null}" th:text="${company.footer}">Pied</div>
+</body>
+</html>

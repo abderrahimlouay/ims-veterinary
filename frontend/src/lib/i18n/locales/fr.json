@@ -1229,7 +1229,8 @@
     "allocateTo": "{{number}} (reste dû {{open}})",
     "allAdvance": "Aucune facture ouverte : tout le paiement sera une avance.",
     "restIsAdvance": "Ce qui n’est pas imputé reste une avance sur le compte du client.",
-    "record": "Enregistrer"
+    "record": "Enregistrer",
+    "statementPdf": "Relevé (PDF)"
   },
   "supplierInvoices": {
     "title": "Factures fournisseurs",
@@ -1330,6 +1331,7 @@
     },
     "label": "Libellé",
     "post": "Enregistrer",
-    "closeTitle": "Fermer la session n° {{id}}"
+    "closeTitle": "Fermer la session n° {{id}}",
+    "reportPdf": "Rapport (PDF)"
   }
 }

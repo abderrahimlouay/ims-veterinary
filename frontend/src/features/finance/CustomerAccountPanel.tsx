@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { ApiError } from '../../api/client'
 import type { Problem } from '../../api/problem'
 import { Alert } from '../../components/Alert'
+import { PdfLink } from '../../components/PdfLink'
 import { Button } from '../../components/Button'
 import { Dialog } from '../../components/Dialog'
 import { SelectField } from '../../components/SelectField'
@@ -18,6 +19,7 @@ import {
   useOpenItems,
   useRecordPayment,
   useReversePayment,
+  statementPdfUrl,
   useStatement,
   type Advance,
   type OpenInvoice,
@@ -137,6 +139,7 @@ function StatementSection({ customerId, onReverse }: { customerId: number; onRev
       {statement.error instanceof ApiError && <Alert tone="danger">{problemMessage(statement.error.problem, t)}</Alert>}
       {statement.data && (
         <>
+          <PdfLink href={statementPdfUrl(customerId, from, to)}>{t('account.statementPdf')}</PdfLink>
           <table className="w-full text-sm border-collapse" data-testid="statement">
             <thead>
               <tr className="border-b border-line">

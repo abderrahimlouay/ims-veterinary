@@ -6,6 +6,7 @@ import type { Problem } from '../../api/problem'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
 import { Dialog } from '../../components/Dialog'
+import { PdfLink } from '../../components/PdfLink'
 import { Pager } from '../../components/Pager'
 import { SelectField } from '../../components/SelectField'
 import { TextField } from '../../components/TextField'
@@ -145,6 +146,7 @@ export function CashSessionPage() {
           {t(`cash.statuses.${data.session.status}`)}
         </span>
         <div className="ms-auto flex gap-2">
+          <PdfLink href={`/api/cash-sessions/${data.session.id}/report?format=pdf`}>{t('cash.reportPdf')}</PdfLink>
           {open && mine && manage && <Button onClick={() => setMoving(true)}>{t('cash.movement')}</Button>}
           {open && (mine || manage) && (
             <Button variant="secondary" onClick={() => setClosing(true)}>

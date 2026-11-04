@@ -85,6 +85,7 @@ describe('customer account (frontend.md §4.6, W8, ADR-134, ADR-135)', () => {
     expect(lines[1]).toHaveTextContent('Paiement')
     expect(lines[1]).toHaveTextContent('CHQ-6')
     expect(screen.getByTestId('closing-balance')).toHaveTextContent('80,00')
+    expect(screen.getByRole('link', { name: 'Relevé (PDF)' })).toHaveAttribute('href', '/api/customers/12/statement?format=pdf')
     expect(screen.queryByRole('button', { name: 'Enregistrer un paiement' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Annuler le paiement' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Imputer' })).toBeNull()

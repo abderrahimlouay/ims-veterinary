@@ -1229,7 +1229,8 @@
     "allocateTo": "{{number}} (المتبقي {{open}})",
     "allAdvance": "لا توجد فاتورة مفتوحة: ستكون الدفعة كلها تسبيقًا.",
     "restIsAdvance": "ما لا يُخصَّص يبقى تسبيقًا في حساب الزبون.",
-    "record": "تسجيل"
+    "record": "تسجيل",
+    "statementPdf": "كشف الحساب (PDF)"
   },
   "supplierInvoices": {
     "title": "فواتير الموردين",
@@ -1330,6 +1331,7 @@
     },
     "label": "البيان",
     "post": "تسجيل",
-    "closeTitle": "إغلاق الجلسة رقم {{id}}"
+    "closeTitle": "إغلاق الجلسة رقم {{id}}",
+    "reportPdf": "التقرير (PDF)"
   }
 }

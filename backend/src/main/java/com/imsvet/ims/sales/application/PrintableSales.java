@@ -65,6 +65,13 @@ public class PrintableSales {
                 ErrorCode.NOT_FOUND, "Unknown customer return.", Map.of("id", returnId)));
     }
 
+    /** A customer's printed identity, for the account statement (ADR-141, ADR-143). */
+    @Transactional(readOnly = true)
+    public PrintedCustomer customer(long customerId) {
+        return customers.findById(customerId).map(PrintableSales::printed).orElseThrow(() -> new BusinessException(
+                ErrorCode.NOT_FOUND, "Unknown customer.", Map.of("id", customerId)));
+    }
+
     private static PrintedCustomer printed(Customer c) {
         return new PrintedCustomer(c.name(), c.address(), c.commune(), c.wilaya(), c.phone(), c.taxId(), c.nis(),
                 c.rc(), c.ai());

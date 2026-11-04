@@ -1,5 +1,6 @@
 package com.imsvet.ims.printing.application;
 
+import com.imsvet.ims.sales.application.PrintableSales.PrintedCustomer;
 import com.imsvet.ims.settings.application.CompanyIdentity.Identity;
 import com.imsvet.ims.settings.domain.CompanyProfile.Fields;
 import java.math.BigDecimal;
@@ -23,6 +24,8 @@ public final class PrintFormats {
 
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final Map<String, String> METHODS = Map.of("cash", "Espèces", "cheque", "Chèque", "bank_transfer",
+            "Virement");
     private static final char GROUP = ' ';
 
     private PrintFormats() {
@@ -94,6 +97,27 @@ public final class PrintFormats {
         company.put("logo", identity.logo() == null ? null
                 : "data:" + identity.logoType() + ";base64," + Base64.getEncoder().encodeToString(identity.logo()));
         return company;
+    }
+
+    /** A customer's printed block (ADR-141): name, address, phone, legal numbers; {@code null} if none. */
+    public static Map<String, Object> customer(PrintedCustomer c) {
+        if (c == null) {
+            return null;
+        }
+        List<String> lines = new ArrayList<>();
+        add(lines, joined(", ", c.address(), c.commune(), c.wilaya()));
+        add(lines, labelled("Tél.", c.phone()));
+        add(lines, joined(" · ", labelled("NIF", c.nif()), labelled("NIS", c.nis())));
+        add(lines, joined(" · ", labelled("RC", c.rc()), labelled("AI", c.ai())));
+        Map<String, Object> customer = new LinkedHashMap<>();
+        customer.put("name", c.name());
+        customer.put("lines", lines);
+        return customer;
+    }
+
+    /** A payment method in French; an unknown code as stored. */
+    public static String method(String code) {
+        return code == null ? null : METHODS.getOrDefault(code, code);
     }
 
     static String labelled(String label, String value) {

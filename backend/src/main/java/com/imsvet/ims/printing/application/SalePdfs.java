@@ -7,7 +7,6 @@ import com.imsvet.ims.common.error.ValidationException.Violation;
 import com.imsvet.ims.common.time.BusinessSettings;
 import com.imsvet.ims.printing.application.PdfRenderer.Paper;
 import com.imsvet.ims.sales.application.PrintableSales;
-import com.imsvet.ims.sales.application.PrintableSales.PrintedCustomer;
 import com.imsvet.ims.sales.application.PrintableSales.SalePrint;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.sales.application.SalesViews.SaleLine;
@@ -17,7 +16,6 @@ import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -43,8 +41,6 @@ public class SalePdfs {
     /** Seeded species by code (ADR-054, as the screens); a species added later prints its stored name. */
     private static final Map<String, String> SPECIES = Map.of("BOVINE", "Bovin", "OVINE", "Ovin", "CAPRINE", "Caprin",
             "POULTRY", "Volaille", "EQUINE", "Équin", "CANINE", "Canin", "FELINE", "Félin");
-    private static final Map<String, String> METHODS = Map.of("cash", "Espèces", "cheque", "Chèque", "bank_transfer",
-            "Virement");
 
     private final PrintableSales sales;
     private final CompanyIdentity identity;
@@ -112,7 +108,7 @@ public class SalePdfs {
         doc.put("notes", d.notes());
         doc.put("creditSale", d.creditSale());
         model.put("doc", doc);
-        model.put("customer", customer(print.customer()));
+        model.put("customer", PrintFormats.customer(print.customer()));
 
         List<Map<String, Object>> lines = new ArrayList<>();
         Map<BigDecimal, BigDecimal[]> byRate = new TreeMap<>();
@@ -148,7 +144,7 @@ public class SalePdfs {
         totals.put("ttc", PrintFormats.money(d.totals().ttc(), currency));
         model.put("totals", totals);
         model.put("words", words(d));
-        model.put("payments", d.payments().stream().map(p -> METHODS.getOrDefault(p.method(), p.method()) + " : "
+        model.put("payments", d.payments().stream().map(p -> PrintFormats.method(p.method()) + " : "
                 + PrintFormats.money(p.amount(), currency) + (p.reference() == null ? "" : " (" + p.reference() + ")"))
                 .toList());
         model.put("warnings", "credit_note".equals(d.docType()) ? List.of()
@@ -165,22 +161,6 @@ public class SalePdfs {
         };
     }
 
-    private static Map<String, Object> customer(PrintedCustomer c) {
-        if (c == null) {
-            return null;
-        }
-        List<String> lines = new ArrayList<>();
-        PrintFormats.add(lines, PrintFormats.joined(", ", c.address(), c.commune(), c.wilaya()));
-        PrintFormats.add(lines, PrintFormats.labelled("Tél.", c.phone()));
-        PrintFormats.add(lines, PrintFormats.joined(" · ", PrintFormats.labelled("NIF", c.nif()),
-                PrintFormats.labelled("NIS", c.nis())));
-        PrintFormats.add(lines, PrintFormats.joined(" · ", PrintFormats.labelled("RC", c.rc()),
-                PrintFormats.labelled("AI", c.ai())));
-        Map<String, Object> customer = new LinkedHashMap<>();
-        customer.put("name", c.name());
-        customer.put("lines", lines);
-        return customer;
-    }
 
     /** "Produit — Bovins : viande 28 j, lait 7 j" (ADR-142). */
     private static String warning(SaleWarning w, Map<Long, String> names) {
