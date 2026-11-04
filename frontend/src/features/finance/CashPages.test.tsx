@@ -130,6 +130,7 @@ describe('cash sessions (frontend.md §4.9, ADR-136, BR-CASH-003)', () => {
     renderApp('/cash-sessions/21')
 
     expect(await screen.findByTestId('report-expected')).toHaveTextContent('145,50')
+    expect(screen.getByRole('link', { name: 'Rapport (PDF)' })).toHaveAttribute('href', '/api/cash-sessions/21/report?format=pdf')
     expect(screen.getByTestId('source-sales')).toHaveTextContent('65,50')
     expect(screen.getByTestId('source-supplier_payments')).toHaveTextContent('20,00')
     const nonCash = screen.getAllByTestId('non-cash')

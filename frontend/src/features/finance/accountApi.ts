@@ -106,7 +106,7 @@ export function useOpenItems(customerId: number, enabled = true) {
 }
 
 /** `from`/`to`: business dates, empty for "from the first entry" / "today". */
-export function useStatement(customerId: number, from: string, to: string, enabled = true) {
+function statementParams(from: string, to: string): URLSearchParams {
   const params = new URLSearchParams()
   if (from !== '') {
     params.set('from', from)
@@ -114,6 +114,18 @@ export function useStatement(customerId: number, from: string, to: string, enabl
   if (to !== '') {
     params.set('to', to)
   }
+  return params
+}
+
+/** The statement of the same period as a PDF (ADR-137, ADR-143). */
+export function statementPdfUrl(customerId: number, from: string, to: string): string {
+  const params = statementParams(from, to)
+  params.set('format', 'pdf')
+  return `/api/customers/${customerId}/statement?${params}`
+}
+
+export function useStatement(customerId: number, from: string, to: string, enabled = true) {
+  const params = statementParams(from, to)
   return useQuery({
     enabled,
     queryKey: keys.statement(customerId, from, to),

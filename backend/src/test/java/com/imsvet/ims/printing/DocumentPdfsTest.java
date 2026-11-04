@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.imsvet.ims.TestClock;
 import com.imsvet.ims.TestcontainersConfiguration;
 import com.imsvet.ims.common.time.BusinessCalendar;
+import com.imsvet.ims.printing.application.PrintFormats;
 import com.imsvet.ims.support.ApiClient;
 import com.imsvet.ims.support.TestLots;
 import com.imsvet.ims.support.TestUsers;
@@ -31,8 +32,9 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The credit note of a customer return, a purchase order and a recall buyers list as PDFs (ADR-143), checked on their
- * extracted text; a draft order refused; the recall report still JSON without {@code format=pdf}.
+ * The credit note of a customer return, a purchase order, a recall buyers list, a customer statement and a cash-session
+ * report as PDFs (ADR-137, ADR-143), checked on their extracted text; a draft order refused; the JSON views unchanged
+ * without {@code format=pdf}; another cashier's session report refused.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -128,6 +130,47 @@ class DocumentPdfsTest {
         assertThat(text).contains("RAPPEL DE LOT").contains("Ivomec Démo (PDF-DOC-1)").contains("LOT-RAPPEL-1")
                 .contains("Motif : Avis du fabricant n° 7").contains("Ferme Démo Rappel")
                 .contains(invoice.get("number").asString()).contains("47");
+    }
+
+    @Test
+    void theStatementPrintsTheCustomerTheEntriesAndTheClosingBalance() throws Exception {
+        long customer = creditCustomer("Élevage Démo Relevé");
+        jdbc.update("UPDATE customers SET nis = 'NIS-REL-1' WHERE id = ?", customer);
+        JsonNode invoice = creditInvoice(customer, "2");
+        admin.post("/api/payments/customers", "{\"customerId\":" + customer + ",\"method\":\"cheque\","
+                + "\"amount\":\"500\",\"reference\":\"CHQ-77\"}").andExpect(status().isCreated());
+
+        admin.get("/api/customers/" + customer + "/statement").andExpect(status().isOk())
+                .andExpect(jsonPath("$.closingBalance").value("1680.00"));
+        String text = text(admin.get("/api/customers/" + customer + "/statement?format=pdf&from="
+                + calendar.today()).andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/pdf")));
+        assertThat(text).contains("RELEVÉ DE COMPTE").contains("Du " + PrintFormats.date(calendar.today()))
+                .contains("Élevage Démo Relevé").contains("NIS NIS-REL-1").contains("Solde d'ouverture")
+                .contains("Facture").contains(invoice.get("number").asString()).contains("2 180,00")
+                .contains("Règlement").contains("Chèque CHQ-77").contains("500,00").contains("1 680,00 DA");
+        admin.get("/api/customers/" + customer + "/statement?format=pdf&from=" + calendar.today().plusDays(1)
+                + "&to=" + calendar.today()).andExpect(status().isBadRequest());
+        admin.get("/api/customers/999999/statement?format=pdf").andExpect(status().isNotFound());
+    }
+
+    @Test
+    void theCashReportPrintsTheSessionByOriginAndOnlyForItsReaders() throws Exception {
+        long session = id(admin.post("/api/cash-sessions/open", "{\"openingAmount\":\"100\"}")
+                .andExpect(status().isCreated()));
+        admin.post("/api/cash-sessions/" + session + "/movements", "{\"direction\":\"in\",\"amount\":\"40\","
+                + "\"label\":\"Apport\"}").andExpect(status().isCreated());
+
+        String text = text(admin.get("/api/cash-sessions/" + session + "/report?format=pdf").andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "application/pdf")));
+        assertThat(text).contains("RAPPORT DE CAISSE").contains("Session n° " + session)
+                .contains("Session ouverte").contains("Fond de caisse : 100,00 DA").contains("Mouvements manuels")
+                .contains("40,00").contains("Attendu : 140,00 DA").contains("Compté : —");
+
+        TestUser sellerUser = new TestUsers(jdbc, encoder).create("Seller");
+        ApiClient seller = ApiClient.create(context, "198.51.100.242");
+        seller.login(sellerUser.username(), sellerUser.password()).andExpect(status().isOk());
+        seller.get("/api/cash-sessions/" + session + "/report?format=pdf").andExpect(status().isForbidden());
     }
 
     private long creditCustomer(String name) throws Exception {

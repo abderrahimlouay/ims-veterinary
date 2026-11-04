@@ -1229,7 +1229,8 @@
     "allocateTo": "{{number}} (left to pay {{open}})",
     "allAdvance": "No open invoice: the whole payment will be an advance.",
     "restIsAdvance": "What is not allocated stays as an advance on the customer's account.",
-    "record": "Record"
+    "record": "Record",
+    "statementPdf": "Statement (PDF)"
   },
   "supplierInvoices": {
     "title": "Supplier invoices",
@@ -1330,6 +1331,7 @@
     },
     "label": "Label",
     "post": "Record",
-    "closeTitle": "Close session #{{id}}"
+    "closeTitle": "Close session #{{id}}",
+    "reportPdf": "Report (PDF)"
   }
 }
