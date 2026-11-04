@@ -17,7 +17,7 @@ test('J4: a cash sale across two lots by FEFO, with change', async ({ page }) =>
   await aLot(page, 'E2E Fefoval', 'J4-LATE', '12/2029', '10')
   await aLot(page, 'E2E Fefoval', 'J4-SOON', '12/2028', '3')
 
-  await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('link', { name: 'Caisse' }).click()
+  await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('link', { name: 'Caisse', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Caisse' })).toBeVisible()
   await addToCart(page, 'E2E Fefoval', '5')
 

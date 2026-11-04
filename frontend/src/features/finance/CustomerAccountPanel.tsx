@@ -20,9 +20,10 @@ import {
   useReversePayment,
   useStatement,
   type Advance,
-  type AllocationWrite,
   type OpenInvoice,
 } from './accountApi'
+import { AllocationRows } from './AllocationFields'
+import { allocationsOf, fieldErrors } from './allocations'
 
 /**
  * The Account tab of a customer (frontend.md §4.6, W8, ADR-134, ADR-135): the balance, the open credit invoices and
@@ -195,47 +196,6 @@ function StatementSection({ customerId, onReverse }: { customerId: number; onRev
       )}
     </section>
   )
-}
-
-/** The field errors of a failed payment, by field name, and the problem when none is a field (api.md §3). */
-function fieldErrors(problem: Problem, t: (key: string) => string): Record<string, string> {
-  const errors: Record<string, string> = {}
-  for (const e of problem.errors) {
-    errors[e.field] = t(`fieldErrors.${e.code}`)
-  }
-  return errors
-}
-
-function AllocationRows({
-  invoices,
-  amounts,
-  errors,
-  onChange,
-}: {
-  invoices: OpenInvoice[]
-  amounts: Record<number, string>
-  errors: Record<string, string>
-  onChange: (id: number, value: string) => void
-}) {
-  const { t } = useTranslation()
-  return (
-    <div className="flex flex-col gap-2">
-      {invoices.map((invoice, index) => (
-        <TextField
-          key={invoice.id}
-          label={t('account.allocateTo', { number: invoice.number, open: formatMoney(invoice.open) })}
-          inputMode="decimal"
-          value={amounts[invoice.id] ?? ''}
-          error={errors[`allocations[${index}].amount`]}
-          onChange={(e) => onChange(invoice.id, e.target.value)}
-        />
-      ))}
-    </div>
-  )
-}
-
-function allocationsOf(invoices: OpenInvoice[], amounts: Record<number, string>): AllocationWrite[] {
-  return invoices.filter((i) => (amounts[i.id] ?? '').trim() !== '').map((i) => ({ invoiceId: i.id, amount: amounts[i.id].trim() }))
 }
 
 function PaymentDialog({ customerId, invoices, onClose }: { customerId: number; invoices: OpenInvoice[]; onClose: () => void }) {
