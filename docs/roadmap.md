@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–9 complete (tags `phase-0-done` … `phase-9-done`); Phase 10 (Documents & printing) current: decisions ADR-138…143 (2026-11-04); Phases 11–13 not started
+> **Status:** Phases 0–10 complete (tags `phase-0-done` … `phase-10-done`); Phases 11–13 not started
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-11-02
 
@@ -161,6 +161,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Frontend work:** PDF buttons, the ticket at the counter, the company profile page, the customer legal numbers.
 - **Tests:** extracted-text tests per document type against fixtures; withdrawal rule coverage; amount in words; drafts refused; PDF < 2 s; `Phase10UpgradeMigrationTest`.
 - **Completion criteria:** NFR-003 met on target printers (manual check); FR-SALE-003, 008 fully done.
+- **Delivered (2026-11-04; approved and tagged `phase-10-done`; the printer check of NFR-003 confirmed by the user):** decisions PR #115 (ADR-138…143, SD-147/148, DR-043; OD-020, OD-026, OD-028 resolved), then PRs #117 (versioned company profile, customer NIS/RC/AI), #118 (sales documents in A4 and the 80 mm ticket), #119 (credit note, purchase order, recall buyers list), #120 (customer statement, cash-session report) and the close PR (a fictional company profile and customer legal numbers in the demo data); migrations V10_001…002. Every document of ADR-143 prints from `printing` (openhtmltopdf, bundled Noto fonts, French); tests `SalePdfsTest`, `DocumentPdfsTest`, `AmountInWordsTest`, `CompanyProfilesTest`, `Phase10UpgradeMigrationTest`; an invoice renders in under 2 s. No e2e journey prints (the PDFs are checked on their text server side; the buttons in unit tests). Known: the cash-session report names users by id, as its screen (`printing` does not read `users`). Go-live blockers unchanged: DR-040 (legal rounding, ADR-115), DR-041 (prescription-only products, ADR-124).
 
 ## Phase 11 — Reports & audit
 - **Objective:** management information and data safety.

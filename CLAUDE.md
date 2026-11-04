@@ -1,6 +1,6 @@
 # CLAUDE.md — IMS Vétérinaire
 
-> **Project phase: Phase 10 (Documents & printing) current, decisions ADR-138…143 (Phase 9 tagged `phase-9-done`).** Build/test commands are in `README.md`.
+> **Project phase: Phase 10 (Documents & printing) approved and tagged `phase-10-done`. Phase 11 (Reports & audit) does not start until the user sends it.** Build/test commands are in `README.md`.
 
 ## 1. Project
 Stock, purchasing, sales and finance application for a veterinary-medicine pharmacy/wholesaler (lots, expiry, FEFO, withdrawal periods, credit sales, recalls). Source of intent: the functional Spec (`said_project.md`). Everything you need is in `docs/`; start with `docs/roadmap.md` and `docs/development-workflow.md`.
