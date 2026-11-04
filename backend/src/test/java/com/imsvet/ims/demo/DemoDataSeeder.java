@@ -72,6 +72,9 @@ import com.imsvet.ims.sales.application.SalesDocuments.DraftInput;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.users.application.UserAdministration;
 import com.imsvet.ims.users.application.UserAdministration.NewUser;
+import com.imsvet.ims.settings.application.CompanyProfiles;
+import com.imsvet.ims.settings.application.CompanyProfiles.ProfileInput;
+import com.imsvet.ims.settings.domain.CompanyProfile.Fields;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -160,6 +163,7 @@ class DemoDataSeeder {
     private final SupplierInvoices supplierInvoices;
     private final SupplierPayments supplierPayments;
     private final AccountPayments accountPayments;
+    private final CompanyProfiles companyProfiles;
 
     private final Random random = new Random(20261024L);
     private final LocalDate today;
@@ -179,7 +183,8 @@ class DemoDataSeeder {
             CustomerDirectory customers, CustomerCredit credit, CustomerPrices customerPrices, SalesDocuments documents,
             SaleLines lines, SaleConfirmation confirmation, SaleConversion conversion, SaleCancellation cancellation,
             CashSessions sessions, CustomerReturns customerReturns, SupplierAccounts supplierAccounts,
-            SupplierInvoices supplierInvoices, SupplierPayments supplierPayments, AccountPayments accountPayments) {
+            SupplierInvoices supplierInvoices, SupplierPayments supplierPayments, AccountPayments accountPayments,
+            CompanyProfiles companyProfiles) {
         this.environment = environment;
         this.jdbc = jdbc;
         this.clock = clock;
@@ -216,6 +221,7 @@ class DemoDataSeeder {
         this.supplierInvoices = supplierInvoices;
         this.supplierPayments = supplierPayments;
         this.accountPayments = accountPayments;
+        this.companyProfiles = companyProfiles;
         this.today = LocalDate.now(BUSINESS);
     }
 
@@ -243,6 +249,7 @@ class DemoDataSeeder {
 
     private void seed() {
         at(-121, 9, 0);
+        companyProfile();
         createUsers();
         at(-120, 9, 30);
         Map<String, Integer> categories = categories();
@@ -677,6 +684,14 @@ class DemoDataSeeder {
      * Categories, then customers through the directory (a new customer is cash only, ADR-109), then their limits and
      * own prices through their own use cases, so the audit trail shows them.
      */
+    /** A fictional identity in force before every demo document, so each prints its header (ADR-140, ADR-141). */
+    private void companyProfile() {
+        companyProfiles.record(new ProfileInput(new Fields("Pharmacie vétérinaire Démo", "SARL (fictive)",
+                "Adresse fictive de démonstration, Zone d'activité", "Blida", "0100 00 00 01", null,
+                "DEMO-NIF-SOCIETE", "DEMO-NIS-SOCIETE", "DEMO-RC-SOCIETE", "DEMO-AI-SOCIETE", "DEMO-AGREMENT-001",
+                null, "Données fictives de démonstration : aucune valeur légale."), null, false));
+    }
+
     private void createCustomers() {
         int ovins = customerCategories.create(new CategoryInput("Éleveurs ovins", new BigDecimal("5.00"))).id();
         int grands = customerCategories.create(new CategoryInput("Grands élevages", new BigDecimal("8.00"))).id();
@@ -684,8 +699,8 @@ class DemoDataSeeder {
                 .id();
 
         CustomerDetail vetKaci = customer(new CustomerInput("Dr Démo Kaci", "veterinarian", cabinets, null,
-                "Tizi Ouzou", "Azazga", "Adresse fictive de démonstration", "0100 00 01 01", null, "DEMO-NIF-0001", 30,
-                null), "200000.00");
+                "Tizi Ouzou", "Azazga", "Adresse fictive de démonstration", "0100 00 01 01", null, "DEMO-NIF-0001",
+                "DEMO-NIS-0001", "DEMO-RC-0001", "DEMO-AI-0001", 30, null), "200000.00");
         CustomerDetail vetPlateaux = customer(new CustomerInput("Cabinet vétérinaire Démo des Hauts-Plateaux",
                 "veterinarian", cabinets, null, "Sétif", "El Eulma", null, "0100 00 01 02", null, "DEMO-NIF-0002", 45,
                 null), null);
@@ -696,8 +711,8 @@ class DemoDataSeeder {
         CustomerDetail nakhil = customer(new CustomerInput("مزرعة النخيل التجريبية", "breeder", grands, "Bovin laitier",
                 "Biskra", "Tolga", null, "+213 100 00 01 05", null, "DEMO-NIF-0005", 60, null), "150000.00");
         CustomerDetail avicole = customer(new CustomerInput("Grand élevage avicole Démo", "breeder", grands, "Avicole",
-                "Bordj Bou Arréridj", "Ras El Oued", null, "0100 00 01 06", null, "DEMO-NIF-0006", 30, null),
-                "300000.00");
+                "Bordj Bou Arréridj", "Ras El Oued", null, "0100 00 01 06", null, "DEMO-NIF-0006", "DEMO-NIS-0006",
+                "DEMO-RC-0006", null, 30, null), "300000.00");
         customer(new CustomerInput("Élevage bovin Démo de la Mitidja", "breeder", null, "Bovin laitier", "Blida",
                 "Boufarik", null, "0100.00.01.07", null, null, 0, vetPlateaux.id()), "20000.00");
         customer(new CustomerInput("Particulier Démo", "other", null, null, "Alger", "Kouba", null, "0100 00 01 08",
