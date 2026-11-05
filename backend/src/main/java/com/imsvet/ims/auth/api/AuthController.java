@@ -53,8 +53,8 @@ class AuthController {
 
     @PostMapping("/change-password")
     ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest body, HttpServletRequest request) {
-        passwords.changeOwnPassword(body.currentPassword(), body.newPassword());
-        sessions.rotate(request);
+        long userId = passwords.changeOwnPassword(body.currentPassword(), body.newPassword());
+        sessions.rotateAndEndOthers(request, userId);
         return ResponseEntity.noContent().build();
     }
 }

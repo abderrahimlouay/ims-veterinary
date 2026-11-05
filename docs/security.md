@@ -45,7 +45,7 @@ Tags: `SRC` Spec · `SCH` Source Schema · `REC` recommendation · `OD-nnn` open
 | Credential | opaque session id in a `HttpOnly; Secure; SameSite=Strict` cookie; session state in MySQL (Spring Session JDBC, tables created by Flyway) |
 | Session content | user id only; active flag, role and permissions re-read on every request (deactivation and permission changes apply on the next request) |
 | Lifetime | idle timeout 30 min, absolute 10 h (configuration properties); new session id at login (fixation protection) |
-| Revocation | logout deletes the session; deactivating a user deletes all their sessions |
+| Revocation | logout deletes the session; deactivating a user or resetting their password deletes all their sessions; changing one's own password deletes the user's other sessions and gives the current one a new id (ADR-154) |
 | CSRF | mandatory on every state-changing request, login included: token in a readable `XSRF-TOKEN` cookie, sent back in the `X-XSRF-TOKEN` header |
 | Not used | no JWT, no refresh endpoint, no signing key |
 
@@ -246,3 +246,19 @@ Never logged: passwords, tokens, hashes, full card/cheque details, full request 
 ## 14. Security test obligations
 
 Defined in `testing.md` §7: authentication, authorization matrix per endpoint, inactive-user lockout, throttling, audit completeness, immutability (ledger update/delete rejected), SQL-injection probes on search and sort parameters, header/CORS checks, secret scanning.
+
+## 15. Phase 12 security review (OWASP ASVS-oriented, 2026-11-05)
+
+| Area (ASVS) | Status | Evidence |
+|---|---|---|
+| V2 Authentication | Pass | bcrypt cost 12 behind a delegating encoder (ADR-039); 12-character policy and common-password refusal; same answer and equalised timing for an unknown user (`LoginService`); throttling per username and IP (ADR-038). No MFA: accepted risk (ADR-156) |
+| V3 Session management | Pass after fix | `HttpOnly; Secure; SameSite=Strict` cookie, new id at login, user and permissions re-read on every request, idle 30 min and absolute 10 h, sessions deleted at reset and deactivation (ADR-036); **fixed:** an own password change now ends the other sessions (ADR-154) |
+| V4 Access control | Pass | `@PreAuthorize` on every application-service use case (architecture test), endpoint × permission matrix test, frontend hiding cosmetic only (BR-SEC-002) |
+| V5 Validation, V13 API | Pass | Problem Details without internals (`ProblemDetailsHandlerTest`), decimals as strings, unknown values refused, parameterised SQL only |
+| V8 Data protection | Pass | personal data never in logs or audit values (ADR-114), backups downloaded by id and audited, backup account read-only |
+| V9 Communications | Pass by design, in deployment | TLS at the proxy with a private CA and HSTS (ADR-152); the application listens on `127.0.0.1` only (ADR-151) |
+| V12 Files | Pass | logo checked by signature and size (ADR-140); backup files resolved only from names the application gives |
+| V14 Configuration | Pass after fix | secrets only from the environment, migration account only in migrate mode (ADR-151), health endpoint without details; **fixed:** a dependency gate in CI (ADR-155) found and removed Tomcat 11.0.24 (Critical) and Jackson 3.1.5 (High) by Spring Boot 4.1.2; the frontend's headers and the rate limit move to the versioned proxy configuration (ADR-157) |
+| Database accounts | Pass | application account least-privilege with append-only ledgers (grants and triggers, `DatabaseAccountsTest`), views read-only, migration account outside the running application, backup account read-only (`BackupsTest`) |
+
+**Accepted risks:** no MFA (ADR-156); ognl 3.3.4 (Medium, used by Thymeleaf on fixed templates only, no user-written expression).

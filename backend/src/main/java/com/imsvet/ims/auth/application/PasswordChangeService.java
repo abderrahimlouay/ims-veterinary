@@ -20,10 +20,12 @@ public class PasswordChangeService {
 
     @PreAuthorize("isAuthenticated()")
     @Transactional
-    public void changeOwnPassword(String currentPassword, String newPassword) {
+    /** Returns the user's id, whose other sessions the caller ends (ADR-154). */
+    public long changeOwnPassword(String currentPassword, String newPassword) {
         SessionUser user = CurrentUserService.current();
         accounts.changeOwnPassword(user.userId(), currentPassword, newPassword);
         SecurityLog.LOG.atInfo().addKeyValue("event", "password_changed")
                 .addKeyValue("username", user.account().username()).log("Security event password_changed");
+        return user.userId();
     }
 }

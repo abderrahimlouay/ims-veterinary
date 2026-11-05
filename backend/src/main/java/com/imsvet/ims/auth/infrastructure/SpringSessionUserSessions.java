@@ -22,19 +22,29 @@ class SpringSessionUserSessions implements UserSessions {
 
     @Override
     public void endAllAfterCommit(long userId) {
+        afterCommit(() -> end(userId, null));
+    }
+
+    @Override
+    public void endOthersAfterCommit(long userId, String keptSessionId) {
+        afterCommit(() -> end(userId, keptSessionId));
+    }
+
+    private static void afterCommit(Runnable action) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    endAll(userId);
+                    action.run();
                 }
             });
         } else {
-            endAll(userId);
+            action.run();
         }
     }
 
-    private void endAll(long userId) {
-        sessions.findByPrincipalName(String.valueOf(userId)).keySet().forEach(sessions::deleteById);
+    private void end(long userId, String keptSessionId) {
+        sessions.findByPrincipalName(String.valueOf(userId)).keySet().stream()
+                .filter(id -> !id.equals(keptSessionId)).forEach(sessions::deleteById);
     }
 }

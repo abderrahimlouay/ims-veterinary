@@ -1096,6 +1096,30 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** a commercial remote-desktop tool (a third-party service in the path); on-site only (the RTO then depends on travel).
 - **Consequences:** deployment guide (VPN, SSH, firewall), runbook, `security.md` (remote administration).
 
+## ADR-154 — A user's own password change ends their other sessions (amends ADR-036)
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 security review, finding 1).
+- **Decision:** When users change their own password, every other session of theirs is deleted (an open session on another counter PC, or a stolen one) and the current session gets a new id, as before; a security event `other_sessions_ended` is logged. An administrator's reset and a deactivation already end all of the user's sessions (ADR-036).
+- **Alternatives:** keep the other sessions until their idle or absolute timeout.
+- **Consequences:** `AuthSessions`, `UserSessions.endOthersAfterCommit`; `security.md` §2.3; test `PasswordChangeTest`.
+
+## ADR-155 — Dependency vulnerability gate in CI with OSV-Scanner
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 security review, finding 2).
+- **Decision:** Every CI run scans the backend's **resolved runtime dependencies** (a CycloneDX bill of materials from Maven, since the scanner cannot resolve the versions the Spring Boot parent manages from `pom.xml` alone) and `frontend/package-lock.json` with a pinned OSV-Scanner image. The build fails on an advisory of **CVSS 7.0 or more with a fixed version available**, unless it is in `.github/osv-allowlist.json` with a reason and an expiry date not yet passed; other advisories are printed. `npm audit` stays.
+- **Alternatives:** OWASP Dependency-Check (slow, an NVD API key); a manual review per release.
+- **Consequences:** CI job "Dependency scan", `.github/scripts/osv_gate.py`; the first run found Tomcat 11.0.24 (four Critical) and Jackson 3.1.5 (five High), fixed by Spring Boot 4.1.2; ognl 3.3.4 (Medium, Thymeleaf's, fixed templates only) printed.
+
+## ADR-156 — No second factor for Administrators (accepted risk)
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 security review, finding 3).
+- **Decision:** No MFA is added. Accepted risk, given that the application is reachable only on the pharmacy's local network (ADR-150, ADR-152) and the server only through the VPN with SSH keys (ADR-153), with a 12-character password policy, common-password refusal, bcrypt and login throttling (ADR-038, ADR-039). To be revisited if the application is ever exposed beyond the local network.
+- **Alternatives:** TOTP for the Administrator role.
+- **Consequences:** `security.md` §15 (accepted risks).
+
+## ADR-157 — A versioned reverse-proxy configuration, checked automatically
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 security review, finding 4).
+- **Decision:** The repository holds a reference reverse-proxy configuration (TLS with the private-CA certificate of ADR-152, HSTS, the frontend's security headers — Content-Security-Policy, X-Content-Type-Options, frame-ancestors, Referrer-Policy —, a coarse request-rate limit, SPA routing, `/api` to the application on `127.0.0.1`); an automated check runs the frontend under that Content-Security-Policy so a violation fails the build.
+- **Alternatives:** headers and limits described in the guide only, written by the operator on the server.
+- **Consequences:** a later Phase 12 slice (deployment); `security.md` §11.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1355,7 +1379,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
-| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review |
+| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05) |
 | 13 Dark theme | ADR-069 (decided 2026-10-22) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**
