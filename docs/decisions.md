@@ -153,7 +153,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Status:** ~~Proposed~~ → Accepted (user confirmation, 2026-10-20, Phase 0 gate). File naming amended 2026-10-20 (user decision, resolving a conflict with `development-workflow.md` §6): `V<phase>_<seq>__<description>.sql`, e.g. `V00_001__baseline.sql`.
 - **Decision:** Versioned SQL migrations (`V<phase>_<seq>__…sql`) applied by Flyway at startup in dev/test and by a controlled step in production. `spring.jpa.hibernate.ddl-auto=validate`.
 - **Alternatives:** Liquibase; Hibernate `update` (rejected: uncontrolled, destroys traceability).
-- **Consequences:** Because **MySQL DDL is non-transactional** (implicit commit), each migration must be small, single-purpose and re-runnable; take a backup before production migrations. Applied migrations are never edited.
+- **Consequences:** Because **MySQL DDL is non-transactional** (implicit commit), each migration must be small, single-purpose and re-runnable; take a backup before production migrations. Applied migrations are never edited. The controlled step is the application's migrate mode (ADR-151, 2026-11-05).
 
 ## ADR-019 — DTOs everywhere; entities never leave the service layer
 - **Status:** ~~Proposed~~ → Accepted including MapStruct (user confirmation, 2026-10-20, Phase 0 gate). The dependency is added with the first mapper (Phase 1), not in Phase 0. *Implementation note 2026-10-21: Phase 1 uses the hand-written fallback — entities expose fluent accessors (`username()`), which MapStruct does not detect as properties without a custom naming strategy; the mappers are small static methods next to the views. Revisit when a module has many DTOs.*
@@ -1065,6 +1065,37 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** standard CSV (comma, decimal point, no BOM); portrait PDF only; auditing each export (`REPORT_EXPORT`).
 - **Consequences:** BR-RPT-007, `api.md` §4.13, `architecture.md` (`printing` may call `reporting` for the PDFs), `testing.md`.
 
+## ADR-150 — On-premises server, business-hours availability, RTO of four business hours (resolves OD-021, hosting)
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 preflight; the four recommended options).
+- **Decision:**
+  1. **Hosting:** one Linux server **on the pharmacy's premises**, on its local network; the counter PCs reach it there, so sales do not depend on the internet link. The server sits behind a UPS.
+  2. **Availability:** during **business hours** (the opening hours the client gives in the deployment record, e.g. 08:00–20:00, six days a week). Updates, migrations and restores are done outside them; no availability percentage is promised.
+  3. **Recovery:** **RTO four business hours**: the last backup restored by the README procedure on a spare or repaired machine; no standby server. **RPO one business day** (ADR-145). A spare machine, or a replacement obtainable within the RTO, is part of the deployment.
+  4. **Operations:** the **developer**, under a maintenance contract, installs, updates, migrates and restores, remotely (ADR-153) or on site, with a written runbook (Phase 12); the pharmacy downloads the off-site backup copies (ADR-146).
+- **Alternatives:** a cloud server (every sale depends on the internet, personal data with a third party); 24/7 availability; RTO of one business day or under one hour (warm standby); operation by the client's IT provider or by pharmacy staff.
+- **Consequences:** `architecture.md` §12, `requirements.md` NFR-004, DR-013 and DR-030 resolved, the deployment guide and runbook of Phase 12 (spare machine, UPS, restore within four business hours rehearsed during UAT).
+
+## ADR-151 — Production migrations by the application's migrate command (defines ADR-018's controlled step)
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 preflight).
+- **Decision:**
+  1. The release JAR has a **migrate mode**: started once with it, the application connects with the **migration account** only, applies the pending Flyway migrations with the same callbacks as in development (the grants of the application account, ADR-087), reports the applied versions and **exits** without serving requests. The application in normal mode keeps Flyway off and never holds the migration account (ADR-087).
+  2. **Release order** (runbook, outside business hours): Run now a backup (or check that day's), stop the application, run the migrate mode, start the new version. A failed migration stops the release: restore that backup (MySQL DDL is not transactional, ADR-018).
+  3. The README restore procedure uses the same migrate mode after the import, then starts the application.
+- **Alternatives:** the standalone Flyway tool with a separate grants script (two tools, grants duplicated); Flyway at application start in production (the running application would hold schema-changing credentials).
+- **Consequences:** backend work in Phase 12 (the migrate mode and its test), README (release and restore), `development-workflow.md` release steps, the runbook.
+
+## ADR-152 — HTTPS on the local network with a private certificate authority
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 preflight).
+- **Decision:** A small **private certificate authority** is created for the pharmacy; its root certificate is installed once in the trust store of each counter PC (and browser where needed); the **reverse proxy** on the server presents a certificate it signs for the server's local name, terminates TLS, sends HSTS and forwards to the application (security.md §10). The CA's private key is kept offline by the operator, never on the server. Renewal before expiry is a runbook step with a reminder date in the deployment record.
+- **Alternatives:** a self-signed server certificate trusted on each PC (every renewal touches every PC); a public certificate through a real domain and DNS validation (needs a domain and internet for renewals).
+- **Consequences:** deployment guide (proxy, certificates, local name), runbook (renewal, adding a PC), `security.md` §10.
+
+## ADR-153 — Remote maintenance through a VPN and SSH keys
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 preflight).
+- **Decision:** The operator reaches the server through a **WireGuard VPN** to the pharmacy network; **SSH** on the server accepts **keys only** (no password, no root login) and listens only on the local network and the VPN; nothing of the server is exposed to the internet except the VPN port. Logins are logged on the server; the operator's keys are listed in the deployment record and removed when a person leaves.
+- **Alternatives:** a commercial remote-desktop tool (a third-party service in the path); on-site only (the RTO then depends on travel).
+- **Consequences:** deployment guide (VPN, SSH, firewall), runbook, `security.md` (remote administration).
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1181,7 +1212,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 - **Blocks:** Phase 10. **Related:** NFR-003.
 
 ## OD-021 — Hosting, availability and backup policy
-- **Status:** Backup resolved 2026-11-04 → **ADR-144** (mechanism), **ADR-145** (schedule, retention), **ADR-146** (off-site copy). **Still open for Phase 12:** hosting (on premises or cloud), availability target and hours, RTO, who operates and restores.
+- **Status:** **Resolved.** Backup 2026-11-04 → **ADR-144** (mechanism), **ADR-145** (schedule, retention), **ADR-146** (off-site copy); hosting, availability, RTO and operations 2026-11-05 → **ADR-150** (and ADR-151…153 for the migrations, HTTPS and remote access).
 - **Question:** On-premises server vs. cloud; availability target; backup frequency/retention/RPO/RTO; where backups are stored; who restores; is the backup performed by the application or by an external operating-system job (the app then only records `backup_log`)?
 - **Blocks:** Phase 12 (deployment); backup design touches Phase 11. **Related:** FR-AUD-002, NFR-004.
 
@@ -1324,7 +1355,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
-| 12 Testing, Security, Deployment | OD-021 (hosting, availability, RTO, operations), ADR-036 hardening review |
+| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review |
 | 13 Dark theme | ADR-069 (decided 2026-10-22) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**
