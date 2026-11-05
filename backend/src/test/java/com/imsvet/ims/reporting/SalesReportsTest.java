@@ -29,7 +29,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * BR-RPT-001, BR-RPT-003, ADR-147: revenue and margin count confirmed invoices and receipts net of credit notes; a
  * delivery note through its invoice only, the uninvoiced ones apart; quotes and cancelled documents never; margin
- * needs {@code report.margin}.
+ * needs {@code report.margin}. FR-RPT-003: statistics by period, customer and zone, for one customer type.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -123,7 +123,7 @@ class SalesReportsTest {
     void marginTakesBackTheCostOfWhatACreditNoteCredits() throws Exception {
         admin.get("/api/reports/margin?groupBy=product").andExpect(status().isOk())
                 .andExpect(jsonPath("$.rows[0].code").value("RPT-1"))
-                .andExpect(jsonPath("$.rows[0].quantityBase").value(2.0))
+                .andExpect(jsonPath("$.rows[0].quantityBase").value("2.000"))
                 .andExpect(jsonPath("$.rows[0].revenueHt").value("2000.00"))
                 .andExpect(jsonPath("$.rows[0].cost").value("1.00"))
                 .andExpect(jsonPath("$.rows[0].margin").value("1999.00"))
@@ -133,6 +133,27 @@ class SalesReportsTest {
                 .andExpect(jsonPath("$.totalRevenueHt").value("2300.00"))
                 .andExpect(jsonPath("$.totalCost").value("2.50"))
                 .andExpect(jsonPath("$.totalMargin").value("2297.50"));
+    }
+
+    @Test
+    void statisticsCountInvoicesAndReceiptsByCustomerAndZone() throws Exception {
+        admin.get("/api/reports/sales-statistics?groupBy=customer").andExpect(status().isOk())
+                .andExpect(jsonPath("$.rows.length()").value(1))
+                .andExpect(jsonPath("$.rows[0].key").value(String.valueOf(customer)))
+                .andExpect(jsonPath("$.rows[0].label").value("Ferme Démo Rapport"))
+                .andExpect(jsonPath("$.rows[0].documents").value(3))
+                .andExpect(jsonPath("$.rows[0].revenueHt").value("2300.00"))
+                .andExpect(jsonPath("$.totalDocuments").value(3));
+        admin.get("/api/reports/sales-statistics?groupBy=wilaya&customerType=breeder").andExpect(status().isOk())
+                .andExpect(jsonPath("$.customerType").value("breeder"))
+                .andExpect(jsonPath("$.rows[0].label").value("Djelfa"))
+                .andExpect(jsonPath("$.rows[0].revenueHt").value("2300.00"));
+        admin.get("/api/reports/sales-statistics?groupBy=day").andExpect(status().isOk())
+                .andExpect(jsonPath("$.rows[0].documents").value(3));
+        admin.get("/api/reports/sales-statistics?customerType=veterinarian").andExpect(status().isOk())
+                .andExpect(jsonPath("$.rows").isEmpty()).andExpect(jsonPath("$.totalHt").value("0.00"));
+        admin.get("/api/reports/sales-statistics?customerType=farmer").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
     }
 
     @Test

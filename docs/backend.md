@@ -143,7 +143,7 @@ No job computes expiry: expired lots are unsellable by rule, evaluated at read a
 
 ## 13. Reporting
 
-Read-only; implemented as native/JPQL queries or the rewritten MySQL views (ADR-014). Reports never write. Margin and revenue are net of credit notes (BR-RPT-001). Large exports stream. `reporting` reads views only and depends on `common` and `settings` alone (architecture tests). Delivered (Phase 11, slice 1): `SalesFigures` (`NamedParameterJdbcTemplate` over `v_sales_margin` and `v_uninvoiced_delivery_notes`, instants in UTC), `SalesReports` (revenue by day, month, category or product; margin by category or product; periods in business dates, the day and month buckets computed in the business time zone from each document's issue instant).
+Read-only; implemented as native/JPQL queries or the rewritten MySQL views (ADR-014). Reports never write. Margin and revenue are net of credit notes (BR-RPT-001). Large exports stream. `reporting` reads views only and depends on `common` and `settings` alone (architecture tests). Delivered (Phase 11, slice 1): `SalesFigures` (`NamedParameterJdbcTemplate` over `v_sales_margin` and `v_uninvoiced_delivery_notes`, instants in UTC), `SalesReports` (revenue by day, month, category or product; margin by category or product; periods in business dates, the day and month buckets computed in the business time zone from each document's issue instant); slice 2: sales statistics in `SalesReports` (by date, customer, wilaya or commune, one customer type or all), `StockFigures` and `StockReports` (valuation now, at sale price or at cost, the cost basis also needing `report.margin` in the `@PreAuthorize`).
 
 ## 14. Printing
 

@@ -6,6 +6,7 @@ import com.imsvet.ims.common.time.BusinessCalendar;
 import com.imsvet.ims.reporting.infrastructure.SalesFigures;
 import com.imsvet.ims.reporting.infrastructure.SalesFigures.DocumentFigure;
 import com.imsvet.ims.reporting.infrastructure.SalesFigures.GroupFigure;
+import com.imsvet.ims.reporting.infrastructure.SalesFigures.StatisticFigure;
 import com.imsvet.ims.reporting.infrastructure.SalesFigures.Uninvoiced;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -23,7 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Revenue and gross margin (FR-RPT-001, BR-RPT-001, ADR-147): confirmed invoices and receipts at their issue date,
+ * Revenue, gross margin and sales statistics (FR-RPT-001, FR-RPT-003, BR-RPT-001, ADR-147): confirmed invoices and receipts at their issue date,
  * net of credit notes at theirs; a delivery note through its invoice only, the uninvoiced ones given apart. Periods are
  * business dates, both inclusive (business time zone); without {@code from} the month of {@code to}, without {@code to}
  * today. Margin and cost need {@code report.margin} (BR-RPT-003).
@@ -34,6 +35,8 @@ public class SalesReports {
     private static final int MONEY_SCALE = 2;
     private static final Set<String> REVENUE_GROUPS = Set.of("day", "month", "category", "product");
     private static final Set<String> MARGIN_GROUPS = Set.of("category", "product");
+    private static final Set<String> STATISTIC_GROUPS = Set.of("day", "month", "customer", "wilaya", "commune");
+    private static final Set<String> CUSTOMER_TYPES = Set.of("breeder", "veterinarian", "other");
 
     /**
      * {@code key}: the business date ({@code 2026-11-04}), the month ({@code 2026-11}), or the product or category id
@@ -56,6 +59,17 @@ public class SalesReports {
 
     public record MarginReport(LocalDate from, LocalDate to, String groupBy, List<MarginRow> rows,
             BigDecimal totalRevenueHt, BigDecimal totalCost, BigDecimal totalMargin, BigDecimal marginRate) {
+    }
+
+    /**
+     * {@code key}: the date or month, or the customer id; {@code null} for counter sales without a customer or a
+     * customer without the zone. {@code code}: the wilaya of a commune. {@code documents}: invoices and receipts.
+     */
+    public record StatisticRow(String key, String code, String label, long documents, BigDecimal revenueHt) {
+    }
+
+    public record StatisticsReport(LocalDate from, LocalDate to, String groupBy, String customerType,
+            List<StatisticRow> rows, long totalDocuments, BigDecimal totalHt) {
     }
 
     private record Period(LocalDate from, LocalDate to, Instant start, Instant end) {
@@ -109,9 +123,63 @@ public class SalesReports {
                 rate(revenue.subtract(cost), revenue));
     }
 
+    /**
+     * Sales statistics (FR-RPT-003) by period, customer or zone, for every customer or one type ({@code breeder} for
+     * the breeders); the revenue as in {@link #revenue}.
+     */
+    @PreAuthorize("hasAuthority('report.sales')")
+    @Transactional(readOnly = true)
+    public StatisticsReport statistics(LocalDate from, LocalDate to, String groupBy, String customerType) {
+        String group = groupBy(groupBy, "month", STATISTIC_GROUPS);
+        String type = customerType(customerType);
+        Period p = period(from, to);
+        List<StatisticRow> rows = switch (group) {
+            case "day", "month" -> statisticsByDate(p, "day".equals(group), type);
+            case "customer" -> statistics(figures.byCustomer(p.start(), p.end(), type));
+            case "wilaya" -> statistics(figures.byWilaya(p.start(), p.end(), type));
+            default -> statistics(figures.byCommune(p.start(), p.end(), type));
+        };
+        long documents = rows.stream().mapToLong(StatisticRow::documents).sum();
+        BigDecimal total = rows.stream().map(StatisticRow::revenueHt).reduce(zero(), BigDecimal::add);
+        return new StatisticsReport(p.from(), p.to(), group, type, rows, documents, total);
+    }
+
+    private List<StatisticRow> statisticsByDate(Period p, boolean daily, String type) {
+        Map<String, BigDecimal> totals = new TreeMap<>();
+        Map<String, Long> counts = new TreeMap<>();
+        for (DocumentFigure f : figures.byDocument(p.start(), p.end(), type)) {
+            LocalDate date = calendar.dateOf(f.issuedAt());
+            String key = daily ? date.toString() : YearMonth.from(date).toString();
+            totals.merge(key, money(f.revenueHt()), BigDecimal::add);
+            counts.merge(key, f.creditNote() ? 0L : 1L, Long::sum);
+        }
+        return totals.entrySet().stream()
+                .map(e -> new StatisticRow(e.getKey(), null, null, counts.get(e.getKey()), e.getValue())).toList();
+    }
+
+    private static List<StatisticRow> statistics(List<StatisticFigure> found) {
+        return found.stream()
+                .map(f -> new StatisticRow(f.id() == null ? null : f.id().toString(), f.code(), f.name(),
+                        f.documents(), money(f.revenueHt())))
+                .sorted(Comparator.comparing(StatisticRow::revenueHt).reversed()
+                        .thenComparing(StatisticRow::label, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    }
+
+    private static String customerType(String requested) {
+        if (requested == null || requested.isBlank()) {
+            return null;
+        }
+        if (!CUSTOMER_TYPES.contains(requested)) {
+            throw new ValidationException("Unknown customer type.", List.of(new Violation("customerType", "UNKNOWN",
+                    "breeder, veterinarian or other.")));
+        }
+        return requested;
+    }
+
     private List<RevenueRow> byDate(Period p, boolean daily) {
         Map<String, BigDecimal> totals = new TreeMap<>();
-        for (DocumentFigure f : figures.byDocument(p.start(), p.end())) {
+        for (DocumentFigure f : figures.byDocument(p.start(), p.end(), null)) {
             LocalDate date = calendar.dateOf(f.issuedAt());
             String key = daily ? date.toString() : YearMonth.from(date).toString();
             totals.merge(key, money(f.revenueHt()), BigDecimal::add);
