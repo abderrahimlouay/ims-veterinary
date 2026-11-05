@@ -193,7 +193,8 @@ class CashAndTraceabilityReportsTest {
         long product = new TestLots(jdbc).product("TRC-CSV", "Produit export");
         long lot = new TestLots(jdbc).lot(product, "LOT-CSV", today.plusYears(1), "4");
         assertThat(csv(admin.get("/api/reports/lot-traceability?format=csv&lotId=" + lot)))
-                .startsWith("Lot;LOT-CSV;Produit;TRC-CSV;Produit export;Péremption;")
+                .startsWith("Lot\r\nLot;Code;Produit;Péremption;Statut;Stock\r\nLOT-CSV;TRC-CSV;Produit export;")
+                .contains(";Actif;4,000\r\n\r\nMouvements\r\nDate;Mouvement;Quantité;Document;Numéro;Tiers;Utilisateur\r\n")
                 .contains("\r\n01/10/2026 09:00;Stock initial;4,000;;;;Lot fixture\r\n");
     }
 

@@ -217,6 +217,8 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/reports/lot-traceability?lotId=999999", "lot.recall"),
             new Endpoint(HttpMethod.GET, "/api/reports/margin?format=csv", "report.margin"),
             new Endpoint(HttpMethod.GET, "/api/reports/customer-balances?format=csv", "report.finance"),
+            new Endpoint(HttpMethod.GET, "/api/reports/stock-valuation?format=pdf", "report.stock"),
+            new Endpoint(HttpMethod.GET, "/api/reports/lot-traceability?format=pdf&lotId=999999", "lot.recall"),
             new Endpoint(HttpMethod.GET, "/api/customers/999999/statement?format=pdf", "statement.read"),
             new Endpoint(HttpMethod.POST, "/api/supplier-invoices", "supplierinvoice.manage",
                     "{\"supplierId\":999999,\"invoiceNumber\":\"M\",\"invoiceDate\":\"2026-10-01\","

@@ -64,7 +64,8 @@ class ArchitectureTest {
                     "common", "catalog", "inventory", "numbering", "settings", "audit")
             .whereLayer("finance").mayOnlyAccessLayers(
                     "common", "sales", "purchasing", "numbering", "audit", "settings")
-            .whereLayer("printing").mayOnlyAccessLayers("common", "purchasing", "sales", "finance", "inventory", "settings")
+            .whereLayer("printing").mayOnlyAccessLayers(
+                    "common", "purchasing", "sales", "finance", "inventory", "settings", "reporting")
             .whereLayer("reporting").mayOnlyAccessLayers("common", "settings")
             .whereLayer("backup").mayOnlyAccessLayers("common", "settings", "audit");
 
