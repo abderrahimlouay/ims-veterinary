@@ -99,16 +99,21 @@ class PasswordChangeTest {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void changingTheOwnPasswordEndsTheOtherSessionsOnly() throws Exception {
         TestUser seller = users.create("Seller");
-        ApiClient otherPc = ApiClient.create(context, "198.51.100.22");
-        client.login(seller.username(), seller.password()).andExpect(status().isOk());
-        otherPc.login(seller.username(), seller.password()).andExpect(status().isOk());
+        try {
+            ApiClient otherPc = ApiClient.create(context, "198.51.100.22");
+            client.login(seller.username(), seller.password()).andExpect(status().isOk());
+            otherPc.login(seller.username(), seller.password()).andExpect(status().isOk());
 
-        client.post("/api/auth/change-password", change(seller.password(), NEW_PASSWORD))
-                .andExpect(status().isNoContent());
+            client.post("/api/auth/change-password", change(seller.password(), NEW_PASSWORD))
+                    .andExpect(status().isNoContent());
 
-        client.get("/api/auth/me").andExpect(status().isOk());
-        otherPc.get("/api/auth/me").andExpect(status().isUnauthorized());
-        jdbc.update("UPDATE users SET is_active = FALSE WHERE id = ?", seller.id());
+            client.get("/api/auth/me").andExpect(status().isOk());
+            otherPc.get("/api/auth/me").andExpect(status().isUnauthorized());
+        } finally {
+            // No test may leave a user behind (AdministratorBootstrapTest): its sessions, then the user.
+            jdbc.update("DELETE FROM SPRING_SESSION WHERE PRINCIPAL_NAME = ?", String.valueOf(seller.id()));
+            jdbc.update("DELETE FROM users WHERE id = ?", seller.id());
+        }
     }
 
     @Test
