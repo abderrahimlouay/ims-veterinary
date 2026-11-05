@@ -1,0 +1,13 @@
+# ADR-151: the release's migrate mode, run as profiles "prod,migrate" with the migration account set: Flyway applies
+# the pending migrations and the grants callback (ADR-087), MigrateMode reports them and closes the application.
+# No HTTP listener and no scheduled job; the normal start keeps Flyway off and never needs the migration account.
+spring:
+  flyway:
+    enabled: true
+
+server:
+  port: -1
+
+ims:
+  jobs:
+    enabled: false

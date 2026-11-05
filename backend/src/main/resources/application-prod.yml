@@ -5,5 +5,10 @@ spring:
     enabled: false
 
 server:
+  # ADR-152: only the reverse proxy on the same server talks to the application, which TLS cannot be bypassed around;
+  # IMS_SERVER_ADDRESS overrides it only for a proxy on another host.
+  address: ${IMS_SERVER_ADDRESS:127.0.0.1}
+  # A release (ADR-151) lets the requests in progress, such as a sale being confirmed, finish before stopping.
+  shutdown: graceful
   # security.md §11: X-Forwarded-For is honoured only from internal proxy addresses (Tomcat RemoteIpValve).
   forward-headers-strategy: native

@@ -56,8 +56,17 @@ The password reaches `mysqldump` through a private options file, deleted after e
 1. Stop the application.
 2. On an empty MySQL 8.4 server (or after dropping the schema), as an administrator, create the empty schema (`CREATE DATABASE `<schema>` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci`) and the migration, application and backup accounts as above, with `log_bin_trust_function_creators=1` (triggers).
 3. Import with the **migration** account: `gunzip -c ims-backup-….sql.gz | mysql --user=<migration-user> -p`.
-4. Run the application's **migrate mode** under the migration account (ADR-151; delivered in Phase 12): Flyway validates the restored history, applies any newer migration and grants the application account again; then start the application normally (in production Flyway is off at start).
+4. Run the application's **migrate mode** (section *Production release*): Flyway validates the restored history, applies any newer migration and grants the application account again; then start the application normally (in production Flyway is off at start).
 5. Check the integrity report and a few documents before reopening.
+
+## Production release (ADR-151)
+In production Flyway is off when the application starts, and the running application never holds the migration account. A release, outside business hours:
+1. Take a backup (backups page, **Run now**) or check that day's backup succeeded.
+2. Stop the application.
+3. Run the new JAR once in **migrate mode**, with the migration account set for this run only:
+   `SPRING_PROFILES_ACTIVE=prod,migrate IMS_DB_MIGRATION_USERNAME=<migration-user> IMS_DB_MIGRATION_PASSWORD=<…> java -jar ims-<version>.jar`
+   It applies the pending migrations, grants the application account, logs `Migrate mode: schema at version …`, opens no port and exits. A failed migration stops it with the error: restore the backup of step 1 (MySQL DDL is not transactional).
+4. Start the new JAR with `SPRING_PROFILES_ACTIVE=prod` and without the migration variables. It listens on `127.0.0.1` only (`IMS_SERVER_ADDRESS` to change it), behind the reverse proxy that serves HTTPS (ADR-152), and finishes the requests in progress when stopped.
 
 ## First start (ADR-040)
 On an empty database, set `IMS_BOOTSTRAP_ADMIN_USERNAME` and `IMS_BOOTSTRAP_ADMIN_PASSWORD` (≥ 12 characters, not a common password) once: the application creates that Administrator, who must change the password at first login. Remove both variables afterwards; they are ignored as soon as a user exists.

@@ -128,6 +128,8 @@ Per `security.md`: session-based filter chain with CSRF (Spring Session JDBC, AD
 
 ## 11. Configuration
 
+**Production (ADR-151, ADR-152):** profile `prod` keeps Flyway off and needs no migration account; profiles `prod,migrate` run the release's migrate mode (`application-migrate.yml`: Flyway on with the grants callback, no HTTP port, no jobs; `MigrateMode` logs the schema version and closes the application once started). `prod` listens on `127.0.0.1` (`IMS_SERVER_ADDRESS`) behind the reverse proxy and shuts down gracefully.
+
 Externalised per profile (`dev`, `test`, `prod`): datasource, Flyway, security (token TTLs, CORS origins), business settings in the `app_settings` table (alert thresholds, default VAT, rounding, locale), file paths (backups, PDFs). No secrets in repository; `.env`/environment variables or secret store; `application-*.yml` hold non-secret defaults only. Hibernate `ddl-auto=validate` (never `update`/`create`).
 
 ## 12. Scheduled jobs
