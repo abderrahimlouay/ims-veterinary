@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phases 12–13 not started
+> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phase 12 (Testing, security hardening, deployment) current: decisions ADR-150…153 (2026-11-05); Phase 13 not started
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-11-02
 
@@ -30,7 +30,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132…134; ADR-135…137 (ADR-108: payments enter the credit balance) |
 | 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | ADR-138…143 (were OD-020, OD-026, OD-028) |
 | 11 | Reports & audit | reports, exports, backup | ADR-144…149 (was OD-021, backup part; DR-007) |
-| 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | OD-021 (hosting, availability), ADR-036 hardening |
+| 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | ADR-150…153 (was OD-021, hosting part), ADR-036 hardening |
 | 13 | Dark theme `[REC]` | user-selectable theme (system / light / dark), contrast verified | ADR-069 (decided 2026-10-22) |
 
 **Dependency adjustment (DR-003).** The POS in Phase 7 needs cash/anonymous-sale payment capture (OD-003) and a cash session (BR-SALE-013, BR-PAY-006), which belong to Phase 9. **Decided 2026-10-31 (ADR-118): option (a)**, a minimal counter-payment and cash-session slice inside Phase 7; manual cash movements and the session report stay in Phase 9.
@@ -176,7 +176,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 12 — Testing, security hardening, deployment
 - **Objective:** release readiness.
-- **Prerequisites:** Phases 0–11; OD-021; session-security hardening review (ADR-036).
+- **Prerequisites:** Phases 0–11; decided 2026-11-05: ADR-150 (on-premises server, business hours, RTO four business hours, operated by the developer), ADR-151 (migrations by the application's migrate mode), ADR-152 (HTTPS with a private CA on the local network), ADR-153 (remote maintenance through a VPN and key-only SSH); was OD-021 (hosting part), DR-013; session-security hardening review (ADR-036). **Go-live blockers** to clear with the client and the accountant before UAT sign-off: DR-040, DR-041, DR-043.
 - **Features:** performance tuning at target volume; security review (OWASP ASVS-oriented checklist); accessibility audit; data-migration rehearsal from the legacy source (if any); operations runbook; UAT.
 - **Database work:** index tuning; review of the least-privilege DB accounts introduced in Phase 4 (ADR-087, BR-SEC-006); restore rehearsal.
 - **Backend work:** rate limits, headers, config hardening, observability checks.

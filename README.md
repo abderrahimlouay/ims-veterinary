@@ -56,7 +56,7 @@ The password reaches `mysqldump` through a private options file, deleted after e
 1. Stop the application.
 2. On an empty MySQL 8.4 server (or after dropping the schema), as an administrator, create the empty schema (`CREATE DATABASE `<schema>` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci`) and the migration, application and backup accounts as above, with `log_bin_trust_function_creators=1` (triggers).
 3. Import with the **migration** account: `gunzip -c ims-backup-….sql.gz | mysql --user=<migration-user> -p`.
-4. Start the application with the same version (or a newer one): Flyway validates the restored history, applies any newer migration and grants the application account again.
+4. Run the application's **migrate mode** under the migration account (ADR-151; delivered in Phase 12): Flyway validates the restored history, applies any newer migration and grants the application account again; then start the application normally (in production Flyway is off at start).
 5. Check the integrity report and a few documents before reopening.
 
 ## First start (ADR-040)

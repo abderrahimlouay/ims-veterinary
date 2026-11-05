@@ -70,6 +70,7 @@ Order of authority when documents conflict: **`said_project.md` Spec** (intent) 
 6. Schema deltas must reference SD-IDs from `database-migration.md`; new deltas are added there first.
 7. `spring.jpa.hibernate.ddl-auto=validate` always; entities never generate schema.
 8. Seed/reference data in separate versioned migrations (`R__` repeatable only for views).
+9. **Production release (ADR-151):** outside business hours, take a backup (Run now), stop the application, run its migrate mode under the migration account (Flyway with the grants callback, then exit), start the new version; a failed migration means restoring that backup.
 9. Production credentials never appear in migrations.
 
 ## 7. Environments and configuration

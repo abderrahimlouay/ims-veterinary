@@ -141,6 +141,7 @@ Flyway, forward-only, small scripts (MySQL DDL is non-transactional, ADR-018). E
 ## 12. Deployment (conceptual only)
 
 - Single Linux host (VM or bare metal) running: reverse proxy (TLS) → Spring Boot JAR; MySQL on the same or a separate host; static SPA served by the proxy; the backup job of the application (ADR-144) and its off-host copy by manual download (ADR-146).
+- **Production (ADR-150…153):** that host is **on the pharmacy's premises**, on its local network, behind a UPS; available during business hours; RTO four business hours by restoring the last backup on a spare machine (RPO one business day). TLS with a certificate from a private CA trusted on the counter PCs (ADR-152); remote maintenance only through a WireGuard VPN and key-only SSH (ADR-153); migrations by the application's migrate mode under the migration account (ADR-151). Operated by the developer under a maintenance contract.
 - Environments: dev (developer machine), test/CI (Testcontainers), production. Staging recommended `[REC]`.
 - Time: servers on UTC; business time zone `Africa/Algiers` in settings (ADR-033).
 - Containers/orchestration are **not** specified in this phase (no Docker artefacts to be written).
