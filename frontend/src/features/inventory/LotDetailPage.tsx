@@ -114,6 +114,14 @@ export function LotDetailPage() {
             {t('stock.adjustment.new')}
           </Link>
         )}
+        {can('lot.recall') && (
+          <Link
+            to={`/reports/lotTraceability?lotId=${data.id}`}
+            className="inline-flex items-center h-10 px-4 rounded-ctl text-sm font-medium bg-surface text-ink border border-control hover:bg-bg focus:outline-2 focus:outline-offset-2 focus:outline-brand"
+          >
+            {t('lots.actions.trace')}
+          </Link>
+        )}
         {stored === 'recalled' && can('lot.recall') && shownReport === undefined && (
           <Button variant="secondary" onClick={() => setShowReport(true)}>
             {t('lots.actions.report')}

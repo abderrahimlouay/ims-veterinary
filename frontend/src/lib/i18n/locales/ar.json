@@ -27,7 +27,9 @@
     "sales": "مستندات البيع",
     "customerReturns": "مرتجعات الزبائن",
     "supplierInvoices": "فواتير الموردين",
-    "cashSessions": "جلسات الصندوق"
+    "cashSessions": "جلسات الصندوق",
+    "reports": "التقارير",
+    "backups": "النسخ الاحتياطية"
   },
   "language": {
     "label": "اللغة",
@@ -252,6 +254,40 @@
         "approvalNumber": "رقم الاعتماد البيطري",
         "bankAccount": "رقم الحساب البنكي",
         "footerText": "نص التذييل"
+      }
+    },
+    "backups": {
+      "title": "النسخ الاحتياطية",
+      "lastSuccess": "آخر نسخة ناجحة",
+      "lastDownload": "آخر تنزيل",
+      "never": "أبدًا",
+      "runNow": "إنشاء نسخة احتياطية الآن",
+      "running": "النسخ جارٍ…",
+      "done": "اكتملت النسخة: {{file}}",
+      "failed": "فشلت النسخة الاحتياطية: {{reason}}",
+      "offsite": "نزّل نسخة احتياطية بانتظام واحفظها خارج المقر (نسخة خارجية).",
+      "empty": "لا توجد نسخ احتياطية بعد.",
+      "startedAt": "التاريخ",
+      "trigger": "المصدر",
+      "status": "الحالة",
+      "file": "الملف أو السبب",
+      "size": "الحجم",
+      "downloaded": "تاريخ التنزيل",
+      "download": "تنزيل",
+      "removed": "محذوفة (الاحتفاظ)",
+      "triggers": {
+        "scheduled": "تلقائية",
+        "manual": "يدوية"
+      },
+      "statuses": {
+        "success": "ناجحة",
+        "failed": "فاشلة"
+      },
+      "warnings": {
+        "NOT_CONFIGURED": "النسخ الاحتياطي غير مهيأ على الخادم (راجع README).",
+        "LAST_FAILED": "فشلت آخر نسخة احتياطية.",
+        "NO_RECENT_BACKUP": "لا توجد نسخة ناجحة منذ أكثر من يوم.",
+        "DOWNLOAD_OVERDUE": "لم تُنزّل أي نسخة منذ {{days}} يومًا: أنشئ نسخة خارجية."
       }
     }
   },
@@ -497,7 +533,8 @@
       "block": "حجز",
       "unblock": "رفع الحجز",
       "recall": "سحب",
-      "report": "تقرير السحب"
+      "report": "تقرير السحب",
+      "trace": "التتبع"
     },
     "dialog": {
       "block": "حجز الحصة {{lotNumber}}",
@@ -1341,5 +1378,176 @@
     "post": "تسجيل",
     "closeTitle": "إغلاق الجلسة رقم {{id}}",
     "reportPdf": "التقرير (PDF)"
+  },
+  "reports": {
+    "title": "التقارير",
+    "none": "لا يوجد تقرير متاح لدورك.",
+    "back": "كل التقارير",
+    "unknown": "هذا التقرير غير موجود.",
+    "filters": "المرشحات",
+    "from": "من",
+    "to": "إلى",
+    "groupBy": "التجميع",
+    "customerType": "الزبائن",
+    "basis": "التقييم",
+    "supplierId": "رقم المورد (اختياري)",
+    "cashierId": "رقم أمين الصندوق (اختياري)",
+    "lotId": "رقم الدفعة (المعرف)",
+    "exportCsv": "تصدير CSV",
+    "exportPdf": "طباعة / PDF",
+    "needLot": "أدخل الدفعة المراد تتبعها.",
+    "empty": "لا توجد بيانات.",
+    "total": "المجموع",
+    "noCategory": "بدون فئة",
+    "counterSale": "بيع على الشباك",
+    "uninvoiced": "سندات تسليم غير مفوترة ({{count}})",
+    "overdueTotal": "منها المستحق",
+    "unappliedCredits": "إشعارات دائنة غير مطبقة",
+    "advances": "تسبيقات",
+    "balance": "الرصيد",
+    "shortages": "العجز",
+    "surpluses": "الفائض",
+    "netVariance": "الفارق الصافي",
+    "expired": "منتهية الصلاحية",
+    "group": {
+      "day": "حسب اليوم",
+      "month": "حسب الشهر",
+      "category": "حسب الفئة",
+      "product": "حسب المنتج",
+      "customer": "حسب الزبون",
+      "wilaya": "حسب الولاية",
+      "commune": "حسب البلدية"
+    },
+    "customerTypes": {
+      "all": "الكل",
+      "breeder": "المربون",
+      "veterinarian": "الأطباء البيطريون",
+      "other": "آخرون"
+    },
+    "bases": {
+      "sale_price": "بسعر البيع",
+      "cost": "بالتكلفة"
+    },
+    "lotStatus": {
+      "active": "نشطة",
+      "blocked": "محجوبة",
+      "recalled": "مسحوبة"
+    },
+    "trace": {
+      "lot": "الدفعة",
+      "movements": "الحركات",
+      "suppliers": "المصدر: الموردون",
+      "customers": "الوجهة: الزبائن"
+    },
+    "movement": {
+      "purchase_receipt": "استلام",
+      "receipt_cancellation": "إلغاء استلام",
+      "supplier_return": "إرجاع للمورد",
+      "opening_stock": "مخزون افتتاحي",
+      "sale": "بيع",
+      "sale_cancellation": "إلغاء بيع",
+      "customer_return": "إرجاع زبون",
+      "return_discard": "إتلاف (إرجاع)",
+      "adjustment_breakage": "كسر",
+      "adjustment_expiry": "انتهاء الصلاحية",
+      "adjustment_theft": "سرقة",
+      "adjustment_internal_use": "استعمال داخلي",
+      "adjustment_inventory": "جرد"
+    },
+    "document": {
+      "goods_receipt": "سند استلام",
+      "supplier_return": "إرجاع للمورد",
+      "invoice": "فاتورة",
+      "receipt": "تذكرة",
+      "delivery_note": "سند تسليم",
+      "credit_note": "إشعار دائن",
+      "customer_return": "إرجاع زبون"
+    },
+    "col": {
+      "code": "الرمز",
+      "product": "المنتج",
+      "category": "الفئة",
+      "date": "التاريخ",
+      "month": "الشهر",
+      "revenueHt": "رقم الأعمال خارج الرسم",
+      "quantity": "الكمية",
+      "cost": "التكلفة",
+      "margin": "الهامش",
+      "marginRate": "نسبة الهامش",
+      "customer": "الزبون",
+      "wilaya": "الولاية",
+      "commune": "البلدية",
+      "documents": "الوثائق",
+      "value": "القيمة",
+      "unsellableQuantity": "كمية غير قابلة للبيع",
+      "unsellableValue": "قيمة غير قابلة للبيع",
+      "phone": "الهاتف",
+      "notDue": "غير مستحق",
+      "bucket": "{{from}}–{{to}} يوم",
+      "bucketOver": "> {{days}} يوم",
+      "advance": "تسبيق",
+      "balance": "الرصيد",
+      "uninvoicedNotes": "سندات غير مفوترة",
+      "supplier": "المورد",
+      "invoice": "الفاتورة",
+      "invoiceDate": "التاريخ",
+      "dueDate": "الاستحقاق",
+      "daysOverdue": "أيام التأخر",
+      "totalTtc": "المجموع مع الرسم",
+      "open": "المتبقي",
+      "session": "الجلسة",
+      "cashier": "أمين الصندوق",
+      "openedAt": "الفتح",
+      "closedAt": "الإغلاق",
+      "closedBy": "أغلقها",
+      "opening": "الرصيد الافتتاحي",
+      "expected": "المتوقع",
+      "counted": "المعدود",
+      "variance": "الفارق",
+      "lot": "الدفعة",
+      "expiry": "انتهاء الصلاحية",
+      "status": "الحالة",
+      "stock": "المخزون",
+      "movement": "الحركة",
+      "document": "الوثيقة",
+      "party": "الطرف",
+      "user": "المستخدم",
+      "received": "المستلم",
+      "returned": "المرجع",
+      "sold": "المباع",
+      "net": "الصافي"
+    },
+    "revenue": {
+      "title": "رقم الأعمال",
+      "description": "الفواتير والتذاكر المؤكدة صافية من الإشعارات الدائنة، خارج الرسم، بتاريخها؛ سندات التسليم غير المفوترة على حدة."
+    },
+    "margin": {
+      "title": "الهامش الإجمالي",
+      "description": "رقم الأعمال ناقص تكلفة الدفعات المباعة، صافيًا من الإشعارات الدائنة."
+    },
+    "salesStatistics": {
+      "title": "إحصائيات المبيعات",
+      "description": "الوثائق ورقم الأعمال حسب الفترة أو الزبون أو المنطقة."
+    },
+    "stockValuation": {
+      "title": "تقييم المخزون",
+      "description": "المخزون الحالي بسعر البيع أو بالتكلفة؛ الدفعات المحجوبة أو المسحوبة أو المنتهية على حدة."
+    },
+    "customerBalances": {
+      "title": "ديون الزبائن",
+      "description": "ما يدين به كل زبون حسب أيام التأخر بعد الاستحقاق؛ التسبيقات والسندات غير المفوترة على حدة."
+    },
+    "supplierPayables": {
+      "title": "ديون الموردين",
+      "description": "فواتير الموردين المفتوحة حسب الاستحقاق والإشعارات الدائنة والتسبيقات."
+    },
+    "cashSessions": {
+      "title": "فوارق الصندوق",
+      "description": "الجلسات المغلقة خلال الفترة مع الفارق بين المعدود والمتوقع."
+    },
+    "lotTraceability": {
+      "title": "تتبع دفعة",
+      "description": "كل حركات الدفعة ومورّدوها وزبائنها."
+    }
   }
 }

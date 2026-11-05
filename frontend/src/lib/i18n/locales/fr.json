@@ -27,7 +27,9 @@
     "sales": "Documents de vente",
     "customerReturns": "Retours clients",
     "supplierInvoices": "Factures fournisseurs",
-    "cashSessions": "Sessions de caisse"
+    "cashSessions": "Sessions de caisse",
+    "reports": "Rapports",
+    "backups": "Sauvegardes"
   },
   "language": {
     "label": "Langue",
@@ -252,6 +254,40 @@
         "approvalNumber": "N° d'agrément vétérinaire",
         "bankAccount": "RIB",
         "footerText": "Texte de pied de page"
+      }
+    },
+    "backups": {
+      "title": "Sauvegardes",
+      "lastSuccess": "Dernière sauvegarde réussie",
+      "lastDownload": "Dernier téléchargement",
+      "never": "Jamais",
+      "runNow": "Lancer une sauvegarde",
+      "running": "Sauvegarde en cours…",
+      "done": "Sauvegarde terminée : {{file}}",
+      "failed": "La sauvegarde a échoué : {{reason}}",
+      "offsite": "Téléchargez régulièrement une sauvegarde et gardez-la hors des locaux (copie hors site).",
+      "empty": "Aucune sauvegarde pour l'instant.",
+      "startedAt": "Date",
+      "trigger": "Origine",
+      "status": "État",
+      "file": "Fichier ou motif",
+      "size": "Taille",
+      "downloaded": "Téléchargée le",
+      "download": "Télécharger",
+      "removed": "Supprimée (rétention)",
+      "triggers": {
+        "scheduled": "Automatique",
+        "manual": "Manuelle"
+      },
+      "statuses": {
+        "success": "Réussie",
+        "failed": "Échouée"
+      },
+      "warnings": {
+        "NOT_CONFIGURED": "Les sauvegardes ne sont pas configurées sur le serveur (voir le README).",
+        "LAST_FAILED": "La dernière sauvegarde a échoué.",
+        "NO_RECENT_BACKUP": "Aucune sauvegarde réussie depuis plus d'un jour.",
+        "DOWNLOAD_OVERDUE": "Aucune sauvegarde téléchargée depuis {{days}} jours : faites une copie hors site."
       }
     }
   },
@@ -497,7 +533,8 @@
       "block": "Bloquer",
       "unblock": "Débloquer",
       "recall": "Rappeler",
-      "report": "Rapport de rappel"
+      "report": "Rapport de rappel",
+      "trace": "Traçabilité"
     },
     "dialog": {
       "block": "Bloquer le lot {{lotNumber}}",
@@ -1341,5 +1378,176 @@
     "post": "Enregistrer",
     "closeTitle": "Fermer la session n° {{id}}",
     "reportPdf": "Rapport (PDF)"
+  },
+  "reports": {
+    "title": "Rapports",
+    "none": "Aucun rapport n'est disponible pour votre rôle.",
+    "back": "Tous les rapports",
+    "unknown": "Ce rapport n'existe pas.",
+    "filters": "Filtres",
+    "from": "Du",
+    "to": "Au",
+    "groupBy": "Regroupement",
+    "customerType": "Clients",
+    "basis": "Valorisation",
+    "supplierId": "N° fournisseur (facultatif)",
+    "cashierId": "N° caissier (facultatif)",
+    "lotId": "N° de lot (identifiant)",
+    "exportCsv": "Exporter CSV",
+    "exportPdf": "Imprimer / PDF",
+    "needLot": "Indiquez le lot à tracer.",
+    "empty": "Aucune donnée.",
+    "total": "Total",
+    "noCategory": "Sans catégorie",
+    "counterSale": "Vente comptoir",
+    "uninvoiced": "Bons de livraison non facturés ({{count}})",
+    "overdueTotal": "Dont échu",
+    "unappliedCredits": "Avoirs non imputés",
+    "advances": "Avances",
+    "balance": "Solde",
+    "shortages": "Manquants",
+    "surpluses": "Excédents",
+    "netVariance": "Écart net",
+    "expired": "périmé",
+    "group": {
+      "day": "Par jour",
+      "month": "Par mois",
+      "category": "Par catégorie",
+      "product": "Par produit",
+      "customer": "Par client",
+      "wilaya": "Par wilaya",
+      "commune": "Par commune"
+    },
+    "customerTypes": {
+      "all": "Tous",
+      "breeder": "Éleveurs",
+      "veterinarian": "Vétérinaires",
+      "other": "Autres"
+    },
+    "bases": {
+      "sale_price": "Au prix de vente",
+      "cost": "Au coût"
+    },
+    "lotStatus": {
+      "active": "Actif",
+      "blocked": "Bloqué",
+      "recalled": "Rappelé"
+    },
+    "trace": {
+      "lot": "Lot",
+      "movements": "Mouvements",
+      "suppliers": "Amont : fournisseurs",
+      "customers": "Aval : clients"
+    },
+    "movement": {
+      "purchase_receipt": "Réception",
+      "receipt_cancellation": "Annulation de réception",
+      "supplier_return": "Retour fournisseur",
+      "opening_stock": "Stock initial",
+      "sale": "Vente",
+      "sale_cancellation": "Annulation de vente",
+      "customer_return": "Retour client",
+      "return_discard": "Mise au rebut (retour)",
+      "adjustment_breakage": "Casse",
+      "adjustment_expiry": "Péremption",
+      "adjustment_theft": "Vol",
+      "adjustment_internal_use": "Usage interne",
+      "adjustment_inventory": "Inventaire"
+    },
+    "document": {
+      "goods_receipt": "Bon de réception",
+      "supplier_return": "Retour fournisseur",
+      "invoice": "Facture",
+      "receipt": "Ticket",
+      "delivery_note": "Bon de livraison",
+      "credit_note": "Avoir",
+      "customer_return": "Retour client"
+    },
+    "col": {
+      "code": "Code",
+      "product": "Produit",
+      "category": "Catégorie",
+      "date": "Date",
+      "month": "Mois",
+      "revenueHt": "CA HT",
+      "quantity": "Quantité",
+      "cost": "Coût",
+      "margin": "Marge",
+      "marginRate": "Taux de marge",
+      "customer": "Client",
+      "wilaya": "Wilaya",
+      "commune": "Commune",
+      "documents": "Documents",
+      "value": "Valeur",
+      "unsellableQuantity": "Qté invendable",
+      "unsellableValue": "Valeur invendable",
+      "phone": "Téléphone",
+      "notDue": "Non échu",
+      "bucket": "{{from}}–{{to}} j",
+      "bucketOver": "> {{days}} j",
+      "advance": "Avance",
+      "balance": "Solde",
+      "uninvoicedNotes": "BL non facturés",
+      "supplier": "Fournisseur",
+      "invoice": "Facture",
+      "invoiceDate": "Date",
+      "dueDate": "Échéance",
+      "daysOverdue": "Jours de retard",
+      "totalTtc": "Total TTC",
+      "open": "Reste dû",
+      "session": "Session",
+      "cashier": "Caissier",
+      "openedAt": "Ouverture",
+      "closedAt": "Clôture",
+      "closedBy": "Clôturée par",
+      "opening": "Fonds initial",
+      "expected": "Attendu",
+      "counted": "Compté",
+      "variance": "Écart",
+      "lot": "Lot",
+      "expiry": "Péremption",
+      "status": "Statut",
+      "stock": "Stock",
+      "movement": "Mouvement",
+      "document": "Document",
+      "party": "Tiers",
+      "user": "Utilisateur",
+      "received": "Reçu",
+      "returned": "Retourné",
+      "sold": "Vendu",
+      "net": "Net"
+    },
+    "revenue": {
+      "title": "Chiffre d'affaires",
+      "description": "Factures et tickets confirmés nets des avoirs, HT, à leur date ; les bons de livraison non facturés à part."
+    },
+    "margin": {
+      "title": "Marge brute",
+      "description": "Chiffre d'affaires moins le coût des lots vendus, nets des avoirs."
+    },
+    "salesStatistics": {
+      "title": "Statistiques des ventes",
+      "description": "Documents et chiffre d'affaires par période, client ou zone."
+    },
+    "stockValuation": {
+      "title": "Valorisation du stock",
+      "description": "Le stock actuel au prix de vente ou au coût ; lots bloqués, rappelés ou périmés à part."
+    },
+    "customerBalances": {
+      "title": "Créances clients",
+      "description": "Ce que doit chaque client, par jours de retard après l'échéance ; avances et BL non facturés à part."
+    },
+    "supplierPayables": {
+      "title": "Dettes fournisseurs",
+      "description": "Factures fournisseurs ouvertes par échéance, avoirs et avances."
+    },
+    "cashSessions": {
+      "title": "Écarts de caisse",
+      "description": "Sessions clôturées sur la période, avec l'écart entre compté et attendu."
+    },
+    "lotTraceability": {
+      "title": "Traçabilité d'un lot",
+      "description": "Tous les mouvements d'un lot, ses fournisseurs et ses clients."
+    }
   }
 }

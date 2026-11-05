@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router'
-import { AuditPage, NewUserPage, RolesPage, SettingsPage, UserDetailPage, UsersPage } from '../features/admin'
+import { AuditPage, BackupsPage, NewUserPage, RolesPage, SettingsPage, UserDetailPage, UsersPage } from '../features/admin'
+import { ReportPage, ReportsPage } from '../features/reports'
 import { NewProductPage, ProductDetailPage, ProductsPage, ReferencesPage } from '../features/catalog'
 import { CustomerCategoriesPage, CustomerPage, CustomersPage, NewCustomerPage } from '../features/customers'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
@@ -105,12 +106,15 @@ export const routes: RouteObject[] = [
       { path: 'customers/:id', element: <RequirePermission code="customer.read"><CustomerPage /></RequirePermission> },
       { path: 'customer-categories', element: <RequirePermission code="customer.read"><CustomerCategoriesPage /></RequirePermission> },
       { path: 'catalog/references', element: <RequirePermission code="product.read"><ReferencesPage /></RequirePermission> },
+      { path: 'reports', element: <ReportsPage /> },
+      { path: 'reports/:key', element: <ReportPage /> },
       { path: 'admin/users', element: <RequirePermission code="user.read"><UsersPage /></RequirePermission> },
       { path: 'admin/users/new', element: <RequirePermission code="user.manage"><NewUserPage /></RequirePermission> },
       { path: 'admin/users/:id', element: <RequirePermission code="user.read"><UserDetailPage /></RequirePermission> },
       { path: 'admin/roles', element: <RequirePermission code="role.manage"><RolesPage /></RequirePermission> },
       { path: 'admin/settings', element: <RequirePermission code="settings.manage"><SettingsPage /></RequirePermission> },
       { path: 'admin/audit', element: <RequirePermission code="audit.read"><AuditPage /></RequirePermission> },
+      { path: 'admin/backups', element: <RequirePermission code="backup.manage"><BackupsPage /></RequirePermission> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

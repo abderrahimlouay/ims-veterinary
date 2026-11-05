@@ -27,7 +27,9 @@
     "sales": "Sales documents",
     "customerReturns": "Customer returns",
     "supplierInvoices": "Supplier invoices",
-    "cashSessions": "Cash sessions"
+    "cashSessions": "Cash sessions",
+    "reports": "Reports",
+    "backups": "Backups"
   },
   "language": {
     "label": "Language",
@@ -252,6 +254,40 @@
         "approvalNumber": "Veterinary approval number",
         "bankAccount": "Bank account (RIB)",
         "footerText": "Footer text"
+      }
+    },
+    "backups": {
+      "title": "Backups",
+      "lastSuccess": "Last successful backup",
+      "lastDownload": "Last download",
+      "never": "Never",
+      "runNow": "Run a backup now",
+      "running": "Backup running…",
+      "done": "Backup finished: {{file}}",
+      "failed": "The backup failed: {{reason}}",
+      "offsite": "Download a backup regularly and keep it off the premises (off-site copy).",
+      "empty": "No backup yet.",
+      "startedAt": "Date",
+      "trigger": "Origin",
+      "status": "Status",
+      "file": "File or reason",
+      "size": "Size",
+      "downloaded": "Downloaded",
+      "download": "Download",
+      "removed": "Removed (retention)",
+      "triggers": {
+        "scheduled": "Scheduled",
+        "manual": "Manual"
+      },
+      "statuses": {
+        "success": "Succeeded",
+        "failed": "Failed"
+      },
+      "warnings": {
+        "NOT_CONFIGURED": "Backups are not configured on the server (see the README).",
+        "LAST_FAILED": "The last backup failed.",
+        "NO_RECENT_BACKUP": "No successful backup for more than a day.",
+        "DOWNLOAD_OVERDUE": "No backup downloaded for {{days}} days: make an off-site copy."
       }
     }
   },
@@ -497,7 +533,8 @@
       "block": "Block",
       "unblock": "Unblock",
       "recall": "Recall",
-      "report": "Recall report"
+      "report": "Recall report",
+      "trace": "Traceability"
     },
     "dialog": {
       "block": "Block lot {{lotNumber}}",
@@ -1341,5 +1378,176 @@
     "post": "Record",
     "closeTitle": "Close session #{{id}}",
     "reportPdf": "Report (PDF)"
+  },
+  "reports": {
+    "title": "Reports",
+    "none": "No report is available for your role.",
+    "back": "All reports",
+    "unknown": "This report does not exist.",
+    "filters": "Filters",
+    "from": "From",
+    "to": "To",
+    "groupBy": "Grouping",
+    "customerType": "Customers",
+    "basis": "Valuation",
+    "supplierId": "Supplier no. (optional)",
+    "cashierId": "Cashier no. (optional)",
+    "lotId": "Lot no. (identifier)",
+    "exportCsv": "Export CSV",
+    "exportPdf": "Print / PDF",
+    "needLot": "Enter the lot to trace.",
+    "empty": "No data.",
+    "total": "Total",
+    "noCategory": "No category",
+    "counterSale": "Counter sale",
+    "uninvoiced": "Uninvoiced delivery notes ({{count}})",
+    "overdueTotal": "Of which overdue",
+    "unappliedCredits": "Unapplied credit notes",
+    "advances": "Advances",
+    "balance": "Balance",
+    "shortages": "Shortages",
+    "surpluses": "Surpluses",
+    "netVariance": "Net variance",
+    "expired": "expired",
+    "group": {
+      "day": "By day",
+      "month": "By month",
+      "category": "By category",
+      "product": "By product",
+      "customer": "By customer",
+      "wilaya": "By wilaya",
+      "commune": "By commune"
+    },
+    "customerTypes": {
+      "all": "All",
+      "breeder": "Breeders",
+      "veterinarian": "Veterinarians",
+      "other": "Others"
+    },
+    "bases": {
+      "sale_price": "At sale price",
+      "cost": "At cost"
+    },
+    "lotStatus": {
+      "active": "Active",
+      "blocked": "Blocked",
+      "recalled": "Recalled"
+    },
+    "trace": {
+      "lot": "Lot",
+      "movements": "Movements",
+      "suppliers": "Upstream: suppliers",
+      "customers": "Downstream: customers"
+    },
+    "movement": {
+      "purchase_receipt": "Receipt",
+      "receipt_cancellation": "Receipt cancellation",
+      "supplier_return": "Supplier return",
+      "opening_stock": "Opening stock",
+      "sale": "Sale",
+      "sale_cancellation": "Sale cancellation",
+      "customer_return": "Customer return",
+      "return_discard": "Discard (return)",
+      "adjustment_breakage": "Breakage",
+      "adjustment_expiry": "Expiry",
+      "adjustment_theft": "Theft",
+      "adjustment_internal_use": "Internal use",
+      "adjustment_inventory": "Inventory"
+    },
+    "document": {
+      "goods_receipt": "Goods receipt",
+      "supplier_return": "Supplier return",
+      "invoice": "Invoice",
+      "receipt": "Receipt",
+      "delivery_note": "Delivery note",
+      "credit_note": "Credit note",
+      "customer_return": "Customer return"
+    },
+    "col": {
+      "code": "Code",
+      "product": "Product",
+      "category": "Category",
+      "date": "Date",
+      "month": "Month",
+      "revenueHt": "Revenue excl. VAT",
+      "quantity": "Quantity",
+      "cost": "Cost",
+      "margin": "Margin",
+      "marginRate": "Margin rate",
+      "customer": "Customer",
+      "wilaya": "Wilaya",
+      "commune": "Commune",
+      "documents": "Documents",
+      "value": "Value",
+      "unsellableQuantity": "Unsellable qty",
+      "unsellableValue": "Unsellable value",
+      "phone": "Phone",
+      "notDue": "Not due",
+      "bucket": "{{from}}–{{to}} d",
+      "bucketOver": "> {{days}} d",
+      "advance": "Advance",
+      "balance": "Balance",
+      "uninvoicedNotes": "Uninvoiced notes",
+      "supplier": "Supplier",
+      "invoice": "Invoice",
+      "invoiceDate": "Date",
+      "dueDate": "Due",
+      "daysOverdue": "Days overdue",
+      "totalTtc": "Total incl. VAT",
+      "open": "Open",
+      "session": "Session",
+      "cashier": "Cashier",
+      "openedAt": "Opened",
+      "closedAt": "Closed",
+      "closedBy": "Closed by",
+      "opening": "Opening",
+      "expected": "Expected",
+      "counted": "Counted",
+      "variance": "Variance",
+      "lot": "Lot",
+      "expiry": "Expiry",
+      "status": "Status",
+      "stock": "Stock",
+      "movement": "Movement",
+      "document": "Document",
+      "party": "Party",
+      "user": "User",
+      "received": "Received",
+      "returned": "Returned",
+      "sold": "Sold",
+      "net": "Net"
+    },
+    "revenue": {
+      "title": "Revenue",
+      "description": "Confirmed invoices and receipts net of credit notes, excl. VAT, at their date; uninvoiced delivery notes apart."
+    },
+    "margin": {
+      "title": "Gross margin",
+      "description": "Revenue less the cost of the lots sold, net of credit notes."
+    },
+    "salesStatistics": {
+      "title": "Sales statistics",
+      "description": "Documents and revenue by period, customer or zone."
+    },
+    "stockValuation": {
+      "title": "Stock valuation",
+      "description": "Current stock at sale price or at cost; blocked, recalled or expired lots apart."
+    },
+    "customerBalances": {
+      "title": "Customer receivables",
+      "description": "What each customer owes, by days past due; advances and uninvoiced notes apart."
+    },
+    "supplierPayables": {
+      "title": "Supplier payables",
+      "description": "Open supplier invoices by due date, credit notes and advances."
+    },
+    "cashSessions": {
+      "title": "Cash variances",
+      "description": "Sessions closed in the period with the counted vs expected variance."
+    },
+    "lotTraceability": {
+      "title": "Lot traceability",
+      "description": "Every movement of a lot, its suppliers and its customers."
+    }
   }
 }

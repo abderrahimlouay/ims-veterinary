@@ -3,6 +3,8 @@ export interface NavItem {
   to: string
   labelKey: string
   permission?: string
+  /** Shown when the user holds at least one of these. */
+  anyPermission?: readonly string[]
 }
 
 /** Entries are added with their pages, phase by phase (frontend.md §3.1). */
@@ -25,12 +27,18 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { to: '/customers', labelKey: 'nav.customers', permission: 'customer.read' },
   { to: '/customer-categories', labelKey: 'nav.customerCategories', permission: 'customer.read' },
   { to: '/catalog/references', labelKey: 'nav.references', permission: 'product.read' },
+  { to: '/reports', labelKey: 'nav.reports', anyPermission: ['report.sales', 'report.margin', 'report.stock', 'report.finance', 'lot.recall'] },
   { to: '/admin/users', labelKey: 'nav.users', permission: 'user.read' },
   { to: '/admin/roles', labelKey: 'nav.roles', permission: 'role.manage' },
   { to: '/admin/settings', labelKey: 'nav.settings', permission: 'settings.manage' },
   { to: '/admin/audit', labelKey: 'nav.audit', permission: 'audit.read' },
+  { to: '/admin/backups', labelKey: 'nav.backups', permission: 'backup.manage' },
 ]
 
 export function visibleNavItems(items: readonly NavItem[], permissions: readonly string[]): NavItem[] {
-  return items.filter((item) => item.permission === undefined || permissions.includes(item.permission))
+  return items.filter(
+    (item) =>
+      (item.permission === undefined || permissions.includes(item.permission)) &&
+      (item.anyPermission === undefined || item.anyPermission.some((p) => permissions.includes(p))),
+  )
 }
