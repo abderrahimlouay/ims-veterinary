@@ -195,13 +195,15 @@
         "currency": "Devise",
         "locale": "Format régional",
         "business_time_zone": "Fuseau horaire",
-        "credit_overdue_block_days": "Blocage du crédit après retard (jours)"
+        "credit_overdue_block_days": "Blocage du crédit après retard (jours)",
+        "ageing_buckets": "Colonnes d'ancienneté des créances (jours)"
       },
       "hints": {
         "expiry_alert_days": "Trois nombres décroissants : avis, avertissement, critique (ex. 60,30,15).",
         "default_vat_rate": "De 0 à 100, deux décimales au plus.",
         "locale": "Par exemple fr-DZ.",
-        "credit_overdue_block_days": "off, ou les jours de retard tolérés avant de refuser une nouvelle vente à crédit."
+        "credit_overdue_block_days": "off, ou les jours de retard tolérés avant de refuser une nouvelle vente à crédit.",
+        "ageing_buckets": "Trois nombres croissants de jours de retard, par exemple 30,60,90."
       }
     },
     "audit": {

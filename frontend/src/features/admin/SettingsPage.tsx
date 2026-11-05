@@ -20,6 +20,10 @@ const LOCAL_CHECKS: Record<string, (value: string) => boolean> = {
   login_window_minutes: (v) => /^[1-9]\d*$/.test(v.trim()),
   login_lockout_minutes: (v) => /^[1-9]\d*$/.test(v.trim()),
   credit_overdue_block_days: (v) => /^(off|\d+)$/i.test(v.trim()),
+  ageing_buckets: (v) => {
+    const days = v.split(',').map((d) => Number(d.trim()))
+    return days.length === 3 && days.every((d) => Number.isInteger(d) && d > 0) && days[0] < days[1] && days[1] < days[2]
+  },
 }
 
 /**

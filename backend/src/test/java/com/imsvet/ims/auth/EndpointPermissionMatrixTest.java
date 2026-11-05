@@ -211,6 +211,8 @@ class EndpointPermissionMatrixTest {
             new Endpoint(HttpMethod.GET, "/api/reports/margin", "report.margin"),
             new Endpoint(HttpMethod.GET, "/api/reports/sales-statistics", "report.sales"),
             new Endpoint(HttpMethod.GET, "/api/reports/stock-valuation", "report.stock"),
+            new Endpoint(HttpMethod.GET, "/api/reports/customer-balances", "report.finance"),
+            new Endpoint(HttpMethod.GET, "/api/reports/supplier-payables", "report.finance"),
             new Endpoint(HttpMethod.GET, "/api/customers/999999/statement?format=pdf", "statement.read"),
             new Endpoint(HttpMethod.POST, "/api/supplier-invoices", "supplierinvoice.manage",
                     "{\"supplierId\":999999,\"invoiceNumber\":\"M\",\"invoiceDate\":\"2026-10-01\","

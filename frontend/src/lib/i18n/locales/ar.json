@@ -195,13 +195,15 @@
         "currency": "العملة",
         "locale": "التنسيق الإقليمي",
         "business_time_zone": "المنطقة الزمنية",
-        "credit_overdue_block_days": "حظر الائتمان بعد التأخر (أيام)"
+        "credit_overdue_block_days": "حظر الائتمان بعد التأخر (أيام)",
+        "ageing_buckets": "أعمدة أقدمية الديون (أيام)"
       },
       "hints": {
         "expiry_alert_days": "ثلاثة أعداد تنازلية: إشعار، تحذير، حرج (مثال 60,30,15).",
         "default_vat_rate": "من 0 إلى 100، بمنزلتين عشريتين على الأكثر.",
         "locale": "مثال: fr-DZ.",
-        "credit_overdue_block_days": "off، أو أيام التأخر المسموح بها قبل رفض بيع جديد بالأجل."
+        "credit_overdue_block_days": "off، أو أيام التأخر المسموح بها قبل رفض بيع جديد بالأجل.",
+        "ageing_buckets": "ثلاثة أعداد تصاعدية لأيام التأخر، مثال 30,60,90."
       }
     },
     "audit": {

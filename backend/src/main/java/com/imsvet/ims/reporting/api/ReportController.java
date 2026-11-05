@@ -1,5 +1,8 @@
 package com.imsvet.ims.reporting.api;
 
+import com.imsvet.ims.reporting.application.FinanceReports;
+import com.imsvet.ims.reporting.application.FinanceReports.CustomerBalancesReport;
+import com.imsvet.ims.reporting.application.FinanceReports.PayablesReport;
 import com.imsvet.ims.reporting.application.SalesReports;
 import com.imsvet.ims.reporting.application.SalesReports.MarginReport;
 import com.imsvet.ims.reporting.application.SalesReports.RevenueReport;
@@ -20,10 +23,12 @@ class ReportController {
 
     private final SalesReports sales;
     private final StockReports stock;
+    private final FinanceReports finance;
 
-    ReportController(SalesReports sales, StockReports stock) {
+    ReportController(SalesReports sales, StockReports stock, FinanceReports finance) {
         this.sales = sales;
         this.stock = stock;
+        this.finance = finance;
     }
 
     @GetMapping("/revenue")
@@ -52,5 +57,15 @@ class ReportController {
     ValuationReport valuation(@RequestParam(required = false) String basis,
             @RequestParam(required = false) String groupBy) {
         return stock.valuation(basis, groupBy);
+    }
+
+    @GetMapping("/customer-balances")
+    CustomerBalancesReport customerBalances(@RequestParam(required = false) String customerType) {
+        return finance.customerBalances(customerType);
+    }
+
+    @GetMapping("/supplier-payables")
+    PayablesReport supplierPayables(@RequestParam(required = false) Long supplierId) {
+        return finance.supplierPayables(supplierId);
     }
 }
