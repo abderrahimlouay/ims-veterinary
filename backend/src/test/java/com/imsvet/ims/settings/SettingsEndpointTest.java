@@ -64,11 +64,12 @@ class SettingsEndpointTest {
     @Test
     void listsEverySettingWithItsEditability() throws Exception {
         client.get("/api/settings").andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(13)))
+                .andExpect(jsonPath("$", hasSize(14)))
                 .andExpect(jsonPath("$[?(@.key == 'currency')].editable").value(false))
                 .andExpect(jsonPath("$[?(@.key == 'default_vat_rate')].editable").value(true))
                 .andExpect(jsonPath("$[?(@.key == 'customer_return_max_days')].value").value("off"))
-                .andExpect(jsonPath("$[?(@.key == 'customer_return_max_days')].editable").value(true));
+                .andExpect(jsonPath("$[?(@.key == 'customer_return_max_days')].editable").value(true))
+                .andExpect(jsonPath("$[?(@.key == 'ageing_buckets')].value").value("30,60,90"));
         client.get("/api/settings/expiry_alert_days").andExpect(status().isOk())
                 .andExpect(jsonPath("$.value").value("60,30,15"));
     }

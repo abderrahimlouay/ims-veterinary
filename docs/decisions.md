@@ -1043,6 +1043,19 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** counting a delivery note at its own date, its invoice then not counted.
 - **Consequences:** the rewritten views (ADR-014, DR-007), `business-rules.md` BR-RPT-001, `api.md` §4.13.
 
+## ADR-148 — Receivables ageing and payables reports
+- **Status:** Accepted (user decision, 2026-11-05, Phase 11 slice 3; the four recommended options).
+- **Decision:**
+  1. **Age** of a credit invoice = days past its **due date** (business date of today − due date); 0 or less is "not yet due".
+  2. **Columns:** "not yet due", then the overdue columns closed by the new setting **`ageing_buckets`** = `30,60,90` (three strictly increasing positive integers, editable, ADR-044): 1–30, 31–60, 61–90, over 90 days.
+  3. An invoice is aged on its **open amount** (TTC − its confirmed credit notes − allocations of payments not reversed). Advances (unallocated payments on account) and invoices credited beyond their total lower the balance in an **advance** column; the row's balance = Σ columns − advance = the balance of ADR-118, the one on the Account tab.
+  4. **Uninvoiced credit delivery notes** (ADR-117) are a separate column, **not aged** and not in the balance.
+  5. **Supplier payables:** the open recorded invoices of every supplier (or one) by due date, with days overdue, the unapplied credit notes and the advances; balance as BR-PAY-014.
+  6. **Cash-session variances** over a period list the sessions **closed** in it (business date of closing); open sessions are not listed.
+  7. Both read report views (ADR-014) that repeat the finance definitions: `v_customer_receivables` and `v_supplier_open_items` (SD-151, SD-152); tests check them against the finance service on the same data.
+- **Alternatives:** age from the issue date; fixed columns; delivery notes aged with the invoices or left out; sessions opened in the period.
+- **Consequences:** BR-RPT-004, `api.md` §4.13, `database.md` §2 (settings) and §5, `database-migration.md` SD-151/SD-152, `testing.md`.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1301,7 +1314,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 8 Returns | ~~OD-005~~ → ADR-127, ADR-128, ADR-129; ADR-130, ADR-131 (all 2026-11-02); OD-040 registered, not blocking |
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
-| 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); margin scope follows ADR-117, ADR-118 |
+| 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); margin scope follows ADR-117, ADR-118 |
 | 12 Testing, Security, Deployment | OD-021 (hosting, availability, RTO, operations), ADR-036 hardening review |
 | 13 Dark theme | ADR-069 (decided 2026-10-22) |
 

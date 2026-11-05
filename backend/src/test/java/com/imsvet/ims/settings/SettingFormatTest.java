@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Unit test (U) of the setting formats (ADR-044, BR-LOT-010).
+ * Unit test (U) of the setting formats (ADR-044, BR-LOT-010, ADR-148).
  */
 class SettingFormatTest {
 
@@ -24,6 +24,19 @@ class SettingFormatTest {
     @ValueSource(strings = {"60,30", "60,30,15,7", "30,60,15", "60,30,30", "60,30,0", "60,-30,15", "a,b,c", ""})
     void otherExpiryDaysAreRejected(String raw) {
         assertThatThrownBy(() -> SettingFormat.THREE_DESCENDING_DAYS.normalize(raw))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {"30,60,90|30,60,90", " 15 , 30 ,60 |15,30,60", "1,2,3|1,2,3"})
+    void ageingBucketsAreThreeStrictlyIncreasingPositiveNumbers(String raw, String stored) {
+        assertThat(SettingFormat.THREE_ASCENDING_DAYS.normalize(raw)).isEqualTo(stored);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"30,60", "30,60,90,120", "60,30,90", "30,30,90", "0,30,60", "-30,60,90", "a,b,c", ""})
+    void otherAgeingBucketsAreRejected(String raw) {
+        assertThatThrownBy(() -> SettingFormat.THREE_ASCENDING_DAYS.normalize(raw))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

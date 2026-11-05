@@ -257,6 +257,8 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-148 | `customers` gain optional `nis`, `rc`, `ai` (the NIF stays `tax_id`) | ADR-141 | Accepted 2026-11-04 |
 | SD-149 | `v_sales_margin` rewritten: one signed row per line of confirmed invoices, receipts and credit notes (credit notes negative), cost from the line's snapshot, `SQL SECURITY INVOKER`; new view `v_uninvoiced_delivery_notes`; the application account is granted `SELECT` only on views | ADR-014, ADR-147, DR-007 | Accepted 2026-11-04 |
 | SD-150 | `v_stock_valuation` per lot on hand (quantity, value at lot cost and at sale price, lot status and expiry for the unsellable part), `SQL SECURITY INVOKER` | ADR-014, BR-RPT-002 | Accepted 2026-11-04 |
+| SD-151 | `v_customer_receivables`: one row per confirmed credit invoice (open amount, due date), live payment (unallocated part) and uninvoiced credit delivery note, with the customer's name, type, phone and wilaya, `SQL SECURITY INVOKER`; setting `ageing_buckets` | ADR-014, ADR-118, ADR-148 | Accepted 2026-11-05 |
+| SD-152 | `v_supplier_open_items`: one row per recorded supplier invoice or credit note (open amount, never below zero) and live supplier payment (unallocated part), `SQL SECURITY INVOKER`; the Source `v_supplier_payables` stays not ported | ADR-014, ADR-132, ADR-133, ADR-148 | Accepted 2026-11-05 |
 
 ## 9. Operational requirements for MySQL
 

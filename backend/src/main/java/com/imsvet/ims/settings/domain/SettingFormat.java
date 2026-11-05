@@ -68,6 +68,24 @@ public enum SettingFormat {
         }
     },
 
+    THREE_ASCENDING_DAYS {
+        @Override
+        public String normalize(String raw) {
+            String[] parts = raw.split(",", -1);
+            if (parts.length != 3) {
+                throw new IllegalArgumentException("Enter three numbers of days, smallest first, such as 30,60,90.");
+            }
+            List<Integer> days = new ArrayList<>();
+            for (String part : parts) {
+                days.add(parseInt(part));
+            }
+            if (days.get(0) < 1 || days.get(1) <= days.get(0) || days.get(2) <= days.get(1)) {
+                throw new IllegalArgumentException("Enter three numbers of days, smallest first, such as 30,60,90.");
+            }
+            return days.stream().map(String::valueOf).collect(Collectors.joining(","));
+        }
+    },
+
     CURRENCY_CODE {
         @Override
         public String normalize(String raw) {
