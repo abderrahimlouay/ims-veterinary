@@ -158,9 +158,10 @@ Layout: left = product search + scan field + quick results; centre = cart lines 
 
 ### 4.10 Reports
 Common filter bar (period, grouping), table + simple chart, export CSV/PDF. Role-restricted per report; margin/valuation visible only with their permissions.
+- **Delivered (Phase 11, slice `phase-11/frontend-reports-backups`):** `/reports` lists the reports the user holds the permission for (side-navigation entry shown with any report permission or `lot.recall`); `/reports/:key` (revenue, margin, salesStatistics, stockValuation, customerBalances, supplierPayables, cashSessions, lotTraceability) has the filters of its API (period, grouping, customer type, basis — "at cost" offered only with `report.margin` —, supplier, cashier, lot), the table with its totals as the server computed them (`features/reports/definitions.ts`), and "Exporter CSV" / "Imprimer / PDF" links carrying the same filters (ADR-149). The lot detail page links to the lot's traceability (`lot.recall`). Not delivered: the charts (tables only), to be decided at the Phase 11 close.
 
 ### 4.11 Administration
-Users (create, deactivate, reset password), role/permission matrix editor (checkbox grid, diff summary before save), settings form (typed inputs, validation per key), audit log viewer (filters, JSON detail drawer, read-only), backups list/run/download.
+Users (create, deactivate, reset password), role/permission matrix editor (checkbox grid, diff summary before save), settings form (typed inputs, validation per key), audit log viewer (filters, JSON detail drawer, read-only), backups list/run/download. **Delivered (Phase 11):** `/admin/backups` (`backup.manage`): the warnings of `/api/backups/status` (not configured, last run failed, no backup within a day, no download for `backup_download_reminder_days`), the last success and download, Run now with its result (a failed dump shows its reason), the log with sizes, removed backups, and a download link for kept ones (ADR-144…146).
 
 ## 5. Components (design-system mapping)
 
