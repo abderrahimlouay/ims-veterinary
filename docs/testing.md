@@ -253,8 +253,10 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-AUDIT-003 | S | Force audit failure → business action rolled back |
 | BR-RPT-001 | S,R | Revenue and margin net of credit notes; delivery notes through their invoice, uninvoiced apart; quotes and cancelled documents out (`SalesReportsTest`) |
 | BR-RPT-002 | S | Valuation by cost vs sale price on known fixture; expired, blocked lots apart, an empty lot absent; cost basis refused without `report.margin` (`StockReportsTest`) |
-| BR-RPT-003 | SEC | Report endpoints require their permissions (permission matrix; margin refused to a Seller, `SalesReportsTest`; finance reports refused to a Seller, `FinanceReportsTest`) |
+| BR-RPT-003 | SEC | Report endpoints require their permissions (permission matrix; margin refused to a Seller, `SalesReportsTest`; finance reports refused to a Seller, `FinanceReportsTest`; cash and traceability refused to a Seller, `CashAndTraceabilityReportsTest`) |
 | BR-RPT-004 | S | Ageing by days past due into the default and a changed `ageing_buckets`; credit notes, allocations, a reversed payment and an advance; balance equal to `/customers/{id}/balance`, delivery notes apart, counter sales absent; payables by due date with the cancelled invoice absent and the balance equal to `/suppliers/{id}/payables` (`FinanceReportsTest`) |
+| BR-RPT-005 | S | A lot received, partly returned to the supplier, sold on a credit invoice and at the counter anonymously, then returned by the customer: movements with documents and parties, supplier received/returned, customers sold/returned/net, anonymous row; unknown lot → NOT_FOUND (`CashAndTraceabilityReportsTest`) |
+| BR-RPT-006 | S | Three sessions closed (shortage, surplus, none) and one open: closed ones listed with names and variance, shortage and surplus totals; empty past period; `from` after `to` → VALIDATION_FAILED (`CashAndTraceabilityReportsTest`) |
 | BR-BKP-001 | S | Backup job produces log entry; failure recorded; retention keeps the last N successful files (ADR-144, ADR-145) |
 | BR-BKP-002 | S,A | Exports (CSV/PDF) respect permissions and filters |
 

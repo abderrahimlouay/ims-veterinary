@@ -10,7 +10,6 @@ import com.imsvet.ims.reporting.infrastructure.SalesFigures.StatisticFigure;
 import com.imsvet.ims.reporting.infrastructure.SalesFigures.Uninvoiced;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -72,9 +71,6 @@ public class SalesReports {
             List<StatisticRow> rows, long totalDocuments, BigDecimal totalHt) {
     }
 
-    private record Period(LocalDate from, LocalDate to, Instant start, Instant end) {
-    }
-
     private final SalesFigures figures;
     private final BusinessCalendar calendar;
 
@@ -87,7 +83,7 @@ public class SalesReports {
     @Transactional(readOnly = true)
     public RevenueReport revenue(LocalDate from, LocalDate to, String groupBy) {
         String group = groupBy(groupBy, "month", REVENUE_GROUPS);
-        Period p = period(from, to);
+        ReportPeriod p = ReportPeriod.of(from, to, calendar);
         List<RevenueRow> rows = switch (group) {
             case "day", "month" -> byDate(p, "day".equals(group));
             case "product" -> sorted(figures.byProduct(p.start(), p.end())).stream()
@@ -105,7 +101,7 @@ public class SalesReports {
     @Transactional(readOnly = true)
     public MarginReport margin(LocalDate from, LocalDate to, String groupBy) {
         String group = groupBy(groupBy, "category", MARGIN_GROUPS);
-        Period p = period(from, to);
+        ReportPeriod p = ReportPeriod.of(from, to, calendar);
         boolean product = "product".equals(group);
         List<GroupFigure> found = product ? figures.byProduct(p.start(), p.end()) : figures.byCategory(p.start(), p.end());
         List<MarginRow> rows = new ArrayList<>();
@@ -132,7 +128,7 @@ public class SalesReports {
     public StatisticsReport statistics(LocalDate from, LocalDate to, String groupBy, String customerType) {
         String group = groupBy(groupBy, "month", STATISTIC_GROUPS);
         String type = customerType(customerType);
-        Period p = period(from, to);
+        ReportPeriod p = ReportPeriod.of(from, to, calendar);
         List<StatisticRow> rows = switch (group) {
             case "day", "month" -> statisticsByDate(p, "day".equals(group), type);
             case "customer" -> statistics(figures.byCustomer(p.start(), p.end(), type));
@@ -144,7 +140,7 @@ public class SalesReports {
         return new StatisticsReport(p.from(), p.to(), group, type, rows, documents, total);
     }
 
-    private List<StatisticRow> statisticsByDate(Period p, boolean daily, String type) {
+    private List<StatisticRow> statisticsByDate(ReportPeriod p, boolean daily, String type) {
         Map<String, BigDecimal> totals = new TreeMap<>();
         Map<String, Long> counts = new TreeMap<>();
         for (DocumentFigure f : figures.byDocument(p.start(), p.end(), type)) {
@@ -177,7 +173,7 @@ public class SalesReports {
         return requested;
     }
 
-    private List<RevenueRow> byDate(Period p, boolean daily) {
+    private List<RevenueRow> byDate(ReportPeriod p, boolean daily) {
         Map<String, BigDecimal> totals = new TreeMap<>();
         for (DocumentFigure f : figures.byDocument(p.start(), p.end(), null)) {
             LocalDate date = calendar.dateOf(f.issuedAt());
@@ -185,16 +181,6 @@ public class SalesReports {
             totals.merge(key, money(f.revenueHt()), BigDecimal::add);
         }
         return totals.entrySet().stream().map(e -> new RevenueRow(e.getKey(), null, null, e.getValue())).toList();
-    }
-
-    private Period period(LocalDate from, LocalDate to) {
-        LocalDate last = to == null ? calendar.today() : to;
-        LocalDate first = from == null ? last.withDayOfMonth(1) : from;
-        if (first.isAfter(last)) {
-            throw new ValidationException("The period is invalid.",
-                    List.of(new Violation("from", "RANGE", "The start date must not be after the end date.")));
-        }
-        return new Period(first, last, calendar.startOf(first), calendar.startOf(last.plusDays(1)));
     }
 
     private static String groupBy(String requested, String fallback, Set<String> allowed) {

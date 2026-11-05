@@ -259,6 +259,8 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-150 | `v_stock_valuation` per lot on hand (quantity, value at lot cost and at sale price, lot status and expiry for the unsellable part), `SQL SECURITY INVOKER` | ADR-014, BR-RPT-002 | Accepted 2026-11-04 |
 | SD-151 | `v_customer_receivables`: one row per confirmed credit invoice (open amount, due date), live payment (unallocated part) and uninvoiced credit delivery note, with the customer's name, type, phone and wilaya, `SQL SECURITY INVOKER`; setting `ageing_buckets` | ADR-014, ADR-118, ADR-148 | Accepted 2026-11-05 |
 | SD-152 | `v_supplier_open_items`: one row per recorded supplier invoice or credit note (open amount, never below zero) and live supplier payment (unallocated part), `SQL SECURITY INVOKER`; the Source `v_supplier_payables` stays not ported | ADR-014, ADR-132, ADR-133, ADR-148 | Accepted 2026-11-05 |
+| SD-153 | `v_cash_sessions`: closed sessions with amounts, variance and the full names of the cashier and the closer, `SQL SECURITY INVOKER` | ADR-014, ADR-148 | Accepted 2026-11-05 |
+| SD-154 | `v_lot_traceability`: one row per stock movement with the lot, the product, the user's name, the document (receipt, supplier return, sales document, or the customer return of a `customer_return_line` reference) and the party, `SQL SECURITY INVOKER` | ADR-014, BR-RPT-005 | Accepted 2026-11-05 |
 
 ## 9. Operational requirements for MySQL
 
