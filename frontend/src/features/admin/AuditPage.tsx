@@ -7,11 +7,13 @@ import { TextField } from '../../components/TextField'
 import { formatDateTime } from '../../lib/format'
 import { useAuditLog, type AuditEntry, type AuditFilter } from './api'
 
-/** Action codes of security.md §7, for the filter only; the server validates the value. */
+/** Every action code of `AuditAction` (security.md §7), for the filter only; the server validates the value. */
 const ACTIONS = [
   'PRICE_CHANGE', 'INVOICE_CANCEL', 'STOCK_CORRECTION', 'LOT_BLOCK', 'LOT_UNBLOCK', 'LOT_RECALL', 'RETURN_CREATE',
   'PAYMENT_REVERSE', 'CREDIT_LIMIT_CHANGE', 'USER_CREATE', 'USER_UPDATE', 'USER_DEACTIVATE', 'ROLE_PERMISSION_CHANGE',
   'PASSWORD_RESET', 'SETTING_CHANGE', 'BACKUP_RUN', 'BACKUP_DOWNLOAD', 'FEFO_OVERRIDE', 'DISCOUNT_OVERRIDE',
+  'OPENING_STOCK', 'PO_CANCEL', 'PO_CLOSE', 'RECEIPT_CANCEL', 'SUPPLIER_INVOICE_CANCEL', 'CASH_VARIANCE',
+  'CASH_MOVEMENT_CREATE',
 ]
 
 /** `/admin/audit` (FR-AUD-001, frontend.md §4): read-only, newest first, details as JSON. */
