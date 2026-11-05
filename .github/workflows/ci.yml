@@ -80,6 +80,25 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
+  dependencies:
+    name: Dependency scan (OSV, ADR-155)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # The resolved runtime dependencies with their exact versions: osv-scanner cannot resolve the versions the
+      # Spring Boot parent manages from pom.xml alone.
+      - run: ./mvnw -B -q org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeBom -DincludeTestScope=false -DoutputFormat=json -DoutputName=bom.cdx
+        working-directory: backend
+      - run: >-
+          docker run --rm -v "$PWD":/repo:ro ghcr.io/google/osv-scanner:v2.2.4 scan source --format json
+          -L /repo/backend/target/bom.cdx.json -L /repo/frontend/package-lock.json > osv.json || true
+      - run: python3 .github/scripts/osv_gate.py osv.json .github/osv-allowlist.json
+
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest

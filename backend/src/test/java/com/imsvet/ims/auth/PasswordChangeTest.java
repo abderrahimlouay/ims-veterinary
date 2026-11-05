@@ -17,11 +17,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 /**
- * ADR-039 / BR-SEC-003: own password change, policy, bcrypt cost 12, forced change after a temporary password.
+ * ADR-039 / BR-SEC-003: own password change, policy, bcrypt cost 12, forced change after a temporary password; the
+ * user's other sessions end (ADR-154).
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -90,6 +92,28 @@ class PasswordChangeTest {
         ApiClient other = ApiClient.create(context, "198.51.100.21");
         other.login(seller.username(), seller.password()).andExpect(status().isUnauthorized());
         other.login(seller.username(), NEW_PASSWORD).andExpect(status().isOk());
+    }
+
+    /** ADR-154: committed, since the other sessions are deleted after the change commits. */
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void changingTheOwnPasswordEndsTheOtherSessionsOnly() throws Exception {
+        TestUser seller = users.create("Seller");
+        try {
+            ApiClient otherPc = ApiClient.create(context, "198.51.100.22");
+            client.login(seller.username(), seller.password()).andExpect(status().isOk());
+            otherPc.login(seller.username(), seller.password()).andExpect(status().isOk());
+
+            client.post("/api/auth/change-password", change(seller.password(), NEW_PASSWORD))
+                    .andExpect(status().isNoContent());
+
+            client.get("/api/auth/me").andExpect(status().isOk());
+            otherPc.get("/api/auth/me").andExpect(status().isUnauthorized());
+        } finally {
+            // No test may leave a user behind (AdministratorBootstrapTest): its sessions, then the user.
+            jdbc.update("DELETE FROM SPRING_SESSION WHERE PRINCIPAL_NAME = ?", String.valueOf(seller.id()));
+            jdbc.update("DELETE FROM users WHERE id = ?", seller.id());
+        }
     }
 
     @Test

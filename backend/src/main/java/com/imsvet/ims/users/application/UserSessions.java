@@ -7,4 +7,7 @@ package com.imsvet.ims.users.application;
 public interface UserSessions {
 
     void endAllAfterCommit(long userId);
+
+    /** Every session of the user but {@code keptSessionId}: after the user changed their own password (ADR-154). */
+    void endOthersAfterCommit(long userId, String keptSessionId);
 }

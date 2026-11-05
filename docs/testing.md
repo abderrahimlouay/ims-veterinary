@@ -262,6 +262,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-BKP-002 | S,SEC | Backup download by record id needs `backup.manage`, is audited `BACKUP_DOWNLOAD` and sets the last download; a removed or failed backup → NOT_FOUND; an Accountant refused; the backup account cannot write (`BackupsTest`, permission matrix) |
 | BR-BKP-003 | S,F | Status warnings: last run failed; no recent backup and download overdue after eight days; none after a download (`BackupsTest`); the backups page shows them, the log, downloads and Run now (`BackupsPage.test.tsx`) |
 | ADR-151 | I | `prod,migrate` migrates an empty schema to the last version under the migration account, grants the application account (views SELECT, ledgers SELECT/INSERT), opens no port and closes; `prod` then starts without any migration variable, bound to `127.0.0.1`, graceful shutdown (`MigrateModeTest`) |
+| ADR-154 | SEC | The same user on two PCs: an own password change keeps the current session and ends the other (`PasswordChangeTest`) |
 
 ## 10. Architecture and quality gates
 
@@ -269,6 +270,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
   - *Implemented in Phase 0* (`backend/src/test/java/com/imsvet/ims/architecture/ArchitectureTest.java`): module dependencies (`auth → users` is the only edge between those two, to keep them acyclic), no cycles, `common` depends on no module, `api` never uses `infrastructure` or `@Entity` classes, `domain` never uses `api`/`application`, `application` never uses `api`, no `@Transactional` on controllers, **no `double`/`float` field anywhere in main code**. The "only `inventory` writes stock" and "only `finance` writes payments" rules are added with the first ledger/payment classes (Phases 4 and 9).
 - **Static analysis:** compiler warnings as errors (`-Xlint:all -Werror`), lint (oxlint, the Vite template's linter, instead of ESLint — Phase 0) and TypeScript `strict`; a formatter check is not configured yet.
 - **Coverage guidance `[REC]`:** domain and application packages ≥ 85 % line coverage, but the rule matrix (§9) is the real gate.
+- **Dependency gate (ADR-155):** a CycloneDX bill of materials of the backend's runtime dependencies and `frontend/package-lock.json` scanned by a pinned OSV-Scanner; CVSS ≥ 7.0 with a fix fails the build unless allowlisted with a reason and an expiry (`.github/osv-allowlist.json`); `npm audit --audit-level=high` as well.
 - **CI pipeline stages:** build → unit → integration (Testcontainers) → API/security → migration tests → frontend unit → e2e (Playwright against the real backend on a MySQL container, its own job on every push and pull request while the journeys stay short; move to nightly if they grow) → dependency/secret scans.
 
 ## 11. Module Definition of Done
