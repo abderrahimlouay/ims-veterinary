@@ -24,6 +24,9 @@ const LOCAL_CHECKS: Record<string, (value: string) => boolean> = {
     const days = v.split(',').map((d) => Number(d.trim()))
     return days.length === 3 && days.every((d) => Number.isInteger(d) && d > 0) && days[0] < days[1] && days[1] < days[2]
   },
+  backup_time: (v) => /^([01]?\d|2[0-3]):[0-5]\d$/.test(v.trim()),
+  backup_retention_count: (v) => /^[1-9]\d*$/.test(v.trim()),
+  backup_download_reminder_days: (v) => /^[1-9]\d*$/.test(v.trim()),
 }
 
 /**

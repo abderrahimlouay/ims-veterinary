@@ -184,7 +184,7 @@ Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD
 
 ## 9. Data-level protection
 
-- Database accounts (BR-SEC-006, `database-migration.md` §9): `migrator` (DDL) used only during deployment; `app` (DML) with **no UPDATE/DELETE/TRUNCATE on `stock_movements` and `audit_log`**; `backup` (read-only). The application never connects as `root`.
+- Database accounts (BR-SEC-006, `database-migration.md` §9): `migrator` (DDL) used only during deployment; `app` (DML) with **no UPDATE/DELETE/TRUNCATE on `stock_movements` and `audit_log`**; `backup` (read-only: `SELECT, SHOW VIEW, TRIGGER, LOCK TABLES` on the schema and `SHOW_ROUTINE`, README; credentials only in `IMS_BACKUP_DB_*`, given to `mysqldump` in a private options file, never on its command line). The application never connects as `root`.
 - Triggers + privileges + `@Immutable` mapping protect the ledger (ADR-008).
 - Database not exposed beyond the application host/network segment.
 - Personal data stored (customer name, phone, address; user names/emails) is limited to business needs; applicable data-protection law and retention periods are **not specified by the Spec** (OD-021 covers retention).

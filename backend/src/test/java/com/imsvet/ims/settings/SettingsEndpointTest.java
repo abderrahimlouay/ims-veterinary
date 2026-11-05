@@ -64,7 +64,7 @@ class SettingsEndpointTest {
     @Test
     void listsEverySettingWithItsEditability() throws Exception {
         client.get("/api/settings").andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(14)))
+                .andExpect(jsonPath("$", hasSize(17)))
                 .andExpect(jsonPath("$[?(@.key == 'currency')].editable").value(false))
                 .andExpect(jsonPath("$[?(@.key == 'default_vat_rate')].editable").value(true))
                 .andExpect(jsonPath("$[?(@.key == 'customer_return_max_days')].value").value("off"))

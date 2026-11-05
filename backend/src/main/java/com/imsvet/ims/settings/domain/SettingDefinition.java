@@ -22,7 +22,10 @@ public enum SettingDefinition {
     INTEGRITY_CHECK_TIME("integrity_check_time", SettingFormat.TIME_OF_DAY, true, false),
     CREDIT_OVERDUE_BLOCK_DAYS("credit_overdue_block_days", SettingFormat.OFF_OR_DAYS, true, false),
     CUSTOMER_RETURN_MAX_DAYS("customer_return_max_days", SettingFormat.OFF_OR_DAYS, true, false),
-    AGEING_BUCKETS("ageing_buckets", SettingFormat.THREE_ASCENDING_DAYS, true, false);
+    AGEING_BUCKETS("ageing_buckets", SettingFormat.THREE_ASCENDING_DAYS, true, false),
+    BACKUP_TIME("backup_time", SettingFormat.TIME_OF_DAY, true, false),
+    BACKUP_RETENTION_COUNT("backup_retention_count", SettingFormat.POSITIVE_INTEGER, true, false),
+    BACKUP_DOWNLOAD_REMINDER_DAYS("backup_download_reminder_days", SettingFormat.POSITIVE_INTEGER, true, false);
 
     private final String key;
     private final SettingFormat format;

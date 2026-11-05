@@ -196,14 +196,20 @@
         "locale": "Regional format",
         "business_time_zone": "Time zone",
         "credit_overdue_block_days": "Block credit after overdue (days)",
-        "ageing_buckets": "Receivables ageing columns (days)"
+        "ageing_buckets": "Receivables ageing columns (days)",
+        "backup_time": "Daily backup time",
+        "backup_retention_count": "Backups kept",
+        "backup_download_reminder_days": "Download reminder (days)"
       },
       "hints": {
         "expiry_alert_days": "Three decreasing numbers: notice, warning, critical (e.g. 60,30,15).",
         "default_vat_rate": "From 0 to 100, at most two decimals.",
         "locale": "For example fr-DZ.",
         "credit_overdue_block_days": "off, or the days overdue tolerated before a new credit sale is refused.",
-        "ageing_buckets": "Three increasing numbers of days past due, such as 30,60,90."
+        "ageing_buckets": "Three increasing numbers of days past due, such as 30,60,90.",
+        "backup_time": "Time HH:mm, business time zone (e.g. 02:00).",
+        "backup_retention_count": "Successful backups kept on the server (e.g. 30).",
+        "backup_download_reminder_days": "Days without a backup download before the warning (e.g. 7)."
       }
     },
     "audit": {

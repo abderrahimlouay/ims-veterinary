@@ -33,6 +33,32 @@ CREATE USER '<application-user>'@'%' IDENTIFIED BY '<application-password>';
 
 If a variable is missing, or the same account is given for both roles, the application stops at start with a report that says exactly this. Passwords come **only from environment variables**; nothing in the repository holds one. The `dev` profile defaults the URL (`localhost:3306/ims`) and the account names (`ims_app`, `ims_migrator`) for a local database only: these names are public and must not be used in production, where the `prod` profile has no default at all and every variable must be set. Tests, `spring-boot:test-run` and CI create both accounts in their throw-away container with random passwords.
 
+## Backups (ADR-144…146)
+The application backs the database up itself, once per business day at `backup_time` (default 02:00), with `mysqldump` (the MySQL client must be installed on the server) under a **read-only** account; it keeps the last `backup_retention_count` (default 30) successful backups. Administrators see the log, start a backup (**Run now**) and download one on the backups page; both are audited. Set, only in the environment:
+
+| Variable | Meaning |
+|---|---|
+| `IMS_BACKUP_DIR` | the backup folder: outside anything a web server serves, readable by the application user only |
+| `IMS_BACKUP_DB_USERNAME`, `IMS_BACKUP_DB_PASSWORD` | the read-only backup account |
+| `IMS_BACKUP_MYSQLDUMP` | optional: the `mysqldump` program, when it is not on the path |
+
+Without them backups are "not configured": every run fails with that reason and the backups page warns. Create the account once as a MySQL administrator:
+
+```sql
+CREATE USER '<backup-user>'@'%' IDENTIFIED BY '<backup-password>';
+GRANT SELECT, SHOW VIEW, TRIGGER, LOCK TABLES ON `<schema>`.* TO '<backup-user>'@'%';
+GRANT SHOW_ROUTINE ON *.* TO '<backup-user>'@'%';
+```
+
+The password reaches `mysqldump` through a private options file, deleted after each run, never on its command line. **Off-site copy (ADR-146):** download a backup regularly (the page warns after `backup_download_reminder_days`, default 7) and keep it away from the premises.
+
+**Restoring a backup** (the application never restores; rehearsed by `BackupRestoreRehearsalTest`):
+1. Stop the application.
+2. On an empty MySQL 8.4 server (or after dropping the schema), as an administrator, create the empty schema (`CREATE DATABASE `<schema>` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci`) and the migration, application and backup accounts as above, with `log_bin_trust_function_creators=1` (triggers).
+3. Import with the **migration** account: `gunzip -c ims-backup-….sql.gz | mysql --user=<migration-user> -p`.
+4. Start the application with the same version (or a newer one): Flyway validates the restored history, applies any newer migration and grants the application account again.
+5. Check the integrity report and a few documents before reopening.
+
 ## First start (ADR-040)
 On an empty database, set `IMS_BOOTSTRAP_ADMIN_USERNAME` and `IMS_BOOTSTRAP_ADMIN_PASSWORD` (≥ 12 characters, not a common password) once: the application creates that Administrator, who must change the password at first login. Remove both variables afterwards; they are ignored as soon as a user exists.
 

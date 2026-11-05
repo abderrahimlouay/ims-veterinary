@@ -210,6 +210,7 @@ Per ADR-007 every rule marked `SVC` is authoritative in the backend; `UI` is a c
 | BR-RPT-007 | Report exports | Every report is exported as CSV (French spreadsheet format) or PDF with the same filters, figures and permission as on screen; a text cell is never exported as a formula; exports are not audited (ADR-149). | reports | export | permission of the report | SVC | ACCESS_DENIED / VALIDATION_FAILED | SRC FR-RPT-001 · ADR-149 |
 | BR-BKP-001 | Automatic backup | The application backs the database up once per business day at `backup_time` with `mysqldump` and the read-only `backup` account; each run (and each Run now) is recorded in `backup_log` (status, size, file), a failure with its reason; the last `backup_retention_count` successful backups are kept (ADR-144, ADR-145). | backup | schedule | — | JOB / OPS | — | SRC FR-AUD-002 · ADR-144 · ADR-145 |
 | BR-BKP-002 | Export | An authorised user (`backup.manage`) can export/download a backup; the action is audited. | backup | request | permission | SVC | ACCESS_DENIED | SRC FR-AUD-002 |
+| BR-BKP-003 | Backup warnings | The backups page warns when backups are not configured, when the last run failed, when no backup succeeded within a day, and when no backup was downloaded for `backup_download_reminder_days` (default 7) (ADR-146). | backup | read status | — | SVC | — | ADR-146 |
 
 ## 9. Rule statistics
 

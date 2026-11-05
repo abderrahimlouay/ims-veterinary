@@ -372,9 +372,10 @@ Scope of revenue/margin per ADR-117 / ADR-118, ADR-147 and BR-RPT-001: invoices 
 | GET | `/api/company-profile` | the current company profile — **Phase 10** (ADR-140) | authenticated | → `CompanyProfile {id, legalName, legalForm, address, wilaya, phone, email, nif, nis, rc, ai, approvalNumber, bankAccount, footerText, hasLogo, effectiveFrom, createdBy}`; 204 when none exists yet |
 | POST | `/api/company-profile` | a new version (never an edit) — **Phase 10** (ADR-140) | `settings.manage` | `multipart/form-data`: the fields above (`legalName` required) and an optional `logo` (PNG or JPEG ≤ 256 KB) or `keepLogo=true` → 201 `CompanyProfile`; `VALIDATION_FAILED` (`legalName` `REQUIRED`/`SIZE`, `logo` `SIZE`/`UNKNOWN`, `email` `EMAIL`); audited `SETTING_CHANGE` |
 | GET | `/api/company-profile/logo` | the current logo — **Phase 10** | authenticated | `image/png` or `image/jpeg`; 404 when none |
-| GET | `/api/backups` | backup log | `backup.manage` | page |
-| POST | `/api/backups` | run a backup now (ADR-144) | `backup.manage` | → `BackupRecord`; one at a time, else `INVALID_STATE_TRANSITION`; audited `BACKUP_RUN` |
-| GET | `/api/backups/{id}/download` | download (audited) | `backup.manage` | stream |
+| GET | `/api/backups` | backup log, newest first | `backup.manage` | `?page&size` → page of `BackupRecord {id, trigger (scheduled\|manual), startedBy, status (success\|failed), fileName, sizeBytes, failureReason, startedAt, finishedAt, removedAt, lastDownloadedAt, available}` |
+| GET | `/api/backups/status` | what the backups page warns about (ADR-146) | `backup.manage` | `{configured, lastRun: BackupRecord or null, lastSuccessAt, lastDownloadAt, downloadReminderDays, warnings: [NOT_CONFIGURED, LAST_FAILED, NO_RECENT_BACKUP (no success within a day), DOWNLOAD_OVERDUE (no download for backup_download_reminder_days)]}` |
+| POST | `/api/backups` | run a backup now and wait for it (ADR-144) | `backup.manage` | → 201 `BackupRecord`, `status` `failed` with its `failureReason` when the dump fails (not an error); one at a time, else `INVALID_STATE_TRANSITION` (`context.state` `running`); audited `BACKUP_RUN` |
+| GET | `/api/backups/{id}/download` | download a kept backup (audited `BACKUP_DOWNLOAD`) | `backup.manage` | `application/gzip` attachment, `no-store`; a failed, removed or missing backup → `NOT_FOUND`; sets `lastDownloadedAt` |
 
 ## 5. Detailed contracts (critical endpoints)
 
