@@ -99,6 +99,21 @@ jobs:
           -L /repo/backend/target/bom.cdx.json -L /repo/frontend/package-lock.json > osv.json || true
       - run: python3 .github/scripts/osv_gate.py osv.json .github/osv-allowlist.json
 
+  proxy:
+    name: Reverse proxy configuration (nginx -t, ADR-157)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # A throw-away certificate only so that nginx can load the reference configuration.
+      - run: |
+          mkdir -p tls
+          openssl req -x509 -newkey rsa:2048 -nodes -keyout tls/server.key -out tls/server.crt -days 1 -subj "/CN=ims.pharmacie.lan"
+          chmod 644 tls/server.key
+      - run: >-
+          docker run --rm -v "$PWD/deploy/nginx/ims.conf":/etc/nginx/conf.d/default.conf:ro
+          -v "$PWD/deploy/nginx/ims-security-headers.conf":/etc/nginx/snippets/ims-security-headers.conf:ro
+          -v "$PWD/tls":/etc/ims/tls:ro nginx:1.28-alpine nginx -t
+
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest
