@@ -1056,6 +1056,15 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** age from the issue date; fixed columns; delivery notes aged with the invoices or left out; sessions opened in the period.
 - **Consequences:** BR-RPT-004, `api.md` §4.13, `database.md` §2 (settings) and §5, `database-migration.md` SD-151/SD-152, `testing.md`.
 
+## ADR-149 — Report exports: CSV for French spreadsheets, PDF tables, not audited
+- **Status:** Accepted (user decision, 2026-11-05, Phase 11 exports; the three recommended options).
+- **Decision:**
+  1. **CSV** (`?format=csv` on every report): semicolon separator, decimal comma without grouping, dates `dd/MM/yyyy` and times `dd/MM/yyyy HH:mm` in the business time zone, UTF-8 with a byte-order mark, CRLF; French headers and labels; the rows of the JSON report, then the totals. Downloaded as an attachment, `Cache-Control: no-store`. A text cell beginning with `=`, `+`, `-`, `@`, a tab or a carriage return gets a leading apostrophe (no formula injection); numbers stay numbers.
+  2. **PDF** (`?format=pdf`, rendered by `printing`, ADR-138 style): company header from the company profile, report title, filters and period, print date, the table and totals; A4 **landscape** for wide reports (ageing, payables, cash sessions, lot traceability, margin by product, valuation by product), portrait otherwise; French.
+  3. Exports are **not audited**: they are read-only and gated by the report's own permission, like the screen and the existing PDFs.
+- **Alternatives:** standard CSV (comma, decimal point, no BOM); portrait PDF only; auditing each export (`REPORT_EXPORT`).
+- **Consequences:** BR-RPT-007, `api.md` §4.13, `architecture.md` (`printing` may call `reporting` for the PDFs), `testing.md`.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1314,7 +1323,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 8 Returns | ~~OD-005~~ → ADR-127, ADR-128, ADR-129; ADR-130, ADR-131 (all 2026-11-02); OD-040 registered, not blocking |
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
-| 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); margin scope follows ADR-117, ADR-118 |
+| 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
 | 12 Testing, Security, Deployment | OD-021 (hosting, availability, RTO, operations), ADR-036 hardening review |
 | 13 Dark theme | ADR-069 (decided 2026-10-22) |
 

@@ -1,5 +1,8 @@
 package com.imsvet.ims.reporting;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -12,6 +15,7 @@ import com.imsvet.ims.support.TestUsers;
 import com.imsvet.ims.support.TestUsers.TestUser;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -175,6 +179,26 @@ class SalesReportsTest {
         client.get("/api/reports/margin").andExpect(status().isForbidden());
     }
 
+    @Test
+    void reportsExportAsCsvForFrenchSpreadsheets() throws Exception {
+        assertThat(csv(admin.get("/api/reports/revenue?groupBy=category&format=csv"))).isEqualTo(
+                "Catégorie;CA HT\r\nCatégorie rapport;2000,00\r\nSans catégorie;300,00\r\nTotal;2300,00\r\n"
+                        + "Bons de livraison non facturés (1);4000,00\r\n");
+        assertThat(csv(admin.get("/api/reports/margin?groupBy=product&format=csv")))
+                .startsWith("Code;Produit;Quantité;CA HT;Coût;Marge;Taux de marge (%)\r\n")
+                .contains("RPT-1;Produit rapport;2,000;2000,00;1,00;1999,00;99,95\r\n")
+                .endsWith("Total;;;2300,00;2,50;2297,50;99,89\r\n");
+        assertThat(csv(admin.get("/api/reports/sales-statistics?groupBy=day&format=csv")))
+                .isEqualTo("Date;Documents;CA HT\r\n" + today.format(java.time.format.DateTimeFormatter
+                        .ofPattern("dd/MM/yyyy")) + ";3;2300,00\r\nTotal;3;2300,00\r\n");
+        admin.get("/api/reports/revenue?format=csv&from=" + today.plusDays(1)).andExpect(status().isBadRequest());
+
+        TestUser seller = new TestUsers(jdbc, encoder).create("Seller");
+        ApiClient client = ApiClient.create(context, "198.51.100.250");
+        client.login(seller.username(), seller.password()).andExpect(status().isOk());
+        client.get("/api/reports/margin?format=csv").andExpect(status().isForbidden());
+    }
+
     private long draft(String type, long productId, String quantity) throws Exception {
         long id = id(admin.post("/api/sales", "{\"docType\":\"" + type + "\",\"customerId\":" + customer
                 + ",\"creditSale\":" + !"quote".equals(type) + "}").andExpect(status().isCreated()));
@@ -193,5 +217,13 @@ class SalesReportsTest {
 
     private static long id(ResultActions result) throws Exception {
         return JSON.readTree(result.andReturn().getResponse().getContentAsString()).get("id").asLong();
+    }
+
+    private static String csv(ResultActions result) throws Exception {
+        byte[] bytes = result.andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", startsWith("attachment; filename=")))
+                .andReturn().getResponse().getContentAsByteArray();
+        return new String(bytes, 3, bytes.length - 3, StandardCharsets.UTF_8);
     }
 }

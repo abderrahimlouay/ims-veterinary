@@ -1,5 +1,8 @@
 package com.imsvet.ims.reporting;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -12,6 +15,7 @@ import com.imsvet.ims.support.TestUsers;
 import com.imsvet.ims.support.TestUsers.TestUser;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -174,6 +178,25 @@ class CashAndTraceabilityReportsTest {
         client.get("/api/reports/lot-traceability?lotId=1").andExpect(status().isForbidden());
     }
 
+    @Test
+    void cashAndTraceabilityExportAsCsv() throws Exception {
+        TestUser user = new TestUsers(jdbc, encoder).create("Accountant");
+        ApiClient cashier = ApiClient.create(context, "198.51.100.252");
+        cashier.login(user.username(), user.password()).andExpect(status().isOk());
+        long id = session(cashier, "40", "38");
+        assertThat(csv(admin.get("/api/reports/cash-sessions?format=csv&cashierId=" + user.id())))
+                .startsWith("Session;Caissier;Ouverture;Clôture;Clôturée par;Fonds initial;Attendu;Compté;Écart\r\n"
+                        + id + ";Test User;")
+                .contains(";Test User;40,00;40,00;38,00;-2,00\r\n")
+                .endsWith("Écart net;;;;;;;;-2,00\r\n");
+
+        long product = new TestLots(jdbc).product("TRC-CSV", "Produit export");
+        long lot = new TestLots(jdbc).lot(product, "LOT-CSV", today.plusYears(1), "4");
+        assertThat(csv(admin.get("/api/reports/lot-traceability?format=csv&lotId=" + lot)))
+                .startsWith("Lot;LOT-CSV;Produit;TRC-CSV;Produit export;Péremption;")
+                .contains("\r\n01/10/2026 09:00;Stock initial;4,000;;;;Lot fixture\r\n");
+    }
+
     private long session(ApiClient cashier, String opening, String counted) throws Exception {
         long id = id(cashier.post("/api/cash-sessions/open", "{\"openingAmount\":\"" + opening + "\"}")
                 .andExpect(status().isCreated()));
@@ -199,5 +222,13 @@ class CashAndTraceabilityReportsTest {
     private static long id(ResultActions result) throws Exception {
         JsonNode node = JSON.readTree(result.andReturn().getResponse().getContentAsString());
         return node.get("id").asLong();
+    }
+
+    private static String csv(ResultActions result) throws Exception {
+        byte[] bytes = result.andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", startsWith("attachment; filename=")))
+                .andReturn().getResponse().getContentAsByteArray();
+        return new String(bytes, 3, bytes.length - 3, StandardCharsets.UTF_8);
     }
 }

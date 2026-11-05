@@ -2,6 +2,7 @@ package com.imsvet.ims.reporting;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -13,6 +14,7 @@ import com.imsvet.ims.support.TestLots;
 import com.imsvet.ims.support.TestUsers;
 import com.imsvet.ims.support.TestUsers.TestUser;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -182,6 +184,27 @@ class FinanceReportsTest {
         client.get("/api/reports/supplier-payables").andExpect(status().isForbidden());
     }
 
+    @Test
+    void balancesAndPayablesExportAsCsv() throws Exception {
+        long breeder = customer("Ferme Export", "breeder");
+        document("invoice", "EXP-40", breeder, null, true, today.minusDays(40), "250.00");
+        assertThat(csv(accountant.get("/api/reports/customer-balances?format=csv")))
+                .startsWith("Client;Téléphone;Wilaya;Non échu;1–30 j;31–60 j;61–90 j;> 90 j;Avance;Solde;"
+                        + "BL non facturés\r\n")
+                .contains("\r\nFerme Export;;;0,00;0,00;250,00;0,00;0,00;0,00;250,00;0,00\r\n")
+                .contains("\r\nTotal;;;");
+
+        long supplier = supplier("Labo Export");
+        supplierInvoice(supplier, "FA-EXP", today.minusDays(3), today.minusDays(3), "75", false);
+        assertThat(csv(accountant.get("/api/reports/supplier-payables?format=csv&supplierId=" + supplier)))
+                .contains(";FA-EXP;" + date(today.minusDays(3)) + ";" + date(today.minusDays(3)) + ";3;75,00;75,00\r\n")
+                .endsWith("Solde;;;;;;75,00\r\n");
+    }
+
+    private static String date(LocalDate date) {
+        return date.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
     private long customer(String name, String type) {
         jdbc.update("""
                 INSERT INTO customers (name, customer_type, credit_limit, created_at, updated_at)
@@ -231,5 +254,13 @@ class FinanceReportsTest {
 
     private static long id(ResultActions result) throws Exception {
         return read(result).get("id").asLong();
+    }
+
+    private static String csv(ResultActions result) throws Exception {
+        byte[] bytes = result.andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", startsWith("attachment; filename=")))
+                .andReturn().getResponse().getContentAsByteArray();
+        return new String(bytes, 3, bytes.length - 3, StandardCharsets.UTF_8);
     }
 }
