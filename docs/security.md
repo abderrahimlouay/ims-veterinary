@@ -206,6 +206,7 @@ Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD
 | Topic | Decision |
 |---|---|
 | TLS | HTTPS only in production (terminated at reverse proxy); HSTS enabled; certificate signed by the pharmacy's private CA, root installed on the counter PCs, CA key kept offline (ADR-152) |
+| Application listener | `prod` binds the application to `127.0.0.1` (`IMS_SERVER_ADDRESS` only for a proxy on another host): only the TLS reverse proxy reaches it (ADR-152) |
 | Remote administration | Only through a WireGuard VPN; SSH keys only, no password or root login, listening on the local network and the VPN; nothing else exposed to the internet (ADR-153) |
 | CORS | Production: frontend and API on the **same origin** behind the reverse proxy ⇒ CORS disabled. Development: Vite dev-server proxies `/api` (no CORS) or an explicit allow-list of `http://localhost:<vite-port>`; **never `*` with credentials** |
 | Headers | `Content-Security-Policy` (self + required font CDN decisions in `frontend.md`), `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`/`frame-ancestors 'none'`, `Cache-Control: no-store` on API responses with personal/financial data |
