@@ -59,6 +59,11 @@ ims:
   db:
     lock-wait-timeout-seconds: 5 # ADR-012: a lock held longer is CONCURRENT_MODIFICATION, never a silent wait
     application-host: '%' # host part of the application account the grants are given to (ADR-087)
+  backup: # ADR-144: from the environment only; without a folder or an account backups are "not configured"
+    directory: ${IMS_BACKUP_DIR:}
+    mysqldump: ${IMS_BACKUP_MYSQLDUMP:mysqldump}
+    username: ${IMS_BACKUP_DB_USERNAME:}
+    password: ${IMS_BACKUP_DB_PASSWORD:}
   security:
     session:
       absolute-timeout: 10h # ADR-036

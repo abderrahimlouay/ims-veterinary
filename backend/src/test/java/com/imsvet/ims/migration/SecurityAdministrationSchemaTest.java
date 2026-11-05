@@ -63,6 +63,9 @@ class SecurityAdministrationSchemaTest {
                 Map.entry("integrity_check_time", "02:00"),
                 Map.entry("credit_overdue_block_days", "off"),
                 Map.entry("customer_return_max_days", "off"),
-                Map.entry("ageing_buckets", "30,60,90")));
+                Map.entry("ageing_buckets", "30,60,90"),
+                Map.entry("backup_time", "02:00"),
+                Map.entry("backup_retention_count", "30"),
+                Map.entry("backup_download_reminder_days", "7")));
     }
 }

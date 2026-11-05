@@ -1,6 +1,7 @@
 package com.imsvet.ims;
 
 import com.imsvet.ims.common.db.MySqlVersion;
+import com.imsvet.ims.support.BackupAccount;
 import com.imsvet.ims.support.MigrationAccount;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -31,12 +32,17 @@ public class MySqlContainerConfiguration {
 
     public static final String MIGRATION_USER = "ims_migrator";
 
+    /** The read-only account of the backups (ADR-144, BR-SEC-006). */
+    public static final String BACKUP_USER = "ims_backup";
+
     /** Distinctive so tests can assert it never reaches the logs (ADR-031). */
     public static final String MYSQL_PASSWORD = "tc-canary-" + UUID.randomUUID();
 
     private static final String APP_PASSWORD = "tc-app-" + UUID.randomUUID();
 
     private static final String MIGRATION_PASSWORD = "tc-migration-" + UUID.randomUUID();
+
+    private static final String BACKUP_PASSWORD = "tc-backup-" + UUID.randomUUID();
 
     @Bean
     MySQLContainer mysqlContainer() throws SQLException {
@@ -71,7 +77,15 @@ public class MySqlContainerConfiguration {
                 new DriverManagerDataSource(mysql.getJdbcUrl(), MIGRATION_USER, MIGRATION_PASSWORD)));
     }
 
-    /** As an administrator would (README): the migration account owns the schema; the application account starts empty. */
+    @Bean
+    BackupAccount backupAccount() {
+        return new BackupAccount(BACKUP_USER, BACKUP_PASSWORD);
+    }
+
+    /**
+     * As an administrator would (README): the migration account owns the schema; the application account starts empty;
+     * the backup account reads only (ADR-144).
+     */
     private static void createAccounts(MySQLContainer mysql) throws SQLException {
         try (Connection root = DriverManager.getConnection(mysql.getJdbcUrl(), "root", MYSQL_PASSWORD);
                 Statement sql = root.createStatement()) {
@@ -79,6 +93,10 @@ public class MySqlContainerConfiguration {
             sql.execute("GRANT ALL PRIVILEGES ON `" + mysql.getDatabaseName() + "`.* TO '" + MIGRATION_USER
                     + "'@'%' WITH GRANT OPTION");
             sql.execute("CREATE USER '" + APP_USER + "'@'%' IDENTIFIED BY '" + APP_PASSWORD + "'");
+            sql.execute("CREATE USER '" + BACKUP_USER + "'@'%' IDENTIFIED BY '" + BACKUP_PASSWORD + "'");
+            sql.execute("GRANT SELECT, SHOW VIEW, TRIGGER, LOCK TABLES ON `" + mysql.getDatabaseName() + "`.* TO '"
+                    + BACKUP_USER + "'@'%'");
+            sql.execute("GRANT SHOW_ROUTINE ON *.* TO '" + BACKUP_USER + "'@'%'");
         }
     }
 }
