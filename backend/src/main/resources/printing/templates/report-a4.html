@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title th:text="${title}">Rapport</title>
+<style th:replace="~{common :: style}"></style>
+<style th:if="${wide}">@page { size: A4 landscape; }</style>
+<style>
+  table.lines td, table.lines th { font-size: 8pt; }
+  tr.total td { font-weight: 700; border-top: 0.8pt solid #444; border-bottom: none; }
+  .filters { margin-top: 4mm; }
+</style>
+</head>
+<body>
+<table class="header">
+  <tr>
+    <td th:replace="~{common :: company(${company})}"></td>
+    <td>
+      <div class="title" th:text="${title}">RAPPORT</div>
+      <div class="right" th:text="'Édité le ' + ${printedAt}">Date</div>
+    </td>
+  </tr>
+</table>
+<div class="filters">
+  <div class="muted" th:each="f : ${filters}" th:text="${f}">Période</div>
+</div>
+<th:block th:each="section : ${sections}">
+  <h3 th:if="${section.heading != null}" th:text="${section.heading}">Section</h3>
+  <table class="lines">
+    <thead>
+      <tr><th th:each="c : ${section.columns}" th:classappend="${c.num} ? 'num'" th:text="${c.label}">Colonne</th></tr>
+    </thead>
+    <tbody>
+      <tr th:each="row : ${section.rows}">
+        <td th:each="cell : ${row}" th:classappend="${cell.num} ? 'num'" th:text="${cell.text}">0</td>
+      </tr>
+      <tr th:if="${section.rows.isEmpty()}">
+        <td class="muted" th:attr="colspan=${section.columns.size()}">Aucune donnée.</td>
+      </tr>
+      <tr class="total" th:each="row : ${section.totals}">
+        <td th:each="cell : ${row}" th:classappend="${cell.num} ? 'num'" th:text="${cell.text}">0</td>
+      </tr>
+    </tbody>
+  </table>
+</th:block>
+</body>
+</html>

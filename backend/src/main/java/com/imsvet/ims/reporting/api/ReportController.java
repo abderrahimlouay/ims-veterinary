@@ -4,6 +4,7 @@ import com.imsvet.ims.reporting.application.FinanceReports;
 import com.imsvet.ims.reporting.application.FinanceReports.CashSessionsReport;
 import com.imsvet.ims.reporting.application.FinanceReports.CustomerBalancesReport;
 import com.imsvet.ims.reporting.application.FinanceReports.PayablesReport;
+import com.imsvet.ims.reporting.application.ReportTables;
 import com.imsvet.ims.reporting.application.SalesReports;
 import com.imsvet.ims.reporting.application.SalesReports.MarginReport;
 import com.imsvet.ims.reporting.application.SalesReports.RevenueReport;
@@ -31,10 +32,12 @@ class ReportController {
     private final StockReports stock;
     private final FinanceReports finance;
     private final TraceabilityReports traceability;
+    private final ReportTables tables;
     private final ReportCsv csv;
 
     ReportController(SalesReports sales, StockReports stock, FinanceReports finance,
-            TraceabilityReports traceability, ReportCsv csv) {
+            TraceabilityReports traceability, ReportTables tables, ReportCsv csv) {
+        this.tables = tables;
         this.csv = csv;
         this.sales = sales;
         this.stock = stock;
@@ -96,46 +99,46 @@ class ReportController {
     @GetMapping(value = "/revenue", params = CSV)
     ResponseEntity<byte[]> revenueCsv(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) String groupBy) {
-        return csv.revenue(sales.revenue(from, to, groupBy));
+        return csv.render(tables.revenue(sales.revenue(from, to, groupBy)));
     }
 
     @GetMapping(value = "/margin", params = CSV)
     ResponseEntity<byte[]> marginCsv(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) String groupBy) {
-        return csv.margin(sales.margin(from, to, groupBy));
+        return csv.render(tables.margin(sales.margin(from, to, groupBy)));
     }
 
     @GetMapping(value = "/sales-statistics", params = CSV)
     ResponseEntity<byte[]> statisticsCsv(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) String groupBy,
             @RequestParam(required = false) String customerType) {
-        return csv.statistics(sales.statistics(from, to, groupBy, customerType));
+        return csv.render(tables.statistics(sales.statistics(from, to, groupBy, customerType)));
     }
 
     @GetMapping(value = "/stock-valuation", params = CSV)
     ResponseEntity<byte[]> valuationCsv(@RequestParam(required = false) String basis,
             @RequestParam(required = false) String groupBy) {
-        return csv.valuation(stock.valuation(basis, groupBy));
+        return csv.render(tables.valuation(stock.valuation(basis, groupBy)));
     }
 
     @GetMapping(value = "/customer-balances", params = CSV)
     ResponseEntity<byte[]> customerBalancesCsv(@RequestParam(required = false) String customerType) {
-        return csv.customerBalances(finance.customerBalances(customerType));
+        return csv.render(tables.customerBalances(finance.customerBalances(customerType)));
     }
 
     @GetMapping(value = "/supplier-payables", params = CSV)
     ResponseEntity<byte[]> supplierPayablesCsv(@RequestParam(required = false) Long supplierId) {
-        return csv.supplierPayables(finance.supplierPayables(supplierId));
+        return csv.render(tables.supplierPayables(finance.supplierPayables(supplierId)));
     }
 
     @GetMapping(value = "/cash-sessions", params = CSV)
     ResponseEntity<byte[]> cashSessionsCsv(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Long cashierId) {
-        return csv.cashSessions(finance.cashSessions(from, to, cashierId));
+        return csv.render(tables.cashSessions(finance.cashSessions(from, to, cashierId)));
     }
 
     @GetMapping(value = "/lot-traceability", params = CSV)
     ResponseEntity<byte[]> lotTraceabilityCsv(@RequestParam long lotId) {
-        return csv.lotTraceability(traceability.lot(lotId));
+        return csv.render(tables.lotTraceability(traceability.lot(lotId)));
     }
 }
