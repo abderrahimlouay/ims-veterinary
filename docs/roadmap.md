@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–10 complete (tags `phase-0-done` … `phase-10-done`); Phase 11 (Reports & audit) current: decisions ADR-144…147 (2026-11-04), ADR-148 (2026-11-05); Phases 12–13 not started
+> **Status:** Phases 0–10 complete (tags `phase-0-done` … `phase-10-done`); Phase 11 (Reports & audit) current: decisions ADR-144…147 (2026-11-04), ADR-148, ADR-149 (2026-11-05); Phases 12–13 not started
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-11-02
 
@@ -29,7 +29,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 | 8 | Returns | customer returns, credit notes, restock/discard, refunds | ADR-127…131 (was OD-005) |
 | 9 | Payments & finance | payments, allocations, balances, statements, cash sessions, supplier invoices | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132…134; ADR-135…137 (ADR-108: payments enter the credit balance) |
 | 10 | Documents & printing | PDFs, tickets, withdrawal warnings on documents | ADR-138…143 (were OD-020, OD-026, OD-028) |
-| 11 | Reports & audit | reports, exports, backup | ADR-144…148 (was OD-021, backup part; DR-007) |
+| 11 | Reports & audit | reports, exports, backup | ADR-144…149 (was OD-021, backup part; DR-007) |
 | 12 | Hardening & deployment | performance, security review, UAT, deployment procedure | OD-021 (hosting, availability), ADR-036 hardening |
 | 13 | Dark theme `[REC]` | user-selectable theme (system / light / dark), contrast verified | ADR-069 (decided 2026-10-22) |
 
@@ -165,7 +165,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 
 ## Phase 11 — Reports & audit
 - **Objective:** management information and data safety.
-- **Prerequisites:** Phase 9; decided 2026-11-04: ADR-144 (the application takes the backups with `mysqldump` and the read-only `backup` account; restore by a written procedure), ADR-145 (daily, the last 30 kept), ADR-146 (off-site copy by manual download, with a reminder), ADR-147 (revenue and margin at invoice or receipt, net of credit notes; uninvoiced delivery notes apart); was OD-021 (backup part) and DR-007; decided 2026-11-05: ADR-148 (receivables ageing from the due date with the `ageing_buckets` setting, delivery notes apart; payables by due date; cash variances of sessions closed in the period).
+- **Prerequisites:** Phase 9; decided 2026-11-04: ADR-144 (the application takes the backups with `mysqldump` and the read-only `backup` account; restore by a written procedure), ADR-145 (daily, the last 30 kept), ADR-146 (off-site copy by manual download, with a reminder), ADR-147 (revenue and margin at invoice or receipt, net of credit notes; uninvoiced delivery notes apart); was OD-021 (backup part) and DR-007; decided 2026-11-05: ADR-148 (receivables ageing from the due date with the `ageing_buckets` setting, delivery notes apart; payables by due date; cash variances of sessions closed in the period), ADR-149 (exports: CSV for French spreadsheets, PDF tables, not audited).
 - **Features:** revenue, margin, valuation, sales statistics, balances, payables, cash variance, lot traceability; CSV/PDF export; backups and backup log; audit viewer finalised.
 - **Database work:** rewritten MySQL views (ADR-014) with corrected margin/credit-note handling (DR-007), indexes for reports.
 - **Backend work:** `reporting`, `backup`.
