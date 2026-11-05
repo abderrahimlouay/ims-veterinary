@@ -272,6 +272,8 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 | `v_customer_balance` | customer running balance | **Not created** (DR-006): one service query per ADR-118 / ADR-134 (Phase 9) |
 | `v_customer_receivables` | what customers owe, item by item, for the ageing report | **New** (V11_004, SD-151; ADR-148): open credit invoices with their due date, advances, uninvoiced credit delivery notes; same definition as ADR-118 |
 | `v_supplier_payables` | outstanding per supplier invoice | **Not created**: computed by the service per ADR-132 (Phase 9); the report reads `v_supplier_open_items` |
+| `v_cash_sessions` | closed cash sessions with the cashier and closer names | **New** (V11_007, SD-153; ADR-148 item 6) |
+| `v_lot_traceability` | every movement of a lot with its document and party | **New** (V11_008, SD-154; BR-RPT-005) |
 | `v_supplier_open_items` | what is open with each supplier, item by item | **New** (V11_005, SD-152; ADR-148): open recorded invoices and credit notes, advances; same definition as ADR-132 / ADR-133 |
 | `v_stock_valuation` | value at cost and at sale price | **Created** (V11_003, SD-150): one row per lot on hand, with its status and expiry |
 | `v_sales_margin` | revenue / cost / margin by day, product, zone, customer | **Rewritten** (V11_001, SD-149): signed rows of confirmed invoices, receipts and credit notes (ADR-147) |

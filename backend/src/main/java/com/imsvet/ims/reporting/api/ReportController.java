@@ -1,6 +1,7 @@
 package com.imsvet.ims.reporting.api;
 
 import com.imsvet.ims.reporting.application.FinanceReports;
+import com.imsvet.ims.reporting.application.FinanceReports.CashSessionsReport;
 import com.imsvet.ims.reporting.application.FinanceReports.CustomerBalancesReport;
 import com.imsvet.ims.reporting.application.FinanceReports.PayablesReport;
 import com.imsvet.ims.reporting.application.SalesReports;
@@ -9,6 +10,8 @@ import com.imsvet.ims.reporting.application.SalesReports.RevenueReport;
 import com.imsvet.ims.reporting.application.SalesReports.StatisticsReport;
 import com.imsvet.ims.reporting.application.StockReports;
 import com.imsvet.ims.reporting.application.StockReports.ValuationReport;
+import com.imsvet.ims.reporting.application.TraceabilityReports;
+import com.imsvet.ims.reporting.application.TraceabilityReports.LotTraceability;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,11 +27,14 @@ class ReportController {
     private final SalesReports sales;
     private final StockReports stock;
     private final FinanceReports finance;
+    private final TraceabilityReports traceability;
 
-    ReportController(SalesReports sales, StockReports stock, FinanceReports finance) {
+    ReportController(SalesReports sales, StockReports stock, FinanceReports finance,
+            TraceabilityReports traceability) {
         this.sales = sales;
         this.stock = stock;
         this.finance = finance;
+        this.traceability = traceability;
     }
 
     @GetMapping("/revenue")
@@ -67,5 +73,18 @@ class ReportController {
     @GetMapping("/supplier-payables")
     PayablesReport supplierPayables(@RequestParam(required = false) Long supplierId) {
         return finance.supplierPayables(supplierId);
+    }
+
+    @GetMapping("/cash-sessions")
+    CashSessionsReport cashSessions(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) Long cashierId) {
+        return finance.cashSessions(from, to, cashierId);
+    }
+
+    @GetMapping("/lot-traceability")
+    LotTraceability lotTraceability(@RequestParam long lotId) {
+        return traceability.lot(lotId);
     }
 }

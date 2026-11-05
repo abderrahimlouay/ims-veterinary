@@ -9,6 +9,7 @@ import com.imsvet.ims.reporting.infrastructure.FinanceFigures.SupplierItem;
 import com.imsvet.ims.settings.application.SettingsProvider;
 import com.imsvet.ims.settings.domain.SettingDefinition;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -23,7 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Receivables ageing and supplier payables (ADR-148, BR-RPT-004), as of today (business date).
+ * Receivables ageing and supplier payables (ADR-148, BR-RPT-004), as of today (business date); cash-session variances
+ * over a period (BR-RPT-006).
  * <p>
  * Customers: the open amount of each credit invoice is aged by days past its due date into "not yet due" and the
  * columns of {@code ageing_buckets}; advances and invoices credited beyond their total lower the balance apart; the
@@ -57,6 +59,18 @@ public class FinanceReports {
     /** {@code balance} = open invoices − unapplied credit notes − advances: what is owed. */
     public record PayablesReport(LocalDate date, Long supplierId, List<PayableRow> rows, BigDecimal totalOpen,
             BigDecimal totalOverdue, BigDecimal unappliedCreditNotes, BigDecimal advances, BigDecimal balance) {
+    }
+
+    /** {@code variance} = counted − expected (BR-CASH-002): negative a shortage, positive a surplus. */
+    public record CashSessionRow(long sessionId, long cashierId, String cashierName, Long closedById,
+            String closedByName, Instant openedAt, Instant closedAt, BigDecimal openingAmount, BigDecimal expectedAmount,
+            BigDecimal countedAmount, BigDecimal variance) {
+    }
+
+    /** {@code totalShortage} is the sum of the negative variances (≤ 0), {@code totalSurplus} of the positive ones. */
+    public record CashSessionsReport(LocalDate from, LocalDate to, Long cashierId, List<CashSessionRow> rows,
+            long sessions, long sessionsWithVariance, BigDecimal totalShortage, BigDecimal totalSurplus,
+            BigDecimal totalVariance) {
     }
 
     private final FinanceFigures figures;
@@ -122,6 +136,31 @@ public class FinanceReports {
         }
         return new PayablesReport(today, supplierId, rows, money(open), money(overdue), money(credits),
                 money(advances), money(open.subtract(credits).subtract(advances)));
+    }
+
+    /** The sessions closed in the period (ADR-148 item 6), by closing time; one cashier or all. */
+    @PreAuthorize("hasAuthority('report.finance')")
+    @Transactional(readOnly = true)
+    public CashSessionsReport cashSessions(LocalDate from, LocalDate to, Long cashierId) {
+        ReportPeriod period = ReportPeriod.of(from, to, calendar);
+        List<CashSessionRow> rows = figures.closedSessions(period.start(), period.end(), cashierId).stream()
+                .map(f -> new CashSessionRow(f.sessionId(), f.cashierId(), f.cashierName(), f.closedBy(),
+                        f.closerName(), f.openedAt(), f.closedAt(), money(f.openingAmount()),
+                        money(f.expectedAmount()), money(f.countedAmount()), money(f.variance())))
+                .toList();
+        BigDecimal shortage = zero();
+        BigDecimal surplus = zero();
+        long withVariance = 0;
+        for (CashSessionRow row : rows) {
+            if (row.variance().signum() < 0) {
+                shortage = shortage.add(row.variance());
+            } else if (row.variance().signum() > 0) {
+                surplus = surplus.add(row.variance());
+            }
+            withVariance += row.variance().signum() == 0 ? 0 : 1;
+        }
+        return new CashSessionsReport(period.from(), period.to(), cashierId, rows, rows.size(), withVariance, shortage,
+                surplus, shortage.add(surplus));
     }
 
     /** One customer's items, or all of them for the totals ({@code first} {@code null}). */
