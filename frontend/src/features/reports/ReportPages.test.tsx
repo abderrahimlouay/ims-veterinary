@@ -89,6 +89,59 @@ describe('Reports', () => {
     expect(screen.getByRole('link', { name: 'Imprimer / PDF' })).toHaveAttribute('href', '/api/reports/revenue?groupBy=category&format=pdf')
   })
 
+  it('draws a column chart above the table when revenue is grouped by month, and none by category (ADR-164)', async () => {
+    serveMe(aUser({ permissions: ['report.sales'] }))
+    server.use(
+      http.get('/api/reports/revenue', ({ request }) =>
+        HttpResponse.json(
+          new URL(request.url).searchParams.get('groupBy') === 'category'
+            ? REVENUE
+            : {
+                ...REVENUE,
+                groupBy: 'month',
+                rows: [
+                  { key: '2026-09', code: null, label: null, revenueHt: '1200.00' },
+                  { key: '2026-10', code: null, label: null, revenueHt: '3400.00' },
+                ],
+                totalHt: '4600.00',
+              },
+        ),
+      ),
+    )
+    renderApp('/reports/revenue')
+
+    const chart = await screen.findByRole('img', { name: "Chiffre d'affaires HT par période" })
+    expect(chart.querySelectorAll('rect')).toHaveLength(2)
+    expect(within(screen.getByRole('table')).getByText('10/2026')).toBeInTheDocument()
+
+    await userEvent.selectOptions(screen.getByLabelText('Regroupement'), 'category')
+    await screen.findByText('Antiparasitaires')
+    expect(screen.queryByRole('img', { name: "Chiffre d'affaires HT par période" })).not.toBeInTheDocument()
+  })
+
+  it('draws the chart for sales statistics by day', async () => {
+    serveMe(aUser({ permissions: ['report.sales'] }))
+    server.use(
+      http.get('/api/reports/sales-statistics', () =>
+        HttpResponse.json({
+          from: '2026-10-01',
+          to: '2026-10-02',
+          groupBy: 'day',
+          customerType: null,
+          rows: [
+            { key: '2026-10-01', code: null, label: null, documents: 3, revenueHt: '900.00' },
+            { key: '2026-10-02', code: null, label: null, documents: 1, revenueHt: '150.00' },
+          ],
+          totalDocuments: 4,
+          totalHt: '1050.00',
+        }),
+      ),
+    )
+    renderApp('/reports/salesStatistics?groupBy=day')
+    const chart = await screen.findByRole('img', { name: "Chiffre d'affaires HT par période" })
+    expect(chart.querySelectorAll('rect')).toHaveLength(2)
+  })
+
   it('names the ageing columns from the setting and offers valuation at cost only with report.margin', async () => {
     serveMe(aUser({ permissions: ['report.finance', 'report.stock'] }))
     server.use(

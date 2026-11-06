@@ -43,6 +43,10 @@
     "light": "Light",
     "dark": "Dark"
   },
+  "chart": {
+    "highest": "Highest: {{period}}, {{amount}}",
+    "lowest": "Lowest: {{period}}, {{amount}}"
+  },
   "dashboard": {
     "title": "Dashboard",
     "empty": "No modules are available yet."
@@ -1554,6 +1558,7 @@
     "lotTraceability": {
       "title": "Lot traceability",
       "description": "Every movement of a lot, its suppliers and its customers."
-    }
+    },
+    "revenueChart": "Revenue excl. VAT by period"
   }
 }

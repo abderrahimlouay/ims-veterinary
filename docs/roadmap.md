@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phase 12 (Testing, security hardening, deployment) current: decisions ADR-150…157 (2026-11-05), ADR-158…160 (2026-11-06), open until its client items are done (DR-040, DR-041, DR-043, installation, restore rehearsal, UAT); Phase 13 (Dark theme, report charts) current alongside it: decisions ADR-161…163 (2026-11-06)
+> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phase 12 (Testing, security hardening, deployment) current: decisions ADR-150…157 (2026-11-05), ADR-158…160 (2026-11-06), open until its client items are done (DR-040, DR-041, DR-043, installation, restore rehearsal, UAT); Phase 13 (Dark theme, report charts) current alongside it: decisions ADR-161…164 (2026-11-06)
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-11-02
 

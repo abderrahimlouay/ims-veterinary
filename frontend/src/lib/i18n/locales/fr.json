@@ -43,6 +43,10 @@
     "light": "Clair",
     "dark": "Sombre"
   },
+  "chart": {
+    "highest": "Plus haut : {{period}}, {{amount}}",
+    "lowest": "Plus bas : {{period}}, {{amount}}"
+  },
   "dashboard": {
     "title": "Tableau de bord",
     "empty": "Aucun module n'est encore disponible."
@@ -1554,6 +1558,7 @@
     "lotTraceability": {
       "title": "Traçabilité d'un lot",
       "description": "Tous les mouvements d'un lot, ses fournisseurs et ses clients."
-    }
+    },
+    "revenueChart": "Chiffre d'affaires HT par période"
   }
 }

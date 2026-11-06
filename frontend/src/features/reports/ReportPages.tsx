@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
+import { ColumnChart } from '../../components/ColumnChart'
 import { PdfLink } from '../../components/PdfLink'
 import { SelectField } from '../../components/SelectField'
 import { TextField } from '../../components/TextField'
@@ -132,9 +133,16 @@ function ReportView({ definition, canSeeCost }: { definition: ReportDefinition; 
           {t('app.loading')}
         </p>
       )}
+      {report.data !== undefined && !report.error && <ReportChart definition={definition} data={report.data} />}
       {report.data !== undefined && !report.error && definition.sections(report.data, t).map((s, i) => <SectionTable key={i} section={s} />)}
     </section>
   )
+}
+
+function ReportChart({ definition, data }: { definition: ReportDefinition; data: unknown }) {
+  const { t } = useTranslation()
+  const chart = definition.chart?.(data, t) ?? null
+  return chart === null ? null : <ColumnChart title={chart.title} points={chart.points} />
 }
 
 function SectionTable({ section }: { section: Section }) {

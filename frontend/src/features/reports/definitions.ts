@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next'
 import { formatDate, formatDateTime, formatMoney, formatQuantity } from '../../lib/format'
+import type { ChartPoint } from '../../components/ColumnChart'
 import type {
   CashSessionsReport,
   CustomerBalancesReport,
@@ -43,6 +44,8 @@ export interface ReportDefinition {
   /** Required parameters; the report is not requested until they are set. */
   required?: string[]
   sections(data: unknown, t: TFunction): Section[]
+  /** A column chart above the table when the report is grouped by date (ADR-164); screen only. */
+  chart?(data: unknown, t: TFunction): { title: string; points: ChartPoint[] } | null
 }
 
 const text = (value: string | number | null | undefined): Cell => ({ text: value === null || value === undefined ? '' : String(value) })
@@ -84,6 +87,20 @@ function groupCells(groupBy: string, row: { key: string | null; code: string | n
   }
 }
 
+/** Revenue by month or day as chart points; other groupings have no chart (ADR-164). */
+function revenueChart(
+  r: { groupBy: string; rows: { key: string | null; revenueHt: string }[] },
+  t: TFunction,
+): { title: string; points: ChartPoint[] } | null {
+  if ((r.groupBy !== 'month' && r.groupBy !== 'day') || r.rows.length === 0) {
+    return null
+  }
+  return {
+    title: t('reports.revenueChart'),
+    points: r.rows.map((x) => ({ label: dateKey(x.key), value: x.revenueHt, display: formatMoney(x.revenueHt) })),
+  }
+}
+
 const pad = (n: number): Cell[] => Array.from({ length: n }, () => blank)
 
 export const REPORTS: readonly ReportDefinition[] = [
@@ -93,6 +110,7 @@ export const REPORTS: readonly ReportDefinition[] = [
     permission: 'report.sales',
     filters: ['period'],
     groups: ['month', 'day', 'category', 'product'],
+    chart: (data, t) => revenueChart(data as RevenueReport, t),
     sections(data, t) {
       const r = data as RevenueReport
       const lead = groupColumns(r.groupBy, t).length
@@ -148,6 +166,7 @@ export const REPORTS: readonly ReportDefinition[] = [
     permission: 'report.sales',
     filters: ['period', 'customerType'],
     groups: ['month', 'day', 'customer', 'wilaya', 'commune'],
+    chart: (data, t) => revenueChart(data as StatisticsReport, t),
     sections(data, t) {
       const r = data as StatisticsReport
       const lead: Column[] =

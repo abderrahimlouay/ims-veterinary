@@ -43,6 +43,10 @@
     "light": "فاتح",
     "dark": "داكن"
   },
+  "chart": {
+    "highest": "الأعلى: {{period}}، {{amount}}",
+    "lowest": "الأدنى: {{period}}، {{amount}}"
+  },
   "dashboard": {
     "title": "لوحة القيادة",
     "empty": "لا تتوفر أي وحدة بعد."
@@ -1554,6 +1558,7 @@
     "lotTraceability": {
       "title": "تتبع دفعة",
       "description": "كل حركات الدفعة ومورّدوها وزبائنها."
-    }
+    },
+    "revenueChart": "رقم الأعمال خارج الرسوم حسب الفترة"
   }
 }
