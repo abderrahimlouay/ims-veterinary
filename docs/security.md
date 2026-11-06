@@ -206,6 +206,7 @@ Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD
 | Topic | Decision |
 |---|---|
 | TLS | HTTPS only in production (terminated at reverse proxy); HSTS enabled; certificate signed by the pharmacy's private CA, root installed on the counter PCs, CA key kept offline (ADR-152) |
+| Frontend headers (ADR-157) | Sent by the reverse proxy (`deploy/nginx/ims-security-headers.conf`): `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; frame-src blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'` (`frame-src blob:` for the print frame, ADR-139), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy` denying camera, microphone, geolocation, payment and USB; HSTS; `server_tokens off`; 1 MB request bodies; 20 requests/s per address with bursts of 40 on `/api/` (429) |
 | Application listener | `prod` binds the application to `127.0.0.1` (`IMS_SERVER_ADDRESS` only for a proxy on another host): only the TLS reverse proxy reaches it (ADR-152) |
 | Remote administration | Only through a WireGuard VPN; SSH keys only, no password or root login, listening on the local network and the VPN; nothing else exposed to the internet (ADR-153) |
 | CORS | Production: frontend and API on the **same origin** behind the reverse proxy ⇒ CORS disabled. Development: Vite dev-server proxies `/api` (no CORS) or an explicit allow-list of `http://localhost:<vite-port>`; **never `*` with credentials** |
@@ -258,7 +259,7 @@ Defined in `testing.md` §7: authentication, authorization matrix per endpoint, 
 | V8 Data protection | Pass | personal data never in logs or audit values (ADR-114), backups downloaded by id and audited, backup account read-only |
 | V9 Communications | Pass by design, in deployment | TLS at the proxy with a private CA and HSTS (ADR-152); the application listens on `127.0.0.1` only (ADR-151) |
 | V12 Files | Pass | logo checked by signature and size (ADR-140); backup files resolved only from names the application gives |
-| V14 Configuration | Pass after fix | secrets only from the environment, migration account only in migrate mode (ADR-151), health endpoint without details; **fixed:** a dependency gate in CI (ADR-155) found and removed Tomcat 11.0.24 (Critical) and Jackson 3.1.5 (High) by Spring Boot 4.1.2; the frontend's headers and the rate limit move to the versioned proxy configuration (ADR-157) |
+| V14 Configuration | Pass after fix | secrets only from the environment, migration account only in migrate mode (ADR-151), health endpoint without details; **fixed:** a dependency gate in CI (ADR-155) found and removed Tomcat 11.0.24 (Critical) and Jackson 3.1.5 (High) by Spring Boot 4.1.2; the frontend's headers and the rate limit are in the versioned proxy configuration, checked by J13 and `nginx -t` (ADR-157) |
 | Database accounts | Pass | application account least-privilege with append-only ledgers (grants and triggers, `DatabaseAccountsTest`), views read-only, migration account outside the running application, backup account read-only (`BackupsTest`) |
 
 **Accepted risks:** no MFA (ADR-156); ognl 3.3.4 (Medium, used by Thymeleaf on fixed templates only, no user-written expression).

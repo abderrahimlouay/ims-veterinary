@@ -68,6 +68,9 @@ In production Flyway is off when the application starts, and the running applica
    It applies the pending migrations, grants the application account, logs `Migrate mode: schema at version …`, opens no port and exits. A failed migration stops it with the error: restore the backup of step 1 (MySQL DDL is not transactional).
 4. Start the new JAR with `SPRING_PROFILES_ACTIVE=prod` and without the migration variables. It listens on `127.0.0.1` only (`IMS_SERVER_ADDRESS` to change it), behind the reverse proxy that serves HTTPS (ADR-152), and finishes the requests in progress when stopped.
 
+## Reverse proxy (ADR-152, ADR-157)
+`deploy/nginx/ims.conf` is the reference configuration of the production server's nginx: HTTP redirected to HTTPS; TLS with the certificate signed by the pharmacy's private CA (`/etc/ims/tls/server.crt` and `.key`); `/api/` to the application on `127.0.0.1:8080` with a coarse rate limit (20 requests per second per address, bursts of 40, then 429); the built frontend (`npm run build`, copied to `/srv/ims/frontend`) with every route falling back to `index.html`; HSTS. Copy `deploy/nginx/ims-security-headers.conf` to `/etc/nginx/snippets/`: it holds the frontend's Content-Security-Policy and other headers, identical to `frontend/src/securityHeaders.ts`, under which the end-to-end journeys run (J13). Replace `ims.pharmacie.lan` by the server's local name. CI checks the configuration with `nginx -t`.
+
 ## First start (ADR-040)
 On an empty database, set `IMS_BOOTSTRAP_ADMIN_USERNAME` and `IMS_BOOTSTRAP_ADMIN_PASSWORD` (≥ 12 characters, not a common password) once: the application creates that Administrator, who must change the password at first login. Remove both variables afterwards; they are ignored as soon as a user exists.
 

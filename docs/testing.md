@@ -263,6 +263,7 @@ Levels per §2. "Key scenarios" are the minimum; implementers add more. Rules wh
 | BR-BKP-003 | S,F | Status warnings: last run failed; no recent backup and download overdue after eight days; none after a download (`BackupsTest`); the backups page shows them, the log, downloads and Run now (`BackupsPage.test.tsx`) |
 | ADR-151 | I | `prod,migrate` migrates an empty schema to the last version under the migration account, grants the application account (views SELECT, ledgers SELECT/INSERT), opens no port and closes; `prod` then starts without any migration variable, bound to `127.0.0.1`, graceful shutdown (`MigrateModeTest`) |
 | ADR-154 | SEC | The same user on two PCs: an own password change keeps the current session and ends the other (`PasswordChangeTest`) |
+| ADR-157 | U,E2E,CI | The proxy's header file and `securityHeaders.ts` are identical, the policy has no `unsafe-*` (`securityHeaders.test.ts`); every journey runs the production build under those headers (`vite preview`), J13 opens the main screens with no policy violation; CI runs `nginx -t` on the reference configuration. **Manual (UAT):** print a ticket and an A4 document from a real counter PC through the proxy (the print frame under `frame-src blob:` and `object-src 'none'` cannot be checked headless) |
 
 ## 10. Architecture and quality gates
 
