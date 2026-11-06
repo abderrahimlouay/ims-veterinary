@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phase 12 (Testing, security hardening, deployment) current: decisions ADR-150…157 (2026-11-05); Phase 13 not started
+> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phase 12 (Testing, security hardening, deployment) current: decisions ADR-150…157 (2026-11-05), ADR-158 (2026-11-06); Phase 13 not started
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-11-02
 
@@ -180,7 +180,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 - **Features:** performance tuning at target volume; security review (OWASP ASVS-oriented checklist); accessibility audit; data-migration rehearsal from the legacy source (if any); operations runbook; UAT.
 - **Database work:** index tuning; review of the least-privilege DB accounts introduced in Phase 4 (ADR-087, BR-SEC-006); restore rehearsal.
 - **Backend work:** rate limits, headers, config hardening, observability checks.
-- **Frontend work:** accessibility fixes, bundle size, browser matrix. The production bundle passed 500 kB in Phase 4 (Vite warning): split the large pages (POS, reports) into lazily loaded chunks here (user decision 2026-10-23).
+- **Frontend work:** accessibility fixes, bundle size, browser matrix. The production bundle passed 500 kB in Phase 4 (Vite warning): split the large pages (POS, reports) into lazily loaded chunks here (user decision 2026-10-23); done 2026-11-06 (every feature lazily loaded, largest file 387 kB).
 - **Tests:** full regression, e2e suite, load test, dependency/secret scans, backup restore test.
 - **Completion criteria:** all NFRs verified; no open Critical/High items in `documentation-review.md`; user acceptance signed off.
 

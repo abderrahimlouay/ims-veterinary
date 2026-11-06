@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { hasPermission, useCurrentUser } from '../auth'
-import { ExpiryWidget, LowStockWidget, ReorderWidget } from '../inventory'
+import { ExpiryWidget } from '../inventory/ExpiryWidget'
+import { LowStockWidget } from '../inventory/LowStockWidget'
+import { ReorderWidget } from '../inventory/ReorderWidget'
 
 /**
  * `/` (frontend.md §3.1): one widget per module the user can read; expiry alerts from Phase 3 (W12), low stock and

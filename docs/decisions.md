@@ -1120,6 +1120,12 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** headers and limits described in the guide only, written by the operator on the server.
 - **Consequences:** a later Phase 12 slice (deployment); `security.md` §11.
 
+## ADR-158 — Target volume and report response times
+- **Status:** Accepted (user decision, 2026-11-06, Phase 12 performance; the recommended options).
+- **Decision:** The application is sized and tested for **300 sales documents a day kept for five years**: about 450,000 documents of every type, 2.25 million lines and as many stock movements, 50,000 products and their lots, 1,500 customers, with account payments, a cash session a day and the supplier invoices. At that volume a report over **a year answers in under 5 s** and over **a month in under 2 s** on screen (CSV and PDF of a year may take longer); search stays under 1 s (NFR-002) and a sale's confirmation under 2 s (`SalePerformanceTest`).
+- **Alternatives:** 100 or 1,000 documents a day; a year's report under 2 s (summary tables kept at each sale) or under 10 s.
+- **Consequences:** `architecture.md` §14, `testing.md` (`VolumePerformanceTest`), index tuning where a report misses its bound.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.

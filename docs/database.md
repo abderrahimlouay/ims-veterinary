@@ -261,6 +261,8 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 | Movement history | `idx_sm_product_date`, `idx_sm_lot`, `idx_sm_reference` |
 | Audit lookup | `idx_audit_entity`, `idx_audit_user_date` |
 
+**Report indexes (Phase 12, V12_001, SD-156, ADR-158):** `sales_documents (status, doc_type, issued_at, customer_id, total_ht)` lets the report views select a period's confirmed documents by a range scan; `sales_document_lines (document_id, product_id, quantity_base, unit_cost, line_ht)` lets them read the lines from the index alone. Measured at the target volume by `VolumePerformanceTest`.
+
 ## 5. Views (target)
 
 | View | Purpose | Status |
@@ -270,13 +272,14 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 | `v_expiring_lots` | expiry alert list | Not created: the list and its levels are computed by the service from settings (ADR-056, DR-019) |
 | `v_sale_withdrawal_warnings` | printable withdrawal warnings | Keep; the same rule on screen and in print (ADR-121, ADR-142) |
 | `v_customer_balance` | customer running balance | **Not created** (DR-006): one service query per ADR-118 / ADR-134 (Phase 9) |
-| `v_customer_receivables` | what customers owe, item by item, for the ageing report | **New** (V11_004, SD-151; ADR-148): open credit invoices with their due date, advances, uninvoiced credit delivery notes; same definition as ADR-118 |
+| `v_customer_receivables` | what customers owe, item by item, for the ageing report | **New** (V11_004, SD-151; ADR-148; rewritten with joined sums V12_003, SD-158): open credit invoices with their due date, advances, uninvoiced credit delivery notes; same definition as ADR-118 |
 | `v_supplier_payables` | outstanding per supplier invoice | **Not created**: computed by the service per ADR-132 (Phase 9); the report reads `v_supplier_open_items` |
 | `v_cash_sessions` | closed cash sessions with the cashier and closer names | **New** (V11_007, SD-153; ADR-148 item 6) |
 | `v_lot_traceability` | every movement of a lot with its document and party | **New** (V11_008, SD-154; BR-RPT-005) |
 | `v_supplier_open_items` | what is open with each supplier, item by item | **New** (V11_005, SD-152; ADR-148): open recorded invoices and credit notes, advances; same definition as ADR-132 / ADR-133 |
 | `v_stock_valuation` | value at cost and at sale price | **Created** (V11_003, SD-150): one row per lot on hand, with its status and expiry |
 | `v_sales_margin` | revenue / cost / margin by day, product, zone, customer | **Rewritten** (V11_001, SD-149): signed rows of confirmed invoices, receipts and credit notes (ADR-147) |
+| `v_sales_documents` | one row per confirmed invoice, receipt or credit note with its signed revenue | **New** (V12_002, SD-157; ADR-158): the reports by day or month; equals the sum of the document's lines in `v_sales_margin` (parity test) |
 | `v_uninvoiced_delivery_notes` | confirmed delivery notes without a confirmed invoice | **New** (V11_002, SD-149; ADR-147) |
 
 Rule (ADR-014): views are read models for listings/reports; decisions inside transactions use locking queries. Views are `SQL SECURITY INVOKER`; the application account has `SELECT` only on them; the `reporting` module reads views, never tables (`ModuleSqlBoundaryTest`).

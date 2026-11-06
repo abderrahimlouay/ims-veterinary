@@ -262,6 +262,9 @@ Differences between the Source Schema and the intended MySQL design. `database.m
 | SD-153 | `v_cash_sessions`: closed sessions with amounts, variance and the full names of the cashier and the closer, `SQL SECURITY INVOKER` | ADR-014, ADR-148 | Accepted 2026-11-05 |
 | SD-154 | `v_lot_traceability`: one row per stock movement with the lot, the product, the user's name, the document (receipt, supplier return, sales document, or the customer return of a `customer_return_line` reference) and the party, `SQL SECURITY INVOKER` | ADR-014, BR-RPT-005 | Accepted 2026-11-05 |
 | SD-155 | `backup_log` redesigned for ADR-144: trigger and user, success or failure with its reason, a file **name** (not a path), start and end, removal by retention, last download; settings `backup_time`, `backup_retention_count`, `backup_download_reminder_days` | ADR-144, ADR-145, ADR-146 | Accepted 2026-11-05 |
+| SD-156 | Report indexes `idx_sales_documents_report (status, doc_type, issued_at, customer_id, total_ht)` and `idx_sales_document_lines_report (document_id, product_id, quantity_base, unit_cost, line_ht)` (V12_001): a year's revenue by month 6.3 s → 3.1 s at the target volume | ADR-158 | Accepted 2026-11-06 |
+| SD-157 | `v_sales_documents` (V12_002): one row per confirmed invoice, receipt or credit note with its signed `total_ht`, for the reports by day or month; equal to the sum of the lines of `v_sales_margin` (`total_ht` is the sum of `line_ht`, `SaleTotals`, ADR-016; parity test) and read from the report index alone | ADR-147, ADR-158 | Accepted 2026-11-06 |
+| SD-158 | `v_customer_receivables` rewritten (V12_003) with the same rows and amounts: credit notes, allocations of payments not reversed and allocations per payment summed once per table and joined, instead of subqueries per invoice or payment (the receivables report reached 5.4 s at the target volume) | ADR-148, ADR-158 | Accepted 2026-11-06 |
 
 ## 9. Operational requirements for MySQL
 

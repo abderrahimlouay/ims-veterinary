@@ -14,14 +14,15 @@ import org.springframework.stereotype.Repository;
 
 /**
  * Reads the report views of sales (ADR-014, ADR-147): {@code v_sales_margin}, signed so that a sum is net of credit
- * notes, and {@code v_uninvoiced_delivery_notes}. A period is a half-open range of instants {@code [from, to)}; the
+ * notes, {@code v_sales_documents} (one row per document, for the reports by date) and
+ * {@code v_uninvoiced_delivery_notes}. A period is a half-open range of instants {@code [from, to)}; the
  * columns hold UTC (ADR-010).
  */
 @Repository
 public class SalesFigures {
 
-    /** One document's net revenue and cost; the caller buckets it by business date. */
-    public record DocumentFigure(Instant issuedAt, boolean creditNote, BigDecimal revenueHt, BigDecimal cost) {
+    /** One document's net revenue; the caller buckets it by business date. */
+    public record DocumentFigure(Instant issuedAt, boolean creditNote, BigDecimal revenueHt) {
     }
 
     /**
@@ -54,18 +55,19 @@ public class SalesFigures {
         this.jdbc = jdbc;
     }
 
-    /** {@code customerType} {@code null} = every sale, counter sales without a customer included. */
+    /**
+     * {@code customerType} {@code null} = every sale, counter sales without a customer included. Reads
+     * {@code v_sales_documents}, one row per document (ADR-158): its total equals the sum of its lines.
+     */
     public List<DocumentFigure> byDocument(Instant from, Instant to, String customerType) {
         return jdbc.query("""
-                SELECT issued_at, doc_type, SUM(revenue_ht) AS revenue_ht, SUM(cost) AS cost
-                FROM v_sales_margin
+                SELECT issued_at, doc_type, revenue_ht
+                FROM v_sales_documents
                 WHERE issued_at >= :from AND issued_at < :to
                   AND (:customerType IS NULL OR customer_type = :customerType)
-                GROUP BY document_id, issued_at, doc_type
                 ORDER BY issued_at, document_id""", range(from, to, customerType),
                 (rs, i) -> new DocumentFigure(rs.getObject("issued_at", LocalDateTime.class).toInstant(ZoneOffset.UTC),
-                        "credit_note".equals(rs.getString("doc_type")), rs.getBigDecimal("revenue_ht"),
-                        rs.getBigDecimal("cost")));
+                        "credit_note".equals(rs.getString("doc_type")), rs.getBigDecimal("revenue_ht")));
     }
 
     public List<StatisticFigure> byCustomer(Instant from, Instant to, String customerType) {

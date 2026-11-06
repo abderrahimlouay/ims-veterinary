@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next'
+import { Suspense } from 'react'
 import { Link, Outlet } from 'react-router'
+import { PageLoading } from './AppLayout'
 
 /** `PosLayout` (frontend.md §2): the full-screen counter, with no sidebar and one way back. */
 export function PosLayout() {
@@ -12,7 +14,9 @@ export function PosLayout() {
         </Link>
       </header>
       <main className="flex-1 p-4">
-        <Outlet />
+        <Suspense fallback={<PageLoading />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   )
