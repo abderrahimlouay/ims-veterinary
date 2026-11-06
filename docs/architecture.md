@@ -155,7 +155,7 @@ Backend = trust boundary; TLS everywhere; hashed passwords; permission-based RBA
 | Attribute | Target | Mechanism |
 |---|---|---|
 | Correctness of stock | zero negative / drifting balances | ledger + CHECK + locks + integrity check |
-| Performance | search < 1 s, confirm sale < 2 s `[REC]` at ~50 k products | indexes, contains-search on 50,000-product reference dataset (ADR-048), short tx |
+| Performance | search < 1 s, confirm sale < 2 s at ~50 k products; at 300 documents a day for five years, a year's report < 5 s and a month's < 2 s (ADR-158) | indexes, contains-search on 50,000-product reference dataset (ADR-048), short tx, `VolumePerformanceTest` |
 | Availability | business hours; RPO one business day (ADR-145); RTO per OD-021 (Phase 12) | backups |
 | Maintainability | module boundaries tested | architecture tests, ADRs |
 | Auditability | all sensitive actions traced | audit module |

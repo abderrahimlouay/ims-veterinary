@@ -261,6 +261,8 @@ Indexes: `(product_id, created_at DESC)`, `(lot_id, id)` (watermark sums, ADR-07
 | Movement history | `idx_sm_product_date`, `idx_sm_lot`, `idx_sm_reference` |
 | Audit lookup | `idx_audit_entity`, `idx_audit_user_date` |
 
+**Report indexes (Phase 12, V12_001, SD-156, ADR-158):** `sales_documents (status, doc_type, issued_at, customer_id)` lets the report views select a period's confirmed documents by a range scan; `sales_document_lines (document_id, product_id, quantity_base, unit_cost, line_ht)` lets them read the lines from the index alone. Measured at the target volume by `VolumePerformanceTest`.
+
 ## 5. Views (target)
 
 | View | Purpose | Status |

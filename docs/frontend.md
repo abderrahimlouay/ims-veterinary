@@ -192,6 +192,8 @@ Derived from the prototype; implement as typed, accessible components in `compon
 - **Other gaps (DR-014):** the prototype shows currency in EUR and generic address fields, while the Spec targets Algeria — resolved by **ADR-033** (DZD, fr-DZ); small-text sizes need verification; statuses must not rely on colour alone.
 - Expiry-alert palette (expired / critical / warning / notice) and stock-status palette are defined as semantic tokens, not raw colours.
 
+**Code splitting (Phase 12):** every page except login, account and the dashboard is loaded with its feature's code on first use (`React.lazy` in `router.tsx`, a `Suspense` boundary in the layouts); shared code imports components from their files, never through a feature's `index.ts`, so a feature is not pulled into the main bundle. The largest file went from 999 kB to 387 kB (no chunk over Vite's 500 kB warning).
+
 ## 7. Forms and validation
 
 - Zod schema per form; field errors from the server (`errors[].field`) are mapped back onto the matching field (nested paths like `lines[0].lotNumber`).

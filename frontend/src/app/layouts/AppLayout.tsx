@@ -1,10 +1,10 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { Button } from '../../components/Button'
 import { LanguageSelect } from '../../components/LanguageSelect'
 import { useCurrentUser, useLogout } from '../../features/auth'
-import { IntegrityBanner } from '../../features/inventory'
+import { IntegrityBanner } from '../../features/inventory/IntegrityBanner'
 import { usePublicSettings } from '../../features/settings'
 import { NAV_ITEMS, visibleNavItems } from '../navigation'
 
@@ -60,9 +60,21 @@ export function AppLayout() {
           </NavLink>
         </nav>
         <main className="flex-1 p-6">
-          <Outlet />
+          <Suspense fallback={<PageLoading />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
+  )
+}
+
+/** While a page's code loads (pages are loaded on first use, `router.tsx`). */
+export function PageLoading() {
+  const { t } = useTranslation()
+  return (
+    <p role="status" className="text-mute">
+      {t('app.loading')}
+    </p>
   )
 }

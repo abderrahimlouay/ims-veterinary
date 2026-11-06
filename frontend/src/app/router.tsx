@@ -1,44 +1,72 @@
+import { lazy, type ComponentType } from 'react'
 import type { RouteObject } from 'react-router'
-import { AuditPage, BackupsPage, NewUserPage, RolesPage, SettingsPage, UserDetailPage, UsersPage } from '../features/admin'
-import { ReportPage, ReportsPage } from '../features/reports'
-import { NewProductPage, ProductDetailPage, ProductsPage, ReferencesPage } from '../features/catalog'
-import { CustomerCategoriesPage, CustomerPage, CustomersPage, NewCustomerPage } from '../features/customers'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
-import { CashSessionPage, CashSessionsPage, NewSupplierInvoicePage, SupplierInvoicePage, SupplierInvoicesPage } from '../features/finance'
-import {
-  AdjustmentPage,
-  CountPage,
-  CountsPage,
-  IntegrityPage,
-  LotDetailPage,
-  LotsPage,
-  NewCountPage,
-  OpeningStockPage,
-  ReorderPage,
-  StockPage,
-} from '../features/inventory'
 import { AccountPage, LoginPage } from '../features/auth'
-import {
-  EditOrderPage,
-  NewOrderPage,
-  NewReceiptPage,
-  NewSupplierPage,
-  NewSupplierReturnPage,
-  OrderDetailPage,
-  PurchaseOrdersPage,
-  ReceiptDetailPage,
-  ReceiptsPage,
-  SupplierPage,
-  SupplierReturnPage,
-  SupplierReturnsPage,
-  SuppliersPage,
-} from '../features/purchasing'
-import { CustomerReturnPage, CustomerReturnsPage, NewCustomerReturnPage, PosPage, SaleDetailPage, SalesPage } from '../features/sales'
 import { RequireAuth, RequirePermission } from './guards'
 import { AppLayout } from './layouts/AppLayout'
 import { AuthLayout } from './layouts/AuthLayout'
 import { PosLayout } from './layouts/PosLayout'
 import { NotFoundPage } from './NotFoundPage'
+
+/**
+ * A page loaded with its feature's code only when first opened (frontend.md §7, Phase 12: the single bundle was
+ * about 1 MB); login, account and the dashboard stay in the main bundle.
+ */
+function page<M, K extends keyof M>(load: () => Promise<M>, name: K) {
+  return lazy(async () => ({ default: (await load())[name] as ComponentType }))
+}
+
+const AuditPage = page(() => import('../features/admin'), 'AuditPage')
+const BackupsPage = page(() => import('../features/admin'), 'BackupsPage')
+const NewUserPage = page(() => import('../features/admin'), 'NewUserPage')
+const RolesPage = page(() => import('../features/admin'), 'RolesPage')
+const SettingsPage = page(() => import('../features/admin'), 'SettingsPage')
+const UserDetailPage = page(() => import('../features/admin'), 'UserDetailPage')
+const UsersPage = page(() => import('../features/admin'), 'UsersPage')
+const ReportPage = page(() => import('../features/reports'), 'ReportPage')
+const ReportsPage = page(() => import('../features/reports'), 'ReportsPage')
+const NewProductPage = page(() => import('../features/catalog'), 'NewProductPage')
+const ProductDetailPage = page(() => import('../features/catalog'), 'ProductDetailPage')
+const ProductsPage = page(() => import('../features/catalog'), 'ProductsPage')
+const ReferencesPage = page(() => import('../features/catalog'), 'ReferencesPage')
+const CustomerCategoriesPage = page(() => import('../features/customers'), 'CustomerCategoriesPage')
+const CustomerPage = page(() => import('../features/customers'), 'CustomerPage')
+const CustomersPage = page(() => import('../features/customers'), 'CustomersPage')
+const NewCustomerPage = page(() => import('../features/customers'), 'NewCustomerPage')
+const CashSessionPage = page(() => import('../features/finance'), 'CashSessionPage')
+const CashSessionsPage = page(() => import('../features/finance'), 'CashSessionsPage')
+const NewSupplierInvoicePage = page(() => import('../features/finance'), 'NewSupplierInvoicePage')
+const SupplierInvoicePage = page(() => import('../features/finance'), 'SupplierInvoicePage')
+const SupplierInvoicesPage = page(() => import('../features/finance'), 'SupplierInvoicesPage')
+const AdjustmentPage = page(() => import('../features/inventory'), 'AdjustmentPage')
+const CountPage = page(() => import('../features/inventory'), 'CountPage')
+const CountsPage = page(() => import('../features/inventory'), 'CountsPage')
+const IntegrityPage = page(() => import('../features/inventory'), 'IntegrityPage')
+const LotDetailPage = page(() => import('../features/inventory'), 'LotDetailPage')
+const LotsPage = page(() => import('../features/inventory'), 'LotsPage')
+const NewCountPage = page(() => import('../features/inventory'), 'NewCountPage')
+const OpeningStockPage = page(() => import('../features/inventory'), 'OpeningStockPage')
+const ReorderPage = page(() => import('../features/inventory'), 'ReorderPage')
+const StockPage = page(() => import('../features/inventory'), 'StockPage')
+const EditOrderPage = page(() => import('../features/purchasing'), 'EditOrderPage')
+const NewOrderPage = page(() => import('../features/purchasing'), 'NewOrderPage')
+const NewReceiptPage = page(() => import('../features/purchasing'), 'NewReceiptPage')
+const NewSupplierPage = page(() => import('../features/purchasing'), 'NewSupplierPage')
+const NewSupplierReturnPage = page(() => import('../features/purchasing'), 'NewSupplierReturnPage')
+const OrderDetailPage = page(() => import('../features/purchasing'), 'OrderDetailPage')
+const PurchaseOrdersPage = page(() => import('../features/purchasing'), 'PurchaseOrdersPage')
+const ReceiptDetailPage = page(() => import('../features/purchasing'), 'ReceiptDetailPage')
+const ReceiptsPage = page(() => import('../features/purchasing'), 'ReceiptsPage')
+const SupplierPage = page(() => import('../features/purchasing'), 'SupplierPage')
+const SupplierReturnPage = page(() => import('../features/purchasing'), 'SupplierReturnPage')
+const SupplierReturnsPage = page(() => import('../features/purchasing'), 'SupplierReturnsPage')
+const SuppliersPage = page(() => import('../features/purchasing'), 'SuppliersPage')
+const CustomerReturnPage = page(() => import('../features/sales'), 'CustomerReturnPage')
+const CustomerReturnsPage = page(() => import('../features/sales'), 'CustomerReturnsPage')
+const NewCustomerReturnPage = page(() => import('../features/sales'), 'NewCustomerReturnPage')
+const PosPage = page(() => import('../features/sales'), 'PosPage')
+const SaleDetailPage = page(() => import('../features/sales'), 'SaleDetailPage')
+const SalesPage = page(() => import('../features/sales'), 'SalesPage')
 
 /** Route map (frontend.md §3.1); feature routes are added phase by phase. */
 export const routes: RouteObject[] = [

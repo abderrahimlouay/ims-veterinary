@@ -1,0 +1,36 @@
+# ADR-158: the reports at the target volume (300 documents a day for five years). Too long (about 12 minutes of data
+# generation) for every pull request, so weekly, on demand, and on changes to the reports, views or migrations.
+name: Volume performance
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'backend/src/main/java/com/imsvet/ims/reporting/**'
+      - 'backend/src/main/resources/db/migration/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: volume-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  volume:
+    name: Reports at the target volume (ADR-158)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: ./mvnw -B test -Dims.excluded.test.groups= -Dgroups=volume -Dsurefire.failIfNoSpecifiedTests=false
