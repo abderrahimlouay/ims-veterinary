@@ -11,7 +11,7 @@ export default defineConfig({
     proxy: { '/api': 'http://localhost:8080' },
   },
   preview: {
-    // ADR-157: the production build is checked under the proxy's headers (e2e).
+    // ADR-157, ADR-166: the production build is checked (e2e) under the headers the application sends.
     headers: SECURITY_HEADERS,
   },
   test: {

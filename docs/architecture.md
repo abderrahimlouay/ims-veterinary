@@ -18,7 +18,7 @@ flowchart LR
   OPS --> DB
 ```
 
-One deployable backend, one database, one SPA served as static files (by the reverse proxy or the backend `[REC]`). No external integrations are required by the Spec; none are assumed.
+One deployable backend, one database, one SPA served as static files by the backend itself (ADR-166). No external integrations are required by the Spec; none are assumed.
 
 ## 2. Logical architecture
 
@@ -140,7 +140,7 @@ Flyway, forward-only, small scripts (MySQL DDL is non-transactional, ADR-018). E
 
 ## 12. Deployment (conceptual only)
 
-- Single Linux host (VM or bare metal) running: reverse proxy (TLS) → Spring Boot JAR; MySQL on the same or a separate host; static SPA served by the proxy; the backup job of the application (ADR-144) and its off-host copy by manual download (ADR-146).
+- One Windows host (the owner's laptop, ADR-165) running two services: the Spring Boot JAR serving HTTPS, the screens and the API itself (ADR-166), and MySQL on `127.0.0.1`; the backup job of the application (ADR-144) with its Google Drive copy (ADR-167).
 - **Production (ADR-165…167, 2026-11-06; was ADR-150…153):** that host is the **store owner's Windows 10/11 laptop**, in the shop; the application and MySQL run as Windows services, MySQL on `127.0.0.1` only, and the shop's other devices open the application over the local network. The application serves the screens and HTTPS itself with a certificate from a private CA trusted on each device (ADR-152, ADR-166), no reverse proxy. Available during business hours while the laptop is on; RTO four business hours by restoring the last backup, copied to Google Drive (ADR-167), on any Windows PC (RPO one business day). Migrations by the application's migrate mode under the migration account (ADR-151). Updated by the owner with a script; no remote access.
 - Environments: dev (developer machine), test/CI (Testcontainers), production. Staging recommended `[REC]`.
 - Time: servers on UTC; business time zone `Africa/Algiers` in settings (ADR-033).
