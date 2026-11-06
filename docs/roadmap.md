@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phase 12 (Testing, security hardening, deployment) current: decisions ADR-150…157 (2026-11-05), ADR-158…160 (2026-11-06); Phase 13 not started
+> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phase 12 (Testing, security hardening, deployment) current: decisions ADR-150…157 (2026-11-05), ADR-158…160 (2026-11-06), open until its client items are done (DR-040, DR-041, DR-043, installation, restore rehearsal, UAT); Phase 13 (Dark theme, report charts) current alongside it: decisions ADR-161…163 (2026-11-06)
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-11-02
 
@@ -188,11 +188,11 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 ## Phase 13 — Dark theme `[REC]`
 > Recommendation accepted by the user (ADR-069, 2026-10-22); not a Spec requirement.
 - **Objective:** a dark theme the user can choose.
-- **Prerequisites:** Phase 12 (or any earlier point the user chooses, since it touches no business rule); ADR-069; the token-only rule followed since Phase 1 (`frontend.md` §6).
+- **Prerequisites:** Phase 12 (or any earlier point the user chooses, since it touches no business rule; started 2026-11-06 with Phase 12 still open, ADR-161); ADR-069, ADR-162, ADR-163; the token-only rule followed since Phase 1 (`frontend.md` §6).
 - **Features:** the report charts deferred from Phase 11 (user decision 2026-11-05; a simple chart beside the table of a report by date, `frontend.md` §4.10); follows the operating-system setting by default; a theme switch with three choices (system / light / dark) in the application header; the choice is remembered per browser; no flash of the wrong theme while the page loads.
 - **Database work:** none. The choice is not stored in the database unless the user later decides it must follow the user across devices (new ADR).
 - **Backend work:** none (same condition).
-- **Frontend work:** theme switch component (accessible radio group or menu, translated fr/ar/en, RTL-ready); the choice stored in `localStorage` with every access wrapped in `try/catch` so the app works when storage is blocked (it then simply follows the system); `data-theme` set on `<html>` for light/dark and removed for system; a small blocking script in `index.html` applies the stored choice before first paint (allowed by the Content-Security-Policy via its hash, `frontend.md` §14); `color-scheme` set so native controls and scrollbars follow; charts read their colours from tokens. Token contrast was already fixed on 2026-10-22 (ADR-069 amendment); any new token keeps passing `contrast.test.ts`.
+- **Frontend work:** theme switch component (a three-button accessible radio group, translated fr/ar/en, RTL-ready) in the application header, the POS header and the login page (ADR-163); the choice stored in `localStorage` with every access wrapped in `try/catch` so the app works when storage is blocked (it then simply follows the system); `data-theme` set on `<html>` for light/dark and removed for system; a small blocking same-origin script, `public/theme-init.js` loaded first in `<head>`, applies the stored choice before first paint (allowed by `script-src 'self'`, no CSP change, ADR-162); `color-scheme` set so native controls and scrollbars follow; charts read their colours from tokens. Token contrast was already fixed on 2026-10-22 (ADR-069 amendment); any new token keeps passing `contrast.test.ts`.
 - **Tests:** component test of the switch (choices, keyboard, accessible names, persistence across a remount, storage that throws); the existing automated contrast test (`contrast.test.ts`, both themes) stays green; axe run of the main pages in dark (login, products, lots, POS, admin); visual check of POS, tables, badges, alerts and charts in both themes; e2e check that the choice survives a reload with no flash.
 - **Completion criteria:** the theme switch works and the choice survives reload without a flash; visual checks done; `contrast.test.ts` still green in both themes; no hard-coded colours in components (automated search in CI).
 

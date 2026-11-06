@@ -1138,6 +1138,24 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** a one-time import of the old database, rehearsed on a copy; master data only, from spreadsheets.
 - **Consequences:** the roadmap's "data-migration rehearsal" of Phase 12 is not needed; `operations.md` §8 and the UAT checklist include the go-live data entry.
 
+## ADR-161 — Phase 13 starts while Phase 12 waits for the client; the theme first
+- **Status:** Accepted (user decision, 2026-11-06, Phase 13 preflight).
+- **Decision:** Phase 13 starts now. Phase 12 stays open (not closed, not tagged) until its client items are done: the accountant's and the pharmacy's answers (DR-040, DR-041, DR-043), the installation, the timed restore rehearsal and the UAT sign-off (`uat.md`). The theme switch is the first slice of Phase 13; the report charts come after it. The roadmap allows this ("Phase 12, or any earlier point the user chooses, since it touches no business rule").
+- **Alternatives:** the switch alone as an extra Phase 12 change; waiting for the Phase 12 close.
+- **Consequences:** `roadmap.md` status line, `CLAUDE.md`.
+
+## ADR-162 — The saved theme is applied before first paint by a small same-origin script
+- **Status:** Accepted (user decision, 2026-11-06, Phase 13 preflight; refines ADR-069).
+- **Decision:** `public/theme-init.js`, loaded by a classic (blocking) `<script src="/theme-init.js">` at the top of `<head>` in `index.html`, reads the saved choice (inside `try/catch`) and sets `data-theme` on `<html>` before the page draws. It is allowed by the existing Content-Security-Policy (`script-src 'self'`, ADR-157): no hash, and no change to the nginx configuration, `securityHeaders.ts` or the J13 header test. The roadmap's inline script with a CSP hash is not used.
+- **Alternatives:** an inline script allowed by its `sha256` hash in the CSP (the hash would have to follow every change of the script in three places).
+- **Consequences:** `frontend.md` §6 and §14, `roadmap.md` Phase 13.
+
+## ADR-163 — The theme switch: a three-button group in the app, POS and login headers
+- **Status:** Accepted (user decision, 2026-11-06, Phase 13 preflight; refines ADR-069).
+- **Decision:** The switch is a segmented group of three buttons, System / Light / Dark (translated fr/ar/en, right to left in Arabic), built as an accessible radio group: one labelled group ("Theme"), each choice a radio with its text (an icon only beside the text), arrow keys moving the choice, the current choice marked. It appears next to the language selector in the application header, the counter (POS) header and the login page. All three share the one choice saved for the browser (ADR-069).
+- **Alternatives:** a drop-down like the language selector; the application header only.
+- **Consequences:** `frontend.md` §6, `roadmap.md` Phase 13, `testing.md`.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1398,7 +1416,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
 | 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05) |
-| 13 Dark theme | ADR-069 (decided 2026-10-22) |
+| 13 Dark theme | ADR-069 (decided 2026-10-22); ADR-161, ADR-162, ADR-163 (2026-11-06) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**
 
