@@ -1156,6 +1156,12 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** a drop-down like the language selector; the application header only.
 - **Consequences:** `frontend.md` §6, `roadmap.md` Phase 13, `testing.md`.
 
+## ADR-164 — Report charts: columns per period for revenue and sales statistics, our own SVG, screen only
+- **Status:** Accepted (user decision, 2026-11-06, Phase 13; the report charts deferred from Phase 11).
+- **Decision:** When the revenue report or the sales statistics are grouped by **month or day**, a column chart of the revenue excl. VAT per period sits above the table; no chart for the other groupings. It is a small component of our own (`ColumnChart`) drawing SVG coloured by the design tokens only, so it follows both themes and needs neither a new dependency nor a CSP change; it runs right to left in Arabic; a negative period (more credit notes than sales) goes below the zero line in `danger`. The amounts come from the server's decimal strings and are converted to numbers only to size the columns (BR-SALE-008); each column names its period and amount on hover, and the caption gives the highest and lowest periods. The chart is a **screen aid only**: the table keeps every figure, the CSV and PDF exports have no chart (ADR-149).
+- **Alternatives:** a chart by category as well; a chart library (Recharts); a line chart; the chart in the PDF too.
+- **Consequences:** `frontend.md` §4.10, `testing.md`, `roadmap.md` Phase 13.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1416,7 +1422,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
 | 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05) |
-| 13 Dark theme | ADR-069 (decided 2026-10-22); ADR-161, ADR-162, ADR-163 (2026-11-06) |
+| 13 Dark theme | ADR-069 (decided 2026-10-22); ADR-161, ADR-162, ADR-163, ADR-164 (report charts) (2026-11-06) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**
 

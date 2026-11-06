@@ -159,6 +159,7 @@ Layout: left = product search + scan field + quick results; centre = cart lines 
 ### 4.10 Reports
 Common filter bar (period, grouping), table + simple chart, export CSV/PDF. Role-restricted per report; margin/valuation visible only with their permissions.
 - **Delivered (Phase 11, slice `phase-11/frontend-reports-backups`):** `/reports` lists the reports the user holds the permission for (side-navigation entry shown with any report permission or `lot.recall`); `/reports/:key` (revenue, margin, salesStatistics, stockValuation, customerBalances, supplierPayables, cashSessions, lotTraceability) has the filters of its API (period, grouping, customer type, basis — "at cost" offered only with `report.margin` —, supplier, cashier, lot), the table with its totals as the server computed them (`features/reports/definitions.ts`), and "Exporter CSV" / "Imprimer / PDF" links carrying the same filters (ADR-149). The lot detail page links to the lot's traceability (`lot.recall`). The charts are deferred to Phase 13 (user decision 2026-11-05).
+- **Delivered (Phase 13, ADR-164):** revenue and sales statistics grouped by month or day show `ColumnChart` above the table (a column per period, our own SVG in design tokens, mirrored in Arabic, a negative period in `danger` below zero, the amount of each column on hover, the highest and lowest periods in the caption); no chart for other groupings, and none in the CSV or PDF.
 
 ### 4.11 Administration
 Users (create, deactivate, reset password), role/permission matrix editor (checkbox grid, diff summary before save), settings form (typed inputs, validation per key), audit log viewer (filters, JSON detail drawer, read-only), backups list/run/download. **Delivered (Phase 11):** `/admin/backups` (`backup.manage`): the warnings of `/api/backups/status` (not configured, last run failed, no backup within a day, no download for `backup_download_reminder_days`), the last success and download, Run now with its result (a failed dump shows its reason), the log with sizes, removed backups, and a download link for kept ones (ADR-144…146).
@@ -259,4 +260,4 @@ Component tests for primitives and forms (RTL), API-mocked page tests (MSW) incl
 
 ## 17. Open frontend items
 
-The report charts (Phase 13, after the theme switch). DR-014 resolved 2026-11-06 (theme switch, ADR-162, ADR-163); DR-015 resolved in Phase 12.
+The report charts delivered in Phase 13 (ADR-164). DR-014 resolved 2026-11-06 (theme switch, ADR-162, ADR-163); DR-015 resolved in Phase 12.
