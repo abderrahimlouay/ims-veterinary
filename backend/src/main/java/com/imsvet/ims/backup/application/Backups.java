@@ -37,16 +37,18 @@ public class Backups {
 
     /** {@code available}: the file is still kept and can be downloaded. */
     public record BackupView(long id, String trigger, Long startedBy, String status, String fileName, Long sizeBytes,
-            String failureReason, Instant startedAt, Instant finishedAt, Instant removedAt, Instant lastDownloadedAt,
-            boolean available) {
+            String failureReason, String copyStatus, String copyFailureReason, Instant startedAt, Instant finishedAt,
+            Instant removedAt, Instant lastDownloadedAt, boolean available) {
     }
 
     /**
      * {@code warnings}: {@code NOT_CONFIGURED}, {@code LAST_FAILED}, {@code NO_RECENT_BACKUP} (no success within a day),
-     * {@code DOWNLOAD_OVERDUE} (no download for {@code backup_download_reminder_days}).
+     * {@code DOWNLOAD_OVERDUE} (no download for {@code backup_download_reminder_days}); with a copy folder (ADR-167)
+     * {@code COPY_FAILED} (the last successful backup was not copied) and {@code NO_RECENT_COPY} (no copy within a day)
+     * instead of {@code DOWNLOAD_OVERDUE}, the copy being the off-site copy.
      */
     public record BackupStatus(boolean configured, BackupView lastRun, Instant lastSuccessAt, Instant lastDownloadAt,
-            int downloadReminderDays, List<String> warnings) {
+            int downloadReminderDays, boolean copyConfigured, Instant lastCopyAt, List<String> warnings) {
     }
 
     /** The bytes of a kept backup and the name to download it under. */
@@ -124,8 +126,11 @@ public class Backups {
         Instant now = clock.instant();
         int reminderDays = settings.intValue(SettingDefinition.BACKUP_DOWNLOAD_REMINDER_DAYS.key());
         BackupRecord last = records.findFirstByOrderByStartedAtDescIdDesc().orElse(null);
-        Instant lastSuccess = records.findFirstByStatusOrderByFinishedAtDescIdDesc(BackupRecord.SUCCESS)
-                .map(BackupRecord::finishedAt).orElse(null);
+        BackupRecord lastSuccessful = records.findFirstByStatusOrderByFinishedAtDescIdDesc(BackupRecord.SUCCESS)
+                .orElse(null);
+        Instant lastSuccess = lastSuccessful == null ? null : lastSuccessful.finishedAt();
+        boolean copying = properties.copyConfigured();
+        Instant lastCopy = copying ? records.lastCopy().orElse(null) : null;
         Instant lastDownload = records.lastDownload().orElse(null);
         List<String> warnings = new ArrayList<>();
         if (!properties.configured()) {
@@ -137,15 +142,22 @@ public class Backups {
         if (lastSuccess == null || lastSuccess.isBefore(now.minus(ONE_DAY))) {
             warnings.add("NO_RECENT_BACKUP");
         }
-        if (lastDownload == null || lastDownload.isBefore(now.minus(Duration.ofDays(reminderDays)))) {
+        if (copying) {
+            if (lastSuccessful != null && lastSuccessful.copyFailed()) {
+                warnings.add("COPY_FAILED");
+            }
+            if (lastCopy == null || lastCopy.isBefore(now.minus(ONE_DAY))) {
+                warnings.add("NO_RECENT_COPY");
+            }
+        } else if (lastDownload == null || lastDownload.isBefore(now.minus(Duration.ofDays(reminderDays)))) {
             warnings.add("DOWNLOAD_OVERDUE");
         }
         return new BackupStatus(properties.configured(), last == null ? null : view(last), lastSuccess, lastDownload,
-                reminderDays, warnings);
+                reminderDays, copying, lastCopy, warnings);
     }
 
     private static BackupView view(BackupRecord r) {
         return new BackupView(r.id(), r.triggerType(), r.startedBy(), r.status(), r.fileName(), r.sizeBytes(),
-                r.failureReason(), r.startedAt(), r.finishedAt(), r.removedAt(), r.lastDownloadedAt(), r.available());
+                r.failureReason(), r.copyStatus(), r.copyFailureReason(), r.startedAt(), r.finishedAt(), r.removedAt(), r.lastDownloadedAt(), r.available());
     }
 }

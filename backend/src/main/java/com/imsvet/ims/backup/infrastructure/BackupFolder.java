@@ -3,6 +3,7 @@ package com.imsvet.ims.backup.infrastructure;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -44,6 +45,37 @@ public class BackupFolder {
 
     public void delete(String name) throws IOException {
         Files.deleteIfExists(resolve(name));
+    }
+
+    /**
+     * ADR-167: copies a kept backup into the copy folder, under a temporary name renamed once complete, so the sync
+     * client never uploads half a file.
+     */
+    public void copy(String name) throws IOException {
+        Path source = resolve(name);
+        Path copies = copyFolder();
+        Files.createDirectories(copies);
+        Path partial = copies.resolve(name + ".partial");
+        try {
+            Files.copy(source, partial, StandardCopyOption.REPLACE_EXISTING);
+            try {
+                Files.move(partial, copies.resolve(name), StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(partial, copies.resolve(name), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(partial);
+        }
+    }
+
+    /** Retention (ADR-145) applies to the copies too. */
+    public void deleteCopy(String name) throws IOException {
+        resolve(name);
+        Files.deleteIfExists(copyFolder().resolve(name));
+    }
+
+    private Path copyFolder() {
+        return Path.of(properties.copyDirectory()).toAbsolutePath().normalize();
     }
 
     private Path folder() {

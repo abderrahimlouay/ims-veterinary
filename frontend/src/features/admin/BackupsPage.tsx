@@ -16,8 +16,9 @@ function size(bytes: number | null): string {
 }
 
 /**
- * `/admin/backups` (ADR-144…146, frontend.md §4.11): the warnings (not configured, last run failed, no recent backup,
- * no download for `backup_download_reminder_days`), Run now, the log and the download of a kept backup.
+ * `/admin/backups` (ADR-144…146, ADR-167, frontend.md §4.11): the warnings (not configured, last run failed, no recent
+ * backup; with a Google Drive copy folder, the last copy failed or none within a day, otherwise no download for
+ * `backup_download_reminder_days`), Run now, the log with each copy's result and the download of a kept backup.
  */
 export function BackupsPage() {
   const { t } = useTranslation()
@@ -33,13 +34,19 @@ export function BackupsPage() {
       {status.data && (
         <>
           {status.data.warnings.map((w) => (
-            <Alert key={w} tone={w === 'DOWNLOAD_OVERDUE' ? 'warn' : 'danger'}>
+            <Alert key={w} tone={w === 'DOWNLOAD_OVERDUE' || w === 'NO_RECENT_COPY' ? 'warn' : 'danger'}>
               {t(`admin.backups.warnings.${w}`, { days: status.data.downloadReminderDays })}
             </Alert>
           ))}
           <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 text-sm max-w-xl">
             <dt className="text-mute">{t('admin.backups.lastSuccess')}</dt>
             <dd>{status.data.lastSuccessAt ? formatDateTime(status.data.lastSuccessAt) : t('admin.backups.never')}</dd>
+            {status.data.copyConfigured && (
+              <>
+                <dt className="text-mute">{t('admin.backups.lastCopy')}</dt>
+                <dd>{status.data.lastCopyAt ? formatDateTime(status.data.lastCopyAt) : t('admin.backups.never')}</dd>
+              </>
+            )}
             <dt className="text-mute">{t('admin.backups.lastDownload')}</dt>
             <dd>{status.data.lastDownloadAt ? formatDateTime(status.data.lastDownloadAt) : t('admin.backups.never')}</dd>
           </dl>
@@ -53,7 +60,9 @@ export function BackupsPage() {
         {run.data?.status === 'failed' && <Alert tone="danger">{t('admin.backups.failedPrefix')} <span lang="en">{run.data.failureReason}</span></Alert>}
         {run.error instanceof ApiError && <Alert tone="danger">{problemMessage(run.error.problem, t)}</Alert>}
       </div>
-      <p className="text-sm text-mute max-w-3xl">{t('admin.backups.offsite')}</p>
+      <p className="text-sm text-mute max-w-3xl">
+        {t(status.data?.copyConfigured ? 'admin.backups.offsiteCopy' : 'admin.backups.offsite')}
+      </p>
       {backups.data && backups.data.content.length === 0 && <p className="text-mute">{t('admin.backups.empty')}</p>}
       {backups.data && backups.data.content.length > 0 && (
         <>
@@ -65,6 +74,7 @@ export function BackupsPage() {
                 <th className="text-start px-2">{t('admin.backups.status')}</th>
                 <th className="text-start px-2">{t('admin.backups.file')}</th>
                 <th className="text-end px-2">{t('admin.backups.size')}</th>
+                {status.data?.copyConfigured && <th className="text-start px-2">{t('admin.backups.copy')}</th>}
                 <th className="text-start px-2">{t('admin.backups.downloaded')}</th>
                 <th />
               </tr>
@@ -85,6 +95,17 @@ export function BackupsPage() {
                         {b.failureReason}
                       </span>}</td>
                   <td className="text-end tabular-nums px-2">{size(b.sizeBytes)}</td>
+                  {status.data?.copyConfigured && (
+                    <td className="px-2">
+                      {b.copyStatus === 'copied' && t('admin.backups.copies.copied')}
+                      {b.copyStatus === 'failed' && (
+                        <span className="text-danger">
+                          {t('admin.backups.copies.failed')} : <span lang="en">{b.copyFailureReason}</span>
+                        </span>
+                      )}
+                      {b.copyStatus === null && '—'}
+                    </td>
+                  )}
                   <td className="px-2">{b.lastDownloadedAt ? formatDateTime(b.lastDownloadedAt) : '—'}</td>
                   <td className="px-2">
                     {b.available && (
