@@ -264,7 +264,6 @@
       "runNow": "Lancer une sauvegarde",
       "running": "Sauvegarde en cours…",
       "done": "Sauvegarde terminée : {{file}}",
-      "failed": "La sauvegarde a échoué : {{reason}}",
       "offsite": "Téléchargez régulièrement une sauvegarde et gardez-la hors des locaux (copie hors site).",
       "empty": "Aucune sauvegarde pour l'instant.",
       "startedAt": "Date",
@@ -288,7 +287,8 @@
         "LAST_FAILED": "La dernière sauvegarde a échoué.",
         "NO_RECENT_BACKUP": "Aucune sauvegarde réussie depuis plus d'un jour.",
         "DOWNLOAD_OVERDUE": "Aucune sauvegarde téléchargée depuis {{days}} jours : faites une copie hors site."
-      }
+      },
+      "failedPrefix": "La sauvegarde a échoué :"
     }
   },
   "reference": {

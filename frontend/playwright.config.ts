@@ -23,13 +23,19 @@ export default defineConfig({
   // and J10 (cash), which posts to that session and closes a Seller's, last.
   projects: [
     { name: 'j1', testMatch: /j1-.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
-    { name: 'chromium', testIgnore: /((j1|j3|j4|j5|j6|j7|j8|j9|j10|j12)-|j11-sales).*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', testIgnore: /((j1|j3|j4|j5|j6|j7|j8|j9|j10|j12|j15)-|j11-sales).*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
     { name: 'stock', testMatch: /(j3|j8)-.*\.spec\.ts/, dependencies: ['chromium'], use: { ...devices['Desktop Chrome'] } },
     { name: 'customers', testMatch: /j12-.*\.spec\.ts/, dependencies: ['stock'], use: { ...devices['Desktop Chrome'] } },
     { name: 'sales', testMatch: /(j4|j5|j9|j11-sales).*\.spec\.ts/, dependencies: ['customers'], use: { ...devices['Desktop Chrome'] } },
     { name: 'returns', testMatch: /j6-.*\.spec\.ts/, dependencies: ['sales'], use: { ...devices['Desktop Chrome'] } },
     { name: 'payments', testMatch: /j7-.*\.spec\.ts/, dependencies: ['returns'], use: { ...devices['Desktop Chrome'] } },
     { name: 'cash', testMatch: /j10-.*\.spec\.ts/, dependencies: ['payments'], use: { ...devices['Desktop Chrome'] } },
+    // J15 sells with the keyboard on the administrator's session, after every journey that relies on it.
+    { name: 'keyboard', testMatch: /j15-.*\.spec\.ts/, dependencies: ['cash'], use: { ...devices['Desktop Chrome'] } },
+    // ADR-159: Edge (current) runs the screen, header and accessibility journeys too; only where it is installed (CI).
+    ...(process.env.E2E_EDGE
+      ? [{ name: 'edge', testMatch: /(j13|j14)-.*\.spec\.ts/, dependencies: ['keyboard'], use: { ...devices['Desktop Edge'], channel: 'msedge' } }]
+      : []),
   ],
   webServer: [
     {
