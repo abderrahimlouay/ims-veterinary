@@ -5,9 +5,9 @@ import { logIn } from './session'
 /**
  * J2 (testing.md §8): reference data, product creation, ingredient and target species, search by name,
  * ingredient and species (Phase 2); a packaging unit with a derived price, a barcode for it, opening the product
- * by scanning in the search box, and the empty lot screens (Phase 3, ADR-064: no lot exists before opening
- * stock); from Phase 4 the new product is out of stock (0 sellable) in the product list and on the stock page;
- * archive. Runs after J1.
+ * by scanning in the search box, and its empty Lots tab (Phase 3, ADR-064: no lot exists before opening stock);
+ * from Phase 4 the new product is out of stock (0 sellable) in the product list and on the stock page; archive.
+ * Other journeys add lots meanwhile, so only this product's screens are expected empty. Runs after J1.
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 
@@ -70,15 +70,11 @@ test('J2: create, describe, package, scan, find and archive a product', async ({
   await page.getByLabel('Rechercher').press('Enter')
   await expect(page.getByRole('heading', { level: 1, name: 'E2E Amoxival 500' })).toBeVisible()
 
-  await nav.getByRole('link', { name: 'Lots' }).click()
-  await expect(page.getByText(/stock d'ouverture et les réceptions/)).toBeVisible()
   await nav.getByRole('link', { name: 'Stock' }).click()
   await page.getByLabel('Rechercher un produit').fill('E2E Amoxival')
   const level = page.getByRole('row', { name: /E2E Amoxival 500/ })
   await expect(level.getByText('Rupture')).toBeVisible()
   await expect(level.getByText('0,000 tablet')).toBeVisible()
-  await nav.getByRole('link', { name: 'Accueil' }).click()
-  await expect(page.getByText('Aucun lot proche de la péremption.')).toBeVisible()
 
   await nav.getByRole('link', { name: 'Produits' }).click()
   const product = page.getByRole('link', { name: 'E2E Amoxival 500' })

@@ -5,7 +5,7 @@ import { logIn } from './session'
 /**
  * J8 (testing.md §8): a new product (with the max-stock warning of ADR-092), its opening stock, a cycle count on
  * it, a counted quantity below the balance, regularisation, and the ledger showing both movements (W10a, W5,
- * ADR-072…075). Runs after the journeys that expect no lot yet.
+ * ADR-072…075).
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 

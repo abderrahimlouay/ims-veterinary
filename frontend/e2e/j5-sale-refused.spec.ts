@@ -39,6 +39,9 @@ test('J5: insufficient stock, an expired lot and a lot blocked meanwhile', async
   await expect(pharmacy.getByRole('button', { name: 'Débloquer' })).toBeVisible()
   await pharmacy.close()
 
+  // By cheque, which needs no cash session: the refusal is the lot's, whatever sessions exist.
+  await page.getByLabel('Mode').selectOption('cheque')
+  await page.getByLabel('Référence').fill('CHQ-J5')
   await page.getByRole('button', { name: 'Confirmer la vente' }).click()
   await expect(page.getByRole('alert')).toContainText('Ce lot est bloqué')
   await expect(page.getByTestId('pos-line')).toHaveAttribute('data-invalid', 'true')

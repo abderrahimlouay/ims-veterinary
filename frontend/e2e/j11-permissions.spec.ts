@@ -24,6 +24,7 @@ test('J11: a restricted user sees forbidden states; the administrator sees the a
   await page.getByLabel('Mot de passe initial').fill(SELLER.initialPassword)
   await page.getByRole('button', { name: 'Enregistrer' }).click()
   await expect(page.getByRole('heading', { level: 1, name: SELLER.username })).toBeVisible()
+  const sellerId = /\/admin\/users\/(\d+)/.exec(page.url())?.[1]
   await logOut(page)
 
   await logIn(page, SELLER.username, SELLER.initialPassword)
@@ -41,7 +42,9 @@ test('J11: a restricted user sees forbidden states; the administrator sees the a
   await logIn(page, ADMIN.username, ADMIN.newPassword)
   await nav.getByRole('link', { name: "Journal d'audit" }).click()
   await page.getByLabel('Action').selectOption('USER_CREATE')
+  // Other journeys create their own users too: this creation is the row of the Seller's id.
   const created = page.getByRole('row').filter({ hasText: 'e2e.admin (E2E Administrator)' })
+    .filter({ has: page.getByRole('cell', { name: `users #${sellerId}`, exact: true }) })
   await expect(created).toHaveCount(1)
   await created.getByRole('button', { name: 'Détails' }).click()
   await expect(page.getByRole('complementary', { name: 'Détails' })).toContainText(SELLER.username)

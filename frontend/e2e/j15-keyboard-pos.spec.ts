@@ -1,13 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { ADMIN } from './fixtures'
 import { aLot, aProduct } from './sales'
-import { logIn } from './session'
+import { asOwnUser } from './users'
 
 /**
  * J15 (frontend.md §12, testing.md §8): a whole counter sale with the keyboard only — the search box has the focus,
  * the product is found and added, the cash received typed, the sale confirmed, and a cash session opened from the
- * dialog when none is open — Tab, typing and Enter, no click. The product and its lot are prepared with the usual
- * forms. Runs last, on the administrator's cash session, open or not.
+ * dialog — Tab, typing and Enter, no click. The product and its lot are prepared with the usual forms, by the
+ * journey's own user, who has no cash session yet.
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 
@@ -38,8 +37,7 @@ async function tabTo(page: Page, name: string | RegExp) {
 }
 
 test('J15: a counter sale with the keyboard only', async ({ page }) => {
-  await page.goto('/login')
-  await logIn(page, ADMIN.username, ADMIN.newPassword)
+  await asOwnUser(page, 'j15')
   await aProduct(page, 'E2E-J15-KEY', 'E2E Clavierine', '20.0000')
   await aLot(page, 'E2E Clavierine', 'J15-LOT', '12/2029', '10')
 
@@ -55,17 +53,13 @@ test('J15: a counter sale with the keyboard only', async ({ page }) => {
   await tabTo(page, 'Confirmer la vente')
   await page.keyboard.press('Enter')
 
-  const opening = page.getByRole('dialog', { name: 'Ouvrir une session de caisse' })
-  const confirmed = page.getByRole('heading', { level: 1, name: 'Vente confirmée' })
-  await expect(opening.or(confirmed)).toBeVisible()
-  if (await opening.isVisible()) {
-    await tabTo(page, 'Fonds de caisse')
-    await page.keyboard.type('50')
-    await page.keyboard.press('Enter')
-    await expect(page.getByTestId('cash-session')).toContainText('Session de caisse ouverte')
-    await tabTo(page, 'Confirmer la vente')
-    await page.keyboard.press('Enter')
-  }
-  await expect(confirmed).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Ouvrir une session de caisse' })).toBeVisible()
+  await tabTo(page, 'Fonds de caisse')
+  await page.keyboard.type('50')
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('cash-session')).toContainText('Session de caisse ouverte')
+  await tabTo(page, 'Confirmer la vente')
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('heading', { level: 1, name: 'Vente confirmée' })).toBeVisible()
   await expect(page.getByText(/Monnaie à rendre/)).toBeVisible()
 })

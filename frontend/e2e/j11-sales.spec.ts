@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { ADMIN, SELLER } from './fixtures'
+import { ADMIN } from './fixtures'
 import { aLot, addToCart, aProduct, payByCheque } from './sales'
-import { logIn, logOut } from './session'
+import { logIn } from './session'
+import { aUser, logInFirstTime } from './users'
 
 /**
  * The sales part of J11 (testing.md §8): a Seller sells at the counter and reads the document, but has no way to cancel
@@ -14,10 +15,8 @@ test('J11 sales: a Seller sells but cannot cancel nor return', async ({ page }) 
   await logIn(page, ADMIN.username, ADMIN.newPassword)
   await aProduct(page, 'E2E-J11-SAL', 'E2E Sellerval', '10.0000')
   await aLot(page, 'E2E Sellerval', 'J11-LOT', '12/2029', '5')
-  await logOut(page)
-
-  await logIn(page, SELLER.username, SELLER.newPassword)
-  await expect(page.getByRole('heading', { level: 1, name: 'Tableau de bord' })).toBeVisible()
+  const seller = await aUser(page, 'j11.seller', 'Seller')
+  await logInFirstTime(page, seller)
   await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('link', { name: 'Caisse', exact: true }).click()
   await addToCart(page, 'E2E Sellerval', '1')
   await expect(page.getByTestId('pos-line')).toHaveCount(1)
