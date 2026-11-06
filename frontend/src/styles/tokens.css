@@ -6,6 +6,7 @@
  * Every pair is checked by contrast.test.ts.
  */
 :root {
+  color-scheme: light dark;
   --bg: 246 248 248;
   --surface: 255 255 255;
   --line: 219 226 227;
@@ -35,7 +36,12 @@
   }
 }
 
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
 :root[data-theme='dark'] {
+  color-scheme: dark;
   --bg: 12 20 23;
   --surface: 20 31 35;
   --line: 44 60 66;

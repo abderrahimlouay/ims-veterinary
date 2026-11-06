@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { Button } from '../../components/Button'
 import { LanguageSelect } from '../../components/LanguageSelect'
+import { ThemeSwitch } from '../../components/ThemeSwitch'
 import { useCurrentUser, useLogout } from '../../features/auth'
 import { IntegrityBanner } from '../../features/inventory/IntegrityBanner'
 import { usePublicSettings } from '../../features/settings'
@@ -32,6 +33,7 @@ export function AppLayout() {
         <span className="font-semibold text-brand">{t('app.name')}</span>
         <div className="ms-auto flex items-center gap-4">
           <LanguageSelect />
+          <ThemeSwitch />
           {current && (
             <span className="text-sm">
               <span className="font-medium">{current.user.fullName}</span>{' '}

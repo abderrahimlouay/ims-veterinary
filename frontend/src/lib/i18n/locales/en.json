@@ -37,6 +37,12 @@
     "ar": "العربية",
     "en": "English"
   },
+  "theme": {
+    "label": "Theme",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
   "dashboard": {
     "title": "Dashboard",
     "empty": "No modules are available yet."
