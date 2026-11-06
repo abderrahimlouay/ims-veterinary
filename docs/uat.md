@@ -20,7 +20,7 @@
 | 2.2 | **DR-043:** are the printed mentions of invoices and credit notes complete (company NIF, NIS, RC, AI; customer's numbers when known; VAT by rate; amount in words)? Must cash invoices carry stamp duty (*droit de timbre*), and how much? | | accountant |
 | 2.3 | **DR-041:** must some products be sold only on a veterinary prescription? If yes, which, and what must be recorded? | | pharmacy |
 
-Another answer than the current behaviour means a new decision and a change **before** go-live (decisions.md).
+Another answer than the current behaviour means a new decision and a change **before** go-live (decisions.md). What each possible answer changes, and its size: `go-live-answers.md`.
 
 ## 3. Business checks
 
