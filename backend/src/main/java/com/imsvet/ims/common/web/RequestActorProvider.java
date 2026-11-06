@@ -11,9 +11,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Actor of the current thread: the authenticated user (ADR-036) and the client IP of the HTTP request. The
- * client IP is the servlet remote address; in production the reverse proxy's {@code X-Forwarded-For} is
- * applied by Tomcat only for internal proxy addresses ({@code server.forward-headers-strategy: native},
- * security.md §11).
+ * client IP is the servlet remote address, the connection's: no proxy sits in front of the application, so no
+ * forwarded header is trusted (ADR-166, security.md §11).
  */
 @Component
 public class RequestActorProvider implements ActorProvider {

@@ -5,15 +5,26 @@ spring:
     enabled: false
 
 server:
-  # ADR-152: only the reverse proxy on the same server talks to the application, which TLS cannot be bypassed around;
-  # IMS_SERVER_ADDRESS overrides it only for a proxy on another host.
-  address: ${IMS_SERVER_ADDRESS:127.0.0.1}
+  # ADR-165, ADR-166: the owner's laptop serves the shop's devices directly, over HTTPS with the shop's private-CA
+  # certificate (a PKCS#12 file); the Windows firewall opens these ports on the Private network only. No proxy sits in
+  # front, so no forwarded header is trusted: the client address is the connection's.
+  address: ${IMS_SERVER_ADDRESS:0.0.0.0}
+  port: ${IMS_SERVER_PORT:443}
+  ssl:
+    enabled: true
+    key-store: ${IMS_TLS_KEYSTORE}
+    key-store-password: ${IMS_TLS_KEYSTORE_PASSWORD}
+    key-store-type: PKCS12
+    enabled-protocols: TLSv1.2, TLSv1.3
   # A release (ADR-151) lets the requests in progress, such as a sale being confirmed, finish before stopping.
   shutdown: graceful
-  # security.md §11: X-Forwarded-For is honoured only from internal proxy addresses (Tomcat RemoteIpValve).
-  forward-headers-strategy: native
 
 ims:
+  server:
+    http-port: ${IMS_HTTP_PORT:80} # plain HTTP only redirects to HTTPS (ADR-166); 0 or less: no redirect listener
+  security:
+    rate-limit:
+      enabled: true # ADR-166: the per-address limit on /api, formerly the reverse proxy's (ADR-157)
   db:
     # ADR-087: the host part of the application account the migrate mode grants (docs/deployment.md §4).
     application-host: ${IMS_DB_APPLICATION_HOST:%}
