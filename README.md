@@ -59,6 +59,8 @@ The password reaches `mysqldump` through a private options file, deleted after e
 4. Run the application's **migrate mode** (section *Production release*): Flyway validates the restored history, applies any newer migration and grants the application account again; then start the application normally (in production Flyway is off at start).
 5. Check the integrity report and a few documents before reopening.
 
+On the owner's Windows laptop (ADR-165) `deploy/windows/restore.ps1` does steps 1–4 (`docs/operations.md` §4) and `deploy/windows/update.ps1` a release with its own rollback (§2).
+
 ## Production release (ADR-151)
 In production Flyway is off when the application starts, and the running application never holds the migration account. A release, outside business hours:
 1. Take a backup (backups page, **Run now**) or check that day's backup succeeded.

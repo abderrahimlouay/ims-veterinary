@@ -117,6 +117,22 @@ jobs:
           -v "$PWD/deploy/nginx/ims-security-headers.conf":/etc/nginx/snippets/ims-security-headers.conf:ro
           -v "$PWD/tls":/etc/ims/tls:ro nginx:1.28-alpine nginx -t
 
+  windows-scripts:
+    name: Windows scripts (PowerShell syntax, ADR-165)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # The owner's laptop runs these (deploy/windows); a syntax error must never reach an installation or an update.
+      - shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($file in Get-ChildItem deploy/windows -Filter *.ps1) {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref] $tokens, [ref] $errors) | Out-Null
+            foreach ($e in $errors) { Write-Host "::error file=$($file.Name),line=$($e.Extent.StartLineNumber)::$($e.Message)"; $failed = $true }
+          }
+          if ($failed) { exit 1 }
+
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest
