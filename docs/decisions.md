@@ -1027,7 +1027,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** settings `backup_time`, `backup_retention_count` (validated, audited like every setting); `backend.md` jobs table.
 
 ## ADR-146 — The off-site copy is a manual download (resolves OD-021, off-site copy)
-- **Status:** Accepted (user decision, 2026-11-04, Phase 11 preflight; Q3 A).
+- **Status:** Accepted (user decision, 2026-11-04, Phase 11 preflight; Q3 A). **Amended by ADR-167** (2026-11-06): with a copy folder (Google Drive) configured, the copy is the off-site copy and the download reminder is not shown.
 - **Decision:**
   1. The application keeps its backups on the server only; the copy away from it is a backup an administrator downloads (for example weekly, to a removable disk kept off the premises).
   2. The backups page shows the date of the last download and warns when none happened for `backup_download_reminder_days` (default 7), and when the last backup failed or is older than a day.
@@ -1066,7 +1066,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** BR-RPT-007, `api.md` §4.13, `architecture.md` (`printing` may call `reporting` for the PDFs), `testing.md`.
 
 ## ADR-150 — On-premises server, business-hours availability, RTO of four business hours (resolves OD-021, hosting)
-- **Status:** Accepted (user decision, 2026-11-05, Phase 12 preflight; the four recommended options).
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 preflight; the four recommended options). **Items 1 and 4 superseded by ADR-165** (2026-11-06): the owner's Windows laptop, updates by the owner with a script; items 2 and 3 stand.
 - **Decision:**
   1. **Hosting:** one Linux server **on the pharmacy's premises**, on its local network; the counter PCs reach it there, so sales do not depend on the internet link. The server sits behind a UPS.
   2. **Availability:** during **business hours** (the opening hours the client gives in the deployment record, e.g. 08:00–20:00, six days a week). Updates, migrations and restores are done outside them; no availability percentage is promised.
@@ -1085,13 +1085,13 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** backend work in Phase 12 (the migrate mode and its test), README (release and restore), `development-workflow.md` release steps, the runbook.
 
 ## ADR-152 — HTTPS on the local network with a private certificate authority
-- **Status:** Accepted (user decision, 2026-11-05, Phase 12 preflight).
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 preflight). **Amended by ADR-166** (2026-11-06): the application, not a reverse proxy, presents the certificate.
 - **Decision:** A small **private certificate authority** is created for the pharmacy; its root certificate is installed once in the trust store of each counter PC (and browser where needed); the **reverse proxy** on the server presents a certificate it signs for the server's local name, terminates TLS, sends HSTS and forwards to the application (security.md §10). The CA's private key is kept offline by the operator, never on the server. Renewal before expiry is a runbook step with a reminder date in the deployment record.
 - **Alternatives:** a self-signed server certificate trusted on each PC (every renewal touches every PC); a public certificate through a real domain and DNS validation (needs a domain and internet for renewals).
 - **Consequences:** deployment guide (proxy, certificates, local name), runbook (renewal, adding a PC), `security.md` §10.
 
 ## ADR-153 — Remote maintenance through a VPN and SSH keys
-- **Status:** Accepted (user decision, 2026-11-05, Phase 12 preflight).
+- **Status:** **Superseded by ADR-165** (2026-11-06): no remote access; the owner updates with a script. Was accepted 2026-11-05.
 - **Decision:** The operator reaches the server through a **WireGuard VPN** to the pharmacy network; **SSH** on the server accepts **keys only** (no password, no root login) and listens only on the local network and the VPN; nothing of the server is exposed to the internet except the VPN port. Logins are logged on the server; the operator's keys are listed in the deployment record and removed when a person leaves.
 - **Alternatives:** a commercial remote-desktop tool (a third-party service in the path); on-site only (the RTO then depends on travel).
 - **Consequences:** deployment guide (VPN, SSH, firewall), runbook, `security.md` (remote administration).
@@ -1115,7 +1115,7 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** `security.md` §15 (accepted risks).
 
 ## ADR-157 — A versioned reverse-proxy configuration, checked automatically
-- **Status:** Accepted (user decision, 2026-11-05, Phase 12 security review, finding 4).
+- **Status:** Accepted (user decision, 2026-11-05, Phase 12 security review, finding 4). **The proxy superseded by ADR-166** (2026-11-06): the application sets the headers and the rate limit itself; the automated check (J13) stands.
 - **Decision:** The repository holds a reference reverse-proxy configuration (TLS with the private-CA certificate of ADR-152, HSTS, the frontend's security headers — Content-Security-Policy, X-Content-Type-Options, frame-ancestors, Referrer-Policy —, a coarse request-rate limit, SPA routing, `/api` to the application on `127.0.0.1`); an automated check runs the frontend under that Content-Security-Policy so a violation fails the build.
 - **Alternatives:** headers and limits described in the guide only, written by the operator on the server.
 - **Consequences:** a later Phase 12 slice (deployment); `security.md` §11.
@@ -1161,6 +1161,36 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Decision:** When the revenue report or the sales statistics are grouped by **month or day**, a column chart of the revenue excl. VAT per period sits above the table; no chart for the other groupings. It is a small component of our own (`ColumnChart`) drawing SVG coloured by the design tokens only, so it follows both themes and needs neither a new dependency nor a CSP change; it runs right to left in Arabic; a negative period (more credit notes than sales) goes below the zero line in `danger`. The amounts come from the server's decimal strings and are converted to numbers only to size the columns (BR-SALE-008); each column names its period and amount on hover, and the caption gives the highest and lowest periods. The chart is a **screen aid only**: the table keeps every figure, the CSV and PDF exports have no chart (ADR-149).
 - **Alternatives:** a chart by category as well; a chart library (Recharts); a line chart; the chart in the PDF too.
 - **Consequences:** `frontend.md` §4.10, `testing.md`, `roadmap.md` Phase 13.
+
+## ADR-165 — The application runs on the owner's Windows laptop, used by the shop's devices (supersedes ADR-150 items 1 and 4, ADR-153)
+- **Status:** Accepted (user decision, 2026-11-06, Phase 12; replaces the on-premises Linux server).
+- **Decision:**
+  1. **Hosting:** the application and MySQL 8.4 run on the **store owner's Windows 10/11 laptop**, each as a **Windows service** that starts with Windows. The laptop is used in the shop and **other devices of the shop** (PCs, tablets) open the application over the local network with Chrome or Edge (ADR-159); MySQL listens on `127.0.0.1` only.
+  2. **Availability:** business hours, as ADR-150 item 2, **while the laptop is in the shop, switched on and awake**: the installation turns off sleep when plugged in, and the owner keeps it on during opening hours. When it is closed or away, the other devices cannot work; this is accepted.
+  3. **Recovery:** RPO one business day (ADR-145) and RTO four business hours (ADR-150 item 3) stand, the replacement being **any Windows 10/11 PC**: install by the guide, restore the newest backup from Google Drive (ADR-167). The restore is rehearsed once on another Windows PC before go-live.
+  4. **Operations:** the **owner** installs updates with a **script** the developer provides (backup, stop, migrate mode, swap, start; ADR-151 unchanged), the developer helping by phone. No VPN, no SSH, no remote access to the laptop is set up (ADR-153 withdrawn).
+- **Alternatives:** an always-on PC or server in the shop (ADR-150, the previous plan); the laptop alone with no other device (no HTTPS needed); developer updates remotely by remote desktop, or on site only.
+- **Consequences:** `deployment.md` rewritten for Windows (Java 21, MySQL 8.4, the two services, power settings, firewall); `operations.md` (the owner's update script, restore on another Windows PC, no VPN or SSH); `deploy/systemd` replaced by the Windows service files and scripts; `security.md` (remote administration removed); `uat.md` §5; `architecture.md` §12.
+
+## ADR-166 — The application serves the screens and HTTPS itself; no reverse proxy (supersedes ADR-157's proxy, amends ADR-152)
+- **Status:** Accepted (user decision, 2026-11-06, Phase 12; follows ADR-165).
+- **Decision:**
+  1. The release JAR carries the built frontend and serves it, with every screen route falling back to `index.html`, next to `/api`; one Windows service, nothing else to install or update.
+  2. The application terminates **HTTPS** on port 443 with the certificate of the shop's **private CA** (ADR-152 unchanged: root installed once on each device, CA key kept off the laptop, renewal in the runbook), redirects HTTP to HTTPS and sends **HSTS**. The certificate names the laptop's local name and the fixed address the router reserves for it.
+  3. The application sets the frontend's **security headers** itself (Content-Security-Policy and the others of `frontend/src/securityHeaders.ts`, the single source), and applies the coarse **per-address request limit** of ADR-157 (20 per second, bursts of 40, then 429) to `/api`, next to the login throttling (ADR-036).
+  4. The **Windows firewall** opens 443 (and 80 for the redirect) on the **Private** network profile only; the shop's Wi-Fi is set as Private, any other network as Public.
+  5. The automated check of ADR-157 stays: the end-to-end journeys run under the same headers (J13), now taken from the application.
+- **Alternatives:** nginx for Windows in front of the application, as ADR-157 (no official Windows service, one more component in the owner's updates).
+- **Consequences:** backend (static frontend, TLS settings from the environment, headers and rate-limit filters, their tests); the build puts the frontend into the JAR; `deploy/nginx` and its CI check removed; `security.md` §10–11; `deployment.md`.
+
+## ADR-167 — Backups on the laptop and copied to Google Drive by the application (amends ADR-146)
+- **Status:** Accepted (user decision, 2026-11-06, Phase 12; follows ADR-165).
+- **Decision:**
+  1. The daily backup stays on the laptop (ADR-144, `IMS_BACKUP_DIR`). After each **successful** backup the application also **copies** the file into a second folder, `IMS_BACKUP_COPY_DIR`, set to a folder of **Google Drive for desktop**, which syncs it off the laptop. The copies there follow the same retention (`backup_retention_count`).
+  2. The copy's result is kept with the backup in the log; a **failed copy** is a warning on the backups page, like a failed backup, and so is no successful copy within a day. With a copy folder configured, the copy is the off-site copy and the download reminder of ADR-146 is not shown; download stays available.
+  3. The file in Google Drive is the same compressed dump, **not encrypted** further, so it can always be restored; the owner's Google account **must use 2-step verification** (deployment checklist).
+- **Alternatives:** a Windows scheduled task copying the folder (a failed copy goes unnoticed); a copy encrypted with a password (safer if the account is breached, useless if the password is lost); a USB drive only.
+- **Consequences:** backend (the copy step, `backup_log` copy columns by a Flyway migration, the warnings), `api.md` (`BackupRecord`, status warnings), backups page, README *Backups*, `deployment.md`, `security.md` (personal data in Google Drive, 2-step verification).
 
 # Part B — Open Decisions
 
@@ -1421,7 +1451,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
-| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05) |
+| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05); owner's Windows laptop → ADR-165 (hosting), ADR-166 (the application serves HTTPS), ADR-167 (Google Drive copy) (2026-11-06) |
 | 13 Dark theme | ADR-069 (decided 2026-10-22); ADR-161, ADR-162, ADR-163, ADR-164 (report charts) (2026-11-06) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**
