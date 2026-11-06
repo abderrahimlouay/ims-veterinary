@@ -34,17 +34,18 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
     private final Clock clock;
     private final ProblemResponseWriter problems;
-    private final double perSecond;
-    private final double burst;
+    /** Tokens are counted in thousandths, so whole numbers suffice (no binary floating point, ArchitectureTest). */
+    private final long perSecond;
+    private final long burstMilli;
     private volatile long lastSweep;
 
     public RequestRateLimitFilter(Clock clock, ProblemResponseWriter problems,
-            @Value("${ims.security.rate-limit.per-second:20}") double perSecond,
-            @Value("${ims.security.rate-limit.burst:40}") double burst) {
+            @Value("${ims.security.rate-limit.per-second:20}") long perSecond,
+            @Value("${ims.security.rate-limit.burst:40}") long burst) {
         this.clock = clock;
         this.problems = problems;
         this.perSecond = perSecond;
-        this.burst = burst;
+        this.burstMilli = burst * 1000;
     }
 
     @Override
@@ -57,8 +58,8 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         long now = clock.millis();
         sweep(now);
-        Bucket bucket = buckets.computeIfAbsent(request.getRemoteAddr(), a -> new Bucket(burst, now));
-        if (!bucket.take(now, perSecond, burst)) {
+        Bucket bucket = buckets.computeIfAbsent(request.getRemoteAddr(), a -> new Bucket(burstMilli, now));
+        if (!bucket.take(now, perSecond, burstMilli)) {
             SecurityLog.LOG.atInfo().addKeyValue("event", "rate_limited")
                     .addKeyValue("path", request.getRequestURI()).log("Security event rate_limited");
             problems.write(request, response, ErrorCode.RATE_LIMITED, "Too many requests from this device; retry in a moment.");
@@ -76,21 +77,22 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
 
     private static final class Bucket {
 
-        private double tokens;
+        /** Thousandths of a token: {@code perSecond} of them come back each millisecond. */
+        private long milliTokens;
         private long updated;
 
-        Bucket(double tokens, long now) {
-            this.tokens = tokens;
+        Bucket(long milliTokens, long now) {
+            this.milliTokens = milliTokens;
             this.updated = now;
         }
 
-        synchronized boolean take(long now, double perSecond, double burst) {
-            tokens = Math.min(burst, tokens + (now - updated) * perSecond / 1000.0);
+        synchronized boolean take(long now, long perSecond, long burstMilli) {
+            milliTokens = Math.min(burstMilli, milliTokens + Math.max(0, now - updated) * perSecond);
             updated = Math.max(updated, now);
-            if (tokens < 1) {
+            if (milliTokens < 1000) {
                 return false;
             }
-            tokens -= 1;
+            milliTokens -= 1000;
             return true;
         }
 
