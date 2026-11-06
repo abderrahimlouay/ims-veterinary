@@ -71,7 +71,8 @@ class MigrateModeTest {
         assertThat(grants).anyMatch(g -> g.contains("`" + SCHEMA + "`.`v_sales_margin`") && g.startsWith("GRANT SELECT ON"))
                 .anyMatch(g -> g.contains("`" + SCHEMA + "`.`stock_movements`") && g.startsWith("GRANT SELECT, INSERT ON"));
 
-        try (ConfigurableApplicationContext running = start("prod", "--server.port=0")) {
+        try (ConfigurableApplicationContext running = start("prod", "--server.port=0", "--IMS_DB_APPLICATION_HOST=127.0.0.1")) {
+            assertThat(running.getEnvironment().getProperty("ims.db.application-host")).isEqualTo("127.0.0.1");
             assertThat(running.isActive()).isTrue();
             assertThat(running.getEnvironment().getProperty("IMS_DB_MIGRATION_USERNAME")).isNull();
             assertThat(running.getEnvironment().getProperty("server.address")).isEqualTo("127.0.0.1");

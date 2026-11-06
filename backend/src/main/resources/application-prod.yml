@@ -12,3 +12,8 @@ server:
   shutdown: graceful
   # security.md §11: X-Forwarded-For is honoured only from internal proxy addresses (Tomcat RemoteIpValve).
   forward-headers-strategy: native
+
+ims:
+  db:
+    # ADR-087: the host part of the application account the migrate mode grants (docs/deployment.md §4).
+    application-host: ${IMS_DB_APPLICATION_HOST:%}

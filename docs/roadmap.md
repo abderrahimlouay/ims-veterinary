@@ -1,6 +1,6 @@
 # Implementation Roadmap — IMS Vétérinaire
 
-> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phase 12 (Testing, security hardening, deployment) current: decisions ADR-150…157 (2026-11-05), ADR-158, ADR-159 (2026-11-06); Phase 13 not started
+> **Status:** Phases 0–11 complete (tags `phase-0-done` … `phase-11-done`); Phase 12 (Testing, security hardening, deployment) current: decisions ADR-150…157 (2026-11-05), ADR-158…160 (2026-11-06); Phase 13 not started
 > **Scope:** ordered plan for Claude Code to implement.
 > **Last updated:** 2026-11-02
 
@@ -177,7 +177,7 @@ Tags: `SRC` Spec · `REC` recommendation · `OD-nnn` open decision · `DR-nnn` r
 ## Phase 12 — Testing, security hardening, deployment
 - **Objective:** release readiness.
 - **Prerequisites:** Phases 0–11; decided 2026-11-05: ADR-150 (on-premises server, business hours, RTO four business hours, operated by the developer), ADR-151 (migrations by the application's migrate mode), ADR-152 (HTTPS with a private CA on the local network), ADR-153 (remote maintenance through a VPN and key-only SSH); was OD-021 (hosting part), DR-013; session-security hardening review (ADR-036). **Go-live blockers** to clear with the client and the accountant before UAT sign-off: DR-040, DR-041, DR-043.
-- **Features:** performance tuning at target volume; security review (OWASP ASVS-oriented checklist); accessibility audit; data-migration rehearsal from the legacy source (if any); operations runbook; UAT.
+- **Features:** performance tuning at target volume; security review (OWASP ASVS-oriented checklist); accessibility audit; data-migration rehearsal from the legacy source (if any) — none: go-live starts from an empty database (ADR-160); operations runbook (`docs/operations.md`) and installation guide (`docs/deployment.md`, with `deploy/systemd/ims.service`); UAT.
 - **Database work:** index tuning; review of the least-privilege DB accounts introduced in Phase 4 (ADR-087, BR-SEC-006); restore rehearsal.
 - **Backend work:** rate limits, headers, config hardening, observability checks.
 - **Frontend work:** accessibility fixes, bundle size, browser matrix. The production bundle passed 500 kB in Phase 4 (Vite warning): split the large pages (POS, reports) into lazily loaded chunks here (user decision 2026-10-23); done 2026-11-06 (every feature lazily loaded, largest file 387 kB).

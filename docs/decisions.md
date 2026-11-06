@@ -1132,6 +1132,12 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** adding Firefox; Chrome only.
 - **Consequences:** `playwright.config.ts` (project `edge`), CI e2e job, `frontend.md` §12, the UAT checklist.
 
+## ADR-160 — No migration from a legacy system: go-live starts from an empty database
+- **Status:** Accepted (user decision, 2026-11-06, Phase 12).
+- **Decision:** No data comes from the old system. At go-live the database is empty: the company profile, users, reference lists, products, suppliers and customers are entered (or bulk-loaded, ADR-091, with `ANALYZE TABLE` afterwards), and the stock on hand is entered lot by lot as opening stock while `opening_stock_open` is on (ADR-082), then switched off. Customer balances owed at go-live are not carried over by the application.
+- **Alternatives:** a one-time import of the old database, rehearsed on a copy; master data only, from spreadsheets.
+- **Consequences:** the roadmap's "data-migration rehearsal" of Phase 12 is not needed; `operations.md` §8 and the UAT checklist include the go-live data entry.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
