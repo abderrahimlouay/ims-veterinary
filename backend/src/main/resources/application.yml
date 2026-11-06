@@ -64,6 +64,7 @@ ims:
     mysqldump: ${IMS_BACKUP_MYSQLDUMP:mysqldump}
     username: ${IMS_BACKUP_DB_USERNAME:}
     password: ${IMS_BACKUP_DB_PASSWORD:}
+    copy-directory: ${IMS_BACKUP_COPY_DIR:} # ADR-167: optional second folder (Google Drive for desktop)
   security:
     session:
       absolute-timeout: 10h # ADR-036

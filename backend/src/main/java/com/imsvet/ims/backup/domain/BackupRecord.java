@@ -10,8 +10,9 @@ import java.time.Instant;
 
 /**
  * One backup run (ADR-144, BR-BKP-001): written when it ends. A success names its file in the backup folder; a failure
- * keeps its reason, never a secret. Only {@code removedAt} (retention, ADR-145) and {@code lastDownloadedAt} (ADR-146)
- * change afterwards.
+ * keeps its reason, never a secret. A success also keeps the result of its copy to the copy folder (ADR-167), when
+ * one is configured. Only {@code removedAt} (retention, ADR-145) and {@code lastDownloadedAt} (ADR-146) change
+ * afterwards.
  */
 @Entity
 @Table(name = "backup_log")
@@ -21,6 +22,21 @@ public class BackupRecord {
     public static final String MANUAL = "manual";
     public static final String SUCCESS = "success";
     public static final String FAILED = "failed";
+    public static final String COPIED = "copied";
+
+    /** ADR-167: the copy of a successful backup; {@link #NONE} when no copy folder is configured. */
+    public record Copy(String status, String failureReason) {
+
+        public static final Copy NONE = new Copy(null, null);
+
+        public static Copy copied() {
+            return new Copy(COPIED, null);
+        }
+
+        public static Copy failed(String reason) {
+            return new Copy(FAILED, reason);
+        }
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,6 +60,12 @@ public class BackupRecord {
     @Column(name = "failure_reason", updatable = false, length = 500)
     private String failureReason;
 
+    @Column(name = "copy_status", updatable = false, length = 20)
+    private String copyStatus;
+
+    @Column(name = "copy_failure_reason", updatable = false, length = 500)
+    private String copyFailureReason;
+
     @Column(name = "started_at", nullable = false, updatable = false)
     private Instant startedAt;
 
@@ -60,25 +82,27 @@ public class BackupRecord {
     }
 
     private BackupRecord(Long startedBy, String status, String fileName, Long sizeBytes, String failureReason,
-            Instant startedAt, Instant finishedAt) {
+            Copy copy, Instant startedAt, Instant finishedAt) {
         this.triggerType = startedBy == null ? SCHEDULED : MANUAL;
         this.startedBy = startedBy;
         this.status = status;
         this.fileName = fileName;
         this.sizeBytes = sizeBytes;
         this.failureReason = failureReason;
+        this.copyStatus = copy.status();
+        this.copyFailureReason = copy.failureReason();
         this.startedAt = startedAt;
         this.finishedAt = finishedAt;
     }
 
     /** {@code startedBy} {@code null}: the daily job. */
-    public static BackupRecord success(Long startedBy, String fileName, long sizeBytes, Instant startedAt,
+    public static BackupRecord success(Long startedBy, String fileName, long sizeBytes, Copy copy, Instant startedAt,
             Instant finishedAt) {
-        return new BackupRecord(startedBy, SUCCESS, fileName, sizeBytes, null, startedAt, finishedAt);
+        return new BackupRecord(startedBy, SUCCESS, fileName, sizeBytes, null, copy, startedAt, finishedAt);
     }
 
     public static BackupRecord failure(Long startedBy, String reason, Instant startedAt, Instant finishedAt) {
-        return new BackupRecord(startedBy, FAILED, null, null, reason, startedAt, finishedAt);
+        return new BackupRecord(startedBy, FAILED, null, null, reason, Copy.NONE, startedAt, finishedAt);
     }
 
     public void removed(Instant at) {
@@ -123,6 +147,18 @@ public class BackupRecord {
 
     public String failureReason() {
         return failureReason;
+    }
+
+    public String copyStatus() {
+        return copyStatus;
+    }
+
+    public String copyFailureReason() {
+        return copyFailureReason;
+    }
+
+    public boolean copyFailed() {
+        return FAILED.equals(copyStatus);
     }
 
     public Instant startedAt() {

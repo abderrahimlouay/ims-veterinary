@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { apiFetch } from '../../api/client'
 import type { Page } from './api'
 
-/** api.md §4.14 (ADR-144…146). */
+/** api.md §4.14 (ADR-144…146, ADR-167). */
 export interface BackupRecord {
   id: number
   trigger: 'scheduled' | 'manual'
@@ -11,6 +11,9 @@ export interface BackupRecord {
   fileName: string | null
   sizeBytes: number | null
   failureReason: string | null
+  /** ADR-167: null when no copy folder is configured or the backup failed. */
+  copyStatus: 'copied' | 'failed' | null
+  copyFailureReason: string | null
   startedAt: string
   finishedAt: string
   removedAt: string | null
@@ -18,7 +21,13 @@ export interface BackupRecord {
   available: boolean
 }
 
-export type BackupWarning = 'NOT_CONFIGURED' | 'LAST_FAILED' | 'NO_RECENT_BACKUP' | 'DOWNLOAD_OVERDUE'
+export type BackupWarning =
+  | 'NOT_CONFIGURED'
+  | 'LAST_FAILED'
+  | 'NO_RECENT_BACKUP'
+  | 'DOWNLOAD_OVERDUE'
+  | 'COPY_FAILED'
+  | 'NO_RECENT_COPY'
 
 export interface BackupStatus {
   configured: boolean
@@ -26,6 +35,8 @@ export interface BackupStatus {
   lastSuccessAt: string | null
   lastDownloadAt: string | null
   downloadReminderDays: number
+  copyConfigured: boolean
+  lastCopyAt: string | null
   warnings: BackupWarning[]
 }
 

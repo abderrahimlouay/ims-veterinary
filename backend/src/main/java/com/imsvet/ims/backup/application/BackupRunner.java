@@ -27,7 +27,9 @@ import org.springframework.stereotype.Component;
 /**
  * Takes one backup (ADR-144, ADR-145, BR-BKP-001): the dump gzip-compressed into the backup folder under a new name,
  * then one {@code backup_log} row, success or failure; after a success, the files beyond the newest
- * {@code backup_retention_count} successful backups are deleted and their rows marked removed. One backup at a time
+ * {@code backup_retention_count} successful backups are deleted, with their copies, and their rows marked removed. With
+ * a copy folder (ADR-167) each successful backup is copied there before its row is written, the copy's result in the
+ * row; a failed copy never fails the backup. One backup at a time
  * (single instance): another request meanwhile is refused with {@code INVALID_STATE_TRANSITION}. The caller holds the
  * transaction and checks the permission.
  */
@@ -82,13 +84,29 @@ public class BackupRunner {
                 return failed(startedBy, "The backup file could not be written: " + e.getClass().getSimpleName(),
                         started);
             }
-            BackupRecord record = records.saveAndFlush(BackupRecord.success(startedBy, name, size, started,
+            BackupRecord.Copy copy = copy(name);
+            BackupRecord record = records.saveAndFlush(BackupRecord.success(startedBy, name, size, copy, started,
                     clock.instant()));
             LOG.info("Backup {} written ({} bytes)", name, size);
             prune();
             return record;
         } finally {
             running.set(false);
+        }
+    }
+
+    private BackupRecord.Copy copy(String name) {
+        if (!properties.copyConfigured()) {
+            return BackupRecord.Copy.NONE;
+        }
+        try {
+            folder.copy(name);
+            return BackupRecord.Copy.copied();
+        } catch (IOException | RuntimeException e) {
+            String reason = "The copy to IMS_BACKUP_COPY_DIR failed: " + e.getClass().getSimpleName()
+                    + (e.getMessage() == null ? "" : ": " + e.getMessage());
+            LOG.error("Backup {} not copied: {}", name, reason);
+            return BackupRecord.Copy.failed(reason.length() > 500 ? reason.substring(0, 500) : reason);
         }
     }
 
@@ -104,6 +122,9 @@ public class BackupRunner {
         for (BackupRecord old : kept.subList(Math.min(keep, kept.size()), kept.size())) {
             try {
                 folder.delete(old.fileName());
+                if (properties.copyConfigured()) {
+                    folder.deleteCopy(old.fileName());
+                }
                 old.removed(clock.instant());
                 records.saveAndFlush(old);
             } catch (IOException e) {

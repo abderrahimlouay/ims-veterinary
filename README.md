@@ -41,6 +41,7 @@ The application backs the database up itself, once per business day at `backup_t
 | `IMS_BACKUP_DIR` | the backup folder: outside anything a web server serves, readable by the application user only |
 | `IMS_BACKUP_DB_USERNAME`, `IMS_BACKUP_DB_PASSWORD` | the read-only backup account |
 | `IMS_BACKUP_MYSQLDUMP` | optional: the `mysqldump` program, when it is not on the path |
+| `IMS_BACKUP_COPY_DIR` | optional (ADR-167): a second folder each successful backup is copied to, a folder of **Google Drive for desktop** on the owner's laptop; retention applies there too |
 
 Without them backups are "not configured": every run fails with that reason and the backups page warns. Create the account once as a MySQL administrator:
 
@@ -50,7 +51,7 @@ GRANT SELECT, SHOW VIEW, TRIGGER, LOCK TABLES ON `<schema>`.* TO '<backup-user>'
 GRANT SHOW_ROUTINE ON *.* TO '<backup-user>'@'%';
 ```
 
-The password reaches `mysqldump` through a private options file, deleted after each run, never on its command line. **Off-site copy (ADR-146):** download a backup regularly (the page warns after `backup_download_reminder_days`, default 7) and keep it away from the premises.
+The password reaches `mysqldump` through a private options file, deleted after each run, never on its command line. **Off-site copy:** with `IMS_BACKUP_COPY_DIR` set (ADR-167), Google Drive carries each backup off the laptop; the page warns when a copy fails or none succeeded within a day. The Google account must use 2-step verification. Without it (ADR-146), download a backup regularly (the page warns after `backup_download_reminder_days`, default 7) and keep it away from the premises.
 
 **Restoring a backup** (the application never restores; rehearsed by `BackupRestoreRehearsalTest`):
 1. Stop the application.

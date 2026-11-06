@@ -296,9 +296,18 @@
         "NOT_CONFIGURED": "Les sauvegardes ne sont pas configurées sur le serveur (voir le README).",
         "LAST_FAILED": "La dernière sauvegarde a échoué.",
         "NO_RECENT_BACKUP": "Aucune sauvegarde réussie depuis plus d'un jour.",
-        "DOWNLOAD_OVERDUE": "Aucune sauvegarde téléchargée depuis {{days}} jours : faites une copie hors site."
+        "DOWNLOAD_OVERDUE": "Aucune sauvegarde téléchargée depuis {{days}} jours : faites une copie hors site.",
+        "COPY_FAILED": "La dernière sauvegarde n'a pas été copiée dans Google Drive.",
+        "NO_RECENT_COPY": "Aucune copie dans Google Drive depuis plus d'un jour."
       },
-      "failedPrefix": "La sauvegarde a échoué :"
+      "failedPrefix": "La sauvegarde a échoué :",
+      "offsiteCopy": "Chaque sauvegarde est copiée dans le dossier Google Drive, qui l'envoie hors de l'ordinateur. Gardez Google Drive ouvert et connecté.",
+      "lastCopy": "Dernière copie Google Drive",
+      "copy": "Copie Google Drive",
+      "copies": {
+        "copied": "Copiée",
+        "failed": "Échec"
+      }
     }
   },
   "reference": {

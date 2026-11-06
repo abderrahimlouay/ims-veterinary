@@ -32,6 +32,10 @@ public interface BackupRecordRepository extends Repository<BackupRecord, Long> {
 
     Optional<BackupRecord> findFirstByStatusOrderByFinishedAtDescIdDesc(String status);
 
+    /** ADR-167: when the last successful copy to the copy folder ended. */
+    @Query("SELECT MAX(b.finishedAt) FROM BackupRecord b WHERE b.copyStatus = 'copied'")
+    Optional<Instant> lastCopy();
+
     @Query("SELECT MAX(b.lastDownloadedAt) FROM BackupRecord b")
     Optional<Instant> lastDownload();
 }

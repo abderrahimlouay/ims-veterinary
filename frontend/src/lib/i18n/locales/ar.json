@@ -296,9 +296,18 @@
         "NOT_CONFIGURED": "النسخ الاحتياطي غير مهيأ على الخادم (راجع README).",
         "LAST_FAILED": "فشلت آخر نسخة احتياطية.",
         "NO_RECENT_BACKUP": "لا توجد نسخة ناجحة منذ أكثر من يوم.",
-        "DOWNLOAD_OVERDUE": "لم تُنزّل أي نسخة منذ {{days}} يومًا: أنشئ نسخة خارجية."
+        "DOWNLOAD_OVERDUE": "لم تُنزّل أي نسخة منذ {{days}} يومًا: أنشئ نسخة خارجية.",
+        "COPY_FAILED": "لم تُنسخ آخر نسخة احتياطية إلى Google Drive.",
+        "NO_RECENT_COPY": "لا توجد نسخة في Google Drive منذ أكثر من يوم."
       },
-      "failedPrefix": "فشلت النسخة الاحتياطية:"
+      "failedPrefix": "فشلت النسخة الاحتياطية:",
+      "offsiteCopy": "تُنسخ كل نسخة احتياطية إلى مجلد Google Drive الذي يرسلها خارج الحاسوب. أبقِ Google Drive مفتوحًا ومتصلًا.",
+      "lastCopy": "آخر نسخ إلى Google Drive",
+      "copy": "النسخ إلى Google Drive",
+      "copies": {
+        "copied": "منسوخة",
+        "failed": "فشل"
+      }
     }
   },
   "reference": {

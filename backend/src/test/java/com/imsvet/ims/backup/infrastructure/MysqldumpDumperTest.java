@@ -66,7 +66,7 @@ class MysqldumpDumperTest {
     }
 
     private MysqldumpDumper dumper(Path program) {
-        return new MysqldumpDumper(new BackupProperties(dir.toString(), program.toString(), "ims_backup", SECRET),
+        return new MysqldumpDumper(new BackupProperties(dir.toString(), program.toString(), "ims_backup", SECRET, null),
                 "jdbc:mysql://db.example:3307/ims?sslMode=REQUIRED");
     }
 

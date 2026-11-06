@@ -296,9 +296,18 @@
         "NOT_CONFIGURED": "Backups are not configured on the server (see the README).",
         "LAST_FAILED": "The last backup failed.",
         "NO_RECENT_BACKUP": "No successful backup for more than a day.",
-        "DOWNLOAD_OVERDUE": "No backup downloaded for {{days}} days: make an off-site copy."
+        "DOWNLOAD_OVERDUE": "No backup downloaded for {{days}} days: make an off-site copy.",
+        "COPY_FAILED": "The last backup was not copied to Google Drive.",
+        "NO_RECENT_COPY": "No copy in Google Drive for more than a day."
       },
-      "failedPrefix": "The backup failed:"
+      "failedPrefix": "The backup failed:",
+      "offsiteCopy": "Each backup is copied to the Google Drive folder, which sends it off the computer. Keep Google Drive running and signed in.",
+      "lastCopy": "Last Google Drive copy",
+      "copy": "Google Drive copy",
+      "copies": {
+        "copied": "Copied",
+        "failed": "Failed"
+      }
     }
   },
   "reference": {
