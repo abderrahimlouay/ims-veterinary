@@ -108,7 +108,9 @@ class VolumePerformanceTest {
         monthly.put("sales list", "/api/sales?size=20");
         monthly.put("customer balance", "/api/customers/" + customer + "/balance");
 
+        // Warm-up, as a server in daily use: the documents and the lines are read once before measuring.
         get(client, "/api/reports/revenue?" + month);
+        get(client, "/api/reports/margin?" + month);
         Map<String, Long> yearMillis = measure(client, yearly);
         Map<String, Long> monthMillis = measure(client, monthly);
         System.out.printf("ADR-158 report times (ms), year: %s; month: %s%n", yearMillis, monthMillis);

@@ -15,8 +15,11 @@ import com.imsvet.ims.support.TestUsers;
 import com.imsvet.ims.support.TestUsers.TestUser;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.Map;
+import java.util.TreeMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,6 +161,21 @@ class SalesReportsTest {
                 .andExpect(jsonPath("$.rows").isEmpty()).andExpect(jsonPath("$.totalHt").value("0.00"));
         admin.get("/api/reports/sales-statistics?customerType=farmer").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    /** ADR-158: the per-document view of the reports by date gives each document the revenue of its lines. */
+    @Test
+    void theDocumentViewEqualsTheSumOfItsLines() {
+        Map<Long, BigDecimal> lines = new TreeMap<>();
+        jdbc.query("SELECT document_id, SUM(revenue_ht) FROM v_sales_margin GROUP BY document_id",
+                rs -> { lines.put(rs.getLong(1), rs.getBigDecimal(2)); });
+        Map<Long, BigDecimal> documents = new TreeMap<>();
+        jdbc.query("SELECT document_id, revenue_ht FROM v_sales_documents",
+                rs -> { documents.put(rs.getLong(1), rs.getBigDecimal(2)); });
+
+        assertThat(lines).hasSizeGreaterThanOrEqualTo(4);
+        assertThat(documents.keySet()).isEqualTo(lines.keySet());
+        lines.forEach((id, revenue) -> assertThat(documents.get(id)).as("document %d", id).isEqualByComparingTo(revenue));
     }
 
     @Test
