@@ -16,10 +16,11 @@ export const SELLER = {
   newPassword: 'E2e-seller-chosen-2026', // gitleaks:allow
 }
 
-/** Created through the users page by J10; opens a cash session that a manager then closes. */
-export const CASHIER = {
-  username: 'e2e.cashier',
-  fullName: 'E2E Cashier',
-  initialPassword: 'E2e-cashier-initial-2026', // gitleaks:allow
-  newPassword: 'E2e-cashier-chosen-2026', // gitleaks:allow
+/**
+ * The passwords of the users a journey creates for itself (`users.ts`): its own user, so its own cash session and
+ * nothing shared with another journey. Test-only values for a throw-away database.
+ */
+export const OWN_USER_PASSWORDS = {
+  initial: 'E2e-own-user-initial-2026', // gitleaks:allow
+  chosen: 'E2e-own-user-chosen-2026', // gitleaks:allow
 }

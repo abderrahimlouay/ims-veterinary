@@ -6,7 +6,7 @@ import { logIn } from './session'
  * J12 (testing.md §8, Phase 6): a customer category, a product, then a customer created through the form; the
  * customer found again by searching the phone in another format (ADR-110); an own price set on the Prices tab
  * (ADR-111); the credit limit moved through its three states — cash only for a new customer, no limit, a limit
- * (ADR-108). Fictional data only, phone of the reserved fake range (ADR-114). Runs last (`customers` project).
+ * (ADR-108). Fictional data only, phone of the reserved fake range (ADR-114).
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 

@@ -1,14 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
-import { ADMIN } from './fixtures'
 import { aLot, addToCart, aProduct } from './sales'
-import { logIn } from './session'
+import { asOwnUser, openCashSession } from './users'
 
 /**
  * J6 (testing.md §8): a cash sale of two products, then a customer return of one sealed unit back into stock and one
  * opened unit discarded with its reason (W3, ADR-127…131). The credit note is issued with its own number and refunded
  * in cash, which lowers the session's expected cash; the lot ledger shows the return and the discard; a second return
- * beyond what is left is refused; the returned sale can no longer be cancelled. Runs after the sales journeys, in its
- * own project, because it uses the administrator's cash session. Fictional data only.
+ * beyond what is left is refused; the returned sale can no longer be cancelled. The journey's own user and cash
+ * session. Fictional data only.
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 
@@ -19,23 +18,13 @@ async function expectedCash(page: Page): Promise<number> {
 }
 
 test('J6: a customer return with a credit note, a restock, a discard and a cash refund', async ({ page }) => {
-  await page.goto('/login')
-  await logIn(page, ADMIN.username, ADMIN.newPassword)
+  await asOwnUser(page, 'j6')
   await aProduct(page, 'E2E-J6-SEALED', 'E2E Retourval', '10.0000')
   await aLot(page, 'E2E Retourval', 'J6-SEALED', '12/2029', '10')
   await aProduct(page, 'E2E-J6-OPENED', 'E2E Ouvertval', '10.0000')
   await aLot(page, 'E2E Ouvertval', 'J6-OPENED', '12/2029', '10')
 
-  await page.goto('/pos')
-  await expect(page.getByRole('heading', { level: 1, name: 'Caisse' })).toBeVisible()
-  // Ask the server, not the bar: while the session loads, the bar shows "none" for a moment.
-  const current = await page.request.get('/api/cash-sessions/current')
-  if (current.status() === 204) {
-    await page.getByTestId('cash-session').getByRole('button', { name: 'Ouvrir la session' }).click()
-    await page.getByLabel('Fonds de caisse').fill('100')
-    await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la session' }).click()
-  }
-  await expect(page.getByTestId('cash-session')).toContainText('Session de caisse ouverte')
+  await openCashSession(page, '100')
   await addToCart(page, 'E2E Retourval', '2')
   await expect(page.getByTestId('pos-line')).toHaveCount(1)
   await addToCart(page, 'E2E Ouvertval', '2')

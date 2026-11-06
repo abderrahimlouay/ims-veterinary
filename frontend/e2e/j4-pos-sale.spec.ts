@@ -1,18 +1,16 @@
 import { expect, test } from '@playwright/test'
-import { ADMIN } from './fixtures'
 import { aLot, addToCart, aProduct } from './sales'
-import { logIn } from './session'
+import { asOwnUser } from './users'
 
 /**
  * J4 (testing.md §8): a counter sale spanning two lots by FEFO, paid in cash with change. The cash session is opened
  * here, from the refusal of a sale without one; the expected cash grows by the total, never by what was tendered
- * (ADR-118).
+ * (ADR-118). The journey's own user, so the session is its own.
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 
 test('J4: a cash sale across two lots by FEFO, with change', async ({ page }) => {
-  await page.goto('/login')
-  await logIn(page, ADMIN.username, ADMIN.newPassword)
+  await asOwnUser(page, 'j4')
   await aProduct(page, 'E2E-J4-FEFO', 'E2E Fefoval', '10.0000')
   await aLot(page, 'E2E Fefoval', 'J4-LATE', '12/2029', '10')
   await aLot(page, 'E2E Fefoval', 'J4-SOON', '12/2028', '3')

@@ -15,26 +15,16 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     trace: 'retain-on-failure',
   },
-  // J1 bootstraps the administrator's own password; the other journeys log in with it, so they run after J1.
-  // J8 creates the first lots, so it runs after the journeys that expect none yet (J2's empty lot screens).
-  // J12 (customers) adds a category, a product and a customer, after those journeys so none of them sees these.
-  // J4, J5, J9 and the sales part of J11 run after them, on products of their own and without depending on each other.
-  // J6 (returns) runs alone after them: it uses the administrator's cash session, which J4 opens; then J7 (payments)
-  // and J10 (cash), which posts to that session and closes a Seller's, last.
+  // J1 bootstraps the administrator's own password; every other journey logs in with it, so they all run after J1.
+  // Beyond that they are independent (testing.md §8): each creates its own products, lots, customers and suppliers,
+  // looks only at them, and a journey that uses a cash session logs in as a user of its own (`e2e/users.ts`), so they
+  // run in any order and in parallel.
   projects: [
     { name: 'j1', testMatch: /j1-.*\.spec\.ts/, use: { ...devices['Desktop Chrome'] } },
-    { name: 'chromium', testIgnore: /((j1|j3|j4|j5|j6|j7|j8|j9|j10|j12|j15)-|j11-sales).*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
-    { name: 'stock', testMatch: /(j3|j8)-.*\.spec\.ts/, dependencies: ['chromium'], use: { ...devices['Desktop Chrome'] } },
-    { name: 'customers', testMatch: /j12-.*\.spec\.ts/, dependencies: ['stock'], use: { ...devices['Desktop Chrome'] } },
-    { name: 'sales', testMatch: /(j4|j5|j9|j11-sales).*\.spec\.ts/, dependencies: ['customers'], use: { ...devices['Desktop Chrome'] } },
-    { name: 'returns', testMatch: /j6-.*\.spec\.ts/, dependencies: ['sales'], use: { ...devices['Desktop Chrome'] } },
-    { name: 'payments', testMatch: /j7-.*\.spec\.ts/, dependencies: ['returns'], use: { ...devices['Desktop Chrome'] } },
-    { name: 'cash', testMatch: /j10-.*\.spec\.ts/, dependencies: ['payments'], use: { ...devices['Desktop Chrome'] } },
-    // J15 sells with the keyboard on the administrator's session, after every journey that relies on it.
-    { name: 'keyboard', testMatch: /j15-.*\.spec\.ts/, dependencies: ['cash'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', testIgnore: /j1-.*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Chrome'] } },
     // ADR-159: Edge (current) runs the screen, header and accessibility journeys too; only where it is installed (CI).
     ...(process.env.E2E_EDGE
-      ? [{ name: 'edge', testMatch: /(j13|j14)-.*\.spec\.ts/, dependencies: ['keyboard'], use: { ...devices['Desktop Edge'], channel: 'msedge' } }]
+      ? [{ name: 'edge', testMatch: /(j13|j14)-.*\.spec\.ts/, dependencies: ['j1'], use: { ...devices['Desktop Edge'], channel: 'msedge' } }]
       : []),
   ],
   webServer: [

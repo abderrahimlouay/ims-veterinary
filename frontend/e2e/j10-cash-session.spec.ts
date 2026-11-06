@@ -1,13 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
-import { ADMIN, CASHIER } from './fixtures'
-import { changePassword, logIn, logOut } from './session'
+import { OWN_USER_PASSWORDS } from './fixtures'
+import { logIn, logOut } from './session'
+import { aUser, asOwnUser, logInFirstTime, openCashSession } from './users'
 
 /**
- * J10 (testing.md §8, Phase 9): on the administrator's own cash session, a manual cash in and a manual cash out with
- * their labels; a supplier invoice recorded and paid in cash from the supplier's Payables tab; the session report by
- * source; then a Seller opens a session at the counter and the administrator (`cash.manage`) closes it with its
- * variance (ADR-132, ADR-133, ADR-136, BR-CASH-002/003). Runs in its own `cash` project after `payments`, as it uses the
- * administrator's session. Fictional data only (ADR-114).
+ * J10 (testing.md §8, Phase 9): on the cash session of the journey's own administrator, a manual cash in and a manual
+ * cash out with their labels; a supplier invoice recorded and paid in cash from the supplier's Payables tab; the
+ * session report by source; then a Seller of its own opens a session at the counter and the administrator
+ * (`cash.manage`) closes it with its variance (ADR-132, ADR-133, ADR-136, BR-CASH-002/003). Other journeys' sessions
+ * may be open meanwhile: the Seller's row is found by its user id. Fictional data only (ADR-114).
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 
@@ -24,22 +25,10 @@ async function movement(page: Page, direction: 'in' | 'out', amount: string, lab
 }
 
 test('J10: manual movements, a supplier paid in cash, the session report, a manager closing another session', async ({ page }) => {
-  await page.goto('/login')
-  await logIn(page, ADMIN.username, ADMIN.newPassword)
+  const manager = await asOwnUser(page, 'j10')
   const nav = page.getByRole('navigation', { name: 'Navigation principale' })
-  await expect(page.getByRole('heading', { level: 1, name: 'Tableau de bord' })).toBeVisible()
-
-  // The administrator's own session: J4 opened it; open one if it is not there.
-  // Decided by the server's answer: while it loads, the bar already offers to open a session.
-  const current = page.waitForResponse((r) => r.url().endsWith('/api/cash-sessions/current'))
-  await page.goto('/pos')
   const bar = page.getByTestId('cash-session')
-  if ((await current).status() === 204) {
-    await bar.getByRole('button', { name: 'Ouvrir la session' }).click()
-    await page.getByRole('dialog').getByLabel('Fonds de caisse').fill('0')
-    await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la session' }).click()
-    await expect(bar.getByRole('button', { name: 'Fermer la session' })).toBeVisible()
-  }
+  await openCashSession(page, '0')
 
   await page.goto('/')
   await nav.getByRole('link', { name: 'Sessions de caisse' }).click()
@@ -82,20 +71,8 @@ test('J10: manual movements, a supplier paid in cash, the session report, a mana
   await expect(page.getByTestId('source-supplier_payments')).toContainText('30,00')
 
   // A Seller opens a session at the counter; the administrator closes it.
-  await nav.getByRole('link', { name: 'Utilisateurs' }).click()
-  await page.getByRole('link', { name: 'Nouvel utilisateur' }).click()
-  await page.getByLabel("Nom d'utilisateur").fill(CASHIER.username)
-  await page.getByLabel('Nom complet').fill(CASHIER.fullName)
-  await page.getByLabel('Rôle').selectOption({ label: 'Seller' })
-  await page.getByLabel('Mot de passe initial').fill(CASHIER.initialPassword)
-  await page.getByRole('button', { name: 'Enregistrer' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: CASHIER.username })).toBeVisible()
-  await logOut(page)
-
-  await logIn(page, CASHIER.username, CASHIER.initialPassword)
-  await expect(page).toHaveURL(/\/account$/)
-  await changePassword(page, CASHIER.initialPassword, CASHIER.newPassword)
-  await expect(page.getByRole('heading', { level: 1, name: 'Tableau de bord' })).toBeVisible()
+  const cashier = await aUser(page, 'j10.cashier', 'Seller')
+  await logInFirstTime(page, cashier)
   await expect(nav.getByRole('link', { name: 'Sessions de caisse' })).toHaveCount(0)
   await page.goto('/pos')
   await bar.getByRole('button', { name: 'Ouvrir la session' }).click()
@@ -107,10 +84,11 @@ test('J10: manual movements, a supplier paid in cash, the session report, a mana
   await page.goto('/')
   await logOut(page)
 
-  await logIn(page, ADMIN.username, ADMIN.newPassword)
+  await logIn(page, manager.username, OWN_USER_PASSWORDS.chosen)
   await expect(page.getByRole('heading', { level: 1, name: 'Tableau de bord' })).toBeVisible()
   await nav.getByRole('link', { name: 'Sessions de caisse' }).click()
-  const theirs = page.getByTestId('cash-session-row').filter({ hasNotText: 'Vous' }).filter({ hasText: 'Ouverte' })
+  const theirs = page.getByTestId('cash-session-row').filter({ hasText: `Utilisateur n° ${cashier.id}` })
+    .filter({ hasText: 'Ouverte' })
   await expect(theirs).toHaveCount(1)
   const number = (await theirs.getByRole('link').textContent()) ?? ''
   await theirs.getByRole('button', { name: 'Fermer la session' }).click()

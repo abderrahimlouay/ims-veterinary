@@ -6,8 +6,8 @@ import { logIn } from './session'
 /**
  * J7 (testing.md §8, Phase 9): two credit invoices for one customer; a cheque on the Account tab settles both, oldest
  * first, and leaves an advance; the statement shows the invoices, the payment and a negative closing balance; the
- * payment reversed with its reason reopens both invoices and the advance is gone (ADR-134, ADR-135). Runs in its own
- * `payments` project after the returns. Fictional data only (ADR-114).
+ * payment reversed with its reason reopens both invoices and the advance is gone (ADR-134, ADR-135). Fictional
+ * data only (ADR-114).
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 

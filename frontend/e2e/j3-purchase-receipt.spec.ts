@@ -5,7 +5,7 @@ import { logIn } from './session'
 /**
  * J3 (testing.md §8): a supplier, a product, a purchase order validated and sent, its receipt into a new lot, the
  * lot visible with its stock and its receipt movement, the order partially received, then the receipt cancelled
- * and the stock back to zero (W1a, W1b, W1d, ADR-093…106). Runs with J8, after the journeys that expect no lot yet.
+ * and the stock back to zero (W1a, W1b, W1d, ADR-093…106).
  */
 test.describe.configure({ mode: 'serial', retries: 0 })
 
