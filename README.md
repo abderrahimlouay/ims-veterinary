@@ -132,6 +132,8 @@ ims-veterinary/
 | `docs/testing.md` | test strategy and rule-to-test matrix |
 | `docs/roadmap.md` | Phases 0–12 and requirement-to-phase matrix |
 | `docs/development-workflow.md` | Claude Code loop, Git, migrations |
+| `docs/deployment.md` | installing the production server: system, VPN and SSH, MySQL accounts, the service, HTTPS with the private CA, nginx, backups, on-site acceptance, the deployment record |
+| `docs/operations.md` | runbook: routine, release, incidents, restore within the RTO, PCs, certificate renewal, people and keys |
 | `docs/decisions.md` | ADRs and OPEN DECISIONS |
 | `docs/glossary.md` | ubiquitous language (EN/FR) |
 | `docs/documentation-review.md` | consistency audit and unresolved issues |
