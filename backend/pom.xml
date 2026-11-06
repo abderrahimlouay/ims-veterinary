@@ -128,6 +128,19 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- ADR-166: the security headers of the screens have one source, shared with the frontend's preview. -->
+            <resource>
+                <directory>${project.basedir}/../frontend/src</directory>
+                <includes>
+                    <include>securityHeaders.json</include>
+                </includes>
+                <targetPath>frontend</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -160,4 +173,37 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- ADR-166: the release JAR carries the built frontend (npm run build first), served by the application; CI checks
+             the JAR holds it. -->
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>frontend-into-jar</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.basedir}/../frontend/dist</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

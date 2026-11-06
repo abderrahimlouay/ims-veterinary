@@ -1,5 +1,7 @@
 # Installation guide — production server
 
+> **Being rewritten (2026-11-06):** the application now runs on the store owner's Windows laptop (ADR-165), serves HTTPS and the screens itself without nginx (ADR-166) and copies its backups to Google Drive (ADR-167). The Linux, nginx, VPN and SSH steps below no longer apply; the Windows guide replaces this page in the next Phase 12 slice.
+
 > **Scope:** installing IMS Vétérinaire on the pharmacy's on-premises server, as decided in ADR-150 (on premises, business hours, RTO four business hours, operated by the developer), ADR-151 (migrate mode), ADR-152 (HTTPS with a private CA), ADR-153 (VPN and SSH keys), ADR-157 (reverse proxy) and ADR-159 (Chrome and Edge). Day-to-day operations, releases and restores are in `operations.md`.
 >
 > Commands are **examples** for a Debian or Ubuntu server with systemd; the distribution, the hardware and the names are chosen at installation and written in the **deployment record** (§9). Nothing here contains a real password: every secret is created on the server and kept there.

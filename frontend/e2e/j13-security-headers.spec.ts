@@ -4,7 +4,7 @@ import { ADMIN } from './fixtures'
 import { logIn } from './session'
 
 /**
- * J13 (ADR-157): the production build runs under the reverse proxy's Content-Security-Policy, served by `vite preview`
+ * J13 (ADR-157, ADR-166): the production build runs under the Content-Security-Policy the application sends, served by `vite preview`
  * with the same headers: logging in and opening the main screens trigger no policy violation and no page error.
  * Runs after J1.
  */
