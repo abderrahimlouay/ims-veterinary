@@ -60,6 +60,8 @@ The password reaches `mysqldump` through a private options file, deleted after e
 4. Run the application's **migrate mode** (section *Production release*): Flyway validates the restored history, applies any newer migration and grants the application account again; then start the application normally (in production Flyway is off at start).
 5. Check the integrity report and a few documents before reopening.
 
+On the owner's Windows laptop (ADR-165) `deploy/windows/restore.ps1` does steps 1–4 (`docs/operations.md` §4) and `deploy/windows/update.ps1` a release with its own rollback (§2).
+
 ## Production release (ADR-151)
 In production Flyway is off when the application starts, and the running application never holds the migration account. A release, outside business hours:
 1. Take a backup (backups page, **Run now**) or check that day's backup succeeded.
@@ -133,7 +135,7 @@ ims-veterinary/
 | `docs/testing.md` | test strategy and rule-to-test matrix |
 | `docs/roadmap.md` | Phases 0–12 and requirement-to-phase matrix |
 | `docs/development-workflow.md` | Claude Code loop, Git, migrations |
-| `docs/deployment.md` | installing the production server (being rewritten for the owner's Windows laptop, ADR-165…167): system, MySQL accounts, the service, HTTPS with the private CA, backups, on-site acceptance, the deployment record |
+| `docs/deployment.md` | installing on the owner's Windows laptop (ADR-165…167): what the developer prepares (release JAR, CA and server certificate), laptop preparation, `deploy/windows/install.ps1`, devices, on-site acceptance, the deployment record |
 | `docs/uat.md` | user acceptance checklist: the accountant's go-live questions, business, operations and accessibility checks, sign-off |
 | `docs/operations.md` | runbook: routine, release, incidents, restore within the RTO, PCs, certificate renewal, people and keys |
 | `docs/decisions.md` | ADRs and OPEN DECISIONS |
