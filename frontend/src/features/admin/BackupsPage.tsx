@@ -50,7 +50,7 @@ export function BackupsPage() {
           {run.isPending ? t('admin.backups.running') : t('admin.backups.runNow')}
         </Button>
         {run.data?.status === 'success' && <Alert tone="ok">{t('admin.backups.done', { file: run.data.fileName })}</Alert>}
-        {run.data?.status === 'failed' && <Alert tone="danger">{t('admin.backups.failed', { reason: run.data.failureReason })}</Alert>}
+        {run.data?.status === 'failed' && <Alert tone="danger">{t('admin.backups.failedPrefix')} <span lang="en">{run.data.failureReason}</span></Alert>}
         {run.error instanceof ApiError && <Alert tone="danger">{problemMessage(run.error.problem, t)}</Alert>}
       </div>
       <p className="text-sm text-mute max-w-3xl">{t('admin.backups.offsite')}</p>
@@ -60,31 +60,33 @@ export function BackupsPage() {
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b border-line">
-                <th className="text-start py-2">{t('admin.backups.startedAt')}</th>
-                <th className="text-start">{t('admin.backups.trigger')}</th>
-                <th className="text-start">{t('admin.backups.status')}</th>
-                <th className="text-start">{t('admin.backups.file')}</th>
-                <th className="text-end">{t('admin.backups.size')}</th>
-                <th className="text-start">{t('admin.backups.downloaded')}</th>
+                <th className="text-start py-2 px-2">{t('admin.backups.startedAt')}</th>
+                <th className="text-start px-2">{t('admin.backups.trigger')}</th>
+                <th className="text-start px-2">{t('admin.backups.status')}</th>
+                <th className="text-start px-2">{t('admin.backups.file')}</th>
+                <th className="text-end px-2">{t('admin.backups.size')}</th>
+                <th className="text-start px-2">{t('admin.backups.downloaded')}</th>
                 <th />
               </tr>
             </thead>
             <tbody>
               {backups.data.content.map((b) => (
                 <tr key={b.id} className="border-b border-line">
-                  <td className="py-2">{formatDateTime(b.startedAt)}</td>
-                  <td>{t(`admin.backups.triggers.${b.trigger}`)}</td>
-                  <td>
+                  <td className="py-2 px-2">{formatDateTime(b.startedAt)}</td>
+                  <td className="px-2">{t(`admin.backups.triggers.${b.trigger}`)}</td>
+                  <td className="px-2">
                     {b.status === 'success'
                       ? b.removedAt
                         ? t('admin.backups.removed')
                         : t('admin.backups.statuses.success')
                       : t('admin.backups.statuses.failed')}
                   </td>
-                  <td>{b.status === 'success' ? <code>{b.fileName}</code> : <span className="text-danger">{b.failureReason}</span>}</td>
-                  <td className="text-end tabular-nums">{size(b.sizeBytes)}</td>
-                  <td>{b.lastDownloadedAt ? formatDateTime(b.lastDownloadedAt) : '—'}</td>
-                  <td>
+                  <td className="px-2">{b.status === 'success' ? <code>{b.fileName}</code> : <span className="text-danger" lang="en">
+                        {b.failureReason}
+                      </span>}</td>
+                  <td className="text-end tabular-nums px-2">{size(b.sizeBytes)}</td>
+                  <td className="px-2">{b.lastDownloadedAt ? formatDateTime(b.lastDownloadedAt) : '—'}</td>
+                  <td className="px-2">
                     {b.available && (
                       <a
                         href={backupDownloadUrl(b.id)}

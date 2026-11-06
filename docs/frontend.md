@@ -237,6 +237,8 @@ Desktop-first (counter and back-office). Breakpoints: â‰¥1280 full layout; 768â€
 
 ## 12. Accessibility
 
+**Phase 12 audit (2026-11-06):** axe-core (WCAG 2.1 A and AA rules) finds no violation on the login page and 17 main screens in French, nor on the counter, the revenue report and the backups page in Arabic (right to left); the check is a journey (J14) so it guards every change. A whole counter sale is made with the keyboard only (J15). The technical reason of a failed backup, in English, is marked `lang="en"` (WCAG 3.1.2). Supported browsers: Chrome and Edge, current and previous version (ADR-159). Automated checks cover only part of WCAG: screen-reader use and zoom to 200 % are part of the UAT checklist.
+
 Target WCAG 2.1 AA: semantic landmarks, labelled controls, visible focus, keyboard-only POS flow, `role="alert"` / live regions for dynamic errors, sufficient contrast, status not colour-only, modals trap focus, table headers with scope, form errors linked via `aria-describedby`, reduced-motion respect.
 
 ## 13. Printing and documents

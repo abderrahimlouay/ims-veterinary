@@ -1126,6 +1126,12 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** 100 or 1,000 documents a day; a year's report under 2 s (summary tables kept at each sale) or under 10 s.
 - **Consequences:** `architecture.md` §14, `testing.md` (`VolumePerformanceTest`), index tuning where a report misses its bound.
 
+## ADR-159 — Supported browsers: Chrome and Edge
+- **Status:** Accepted (user decision, 2026-11-06, Phase 12 browser matrix; the recommended option).
+- **Decision:** The counter and office PCs use **Google Chrome or Microsoft Edge**, the current and the previous major version. The end-to-end suite runs on Chromium; Edge runs the screen, security-header and accessibility journeys (J13, J14) in CI. Printing (thermal ticket and A4) is checked on both during UAT. Other browsers are not supported.
+- **Alternatives:** adding Firefox; Chrome only.
+- **Consequences:** `playwright.config.ts` (project `edge`), CI e2e job, `frontend.md` §12, the UAT checklist.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.

@@ -264,7 +264,6 @@
       "runNow": "Run a backup now",
       "running": "Backup running…",
       "done": "Backup finished: {{file}}",
-      "failed": "The backup failed: {{reason}}",
       "offsite": "Download a backup regularly and keep it off the premises (off-site copy).",
       "empty": "No backup yet.",
       "startedAt": "Date",
@@ -288,7 +287,8 @@
         "LAST_FAILED": "The last backup failed.",
         "NO_RECENT_BACKUP": "No successful backup for more than a day.",
         "DOWNLOAD_OVERDUE": "No backup downloaded for {{days}} days: make an off-site copy."
-      }
+      },
+      "failedPrefix": "The backup failed:"
     }
   },
   "reference": {
