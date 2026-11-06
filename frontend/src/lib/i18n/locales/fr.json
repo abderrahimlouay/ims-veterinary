@@ -37,6 +37,12 @@
     "ar": "العربية",
     "en": "English"
   },
+  "theme": {
+    "label": "Thème",
+    "system": "Système",
+    "light": "Clair",
+    "dark": "Sombre"
+  },
   "dashboard": {
     "title": "Tableau de bord",
     "empty": "Aucun module n'est encore disponible."

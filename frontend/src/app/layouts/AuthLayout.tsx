@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Outlet } from 'react-router'
 import { LanguageSelect } from '../../components/LanguageSelect'
+import { ThemeSwitch } from '../../components/ThemeSwitch'
 
 /** Centred card for `/login` (frontend.md §3). */
 export function AuthLayout() {
@@ -17,7 +18,10 @@ export function AuthLayout() {
       <main className="w-full max-w-sm p-6 bg-surface border border-line rounded-ctl shadow-sm">
         <Outlet />
       </main>
-      <LanguageSelect />
+      <div className="flex flex-wrap items-center justify-center gap-4">
+        <LanguageSelect />
+        <ThemeSwitch />
+      </div>
     </div>
   )
 }

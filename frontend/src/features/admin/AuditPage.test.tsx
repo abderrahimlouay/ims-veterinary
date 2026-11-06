@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
@@ -36,7 +36,7 @@ describe('AuditPage', () => {
     renderApp('/admin/audit')
 
     expect(await screen.findByText('admin (Amina Benali)')).toBeInTheDocument()
-    expect(screen.getByText('Système')).toBeInTheDocument()
+    expect(within(screen.getByRole('table')).getByText('Système')).toBeInTheDocument()
     expect(screen.getAllByText('21/10/2026 00:30')).toHaveLength(2)
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Détails' })[0])
