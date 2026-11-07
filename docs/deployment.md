@@ -42,7 +42,8 @@ Folders: `C:\IMS\app` (JAR, WinSW and its file `ims-service.xml`, which holds th
    ```
    and restart the service (`Restart-Service MySQL84`). `install.ps1` refuses to continue if these are not in force.
 4. **Google Drive for desktop:** signed in with the owner's Google account, **2-step verification on** (ADR-167), "My Drive" set to **Mirror files** (Preferences → Google Drive), so the folder is a real folder the service can write to (e.g. `C:\Users\<owner>\Mon Drive`). Create `IMS-sauvegardes` inside it.
-5. The shop's Wi-Fi set as a **Private** network (Settings → Network → the Wi-Fi → Network profile type: Private). Any other network stays Public: the application is then unreachable from it.
+5. **Ports 443 and 80 free:** no other web server on the laptop (IIS, another application's server); `install.ps1` names the program holding one and stops before changing anything.
+6. The shop's Wi-Fi set as a **Private** network (Settings → Network → the Wi-Fi → Network profile type: Private). Any other network stays Public: the application is then unreachable from it.
 
 ## 4. Install (`install.ps1`)
 
@@ -54,7 +55,7 @@ Set-ExecutionPolicy -Scope Process Bypass
   -DriveFolder "C:\Users\<owner>\Mon Drive\IMS-sauvegardes"
 ```
 
-It checks the drive is encrypted (ADR-168), asks for the MySQL root password and the `server.p12` password, then: checks Java 21 and MySQL; creates the folders; installs `ims-ca.crt` in the laptop's trusted roots; creates the schema and the three MySQL accounts (`ims_migrator`, `ims_app`, `ims_backup` on `127.0.0.1`, generated passwords; ADR-087) and keeps the migration account for the scripts, readable only by this Windows account; creates the Windows account `ims-svc` with access to `C:\IMS` and the Drive folder only; migrates the schema (ADR-151); installs and starts the service with a **first Administrator** (ADR-040), then removes the bootstrap variables and restarts; opens 443 and 80 on the Private profile; turns off sleep and the lid action on mains power. At the end it prints the first Administrator's temporary password and the generated passwords: **copy them into the password manager**, then close the window.
+It checks the drive is encrypted (ADR-168) and ports 443 and 80 are free, asks for the MySQL root password and the `server.p12` password, then: checks Java 21 and MySQL; creates the folders; installs `ims-ca.crt` in the laptop's trusted roots; creates the schema and the three MySQL accounts (`ims_migrator`, `ims_app`, `ims_backup` on `127.0.0.1`, generated passwords; ADR-087) and keeps the migration account for the scripts, readable only by this Windows account; creates the Windows account `ims-svc` with access to `C:\IMS` and the Drive folder only; migrates the schema (ADR-151); installs and starts the service with a **first Administrator** (ADR-040), then removes the bootstrap variables and restarts; opens 443 and 80 on the Private profile; turns off sleep and the lid action on mains power. At the end it prints the first Administrator's temporary password and the generated passwords: **copy them into the password manager**, then close the window.
 
 ## 5. After the installation
 

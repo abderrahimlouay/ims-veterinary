@@ -50,6 +50,21 @@ function Assert-DiskEncrypted([string[]] $Paths) {
     }
 }
 
+# The application listens on 443 and 80 (ADR-166): a program already holding one (IIS, another web server) would only
+# show up at the end as "no answer". PID 4 is Windows itself, for a program that goes through its HTTP service.
+function Assert-PortsFree([int[]] $Ports = @(443, 80)) {
+    foreach ($port in $Ports) {
+        $listener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($listener) {
+            $owner = if ($listener.OwningProcess -eq 4) { 'Windows (service HTTP, par exemple IIS)' } else {
+                $process = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
+                if ($process) { "$($process.ProcessName) (PID $($listener.OwningProcess))" } else { "PID $($listener.OwningProcess)" }
+            }
+            throw "Le port $port est déjà utilisé par $owner : arrêtez ou désinstallez ce programme, puis relancez (docs/deployment.md §3)."
+        }
+    }
+}
+
 # Letters and digits only (no quote or backslash to escape in an option file or XML), without bias.
 function New-Secret([int] $Length = 24) {
     $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'

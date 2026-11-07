@@ -39,6 +39,7 @@ if (Get-Service $ImsService -ErrorAction SilentlyContinue) {
 }
 Write-Step 'Chiffrement du disque (ADR-168)'
 Assert-DiskEncrypted @($ImsRoot, $env:ProgramData, $DriveFolder)
+Assert-PortsFree
 $java = Find-Java
 Find-MySqlBin | Out-Null
 foreach ($file in @($Jar, $Keystore, $CaCertificate, $WinSW)) {

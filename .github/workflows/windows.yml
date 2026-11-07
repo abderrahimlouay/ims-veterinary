@@ -147,6 +147,17 @@ jobs:
           openssl pkcs12 -export -in server.crt -inkey server.key -certfile ims-ca.crt -out server.p12 -passout "pass:$pass"
           rm server.key ims-ca.key
 
+      - name: Free ports 443 and 80 (the runner image's own web services)
+        shell: powershell
+        run: |
+          Get-NetTCPConnection -LocalPort 80, 443 -State Listen -ErrorAction SilentlyContinue |
+            ForEach-Object { "port $($_.LocalPort): PID $($_.OwningProcess) $((Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName)" }
+          foreach ($name in 'W3SVC', 'WAS', 'WMSVC', 'MsDepSvc') {
+            if (Get-Service $name -ErrorAction SilentlyContinue) { Stop-Service $name -Force -ErrorAction SilentlyContinue; "stopped $name" }
+          }
+          Get-NetTCPConnection -LocalPort 80, 443 -State Listen -ErrorAction SilentlyContinue |
+            ForEach-Object { "still: port $($_.LocalPort) PID $($_.OwningProcess)" }
+
       - name: WinSW v2.12.0
         shell: powershell
         run: Invoke-WebRequest 'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe' -OutFile "$env:RUNNER_TEMP\WinSW-x64.exe" -UseBasicParsing
