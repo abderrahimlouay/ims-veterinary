@@ -97,7 +97,13 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          Get-Service -Name 'MySQL*' -ErrorAction SilentlyContinue | Stop-Service -Force -ErrorAction SilentlyContinue
+          # The runner image ships its own MySQL: removed, so this is a clean installation as on a new PC.
+          foreach ($service in @(Get-Service -Name 'MySQL*' -ErrorAction SilentlyContinue)) {
+            Stop-Service $service.Name -Force -ErrorAction SilentlyContinue
+            & sc.exe delete $service.Name | Out-Host
+          }
+          Get-Process mysqld -ErrorAction SilentlyContinue | Stop-Process -Force
+          Remove-Item 'C:\Program Files\MySQL', 'C:\ProgramData\MySQL' -Recurse -Force -ErrorAction SilentlyContinue
           $version = '8.4.10'
           $zip = Join-Path $env:RUNNER_TEMP 'mysql.zip'
           try {
