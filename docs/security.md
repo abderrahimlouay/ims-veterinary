@@ -188,6 +188,7 @@ Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD
 - Triggers + privileges + `@Immutable` mapping protect the ledger (ADR-008).
 - Database not exposed beyond the application host/network segment.
 - Personal data stored (customer name, phone, address; user names/emails) is limited to business needs; applicable data-protection law and retention periods are **not specified by the Spec** (OD-021 covers retention).
+- **Disk encryption (ADR-168):** the laptop's drive holding the database, the backups and the Drive folder is encrypted with BitLocker or Windows Device encryption; `install.ps1` refuses to install otherwise. A stolen laptop does not give the data away; the recovery key is kept off the laptop.
 - **Backups in Google Drive (ADR-167):** each backup (the whole database, customers' personal data included) is copied to the owner's Google Drive; it is not encrypted further, so the owner's Google account must use 2-step verification (deployment checklist), and nobody else is given access to that folder.
 - **Customer personal data (ADR-114):** a customer's name, phone, email, address and tax id are never written to application logs, security events or audit entries — these carry ids, amounts and codes only; a duplicate refusal or the similar-customers check answers with ids and the matching field only (ADR-110). Tests and demo data use fictional names and fake-range phone numbers only. A test creates and edits a customer, searches by name, phone and tax id and runs the similar-customers check, then checks that the captured log output contains none of those values. Request paths only are ever logged (the access-denied security event and the problem `instance` use the path, never the query string; there is no access log), and the similar-customers check is a POST with a body.
 
@@ -199,7 +200,7 @@ Audit data is append-only: no API to edit/delete; DB triggers and privileges (SD
 | Profiles | `dev`, `test`, `prod`; production values never in the repository |
 | Rotation | Signing key and DB passwords rotatable without code change (key id / reconnect) |
 | Build | Frontend build variables are **public** — no secrets in `VITE_*` |
-| Backups | Contain all data; stored with restricted access and encryption at rest `[REC]`; backup file download is audited (BR-BKP-002) |
+| Backups | Contain all data; stored with restricted access on the encrypted laptop drive (ADR-168) and in the owner's Google Drive with 2-step verification (ADR-167); backup file download is audited (BR-BKP-002) |
 | Repository hygiene | Secret-scanning in CI (e.g. gitleaks) `[REC]`; commit rule in `CLAUDE.md` |
 
 ## 11. Transport, CORS and headers
@@ -239,6 +240,7 @@ Never logged: passwords, tokens, hashes, full card/cheque details, full request 
 | Return or refund abuse (fictitious return, double refund, cash taken out) | `return.customer.create` (Administrator, Pharmacist only), mandatory reason, returned ≤ sold under lock and DB CHECK, refund only inside its return with `Idempotency-Key`, cash refund on the refunder's own session and never below zero, `RETURN_CREATE` / `REFUND_CREATE` audit (ADR-128, ADR-130) |
 | Privilege escalation | Server-side method security, no client-supplied permissions, role changes audited |
 | Credential stuffing / brute force | Throttling, generic errors, strong hashing |
+| Laptop stolen or lost | Encrypted drive (ADR-168), recovery key kept off the laptop; backups in Google Drive (ADR-167) |
 | Session/token theft | HttpOnly cookies / in-memory token, short lifetimes, TLS, CSP |
 | Injection (SQL/XSS) | §8 |
 | Data exfiltration via backups | Restricted, encrypted, audited backups |

@@ -32,7 +32,7 @@ Folders: `C:\IMS\app` (JAR, WinSW and its file `ims-service.xml`, which holds th
 
 ## 3. Prepare the laptop (owner, with the developer)
 
-1. Windows up to date. **Active hours** (Settings → Windows Update → Advanced options) set to the opening hours, so Windows never restarts the laptop during them. Device encryption or BitLocker **on** `[REC]`: the database holds customers' personal data.
+1. Windows up to date. **Active hours** (Settings → Windows Update → Advanced options) set to the opening hours, so Windows never restarts the laptop during them. **Disk encryption on (ADR-168, required):** the database holds customers' personal data. Windows Pro: Settings → Privacy & security → Device encryption, or Control Panel → BitLocker Drive Encryption → Turn on BitLocker for `C:`. Windows Home: Settings → Privacy & security → **Device encryption** → On (it needs the owner signed in with a Microsoft account, which keeps the recovery key). Save the **recovery key** in the owner's Microsoft account or print it, and keep it away from the laptop. Wait until encryption has finished. `install.ps1` refuses to install while a drive it uses is not protected; a laptop with neither option is upgraded to Pro or replaced before go-live.
 2. **Java 21:** Eclipse Temurin 21 JDK (MSI, x64) with the options "Set JAVA_HOME" and "Add to PATH".
 3. **MySQL 8.4 LTS:** MySQL Installer or the MSI, "Server only"; type "Server Computer", port 3306, a **strong root password** (password manager), Windows service `MySQL84` started at boot. Then, as administrator, edit `C:\ProgramData\MySQL\MySQL Server 8.4\my.ini`, section `[mysqld]`:
    ```
@@ -54,7 +54,7 @@ Set-ExecutionPolicy -Scope Process Bypass
   -DriveFolder "C:\Users\<owner>\Mon Drive\IMS-sauvegardes"
 ```
 
-It asks for the MySQL root password and the `server.p12` password, then: checks Java 21 and MySQL; creates the folders; installs `ims-ca.crt` in the laptop's trusted roots; creates the schema and the three MySQL accounts (`ims_migrator`, `ims_app`, `ims_backup` on `127.0.0.1`, generated passwords; ADR-087) and keeps the migration account for the scripts, readable only by this Windows account; creates the Windows account `ims-svc` with access to `C:\IMS` and the Drive folder only; migrates the schema (ADR-151); installs and starts the service with a **first Administrator** (ADR-040), then removes the bootstrap variables and restarts; opens 443 and 80 on the Private profile; turns off sleep and the lid action on mains power. At the end it prints the first Administrator's temporary password and the generated passwords: **copy them into the password manager**, then close the window.
+It checks the drive is encrypted (ADR-168), asks for the MySQL root password and the `server.p12` password, then: checks Java 21 and MySQL; creates the folders; installs `ims-ca.crt` in the laptop's trusted roots; creates the schema and the three MySQL accounts (`ims_migrator`, `ims_app`, `ims_backup` on `127.0.0.1`, generated passwords; ADR-087) and keeps the migration account for the scripts, readable only by this Windows account; creates the Windows account `ims-svc` with access to `C:\IMS` and the Drive folder only; migrates the schema (ADR-151); installs and starts the service with a **first Administrator** (ADR-040), then removes the bootstrap variables and restarts; opens 443 and 80 on the Private profile; turns off sleep and the lid action on mains power. At the end it prints the first Administrator's temporary password and the generated passwords: **copy them into the password manager**, then close the window.
 
 ## 5. After the installation
 
@@ -82,7 +82,7 @@ Then the **restore rehearsal** and the **update rehearsal** on another Windows P
 
 | Item | Value |
 |---|---|
-| Laptop: model, Windows version, disk encryption on/off | |
+| Laptop: model, Windows version, disk encryption (BitLocker or Device encryption, ADR-168) and where the recovery key is kept | |
 | Windows name and fixed address; certificate expiry date | |
 | Opening hours = Windows Update active hours (ADR-150, ADR-165) | |
 | Google account of the copy (2-step verification on), Drive folder | |

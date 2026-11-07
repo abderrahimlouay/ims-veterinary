@@ -1,4 +1,4 @@
-# Shared by install.ps1, update.ps1 and restore.ps1 (docs/deployment.md, docs/operations.md; ADR-151, ADR-165).
+﻿# Shared by install.ps1, update.ps1 and restore.ps1 (docs/deployment.md, docs/operations.md; ADR-151, ADR-165).
 # Dot-sourced: . "$PSScriptRoot\ims-common.ps1". Messages are in French: the owner runs these scripts (ADR-165).
 # Written for Windows PowerShell 5.1, which every Windows 10/11 has, and PowerShell 7.
 
@@ -27,6 +27,26 @@ function Assert-Administrator {
     $identity = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
     if (-not $identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         throw 'Lancez ce script dans PowerShell ouvert en tant qu''administrateur.'
+    }
+}
+
+# ADR-168: the drives holding the database, the backups and the Drive copy must be encrypted (BitLocker on Windows Pro,
+# "Device encryption" on Windows Home: both are BitLocker volumes). Read through WMI, not manage-bde, whose output
+# is translated. ProtectionStatus 1 = protection on; a drive encrypted but suspended or waiting for activation is 0.
+function Assert-DiskEncrypted([string[]] $Paths) {
+    $drives = $Paths | ForEach-Object { [IO.Path]::GetPathRoot($_).TrimEnd('\').ToUpperInvariant() } | Sort-Object -Unique
+    try {
+        $volumes = @(Get-CimInstance -Namespace 'root\cimv2\Security\MicrosoftVolumeEncryption' -ClassName Win32_EncryptableVolume)
+    } catch {
+        $volumes = @()
+    }
+    foreach ($drive in $drives) {
+        $volume = $volumes | Where-Object { $_.DriveLetter -eq $drive } | Select-Object -First 1
+        if (-not $volume -or $volume.ProtectionStatus -ne 1) {
+            throw ("Le disque $drive n'est pas chiffré (ADR-168) : activez BitLocker (Windows Pro) ou le chiffrement de " +
+                "l'appareil (Paramètres > Confidentialité et sécurité > Chiffrement de l'appareil), attendez la fin du " +
+                'chiffrement, puis relancez install.ps1 (docs/deployment.md §3).')
+        }
     }
 }
 
