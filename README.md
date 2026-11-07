@@ -13,7 +13,7 @@ Java 21 · Spring Boot 4.1 · Maven · MySQL 8.4 LTS · Flyway · React 19 + Vit
 ## Prerequisites
 - JDK 21, Node.js 24 with npm.
 - Docker, usable **without sudo** by your user (Testcontainers starts MySQL for the backend tests). On Linux: `sudo usermod -aG docker $USER`, then log out and in.
-- For running the backend outside tests: a MySQL 8.4 LTS database (8.0.30 at least; an older server is refused at migration time) started with `log_bin_trust_function_creators=1` (ADR-043; Flyway creates triggers), its two accounts (below) and the variables of `.env.example`.
+- For running the backend outside tests: a MySQL 8.4 LTS database (8.0.30 at least; an older server is refused at migration time; **not 8.4.10**, which refuses the column name `manual` of V09_007, found by the Windows rehearsal: production uses 8.4.11 or later) started with `log_bin_trust_function_creators=1` (ADR-043; Flyway creates triggers), its two accounts (below) and the variables of `.env.example`.
 
 ## Database accounts (ADR-087)
 The application never connects with the account that changes the schema:

@@ -104,7 +104,7 @@ jobs:
           }
           Get-Process mysqld -ErrorAction SilentlyContinue | Stop-Process -Force
           Remove-Item 'C:\Program Files\MySQL', 'C:\ProgramData\MySQL' -Recurse -Force -ErrorAction SilentlyContinue
-          $version = '8.4.10'
+          $version = '8.4.11' # 8.4.10 refuses migration V09_007 (install.ps1 requires 8.4.11 or later)
           $zip = Join-Path $env:RUNNER_TEMP 'mysql.zip'
           try {
             Invoke-WebRequest "https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-$version-winx64.zip" -OutFile $zip -UseBasicParsing

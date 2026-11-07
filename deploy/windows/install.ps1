@@ -64,8 +64,10 @@ Invoke-MySqlTool 'mysql.exe' 'root' $rootPassword @('--batch', '--skip-column-na
     'SELECT @@bind_address, @@log_bin_trust_function_creators, @@version') > $settings
 $actual = (Get-Content $settings -Raw).Trim() -split "`t"
 Remove-Item $settings -Force
-if ($actual[0] -ne '127.0.0.1' -or $actual[1] -ne '1' -or -not $actual[2].StartsWith('8.4')) {
-    throw "MySQL doit être 8.4 avec bind-address=127.0.0.1 et log_bin_trust_function_creators=1 dans my.ini (docs/deployment.md §3) ; trouvé : $actual"
+# MySQL 8.4.10 refuses the column name "manual" of migration V09_007: 8.4.11 or later (docs/deployment.md §3).
+$mysqlVersion = [regex]::Match($actual[2], '^8\.4\.(\d+)')
+if ($actual[0] -ne '127.0.0.1' -or $actual[1] -ne '1' -or -not $mysqlVersion.Success -or [int] $mysqlVersion.Groups[1].Value -lt 11) {
+    throw "MySQL doit être 8.4.11 ou plus récent (8.4.x) avec bind-address=127.0.0.1 et log_bin_trust_function_creators=1 dans my.ini (docs/deployment.md §3) ; trouvé : $actual"
 }
 $appPassword = New-Secret
 $migrationPassword = New-Secret
