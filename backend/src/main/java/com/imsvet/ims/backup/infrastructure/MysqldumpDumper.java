@@ -4,8 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,8 +47,7 @@ public class MysqldumpDumper implements DatabaseDumper {
         if (!url.matches()) {
             throw new BackupFailure("The database address cannot be read for the backup.");
         }
-        Path options = Files.createTempFile("ims-backup-", ".cnf",
-                PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+        Path options = privateTempFile();
         try {
             Files.writeString(options, "[client]\nuser=\"" + escape(properties.username()) + "\"\npassword=\""
                     + escape(properties.password()) + "\"\n", StandardCharsets.UTF_8);
@@ -66,6 +70,34 @@ public class MysqldumpDumper implements DatabaseDumper {
         } finally {
             Files.deleteIfExists(options);
         }
+    }
+
+    /**
+     * An empty temporary file only its owner can read and write: {@code rw-------} where the file system is POSIX; on
+     * Windows (the owner's laptop, ADR-165), which has no POSIX permissions, an access list naming the owner alone
+     * (the service account), set before the password is written.
+     */
+    static Path privateTempFile() throws IOException {
+        if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+            return Files.createTempFile("ims-backup-", ".cnf",
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+        }
+        Path file = Files.createTempFile("ims-backup-", ".cnf");
+        AclFileAttributeView acl = Files.getFileAttributeView(file, AclFileAttributeView.class);
+        if (acl == null) {
+            Files.deleteIfExists(file);
+            throw new BackupFailure("The backup options file cannot be made private on this system.");
+        }
+        acl.setAcl(List.of(AclEntry.newBuilder()
+                .setType(AclEntryType.ALLOW)
+                .setPrincipal(Files.getOwner(file))
+                .setPermissions(AclEntryPermission.READ_DATA, AclEntryPermission.WRITE_DATA,
+                        AclEntryPermission.APPEND_DATA, AclEntryPermission.READ_ATTRIBUTES,
+                        AclEntryPermission.WRITE_ATTRIBUTES, AclEntryPermission.READ_NAMED_ATTRS,
+                        AclEntryPermission.WRITE_NAMED_ATTRS, AclEntryPermission.READ_ACL,
+                        AclEntryPermission.DELETE, AclEntryPermission.SYNCHRONIZE)
+                .build()));
+        return file;
     }
 
     private Process start(Path options, Matcher url) {

@@ -224,8 +224,12 @@ function Wait-Healthy([int] $Seconds = 180) {
     $deadline = (Get-Date).AddSeconds($Seconds)
     while ((Get-Date) -lt $deadline) {
         try {
-            $response = Invoke-WebRequest -Uri 'https://localhost/actuator/health' -UseBasicParsing -TimeoutSec 5
-            if ($response.Content -match '"UP"') {
+            # Windows PowerShell 5.1 gives the body as bytes for a type it does not know as text (the actuator's own
+            # JSON type): ask for plain JSON, and decode bytes if they come anyway.
+            $response = Invoke-WebRequest -Uri 'https://localhost/actuator/health' -UseBasicParsing -TimeoutSec 5 `
+                -Headers @{ Accept = 'application/json' }
+            $body = if ($response.Content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($response.Content) } else { [string] $response.Content }
+            if ($body -match '"UP"') {
                 return
             }
         } catch {

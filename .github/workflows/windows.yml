@@ -7,6 +7,8 @@ name: Windows rehearsal
 on:
   pull_request:
     paths:
+      - 'backend/src/main/java/com/imsvet/ims/backup/**'
+      - 'backend/src/main/java/com/imsvet/ims/common/db/**'
       - 'deploy/windows/**'
       - 'backend/src/main/resources/db/**'
       - 'backend/src/main/resources/application*.yml'
@@ -15,6 +17,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'backend/src/main/java/com/imsvet/ims/backup/**'
+      - 'backend/src/main/java/com/imsvet/ims/common/db/**'
       - 'deploy/windows/**'
       - 'backend/src/main/resources/db/**'
       - 'backend/src/main/resources/application*.yml'
