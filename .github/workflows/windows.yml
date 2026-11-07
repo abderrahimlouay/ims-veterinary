@@ -140,8 +140,10 @@ jobs:
           name=$(hostname)
           MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:4096 -sha256 -days 30 -nodes -keyout ims-ca.key -out ims-ca.crt -subj "/CN=CI throwaway IMS CA"
           MSYS_NO_PATHCONV=1 openssl req -new -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj "/CN=$name"
+          # The guide's <(printf …) is for the developer's Linux machine: Git Bash cannot hand it to the Windows openssl.exe.
+          printf "subjectAltName=DNS:%s,DNS:localhost,IP:127.0.0.1" "$name" > san.ext
           openssl x509 -req -in server.csr -CA ims-ca.crt -CAkey ims-ca.key -CAcreateserial -days 30 -sha256 \
-            -extfile <(printf "subjectAltName=DNS:%s,DNS:localhost,IP:127.0.0.1" "$name") -out server.crt
+            -extfile san.ext -out server.crt
           openssl pkcs12 -export -in server.crt -inkey server.key -certfile ims-ca.crt -out server.p12 -passout "pass:$pass"
           rm server.key ims-ca.key
 
