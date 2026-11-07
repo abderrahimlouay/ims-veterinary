@@ -84,7 +84,7 @@ function Connect-Api([string] $Password) {
 
 function Get-Sha([string] $Path) { (Get-FileHash $Path -Algorithm SHA256).Hash }
 function Assert-Healthy([string] $When) {
-    $health = curl.exe --ssl-no-revoke -sS "$base/actuator/health"
+    $health = (curl.exe --ssl-no-revoke -sS "$base/actuator/health") -join "`n"
     Check ($health -match '"UP"') "the application answers UP over HTTPS $When"
     Check ((Get-Service ims).Status -eq 'Running') "service ims running $When"
 }
@@ -114,9 +114,9 @@ $serviceXml = Get-Content 'C:\IMS\app\ims-service.xml' -Raw
 Check ($serviceXml -notmatch 'IMS_BOOTSTRAP_ADMIN') 'the bootstrap variables were removed from the service file (ADR-040)'
 $rule = Get-NetFirewallRule -DisplayName 'IMS V*' -ErrorAction SilentlyContinue
 Check ($rule -and $rule.Profile.ToString() -eq 'Private') 'firewall rule on the Private profile only'
-$screen = curl.exe --ssl-no-revoke -sS -D - -o NUL "$base/"
+$screen = (curl.exe --ssl-no-revoke -sS -D - -o NUL "$base/") -join "`n"
 Check ($screen -match '(?im)^content-security-policy:') 'the screens are served with the security headers (ADR-166)'
-$redirect = curl.exe --ssl-no-revoke -sS -o NUL -w '%{http_code} %{redirect_url}' 'http://localhost/'
+$redirect = (curl.exe --ssl-no-revoke -sS -o NUL -w '%{http_code} %{redirect_url}' 'http://localhost/') -join ""
 Check ($redirect -match '^30[1278] https://localhost') "HTTP redirects to HTTPS ($redirect)"
 Check (Test-Path 'C:\IMS\config\migration.cred.xml') 'the migration account is kept for the scripts'
 
