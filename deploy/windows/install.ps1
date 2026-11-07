@@ -87,7 +87,9 @@ $migration = New-Object pscredential('ims_migrator', (ConvertTo-SecureString $mi
 $migration | Export-Clixml $MigrationCredential
 
 Write-Step 'Compte Windows du service (ims-svc)'
-$servicePassword = New-Secret 32
+# Windows' complexity rule wants three kinds of character: drawn again until upper case, lower case and a digit are in.
+do { $servicePassword = New-Secret 32 } until (
+    $servicePassword -cmatch '[A-Z]' -and $servicePassword -cmatch '[a-z]' -and $servicePassword -match '[0-9]')
 New-LocalUser -Name 'ims-svc' -Password (ConvertTo-SecureString $servicePassword -AsPlainText -Force) `
     -PasswordNeverExpires -UserMayNotChangePassword -Description 'IMS Vétérinaire (service)' | Out-Null
 Set-Rights $ImsRoot @('/inheritance:r', '/grant:r', "${Administrators}:(OI)(CI)F", "${LocalSystem}:(OI)(CI)F",
