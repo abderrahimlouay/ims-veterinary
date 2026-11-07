@@ -47,7 +47,7 @@ Another answer than the current behaviour means a new decision and a change **be
 | # | Check | Who | Result |
 |---|---|---|---|
 | 4.1 | Backups page: **Run now** succeeds and is **copied to Google Drive** (column "Copiée", the file visible in Google Drive on the web); a download works (ADR-167) | Administrator | |
-| 4.2 | **Installation and restore rehearsal** on another Windows PC: `deployment.md` §3–§4, then `restore.ps1` with a backup taken from Google Drive (`operations.md` §4), timed: under four business hours (ADR-150, ADR-165) | developer, owner | time: |
+| 4.2 | **Installation and restore rehearsal** on another Windows PC: `deployment.md` §3–§4, then `restore.ps1` with a backup **downloaded from Google Drive on another machine** (same name and size as on the backups page, the sync delay noted: proves the copy left the PC; `operations.md` §4), timed: under four business hours (ADR-150, ADR-165) | developer, owner | time: |
 | 4.3 | An update rehearsal with `update.ps1` (`operations.md` §2) on that PC, and once with a JAR whose migration fails: the previous version and data come back by themselves | developer, owner | |
 | 4.4 | Printing ticket and A4 from **Chrome and from Edge**, on the laptop and on another device over HTTPS (security headers in force, ADR-157, ADR-166) | Seller | |
 | 4.5 | A whole sale with the keyboard only (J15 automates it; check on the real counter PC and scanner) | Seller | |
