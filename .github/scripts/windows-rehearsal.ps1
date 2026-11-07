@@ -54,7 +54,7 @@ function Invoke-Captured([scriptblock] $Block) {
     $transcript = Join-Path $env:RUNNER_TEMP ('transcript-' + [Guid]::NewGuid().ToString('N') + '.txt')
     Start-Transcript -Path $transcript | Out-Null
     $global:LASTEXITCODE = 0
-    try { & $Block } finally { Stop-Transcript | Out-Null }
+    try { & $Block | Out-Host } finally { Stop-Transcript | Out-Null }
     [pscustomobject] @{ Output = (Get-Content $transcript -Raw); ExitCode = $global:LASTEXITCODE }
 }
 
