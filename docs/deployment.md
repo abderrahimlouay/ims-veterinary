@@ -1,7 +1,7 @@
 # Installation guide — the owner's Windows laptop
 
 > **Scope:** installing IMS Vétérinaire on the store owner's Windows 10/11 laptop, used by the shop's other devices over the local network (ADR-165), the application serving HTTPS and the screens itself (ADR-166), backups copied to Google Drive (ADR-167). Day-to-day operation, updates and restores: `operations.md`. The scripts are in `deploy/windows`; they print their messages in French for the owner.
-> **Not tested on a real laptop yet:** the scripts are checked for syntax in CI only. The first installation on another Windows PC is the rehearsal (`uat.md` §4.2, §4.3); correct this page and the scripts with what it shows.
+> **Rehearsed on Windows in CI, not yet on a real PC:** workflow `windows.yml` runs install, backup with its Drive copy, update, a failed update rolled back and restore on a Windows runner in Windows PowerShell 5.1 (`testing.md` §9; it found and fixed five defects on 2026-11-07, `roadmap.md` Phase 12). Google Drive's own sync, a French Windows, a real laptop and the shop's devices are still only covered by the rehearsal on another Windows PC (`uat.md` §4.2, §4.3); correct this page and the scripts with what it shows.
 
 ## 1. What runs where
 
@@ -23,7 +23,7 @@ Folders: `C:\IMS\app` (JAR, WinSW and its file `ims-service.xml`, which holds th
    ```
    openssl req -new -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj "/CN=PHARMA-PC"
    openssl x509 -req -in server.csr -CA ims-ca.crt -CAkey ims-ca.key -CAcreateserial -days 730 -sha256 \
-     -extfile <(printf "subjectAltName=DNS:PHARMA-PC,DNS:localhost,IP:192.168.1.20")
+     -extfile <(printf "subjectAltName=DNS:PHARMA-PC,DNS:localhost,IP:192.168.1.20") -out server.crt
    openssl pkcs12 -export -in server.crt -inkey server.key -certfile ims-ca.crt -out server.p12
    ```
    The last command asks for the **`server.p12` password**: give it to the owner apart from the file. Write the expiry date in the deployment record (§8). Delete `server.key` after the export.
@@ -34,7 +34,7 @@ Folders: `C:\IMS\app` (JAR, WinSW and its file `ims-service.xml`, which holds th
 
 1. Windows up to date. **Active hours** (Settings → Windows Update → Advanced options) set to the opening hours, so Windows never restarts the laptop during them. **Disk encryption on (ADR-168, required):** the database holds customers' personal data. Windows Pro: Settings → Privacy & security → Device encryption, or Control Panel → BitLocker Drive Encryption → Turn on BitLocker for `C:`. Windows Home: Settings → Privacy & security → **Device encryption** → On (it needs the owner signed in with a Microsoft account, which keeps the recovery key). Save the **recovery key** in the owner's Microsoft account or print it, and keep it away from the laptop. Wait until encryption has finished. `install.ps1` refuses to install while a drive it uses is not protected; a laptop with neither option is upgraded to Pro or replaced before go-live.
 2. **Java 21:** Eclipse Temurin 21 JDK (MSI, x64) with the options "Set JAVA_HOME" and "Add to PATH".
-3. **MySQL 8.4 LTS:** MySQL Installer or the MSI, "Server only"; type "Server Computer", port 3306, a **strong root password** (password manager), Windows service `MySQL84` started at boot. Then, as administrator, edit `C:\ProgramData\MySQL\MySQL Server 8.4\my.ini`, section `[mysqld]`:
+3. **MySQL 8.4 LTS, 8.4.11 or later** (8.4.10 refuses the column name `manual` of migration V09_007; `install.ps1` checks the version): MySQL Installer or the MSI, "Server only"; type "Server Computer", port 3306, a **strong root password** (password manager), Windows service `MySQL84` started at boot. Then, as administrator, edit `C:\ProgramData\MySQL\MySQL Server 8.4\my.ini`, section `[mysqld]`:
    ```
    bind-address=127.0.0.1
    log_bin_trust_function_creators=1
@@ -42,7 +42,8 @@ Folders: `C:\IMS\app` (JAR, WinSW and its file `ims-service.xml`, which holds th
    ```
    and restart the service (`Restart-Service MySQL84`). `install.ps1` refuses to continue if these are not in force.
 4. **Google Drive for desktop:** signed in with the owner's Google account, **2-step verification on** (ADR-167), "My Drive" set to **Mirror files** (Preferences → Google Drive), so the folder is a real folder the service can write to (e.g. `C:\Users\<owner>\Mon Drive`). Create `IMS-sauvegardes` inside it.
-5. The shop's Wi-Fi set as a **Private** network (Settings → Network → the Wi-Fi → Network profile type: Private). Any other network stays Public: the application is then unreachable from it.
+5. **Ports 443 and 80 free:** no other web server on the laptop (IIS, another application's server); `install.ps1` names the program holding one and stops before changing anything.
+6. The shop's Wi-Fi set as a **Private** network (Settings → Network → the Wi-Fi → Network profile type: Private). Any other network stays Public: the application is then unreachable from it.
 
 ## 4. Install (`install.ps1`)
 
@@ -54,7 +55,7 @@ Set-ExecutionPolicy -Scope Process Bypass
   -DriveFolder "C:\Users\<owner>\Mon Drive\IMS-sauvegardes"
 ```
 
-It checks the drive is encrypted (ADR-168), asks for the MySQL root password and the `server.p12` password, then: checks Java 21 and MySQL; creates the folders; installs `ims-ca.crt` in the laptop's trusted roots; creates the schema and the three MySQL accounts (`ims_migrator`, `ims_app`, `ims_backup` on `127.0.0.1`, generated passwords; ADR-087) and keeps the migration account for the scripts, readable only by this Windows account; creates the Windows account `ims-svc` with access to `C:\IMS` and the Drive folder only; migrates the schema (ADR-151); installs and starts the service with a **first Administrator** (ADR-040), then removes the bootstrap variables and restarts; opens 443 and 80 on the Private profile; turns off sleep and the lid action on mains power. At the end it prints the first Administrator's temporary password and the generated passwords: **copy them into the password manager**, then close the window.
+It checks the drive is encrypted (ADR-168) and ports 443 and 80 are free, asks for the MySQL root password and the `server.p12` password, then: checks Java 21 and MySQL; creates the folders; installs `ims-ca.crt` in the laptop's trusted roots; creates the schema and the three MySQL accounts (`ims_migrator`, `ims_app`, `ims_backup` on `127.0.0.1`, generated passwords; ADR-087) and keeps the migration account for the scripts, readable only by this Windows account; creates the Windows account `ims-svc` with access to `C:\IMS` and the Drive folder only; migrates the schema (ADR-151); installs and starts the service with a **first Administrator** (ADR-040), then removes the bootstrap variables and restarts; opens 443 and 80 on the Private profile; turns off sleep and the lid action on mains power. At the end it prints the first Administrator's temporary password and the generated passwords: **copy them into the password manager**, then close the window.
 
 ## 5. After the installation
 
