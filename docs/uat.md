@@ -54,6 +54,7 @@ Another answer than the current behaviour means a new decision and a change **be
 | 4.6 | The screens readable at 200 % zoom; the counter usable with a screen reader (NVDA or Narrator) for labels and error messages | pharmacy | |
 | 4.7 | The application in Arabic: the counter and a report, right to left | pharmacy | |
 | 4.8 | Laptop on mains power with the lid closed: the other devices keep working; on a Public network they cannot reach it (ADR-165, ADR-166) | owner | |
+| 4.9 | The laptop's drive is encrypted (BitLocker or Device encryption, protection on) and the recovery key is kept away from the laptop (ADR-168) | owner | |
 
 ## 5. Problems found
 

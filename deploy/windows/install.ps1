@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Installs IMS Vétérinaire on the owner's Windows laptop (docs/deployment.md §4; ADR-165…167).
 .DESCRIPTION
@@ -6,7 +6,7 @@
     update.ps1), after Java 21 and MySQL 8.4 are installed (docs/deployment.md §2-§3). It creates the folders, the
     database and its three accounts with generated passwords, the Windows account of the service, the WinSW service,
     the firewall rule (Private network only), the power settings, migrates the schema, starts the application with a
-    first Administrator and checks it answers over HTTPS.
+    first Administrator and checks it answers over HTTPS. It refuses to start on a drive that is not encrypted (ADR-168).
 .PARAMETER Jar
     The release JAR (built with -Prelease, the screens inside; README, Serving and HTTPS).
 .PARAMETER Keystore
@@ -37,6 +37,8 @@ Assert-Administrator
 if (Get-Service $ImsService -ErrorAction SilentlyContinue) {
     throw 'Le service ims existe déjà : pour une nouvelle version utilisez update.ps1 (docs/operations.md §2).'
 }
+Write-Step 'Chiffrement du disque (ADR-168)'
+Assert-DiskEncrypted @($ImsRoot, $env:ProgramData, $DriveFolder)
 $java = Find-Java
 Find-MySqlBin | Out-Null
 foreach ($file in @($Jar, $Keystore, $CaCertificate, $WinSW)) {

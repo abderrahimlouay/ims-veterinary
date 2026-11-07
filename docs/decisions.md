@@ -1192,6 +1192,12 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** a Windows scheduled task copying the folder (a failed copy goes unnoticed); a copy encrypted with a password (safer if the account is breached, useless if the password is lost); a USB drive only.
 - **Consequences:** backend (the copy step, `backup_log` copy columns by a Flyway migration, the warnings), `api.md` (`BackupRecord`, status warnings), backups page, README *Backups*, `deployment.md`, `security.md` (personal data in Google Drive, 2-step verification).
 
+## ADR-168 — The laptop's disk is encrypted, checked by the installation
+- **Status:** Accepted (user decision, 2026-11-07, Phase 12; follows ADR-165, ADR-167).
+- **Decision:** The drive that holds the database, the backups and the Google Drive folder (normally `C:`) **must be encrypted** before the application is installed: **BitLocker** on Windows Pro, **Device encryption** on Windows Home (both are BitLocker volumes), protection on and the recovery key saved in the owner's Microsoft account or printed and kept away from the laptop. `install.ps1` reads the state of each such drive and **refuses to install** while one is not protected. A laptop that can do neither (Windows Home without device encryption) is upgraded to Pro or replaced before go-live. The replacement PC of a restore (ADR-165 item 3) meets the same rule, since it is installed by the same script.
+- **Alternatives:** required in the guide only, not checked; recommended only (the previous `[REC]`).
+- **Consequences:** `deploy/windows` (`Assert-DiskEncrypted`), `deployment.md` §3 and §8, `security.md` §9–10, `uat.md` §4.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1451,7 +1457,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
-| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05); owner's Windows laptop → ADR-165 (hosting), ADR-166 (the application serves HTTPS), ADR-167 (Google Drive copy) (2026-11-06) |
+| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05); owner's Windows laptop → ADR-165 (hosting), ADR-166 (the application serves HTTPS), ADR-167 (Google Drive copy) (2026-11-06); ADR-168 (disk encryption required) (2026-11-07) |
 | 13 Dark theme | ADR-069 (decided 2026-10-22); ADR-161, ADR-162, ADR-163, ADR-164 (report charts) (2026-11-06) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**

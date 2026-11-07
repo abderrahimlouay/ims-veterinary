@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Installs a new version of IMS Vétérinaire (docs/operations.md §2; ADR-151, ADR-165).
 .DESCRIPTION

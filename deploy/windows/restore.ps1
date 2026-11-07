@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Restores a backup into IMS Vétérinaire (docs/operations.md §4; README, Restoring a backup; ADR-165, ADR-167).
 .DESCRIPTION
