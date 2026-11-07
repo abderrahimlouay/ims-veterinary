@@ -1,7 +1,7 @@
 # Installation guide — the owner's Windows laptop
 
 > **Scope:** installing IMS Vétérinaire on the store owner's Windows 10/11 laptop, used by the shop's other devices over the local network (ADR-165), the application serving HTTPS and the screens itself (ADR-166), backups copied to Google Drive (ADR-167). Day-to-day operation, updates and restores: `operations.md`. The scripts are in `deploy/windows`; they print their messages in French for the owner.
-> **Not tested on a real laptop yet:** the scripts are checked for syntax in CI only. The first installation on another Windows PC is the rehearsal (`uat.md` §4.2, §4.3); correct this page and the scripts with what it shows.
+> **Rehearsed on Windows in CI, not yet on a real PC:** workflow `windows.yml` runs install, backup with its Drive copy, update, a failed update rolled back and restore on a Windows runner in Windows PowerShell 5.1 (`testing.md` §9; it found and fixed five defects on 2026-11-07, `roadmap.md` Phase 12). Google Drive's own sync, a French Windows, a real laptop and the shop's devices are still only covered by the rehearsal on another Windows PC (`uat.md` §4.2, §4.3); correct this page and the scripts with what it shows.
 
 ## 1. What runs where
 
