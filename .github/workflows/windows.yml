@@ -1,0 +1,164 @@
+# The owner's scripts (deploy/windows) run for real on a Windows runner: install, backup copied to a "Google Drive"
+# folder, update, update with a failing migration (automatic rollback), restore (ADR-151, ADR-165..168;
+# docs/testing.md). Java 21 and MySQL 8.4 are installed as docs/deployment.md §3 asks. The CA and certificate are made
+# here for this run and thrown away: never the shop's CA.
+name: Windows rehearsal
+
+on:
+  pull_request:
+    paths:
+      - 'deploy/windows/**'
+      - 'backend/src/main/resources/db/**'
+      - 'backend/src/main/resources/application*.yml'
+      - '.github/scripts/windows-rehearsal.ps1'
+      - '.github/workflows/windows.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/windows/**'
+      - 'backend/src/main/resources/db/**'
+      - 'backend/src/main/resources/application*.yml'
+      - '.github/scripts/windows-rehearsal.ps1'
+      - '.github/workflows/windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  jars:
+    name: Release JARs for the rehearsal
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: ./mvnw -B -Prelease -DskipTests package
+        working-directory: backend
+      # A: the release. B: A plus one migration (a "new version"). Failing: B plus a migration that changes the schema
+      # and then fails, as a broken release would.
+      - run: |
+          mkdir -p rehearsal/x/BOOT-INF/classes/db/migration
+          cp backend/target/ims-*.jar rehearsal/ims-a.jar
+          cd rehearsal/x
+          echo 'CREATE TABLE ci_update_marker (id INT PRIMARY KEY);' > BOOT-INF/classes/db/migration/V99_001__ci_update_marker.sql
+          cp ../ims-a.jar ../ims-b.jar
+          zip -q ../ims-b.jar BOOT-INF/classes/db/migration/V99_001__ci_update_marker.sql
+          printf 'CREATE TABLE ci_partial_change (id INT PRIMARY KEY);\nINSERT INTO ci_table_that_does_not_exist VALUES (1);\n' \
+            > BOOT-INF/classes/db/migration/V99_002__ci_fails.sql
+          cp ../ims-b.jar ../ims-failing.jar
+          zip -q ../ims-failing.jar BOOT-INF/classes/db/migration/V99_002__ci_fails.sql
+          cd .. && rm -r x && ls -l
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rehearsal-jars
+          path: rehearsal/
+          retention-days: 3
+
+  windows:
+    name: Install, update, rollback and restore on Windows (ADR-165)
+    needs: jars
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: rehearsal-jars
+          path: ${{ runner.temp }}\jars
+
+      - name: Java 21 (Temurin MSI, as the owner installs it)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $msi = Join-Path $env:RUNNER_TEMP 'temurin21.msi'
+          Invoke-WebRequest 'https://api.adoptium.net/v3/installer/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk' -OutFile $msi -UseBasicParsing
+          $p = Start-Process msiexec.exe -ArgumentList '/i', "`"$msi`"", '/quiet', 'ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJavaHome' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Temurin MSI: $($p.ExitCode)" }
+          $jdk = Get-ChildItem 'C:\Program Files\Eclipse Adoptium' -Directory -Filter 'jdk-21*' | Select-Object -First 1
+          Add-Content $env:GITHUB_PATH (Join-Path $jdk.FullName 'bin')
+          & (Join-Path $jdk.FullName 'bin\java.exe') -version
+
+      - name: MySQL 8.4 (service MySQL84, my.ini of docs/deployment.md §3)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Get-Service -Name 'MySQL*' -ErrorAction SilentlyContinue | Stop-Service -Force -ErrorAction SilentlyContinue
+          $version = '8.4.10'
+          $zip = Join-Path $env:RUNNER_TEMP 'mysql.zip'
+          try {
+            Invoke-WebRequest "https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-$version-winx64.zip" -OutFile $zip -UseBasicParsing
+          } catch {
+            Invoke-WebRequest "https://cdn.mysql.com/archives/mysql-8.4/mysql-$version-winx64.zip" -OutFile $zip -UseBasicParsing
+          }
+          Expand-Archive $zip -DestinationPath 'C:\Program Files\MySQL'
+          Rename-Item "C:\Program Files\MySQL\mysql-$version-winx64" 'MySQL Server 8.4'
+          $base = 'C:\Program Files\MySQL\MySQL Server 8.4'
+          $data = 'C:\ProgramData\MySQL\MySQL Server 8.4'
+          New-Item -ItemType Directory -Force $data | Out-Null
+          $ini = "[mysqld]`r`nbasedir=`"$($base.Replace('\','/'))`"`r`ndatadir=`"$($data.Replace('\','/'))/Data`"`r`nport=3306`r`nbind-address=127.0.0.1`r`nlog_bin_trust_function_creators=1`r`ndefault_time_zone='+00:00'`r`n"
+          [IO.File]::WriteAllText("$data\my.ini", $ini, (New-Object Text.UTF8Encoding $false))
+          $ErrorActionPreference = 'Continue'
+          & "$base\bin\mysqld.exe" "--defaults-file=$data\my.ini" --initialize-insecure --console 2>&1 | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw 'mysqld --initialize failed' }
+          & "$base\bin\mysqld.exe" --install MySQL84 "--defaults-file=$data\my.ini" 2>&1 | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw 'mysqld --install failed' }
+          $ErrorActionPreference = 'Stop'
+          Start-Service MySQL84
+          $root = -join ((1..24) | ForEach-Object { 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'[(Get-Random -Maximum 57)] })
+          Write-Host "::add-mask::$root"
+          & "$base\bin\mysql.exe" -u root --skip-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$root';"
+          if ($LASTEXITCODE -ne 0) { throw 'root password not set' }
+          Add-Content $env:GITHUB_ENV "IMS_CI_ROOT_PASSWORD=$root"
+
+      - name: Throwaway CA and server certificate (docs/deployment.md §2 step 3-4)
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          pass=$(openssl rand -hex 16); echo "::add-mask::$pass"; echo "IMS_CI_KEYSTORE_PASSWORD=$pass" >> "$GITHUB_ENV"
+          name=$(hostname)
+          MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:4096 -sha256 -days 30 -nodes -keyout ims-ca.key -out ims-ca.crt -subj "/CN=CI throwaway IMS CA"
+          MSYS_NO_PATHCONV=1 openssl req -new -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj "/CN=$name"
+          openssl x509 -req -in server.csr -CA ims-ca.crt -CAkey ims-ca.key -CAcreateserial -days 30 -sha256 \
+            -extfile <(printf "subjectAltName=DNS:%s,DNS:localhost,IP:127.0.0.1" "$name") -out server.crt
+          openssl pkcs12 -export -in server.crt -inkey server.key -certfile ims-ca.crt -out server.p12 -passout "pass:$pass"
+          rm server.key ims-ca.key
+
+      - name: WinSW v2.12.0
+        shell: powershell
+        run: Invoke-WebRequest 'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe' -OutFile "$env:RUNNER_TEMP\WinSW-x64.exe" -UseBasicParsing
+
+      - name: Rehearsal (Windows PowerShell 5.1, as administrator)
+        shell: powershell
+        run: |
+          $drive = 'C:\ci-drive\IMS-sauvegardes'
+          New-Item -ItemType Directory -Force $drive | Out-Null
+          & .github\scripts\windows-rehearsal.ps1 `
+            -JarA "$env:RUNNER_TEMP\jars\ims-a.jar" -JarB "$env:RUNNER_TEMP\jars\ims-b.jar" `
+            -JarFailing "$env:RUNNER_TEMP\jars\ims-failing.jar" `
+            -Keystore "$env:RUNNER_TEMP\server.p12" -CaCertificate "$env:RUNNER_TEMP\ims-ca.crt" `
+            -WinSW "$env:RUNNER_TEMP\WinSW-x64.exe" -DriveFolder $drive `
+            -RootPassword $env:IMS_CI_ROOT_PASSWORD -KeystorePassword $env:IMS_CI_KEYSTORE_PASSWORD
+
+      - if: failure()
+        name: Logs of the failed run
+        shell: powershell
+        run: |
+          Get-Service ims, MySQL84 -ErrorAction SilentlyContinue | Format-Table -AutoSize
+          Get-ChildItem C:\IMS\logs -File -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "===== $($_.Name)"; Get-Content $_.FullName -Tail 120 }

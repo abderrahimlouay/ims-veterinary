@@ -23,7 +23,7 @@ Folders: `C:\IMS\app` (JAR, WinSW and its file `ims-service.xml`, which holds th
    ```
    openssl req -new -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj "/CN=PHARMA-PC"
    openssl x509 -req -in server.csr -CA ims-ca.crt -CAkey ims-ca.key -CAcreateserial -days 730 -sha256 \
-     -extfile <(printf "subjectAltName=DNS:PHARMA-PC,DNS:localhost,IP:192.168.1.20")
+     -extfile <(printf "subjectAltName=DNS:PHARMA-PC,DNS:localhost,IP:192.168.1.20") -out server.crt
    openssl pkcs12 -export -in server.crt -inkey server.key -certfile ims-ca.crt -out server.p12
    ```
    The last command asks for the **`server.p12` password**: give it to the owner apart from the file. Write the expiry date in the deployment record (§8). Delete `server.key` after the export.
