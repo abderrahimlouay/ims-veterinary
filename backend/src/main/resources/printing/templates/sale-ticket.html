@@ -42,6 +42,8 @@
   <tr><td>Total HT</td><td class="num" th:text="${totals.ht}">0,00</td></tr>
   <tr><td>TVA</td><td class="num" th:text="${totals.vat}">0,00</td></tr>
   <tr class="grand"><td>TOTAL TTC</td><td class="num" th:text="${totals.ttc}">0,00</td></tr>
+  <tr th:if="${totals.stampDuty != null}"><td>Droit de timbre</td><td class="num" th:text="${totals.stampDuty}">0,00</td></tr>
+  <tr th:if="${totals.stampDuty != null}" class="grand"><td>Net à payer</td><td class="num" th:text="${totals.netToPay}">0,00</td></tr>
 </table>
 <div th:each="p : ${payments}" th:text="${p}">Espèces</div>
 <th:block th:if="${!warnings.isEmpty()}">

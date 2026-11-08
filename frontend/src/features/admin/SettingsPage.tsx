@@ -27,6 +27,12 @@ const LOCAL_CHECKS: Record<string, (value: string) => boolean> = {
   backup_time: (v) => /^([01]?\d|2[0-3]):[0-5]\d$/.test(v.trim()),
   backup_retention_count: (v) => /^[1-9]\d*$/.test(v.trim()),
   backup_download_reminder_days: (v) => /^[1-9]\d*$/.test(v.trim()),
+  stamp_duty_rate: (v) => /^off$/i.test(v.trim()) || (/^\d{1,3}(\.\d{1,2})?$/.test(v.trim()) && Number(v) > 0 && Number(v) <= 100),
+  stamp_duty_step: (v) => /^\d+(\.\d{1,2})?$/.test(v.trim()) && Number(v) > 0,
+  stamp_duty_minimum: (v) => /^\d+(\.\d{1,2})?$/.test(v.trim()),
+  stamp_duty_maximum: (v) => /^none$/i.test(v.trim()) || /^\d+(\.\d{1,2})?$/.test(v.trim()),
+  stamp_duty_threshold: (v) => /^\d+(\.\d{1,2})?$/.test(v.trim()),
+  stamp_duty_on_receipts: (v) => /^(true|false)$/i.test(v.trim()),
 }
 
 /**

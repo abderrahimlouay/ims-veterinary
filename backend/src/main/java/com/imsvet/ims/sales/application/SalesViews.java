@@ -15,7 +15,9 @@ public final class SalesViews {
     public record CustomerRef(long id, String name) {
     }
 
-    public record Totals(BigDecimal ht, BigDecimal discount, BigDecimal vat, BigDecimal ttc) {
+    /** {@code stampDuty} and {@code netToPay}: ADR-172 (zero and the TTC without stamp duty). */
+    public record Totals(BigDecimal ht, BigDecimal discount, BigDecimal vat, BigDecimal ttc, BigDecimal stampDuty,
+            BigDecimal netToPay) {
     }
 
     /** A non-blocking warning; only the fields of its {@code code} are set. */
@@ -74,7 +76,8 @@ public final class SalesViews {
             List<SalePayment> payments, BigDecimal customerBalance, List<SaleReturn> returns) {
         return new SaleDetail(d.id(), d.docType().code(), d.number(), d.status().code(), customer, d.parentId(),
                 d.creditSale(), d.dueDate(), d.issuedAt(), d.createdAt(), d.cancelledAt(), d.cancelReason(), d.notes(),
-                new Totals(d.totalHt(), d.totalDiscount(), d.totalVat(), d.totalTtc()), lines, payments, d.cashSessionId(),
+                new Totals(d.totalHt(), d.totalDiscount(), d.totalVat(), d.totalTtc(), d.stampDuty(),
+                        d.netToPay()), lines, payments, d.cashSessionId(),
                 customerBalance, returns, d.version());
     }
 

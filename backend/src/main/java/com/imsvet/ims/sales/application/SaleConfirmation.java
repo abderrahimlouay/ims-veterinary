@@ -46,10 +46,15 @@ import org.springframework.transaction.annotation.Transactional;
  * what was tendered. A credit sale takes no payment: it locks the customer after the lots and passes the limit check
  * (BR-PAY-005), and its due date defaults to the customer's payment terms (ADR-109). A quote is only numbered
  * (BR-SALE-003). A delivery note moves stock and passes the limit check but takes no payment; the invoice made from it
- * posts nothing and passes no new check, its goods having left (ADR-117, ADR-125).
+ * posts nothing and passes no new check, its goods having left (ADR-117, ADR-125). The stamp duty of the cash part, if
+ * any, is charged on the document and kept with the cash (ADR-172).
  */
 @Service
 public class SaleConfirmation {
+
+    /** The stamp duty a confirmation would charge on a cash part, and the net the customer pays (ADR-172). */
+    public record StampDutyPreview(BigDecimal cashPart, BigDecimal stampDuty, BigDecimal netToPay) {
+    }
 
     /** What the idempotency key is compared with. */
     record ConfirmRequest(long documentId, List<Tender> payments) {
@@ -57,6 +62,7 @@ public class SaleConfirmation {
 
     private static final String ENDPOINT = "POST /api/sales/{id}/confirm";
     private static final String REFERENCE_TYPE = "sales_document";
+    private static final String CASH = "cash";
 
     private final SalesDocumentRepository documents;
     private final SalesDocumentLineRepository lines;
@@ -69,6 +75,7 @@ public class SaleConfirmation {
     private final StockService stock;
     private final NumberingService numbering;
     private final PaymentRecorder payments;
+    private final StampDutyScale stampDuty;
     private final IdempotencyKeys keys;
     private final SaleViewer viewer;
     private final ActorProvider actors;
@@ -78,7 +85,7 @@ public class SaleConfirmation {
     public SaleConfirmation(SalesDocumentRepository documents, SalesDocumentLineRepository lines,
             SalesDocumentLocks locks, CustomerRepository customers, CustomerLocks customerLocks, CreditLimitPort credit,
             ProductLookup products, SaleLots lots, StockService stock, NumberingService numbering,
-            PaymentRecorder payments, IdempotencyKeys keys, SaleViewer viewer, ActorProvider actors,
+            PaymentRecorder payments, StampDutyScale stampDuty, IdempotencyKeys keys, SaleViewer viewer, ActorProvider actors,
             BusinessCalendar calendar, Clock clock) {
         this.documents = documents;
         this.lines = lines;
@@ -91,6 +98,7 @@ public class SaleConfirmation {
         this.stock = stock;
         this.numbering = numbering;
         this.payments = payments;
+        this.stampDuty = stampDuty;
         this.keys = keys;
         this.viewer = viewer;
         this.actors = actors;
@@ -133,12 +141,32 @@ public class SaleConfirmation {
             int terms = customers.findById(document.customerId()).orElseThrow().paymentTermsDays();
             document.dueOn(calendar.today().plusDays(terms));
         }
-        RecordedPayments recorded = payments.record(id, document.customerId(), document.totalTtc(), paid);
+        List<Tender> kept = withStampDuty(document, paid);
+        RecordedPayments recorded = payments.record(id, document.customerId(), document.netToPay(), kept);
         document.confirm(number, recorded.cashSessionId(), now);
         documents.saveAndFlush(document);
         found.forEach(lines::saveAndFlush);
         claim.complete(id);
         return viewer.detail(document);
+    }
+
+    /**
+     * ADR-172: what confirming this draft would charge when {@code cashPart} of its TTC is paid in cash ({@code null}:
+     * all of it). Changes nothing; the confirmation computes it again.
+     */
+    @PreAuthorize("hasAuthority('sale.create')")
+    @Transactional(readOnly = true)
+    public StampDutyPreview previewStampDuty(long id, BigDecimal cashPart) {
+        SalesDocument document = find(id);
+        BigDecimal ttc = document.totalTtc();
+        BigDecimal cash = cashPart == null ? ttc : cashPart;
+        if (cash.signum() < 0 || cash.compareTo(ttc) > 0 || cash.stripTrailingZeros().scale() > 2) {
+            throw new ValidationException("The cash part is invalid.", List.of(new Violation("cash", "RANGE",
+                    "The cash part is between 0 and the document's total, with at most two decimals.")));
+        }
+        BigDecimal duty = document.status() == SalesDocStatus.DRAFT
+                ? stampDuty.on(document.docType(), document.creditSale(), cash) : document.stampDuty();
+        return new StampDutyPreview(cash.setScale(2), duty, ttc.add(duty));
     }
 
     private void requireConfirmable(SalesDocument document) {
@@ -222,6 +250,33 @@ public class SaleConfirmation {
                     "An immediate sale is paid in full: the payments must equal its total.",
                     Map.of("total", document.totalTtc().toPlainString(), "paid", total.toPlainString()));
         }
+    }
+
+    /**
+     * ADR-172: the stamp duty on the cash part of the tenders (which add up to the TTC) is charged on the document and
+     * added to its first cash tender, so the cash payment and the session's expected cash include it.
+     */
+    private List<Tender> withStampDuty(SalesDocument document, List<Tender> paid) {
+        BigDecimal cash = paid.stream().filter(SaleConfirmation::isCash).map(Tender::amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal duty = stampDuty.on(document.docType(), document.creditSale(), cash);
+        if (duty.signum() == 0) {
+            return paid;
+        }
+        document.chargeStampDuty(duty);
+        List<Tender> kept = new ArrayList<>(paid);
+        for (int i = 0; i < kept.size(); i++) {
+            Tender tender = kept.get(i);
+            if (isCash(tender)) {
+                kept.set(i, new Tender(tender.method(), tender.amount().add(duty), tender.reference()));
+                break;
+            }
+        }
+        return kept;
+    }
+
+    private static boolean isCash(Tender tender) {
+        return CASH.equals(tender.method()) && tender.amount() != null;
     }
 
     private SalesDocument find(long id) {

@@ -149,6 +149,11 @@ class SalesController {
         return cancellation.cancel(id, body.reason());
     }
 
+    @GetMapping("/{id}/stamp-duty")
+    SaleConfirmation.StampDutyPreview stampDuty(@PathVariable long id, @RequestParam(required = false) BigDecimal cash) {
+        return confirmation.previewStampDuty(id, cash);
+    }
+
     @GetMapping("/{id}/withdrawal-warnings")
     List<SaleWarning> withdrawalWarnings(@PathVariable long id) {
         return lines.withdrawalWarnings(id);

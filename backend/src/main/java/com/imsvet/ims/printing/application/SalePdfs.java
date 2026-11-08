@@ -26,7 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * A sales document as a PDF (api.md `/api/sales/{id}/pdf`, ADR-138, ADR-139, ADR-141, ADR-142, ADR-143): A4 or an
  * 80 mm ticket; the company identity in force at its issue; the customer's legal numbers; VAT by rate; the amount in
- * words on an invoice or a credit note; the withdrawal warnings for any customer; "ANNULÉ" on a cancelled document; a
+ * words on an invoice or a credit note (of the net to pay when there is a stamp duty, ADR-172); the stamp duty and
+ * the net to pay; the withdrawal warnings for any customer; "ANNULÉ" on a cancelled document; a
  * draft refused. Nothing is written or stored.
  */
 @Service
@@ -142,6 +143,9 @@ public class SalePdfs {
                 : PrintFormats.money(d.totals().discount(), currency));
         totals.put("vat", PrintFormats.money(d.totals().vat(), currency));
         totals.put("ttc", PrintFormats.money(d.totals().ttc(), currency));
+        boolean stamped = d.totals().stampDuty().signum() > 0;
+        totals.put("stampDuty", stamped ? PrintFormats.money(d.totals().stampDuty(), currency) : null);
+        totals.put("netToPay", stamped ? PrintFormats.money(d.totals().netToPay(), currency) : null);
         model.put("totals", totals);
         model.put("words", words(d));
         model.put("payments", d.payments().stream().map(p -> PrintFormats.method(p.method()) + " : "
@@ -153,7 +157,7 @@ public class SalePdfs {
     }
 
     private static String words(SaleDetail d) {
-        String amount = AmountInWords.dinars(d.totals().ttc());
+        String amount = AmountInWords.dinars(d.totals().netToPay());
         return switch (d.docType()) {
             case "invoice" -> "Arrêtée la présente facture à la somme de : " + amount + ".";
             case "credit_note" -> "Arrêté le présent avoir à la somme de : " + amount + ".";

@@ -134,6 +134,14 @@ export function SaleDetailPage() {
         <dd className="text-end">{formatMoney(data.totals.vat)}</dd>
         <dt className="font-semibold">{t('pos.ttc')}</dt>
         <dd className="text-end font-semibold">{formatMoney(data.totals.ttc)}</dd>
+        {Number(data.totals.stampDuty) > 0 && (
+          <>
+            <dt>{t('pos.stampDuty')}</dt>
+            <dd className="text-end">{formatMoney(data.totals.stampDuty)}</dd>
+            <dt className="font-semibold">{t('pos.netToPay')}</dt>
+            <dd className="text-end font-semibold">{formatMoney(data.totals.netToPay)}</dd>
+          </>
+        )}
       </dl>
       {data.payments.length > 0 && (
         <section className="flex flex-col gap-1 text-sm">

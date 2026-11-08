@@ -7,7 +7,7 @@ import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
 import { SelectField } from '../../components/SelectField'
 import { TextField } from '../../components/TextField'
-import { subtractDecimal } from '../../lib/decimal'
+import { subtractDecimal, sumDecimals } from '../../lib/decimal'
 import { problemMessage } from '../../lib/errors'
 import { formatDate, formatMoney, formatQuantity, formatUnitPrice } from '../../lib/format'
 import { hasPermission, useCurrentUser } from '../auth'
@@ -28,6 +28,7 @@ import {
   replaceLine,
   updateDraft,
   useCreditBalance,
+  useStampDuty,
   type DocType,
   type LineWrite,
   type PaymentMethod,
@@ -54,7 +55,8 @@ const EMPTY_ROW: PaymentRow = { method: 'cash', amount: '', reference: '' }
 /**
  * `/pos` (frontend.md §4.7): one screen for the counter. The draft is created on the first line, or reopened with `?draft=`; type and customer
  * are chosen before it, since prices depend on the customer and a type never changes. The server computes prices, lots and
- * totals. Change is computed here only and never sent (ADR-118). Printing comes with Phase 10.
+ * totals. Change is computed here only and never sent (ADR-118). The stamp duty of the cash part is asked of the server
+ * before confirming, so the net to pay and the change include it (ADR-172).
  */
 export function PosPage() {
   const { t } = useTranslation()
@@ -150,6 +152,20 @@ export function PosPage() {
     idempotency.current = { body: '', key: '' }
   }
 
+  const cashPart = (ttc: string): string | null => {
+    if (!immediate || Number(ttc) === 0) {
+      return null
+    }
+    if (rows.length === 1) {
+      return rows[0].method === 'cash' ? ttc : null
+    }
+    const cash = rows.filter((row) => row.method === 'cash').map((row) => row.amount.trim())
+    return cash.length === 0 ? null : sumDecimals(cash, 2)
+  }
+  const stamp = useStampDuty(sale?.id ?? null, sale?.totals.ttc ?? '0', sale ? cashPart(sale.totals.ttc) : null)
+  const stampDuty = stamp.data && Number(stamp.data.stampDuty) > 0 ? stamp.data : null
+  const netToPay = stampDuty?.netToPay ?? sale?.totals.ttc ?? '0'
+
   const payments = (ttc: string): PaymentWrite[] => {
     if (!immediate || Number(ttc) === 0) {
       return []
@@ -174,7 +190,7 @@ export function PosPage() {
     void run(async () => {
       try {
         const confirmed = await confirmSale(sale.id, body, idempotency.current.key)
-        setDone({ sale: confirmed, change: changeDue(sale.totals.ttc) })
+        setDone({ sale: confirmed, change: changeDue(confirmed.totals.netToPay) })
         void invalidateSession(client)
       } catch (failure) {
         if (failure instanceof ApiError) {
@@ -192,11 +208,12 @@ export function PosPage() {
     })
   }
 
-  const changeDue = (ttc: string) => {
+  /** `due`: the net to pay, stamp duty included (ADR-172). */
+  const changeDue = (due: string) => {
     if (!immediate || rows.length !== 1 || rows[0].method !== 'cash' || tendered.trim() === '') {
       return null
     }
-    return subtractDecimal(tendered.trim(), ttc, 2)
+    return subtractDecimal(tendered.trim(), due, 2)
   }
 
   const abandon = () =>
@@ -212,7 +229,8 @@ export function PosPage() {
       <section className="flex flex-col gap-4 max-w-md m-auto" aria-label={t('pos.done.title')}>
         <h1 className="text-2xl font-semibold">{t('pos.done.title')}</h1>
         <Alert tone="ok">{t('pos.done.number', { number: done.sale.number })}</Alert>
-        <p>{t('pos.total', { amount: formatMoney(done.sale.totals.ttc) })}</p>
+        {Number(done.sale.totals.stampDuty) > 0 && <p>{t('pos.stampDutyLine', { amount: formatMoney(done.sale.totals.stampDuty) })}</p>}
+        <p>{t('pos.total', { amount: formatMoney(done.sale.totals.netToPay) })}</p>
         {done.change !== null && Number(done.change) >= 0 && <p>{t('pos.change', { amount: formatMoney(done.change) })}</p>}
         {done.sale.customerBalance !== null && <p>{t('pos.balance', { amount: formatMoney(done.sale.customerBalance) })}</p>}
         <div className="flex flex-wrap gap-2">
@@ -228,7 +246,7 @@ export function PosPage() {
 
   const canDiscount = hasPermission(user, 'sale.discount')
   const canOverride = hasPermission(user, 'sale.override_fefo')
-  const change = sale ? changeDue(sale.totals.ttc) : null
+  const change = sale ? changeDue(netToPay) : null
 
   return (
     <div className="flex flex-col gap-3 h-full">
@@ -292,13 +310,25 @@ export function PosPage() {
               <dd className="text-end font-semibold" data-testid="pos-total">
                 {formatMoney(sale.totals.ttc)}
               </dd>
+              {stampDuty && (
+                <>
+                  <dt>{t('pos.stampDuty')}</dt>
+                  <dd className="text-end" data-testid="pos-stamp-duty">
+                    {formatMoney(stampDuty.stampDuty)}
+                  </dd>
+                  <dt className="font-semibold">{t('pos.netToPay')}</dt>
+                  <dd className="text-end font-semibold" data-testid="pos-net">
+                    {formatMoney(stampDuty.netToPay)}
+                  </dd>
+                </>
+              )}
             </dl>
           )}
           <form onSubmit={confirm} className="flex flex-col gap-3">
             {immediate && sale && Number(sale.totals.ttc) > 0 && (
               <Payments rows={rows} onRows={setRows} tendered={tendered} onTendered={setTendered} change={change} />
             )}
-            <Button type="submit" disabled={busy || !sale || sale.lines.length === 0}>
+            <Button type="submit" disabled={busy || !sale || sale.lines.length === 0 || stamp.isFetching}>
               {t('pos.confirm')}
             </Button>
           </form>
