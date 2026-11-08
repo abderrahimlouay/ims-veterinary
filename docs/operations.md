@@ -62,4 +62,4 @@ When a pharmacy user leaves: an Administrator deactivates the account (never del
 **Go-live data (ADR-160):** no data comes from the old system. On the empty production database: the company profile, users and roles, reference lists, products (bulk load possible, ADR-091, then `ANALYZE TABLE`), suppliers and customers; then the stock on hand lot by lot as opening stock (`opening_stock_open` on, ADR-082) after a physical count, and `opening_stock_open` switched off; a first backup and its copy in Google Drive. Amounts customers owed in the old system are not carried over by the application.
 
 
-Not operations, but blocking: the accountant's answers on DR-040 (legal rounding), DR-041 (prescription-only products) and DR-043 (legal mentions and stamp duty), then the UAT sign-off (roadmap, Phase 12).
+Not operations, but blocking: the UAT sign-off (roadmap, Phase 12), including the restore check on the laptop before any real data (`uat.md` §4.2, ADR-170). DR-040, DR-041 and DR-043 are answered (ADR-171, ADR-172); if stamp duty applies, the administrator enters the accountant's figures in the settings (`stamp_duty_*`) before the first real sale.

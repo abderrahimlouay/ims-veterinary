@@ -1,7 +1,7 @@
 # Installation guide — the owner's Windows laptop
 
 > **Scope:** installing IMS Vétérinaire on the store owner's Windows 10/11 laptop, used by the shop's other devices over the local network (ADR-165), the application serving HTTPS and the screens itself (ADR-166), backups copied to Google Drive (ADR-167). Day-to-day operation, updates and restores: `operations.md`. The scripts are in `deploy/windows`; they print their messages in French for the owner.
-> **Rehearsed on Windows in CI, not yet on a real PC:** workflow `windows.yml` runs install, backup with its Drive copy, update, a failed update rolled back and restore on a Windows runner in Windows PowerShell 5.1 (`testing.md` §9; it found and fixed five defects on 2026-11-07, `roadmap.md` Phase 12). Google Drive's own sync, a French Windows, a real laptop and the shop's devices are still only covered by the rehearsal on another Windows PC (`uat.md` §4.2, §4.3); correct this page and the scripts with what it shows.
+> **Rehearsed on Windows in CI (ADR-170):** workflow `windows.yml` runs install, backup with its Drive copy, update, a failed update rolled back and restore on a Windows runner in Windows PowerShell 5.1 (`testing.md` §9; it found and fixed five defects on 2026-11-07, `roadmap.md` Phase 12). That run is the rehearsal; there is no separate rehearsal PC. Google Drive's own sync, a French Windows and the real laptop are checked once on the laptop before any real data, by a backup downloaded from Google Drive on another device and restored (`uat.md` §4.2); correct this page and the scripts if anything differs.
 
 ## 1. What runs where
 
@@ -32,7 +32,7 @@ Folders: `C:\IMS\app` (JAR, WinSW and its file `ims-service.xml`, which holds th
 
 ## 3. Prepare the laptop (owner, with the developer)
 
-1. Windows up to date. **Active hours** (Settings → Windows Update → Advanced options) set to the opening hours, so Windows never restarts the laptop during them. **Disk encryption on (ADR-168, required):** the database holds customers' personal data. Windows Pro: Settings → Privacy & security → Device encryption, or Control Panel → BitLocker Drive Encryption → Turn on BitLocker for `C:`. Windows Home: Settings → Privacy & security → **Device encryption** → On (it needs the owner signed in with a Microsoft account, which keeps the recovery key). Save the **recovery key** in the owner's Microsoft account or print it, and keep it away from the laptop. Wait until encryption has finished. `install.ps1` refuses to install while a drive it uses is not protected; a laptop with neither option is upgraded to Pro or replaced before go-live.
+1. Windows up to date. **Active hours** (Settings → Windows Update → Advanced options) set to the opening hours, so Windows never restarts the laptop during them. **Disk encryption recommended (ADR-169, not required):** the database holds customers' personal data, readable by whoever takes the laptop if the drive is not encrypted. Windows Pro: Settings → Privacy & security → Device encryption, or Control Panel → BitLocker Drive Encryption → Turn on BitLocker for `C:`. Windows Home: Settings → Privacy & security → **Device encryption** → On (it needs the owner signed in with a Microsoft account, which keeps the recovery key). Save the **recovery key** in the owner's Microsoft account or print it, and keep it away from the laptop. Wait until encryption has finished. `install.ps1` reports the state of each drive it uses and only warns when one is not protected.
 2. **Java 21:** Eclipse Temurin 21 JDK (MSI, x64) with the options "Set JAVA_HOME" and "Add to PATH".
 3. **MySQL 8.4 LTS, 8.4.11 or later** (8.4.10 refuses the column name `manual` of migration V09_007; `install.ps1` checks the version): MySQL Installer or the MSI, "Server only"; type "Server Computer", port 3306, a **strong root password** (password manager), Windows service `MySQL84` started at boot. Then, as administrator, edit `C:\ProgramData\MySQL\MySQL Server 8.4\my.ini`, section `[mysqld]`:
    ```
@@ -55,7 +55,7 @@ Set-ExecutionPolicy -Scope Process Bypass
   -DriveFolder "C:\Users\<owner>\Mon Drive\IMS-sauvegardes"
 ```
 
-It checks the drive is encrypted (ADR-168) and ports 443 and 80 are free, asks for the MySQL root password and the `server.p12` password, then: checks Java 21 and MySQL; creates the folders; installs `ims-ca.crt` in the laptop's trusted roots; creates the schema and the three MySQL accounts (`ims_migrator`, `ims_app`, `ims_backup` on `127.0.0.1`, generated passwords; ADR-087) and keeps the migration account for the scripts, readable only by this Windows account; creates the Windows account `ims-svc` with access to `C:\IMS` and the Drive folder only; migrates the schema (ADR-151); installs and starts the service with a **first Administrator** (ADR-040), then removes the bootstrap variables and restarts; opens 443 and 80 on the Private profile; turns off sleep and the lid action on mains power. At the end it prints the first Administrator's temporary password and the generated passwords: **copy them into the password manager**, then close the window.
+It reports whether the drives are encrypted (ADR-169, a warning only), checks ports 443 and 80 are free, asks for the MySQL root password and the `server.p12` password, then: checks Java 21 and MySQL; creates the folders; installs `ims-ca.crt` in the laptop's trusted roots; creates the schema and the three MySQL accounts (`ims_migrator`, `ims_app`, `ims_backup` on `127.0.0.1`, generated passwords; ADR-087) and keeps the migration account for the scripts, readable only by this Windows account; creates the Windows account `ims-svc` with access to `C:\IMS` and the Drive folder only; migrates the schema (ADR-151); installs and starts the service with a **first Administrator** (ADR-040), then removes the bootstrap variables and restarts; opens 443 and 80 on the Private profile; turns off sleep and the lid action on mains power. At the end it prints the first Administrator's temporary password and the generated passwords: **copy them into the password manager**, then close the window.
 
 ## 5. After the installation
 
@@ -83,7 +83,7 @@ Then the **restore rehearsal** and the **update rehearsal** on another Windows P
 
 | Item | Value |
 |---|---|
-| Laptop: model, Windows version, disk encryption (BitLocker or Device encryption, ADR-168) and where the recovery key is kept | |
+| Laptop: model, Windows version, disk encryption (BitLocker, Device encryption or none, ADR-169) and, if encrypted, where the recovery key is kept | |
 | Windows name and fixed address; certificate expiry date | |
 | Opening hours = Windows Update active hours (ADR-150, ADR-165) | |
 | Google account of the copy (2-step verification on), Drive folder | |

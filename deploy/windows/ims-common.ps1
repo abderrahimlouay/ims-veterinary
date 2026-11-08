@@ -30,10 +30,11 @@ function Assert-Administrator {
     }
 }
 
-# ADR-168: the drives holding the database, the backups and the Drive copy must be encrypted (BitLocker on Windows Pro,
-# "Device encryption" on Windows Home: both are BitLocker volumes). Read through WMI, not manage-bde, whose output
-# is translated. ProtectionStatus 1 = protection on; a drive encrypted but suspended or waiting for activation is 0.
-function Assert-DiskEncrypted([string[]] $Paths) {
+# ADR-169 (supersedes ADR-168's refusal): disk encryption is recommended, not required. The installation reports the
+# state of the drives holding the database, the backups and the Drive copy, and goes on either way. Read through WMI,
+# not manage-bde, whose output is translated. ProtectionStatus 1 = protection on (BitLocker on Windows Pro, "Device
+# encryption" on Windows Home: both are BitLocker volumes).
+function Show-DiskEncryption([string[]] $Paths) {
     $drives = $Paths | ForEach-Object { [IO.Path]::GetPathRoot($_).TrimEnd('\').ToUpperInvariant() } | Sort-Object -Unique
     try {
         $volumes = @(Get-CimInstance -Namespace 'root\cimv2\Security\MicrosoftVolumeEncryption' -ClassName Win32_EncryptableVolume)
@@ -42,10 +43,12 @@ function Assert-DiskEncrypted([string[]] $Paths) {
     }
     foreach ($drive in $drives) {
         $volume = $volumes | Where-Object { $_.DriveLetter -eq $drive } | Select-Object -First 1
-        if (-not $volume -or $volume.ProtectionStatus -ne 1) {
-            throw ("Le disque $drive n'est pas chiffré (ADR-168) : activez BitLocker (Windows Pro) ou le chiffrement de " +
-                "l'appareil (Paramètres > Confidentialité et sécurité > Chiffrement de l'appareil), attendez la fin du " +
-                'chiffrement, puis relancez install.ps1 (docs/deployment.md §3).')
+        if ($volume -and $volume.ProtectionStatus -eq 1) {
+            Write-Host "    Disque $drive chiffré."
+        } else {
+            Write-Warning ("Le disque $drive n'est pas chiffré : l'installation continue (ADR-169). En cas de vol de " +
+                "l'ordinateur, les données seraient lisibles ; BitLocker ou le chiffrement de l'appareil reste conseillé " +
+                '(docs/deployment.md §3).')
         }
     }
 }
