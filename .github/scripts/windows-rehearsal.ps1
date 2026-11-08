@@ -1,12 +1,10 @@
 # CI rehearsal of the owner's scripts (deploy/windows) on a real Windows runner, in Windows PowerShell 5.1
-# (.github/workflows/windows.yml; docs/testing.md; ADR-151, ADR-165..168). It runs, in order:
-#   1. install.ps1 as shipped: it must refuse the runner's unencrypted drive (ADR-168) and leave nothing behind;
-#   2. install.ps1 from a CI copy whose encryption check is replaced (the only change; see Copy-ScriptsForCi);
-#   3. a backup through the API, copied to the "Google Drive" folder (ADR-167);
-#   4. update.ps1 with a JAR carrying one more migration;
-#   5. update.ps1 with a JAR whose migration fails: the previous JAR and data must come back by themselves;
-#   6. restore.ps1 with the Drive copy of step 3.
-# The CI copy lives in the runner's temp folder only: the shipped scripts keep the check and have no switch to skip it.
+# (.github/workflows/windows.yml; docs/testing.md; ADR-151, ADR-165..167, ADR-169). It runs the shipped scripts, unchanged:
+#   1. install.ps1: the runner's drive is not encrypted, so it must warn and go on (ADR-169);
+#   2. a backup through the API, copied to the "Google Drive" folder (ADR-167);
+#   3. update.ps1 with a JAR carrying one more migration;
+#   4. update.ps1 with a JAR whose migration fails: the previous JAR and data must come back by themselves;
+#   5. restore.ps1 with the Drive copy of step 2.
 param(
     [Parameter(Mandatory)] [string] $JarA,
     [Parameter(Mandatory)] [string] $JarB,
@@ -23,7 +21,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $shipped = Join-Path $repo 'deploy\windows'
-$work = Join-Path $env:RUNNER_TEMP 'ims-scripts'
 $base = 'https://localhost'
 $newAdminPassword = 'Ci-' + [Guid]::NewGuid().ToString('N')
 
@@ -38,14 +35,6 @@ function Check([bool] $Condition, [string] $Message) {
 function global:Get-Credential([string] $UserName, [string] $Message) {
     $value = if ($UserName -eq 'root') { $RootPassword } else { $KeystorePassword }
     New-Object pscredential($UserName, (ConvertTo-SecureString $value -AsPlainText -Force))
-}
-
-function Copy-ScriptsForCi {
-    if (Test-Path $work) { Remove-Item $work -Recurse -Force }
-    Copy-Item $shipped $work -Recurse
-    # The runner's drive is not encrypted: in the CI copy only, a later definition replaces Assert-DiskEncrypted.
-    $override = "`r`nfunction Assert-DiskEncrypted([string[]] `$Paths) { Write-Host '    (CI: disk encryption check replaced, ADR-168 tested separately)' }`r`n"
-    [IO.File]::AppendAllText((Join-Path $work 'ims-common.ps1'), $override, (New-Object Text.UTF8Encoding $true))
 }
 
 # Runs a script as the owner does, without redirecting it (in Windows PowerShell 5.1 a redirection turns a program's
@@ -89,22 +78,14 @@ function Assert-Healthy([string] $When) {
     Check ((Get-Service ims).Status -eq 'Running') "service ims running $When"
 }
 
-Step '1. install.ps1 as shipped refuses an unencrypted drive (ADR-168)'
+Step '1. install.ps1 (ADR-165, ADR-169)'
 $installArguments = @{
     Jar = $JarA; Keystore = $Keystore; CaCertificate = $CaCertificate; WinSW = $WinSW; DriveFolder = $DriveFolder
 }
-$refused = $null
-try { & (Join-Path $shipped 'install.ps1') @installArguments } catch { $refused = $_.Exception.Message }
-Write-Host "  refusal: $refused"
-Check ($refused -match 'chiffr' -and $refused -match 'ADR-168') 'install.ps1 stopped on the encryption check'
-Check (-not (Test-Path 'C:\IMS')) 'nothing was created (C:\IMS absent)'
-Check (-not (Get-Service ims -ErrorAction SilentlyContinue)) 'no service was installed'
-
-Step '2. install.ps1 (CI copy)'
-Copy-ScriptsForCi
-Push-Location $work
-$install = Invoke-Captured { & (Join-Path $work 'install.ps1') @installArguments }
+Push-Location $shipped
+$install = Invoke-Captured { & (Join-Path $shipped 'install.ps1') @installArguments }
 Pop-Location
+Check ($install.Output -match "n'est pas chiffr.*ADR-169") 'install.ps1 warned that the drive is not encrypted'
 Check ($install.Output -match 'Installation termin') 'install.ps1 reached its end'
 $match = [regex]::Match($install.Output, 'Premier administrateur : admin / (\S+)')
 Check $match.Success 'the first Administrator password was printed'
@@ -120,7 +101,7 @@ $redirect = (curl.exe --ssl-no-revoke -sS -o NUL -w '%{http_code} %{redirect_url
 Check ($redirect -match '^30[1278] https://localhost') "HTTP redirects to HTTPS ($redirect)"
 Check (Test-Path 'C:\IMS\config\migration.cred.xml') 'the migration account is kept for the scripts'
 
-Step '3. A backup through the API, copied to the Drive folder (ADR-167)'
+Step '2. A backup through the API, copied to the Drive folder (ADR-167)'
 $login = Connect-Api $adminPassword
 Check ($login.Status -eq 200 -and $login.Body -match '"mustChangePassword"\s*:\s*true') "first login with the temporary password ($($login.Status))"
 $change = Invoke-Api 'POST' '/api/auth/change-password' (@{ currentPassword = $adminPassword; newPassword = $newAdminPassword } | ConvertTo-Json)
@@ -137,7 +118,7 @@ Check (Test-Path $driveCopy) "the copy is in the Drive folder: $driveCopy"
 $restoreSource = Join-Path $env:RUNNER_TEMP $record.fileName
 Copy-Item $driveCopy $restoreSource
 
-. (Join-Path $work 'ims-common.ps1')
+. (Join-Path $shipped 'ims-common.ps1')
 $ErrorActionPreference = 'Stop'
 $migration = Get-MigrationCredential
 function Invoke-Sql([string] $Sql) {
@@ -154,8 +135,8 @@ function Get-SchemaVersion {
 $versionA = Get-SchemaVersion
 Write-Host "  schema version after the installation: $versionA"
 
-Step '4. update.ps1 with a new version (one more migration)'
-$update = Invoke-Captured { & (Join-Path $work 'update.ps1') -Jar $JarB }
+Step '3. update.ps1 with a new version (one more migration)'
+$update = Invoke-Captured { & (Join-Path $shipped 'update.ps1') -Jar $JarB }
 Check ($update.ExitCode -eq 0 -and $update.Output -match 'Mise . jour termin') 'update.ps1 finished'
 Check ((Get-Sha 'C:\IMS\app\ims.jar') -eq (Get-Sha $JarB)) 'the new JAR is in place'
 Check ((Get-Sha 'C:\IMS\app\ims.jar.previous') -eq (Get-Sha $JarA)) 'the previous JAR is kept'
@@ -164,8 +145,8 @@ Check (Test-Table 'ci_update_marker') 'the new version''s table exists'
 Check (@(Get-ChildItem 'C:\IMS\backups' -Filter 'avant-mise-a-jour-*.sql').Count -ge 1) 'the database was saved before the update'
 Assert-Healthy 'after the update'
 
-Step '5. update.ps1 with a failing migration: the previous version and data come back'
-$failed = Invoke-Captured { & (Join-Path $work 'update.ps1') -Jar $JarFailing }
+Step '4. update.ps1 with a failing migration: the previous version and data come back'
+$failed = Invoke-Captured { & (Join-Path $shipped 'update.ps1') -Jar $JarFailing }
 Check ($failed.ExitCode -eq 1) "update.ps1 reports the failure (exit $($failed.ExitCode))"
 Check ($failed.Output -match 'La version pr.c.dente fonctionne de nouveau') 'it says the previous version works again'
 Check ((Get-Sha 'C:\IMS\app\ims.jar') -eq (Get-Sha $JarB)) 'the previous JAR is back'
@@ -175,10 +156,10 @@ Check ((Invoke-Sql "SELECT COUNT(*) FROM flyway_schema_history WHERE success = 0
 Assert-Healthy 'after the rollback'
 Check ((Connect-Api $newAdminPassword).Status -eq 200) 'the data are those of before the update (login works)'
 
-Step '6. restore.ps1 with the Drive copy of step 3'
+Step '5. restore.ps1 with the Drive copy of step 2'
 Invoke-Sql 'CREATE TABLE ci_after_backup (id INT PRIMARY KEY)' | Out-Null
 Check (Test-Table 'ci_after_backup') 'a change made after the backup'
-$restore = Invoke-Captured { & (Join-Path $work 'restore.ps1') -Backup $restoreSource }
+$restore = Invoke-Captured { & (Join-Path $shipped 'restore.ps1') -Backup $restoreSource }
 Check ($restore.Output -match 'Restauration termin') 'restore.ps1 finished'
 Check (-not (Test-Table 'ci_after_backup')) 'the change made after the backup is gone'
 Check ((Get-SchemaVersion) -eq '99.001') 'the backup was migrated to the installed version (99.001)'

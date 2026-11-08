@@ -1,7 +1,8 @@
 # Go-live answers — what each answer changes (DR-040, DR-041, DR-043)
 
 > **Purpose:** the accountant (questions 1–4) and the pharmacy (question 5) answer the questions sent on 2026-11-06 (`uat.md` §2). This page says, for each possible answer, what changes in the application, which tests prove it and how large the work is, so the change can start the day the answer arrives.
-> **Status:** a plan, not a decision. Nothing here is built. Each answer that differs from today's behaviour becomes an ADR first (CLAUDE.md §10), then a small PR. An answer "Oui, c'est conforme" closes the item with no code change.
+> **Status (2026-11-08): answered** by the owner (ADR-171, ADR-172): question 1 A, question 2 A, question 3.1 A, question 3.2 A, question 4 B (built, off until the figures are entered; scope, formula and returns in ADR-172), question 5 A. The rest of this page is the plan as it stood before the answers.
+> **Former status:** a plan, not a decision. Nothing here was built. Each answer that differs from today's behaviour becomes an ADR first (CLAUDE.md §10), then a small PR. An answer "Oui, c'est conforme" closes the item with no code change.
 > **Rule for every change:** it lands **before** the first real invoice, credit note or sale (go-live starts from an empty database, ADR-160), so no issued document is ever recomputed or reprinted differently (BR-SALE-004).
 
 ## Summary

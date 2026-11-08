@@ -1193,10 +1193,48 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Consequences:** backend (the copy step, `backup_log` copy columns by a Flyway migration, the warnings), `api.md` (`BackupRecord`, status warnings), backups page, README *Backups*, `deployment.md`, `security.md` (personal data in Google Drive, 2-step verification).
 
 ## ADR-168 — The laptop's disk is encrypted, checked by the installation
-- **Status:** Accepted (user decision, 2026-11-07, Phase 12; follows ADR-165, ADR-167).
+- **Status:** **Superseded by ADR-169** (2026-11-08); was Accepted (user decision, 2026-11-07, Phase 12; follows ADR-165, ADR-167).
 - **Decision:** The drive that holds the database, the backups and the Google Drive folder (normally `C:`) **must be encrypted** before the application is installed: **BitLocker** on Windows Pro, **Device encryption** on Windows Home (both are BitLocker volumes), protection on and the recovery key saved in the owner's Microsoft account or printed and kept away from the laptop. `install.ps1` reads the state of each such drive and **refuses to install** while one is not protected. A laptop that can do neither (Windows Home without device encryption) is upgraded to Pro or replaced before go-live. The replacement PC of a restore (ADR-165 item 3) meets the same rule, since it is installed by the same script.
 - **Alternatives:** required in the guide only, not checked; recommended only (the previous `[REC]`).
 - **Consequences:** `deploy/windows` (`Assert-DiskEncrypted`), `deployment.md` §3 and §8, `security.md` §9–10, `uat.md` §4.
+
+## ADR-169 — Disk encryption is recommended, not required (supersedes ADR-168)
+- **Status:** Accepted (user decision, 2026-11-08, Phase 12: "no need for encryption").
+- **Decision:** The laptop's drive **need not be encrypted**. `install.ps1` still reads the state of the drives holding the database, the backups and the Google Drive folder (`Show-DiskEncryption`), prints it, and on an unencrypted drive shows a **warning** and goes on; it never refuses. BitLocker or Device encryption stays **recommended** in the guide.
+- **Alternatives:** keep the refusal of ADR-168; drop the check entirely (the owner would not be told).
+- **Accepted risk:** a stolen or lost laptop exposes the database and the local backups (customers, sales, prices) to whoever holds it. The Google Drive copy (ADR-167) still protects against losing the data, not against their disclosure.
+- **Consequences:** `deploy/windows` (`Show-DiskEncryption` replaces `Assert-DiskEncrypted`); the CI rehearsal runs the shipped scripts unchanged, with no CI copy (`testing.md`); `deployment.md` §3, §4 and §8; `security.md` §9–10; `uat.md` §4.9 removed.
+
+## ADR-170 — The Windows rehearsal is the CI run; the laptop gets a restore check before real data
+- **Status:** Accepted (user decision, 2026-11-08, Phase 12: "choose the easiest"; amends ADR-150 item 5 and ADR-165 for the rehearsal).
+- **Decision:**
+  1. The **Windows rehearsal in CI** (`windows.yml`: install, backup copied to the Drive folder, update, failed update rolled back, restore, on a real Windows runner in Windows PowerShell 5.1) **replaces the rehearsal on a second PC** with the USB kit. It runs on every change to the scripts, migrations and backups.
+  2. On the **owner's laptop**, after the installation and **before any real data**, one short check (`uat.md` §4.2): a backup from the backups page, its copy downloaded from Google Drive **on another device** (same name and size, the sync delay noted), then `restore.ps1` with that file, and the application works again. It is timed; the target stays four business hours (ADR-150), well above what CI measures.
+  3. The update rehearsal on a real PC (`uat.md` §4.3) is covered by the CI run and is not repeated.
+- **Alternatives:** the rehearsal on a second Windows PC with the USB kit (the previous rule); no check on the laptop at all (a sync or restore problem specific to the laptop would be found during a real incident).
+- **Consequences:** `uat.md` §4.2–4.3, `deployment.md` header, `operations.md`, roadmap.
+
+## ADR-171 — Go-live answers: VAT per line, no prescription rule, the printed mentions are complete (resolves DR-040, DR-041 and the mentions part of DR-043)
+- **Status:** Accepted (user decision, 2026-11-08, Phase 12; the owner answers for the accountant and the pharmacy, `uat.md` §2).
+- **Decision:**
+  1. **DR-040:** VAT is rounded **per line** on invoices and credit notes, and partial credit notes follow ADR-130, as built (ADR-093, ADR-115). No change.
+  2. **DR-041:** **no prescription-only rule**: every sellable lot can be sold (ADR-124). No change.
+  3. **DR-043, mentions:** the mentions of ADR-141 are **complete**, and the customer's legal numbers (NIF, NIS, RC, AI) stay **optional**. No change.
+- **Alternatives:** `go-live-answers.md` (VAT per rate; a product flag with a warning or a refusal; numbers required for professional customers).
+- **Consequences:** DR-040 and DR-041 resolved, DR-043 resolved with ADR-172; `uat.md` §2 filled in; `go-live-answers.md` records the choices.
+
+## ADR-172 — Stamp duty on the cash part of immediate sales, off until its figures are set (resolves the stamp-duty part of DR-043; supersedes ADR-141 item 3)
+- **Status:** Accepted (user decision, 2026-11-08, Phase 12).
+- **Decision:**
+  1. **Scope:** an **invoice or receipt paid at confirmation** carries a *droit de timbre* computed on its **cash part only** (the cash tenders; cheques and transfers carry none). Credit sales, delivery notes and quotes carry none, and so do later payments on account. A setting can leave receipts out.
+  2. **Formula:** nothing when the cash part is at or below `stamp_duty_threshold`; otherwise the cash part is **rounded up to a whole number of `stamp_duty_step`** (each started step counts), multiplied by `stamp_duty_rate` %, rounded HALF_UP to 0.01, then kept between `stamp_duty_minimum` and `stamp_duty_maximum` (`none` for no maximum).
+  3. **Off by default:** `stamp_duty_rate` is seeded `off`, so nothing is computed until an administrator enters the accountant's figures in the settings (ADR-044, audited). No figure is hard-coded (CLAUDE.md §11). The other settings are seeded neutral: step 0.01, minimum 0.00, maximum `none`, threshold 0.00, receipts included `true`.
+  4. **Payment:** the tenders of the confirmation still add up to the document's TTC; the server computes the stamp duty and adds it to the **cash** payment it records, so the cash movement and the session's expected cash include it (BR-CASH-003). The document stores `stamp_duty` and `net_to_pay` (= TTC + stamp duty), frozen at confirmation (BR-SALE-004). A screen asks the server for the amount before confirming (preview), to show the net and the change.
+  5. **Returns:** a credit note **never refunds** the stamp duty. Cancelling the whole sale (ADR-119) reverses its payments, stamp included.
+  6. **Printing:** when there is a stamp duty, the invoice, the A4 receipt and the ticket print a "Droit de timbre" line and a "Net à payer" after the TTC, and the amount in words of an invoice is that of the net.
+  7. Revenue, margin and VAT reports are unchanged (the stamp duty is neither revenue nor VAT).
+- **Alternatives:** invoices only; the whole document when any cash is used; a plain rate without steps; refunds on a full return or pro rata; not applicable (no stamp duty).
+- **Consequences:** a Flyway migration (settings, `sales_documents.stamp_duty`, `net_to_pay`), `sales` (`StampDuty`, confirmation, preview endpoint), `finance` (the cash payment), PDFs, the POS and the sale detail, settings page, `api.md`, `database.md`, `business-rules.md`, `glossary.md`, `testing.md`.
 
 # Part B — Open Decisions
 
@@ -1457,7 +1495,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
-| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05); owner's Windows laptop → ADR-165 (hosting), ADR-166 (the application serves HTTPS), ADR-167 (Google Drive copy) (2026-11-06); ADR-168 (disk encryption required) (2026-11-07) |
+| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05); owner's Windows laptop → ADR-165 (hosting), ADR-166 (the application serves HTTPS), ADR-167 (Google Drive copy) (2026-11-06); ~~ADR-168~~ (disk encryption required) (2026-11-07) → ADR-169 (recommended only), ADR-170 (rehearsal), ADR-171 (go-live answers, ~~DR-040~~, ~~DR-041~~), ADR-172 (stamp duty, ~~DR-043~~) (2026-11-08) |
 | 13 Dark theme | ADR-069 (decided 2026-10-22); ADR-161, ADR-162, ADR-163, ADR-164 (report charts) (2026-11-06) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**

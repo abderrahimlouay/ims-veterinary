@@ -16,9 +16,9 @@
 
 | # | Question | Answer | Who |
 |---|---|---|---|
-| 2.1 | **DR-040:** VAT is rounded per line on invoices and credit notes (a partial return may differ by at most 0.01 per line). Is that the legal rule? | | accountant |
-| 2.2 | **DR-043:** are the printed mentions of invoices and credit notes complete (company NIF, NIS, RC, AI; customer's numbers when known; VAT by rate; amount in words)? Must cash invoices carry stamp duty (*droit de timbre*), and how much? | | accountant |
-| 2.3 | **DR-041:** must some products be sold only on a veterinary prescription? If yes, which, and what must be recorded? | | pharmacy |
+| 2.1 | **DR-040:** VAT is rounded per line on invoices and credit notes (a partial return may differ by at most 0.01 per line). Is that the legal rule? | Yes, kept as built (owner, 2026-11-08, ADR-171) | accountant |
+| 2.2 | **DR-043:** are the printed mentions of invoices and credit notes complete (company NIF, NIS, RC, AI; customer's numbers when known; VAT by rate; amount in words)? Must cash invoices carry stamp duty (*droit de timbre*), and how much? | Mentions complete, customer numbers optional; stamp duty on the cash part of immediate sales, off until its figures are entered in the settings (owner, 2026-11-08, ADR-171, ADR-172). Figures: | accountant |
+| 2.3 | **DR-041:** must some products be sold only on a veterinary prescription? If yes, which, and what must be recorded? | No (owner, 2026-11-08, ADR-171) | pharmacy |
 
 Another answer than the current behaviour means a new decision and a change **before** go-live (decisions.md). What each possible answer changes, and its size: `go-live-answers.md`.
 
@@ -47,14 +47,14 @@ Another answer than the current behaviour means a new decision and a change **be
 | # | Check | Who | Result |
 |---|---|---|---|
 | 4.1 | Backups page: **Run now** succeeds and is **copied to Google Drive** (column "Copiée", the file visible in Google Drive on the web); a download works (ADR-167) | Administrator | |
-| 4.2 | **Installation and restore rehearsal** on another Windows PC: `deployment.md` §3–§4, then `restore.ps1` with a backup **downloaded from Google Drive on another machine** (same name and size as on the backups page, the sync delay noted: proves the copy left the PC; `operations.md` §4), timed: under four business hours (ADR-150, ADR-165) | developer, owner | time: |
-| 4.3 | An update rehearsal with `update.ps1` (`operations.md` §2) on that PC, and once with a JAR whose migration fails: the previous version and data come back by themselves | developer, owner | |
+| 4.2 | **Restore check on the laptop, before any real data** (ADR-170): a backup from the backups page; its copy **downloaded from Google Drive on another device** (same name and size as on the backups page, the sync delay noted: proves the copy left the laptop); then `restore.ps1` with that file (`operations.md` §4), and the application works again. Timed: under four business hours (ADR-150) | developer, owner | time: |
+| 4.3 | Update and failed-update rollback: covered by the Windows rehearsal in CI (`windows.yml`, ADR-170), not repeated here | — | — |
 | 4.4 | Printing ticket and A4 from **Chrome and from Edge**, on the laptop and on another device over HTTPS (security headers in force, ADR-157, ADR-166) | Seller | |
 | 4.5 | A whole sale with the keyboard only (J15 automates it; check on the real counter PC and scanner) | Seller | |
 | 4.6 | The screens readable at 200 % zoom; the counter usable with a screen reader (NVDA or Narrator) for labels and error messages | pharmacy | |
 | 4.7 | The application in Arabic: the counter and a report, right to left | pharmacy | |
 | 4.8 | Laptop on mains power with the lid closed: the other devices keep working; on a Public network they cannot reach it (ADR-165, ADR-166) | owner | |
-| 4.9 | The laptop's drive is encrypted (BitLocker or Device encryption, protection on) and the recovery key is kept away from the laptop (ADR-168) | owner | |
+| 4.9 | Disk encryption: not required (ADR-169); `install.ps1` reports it. Note whether the drive is encrypted in the deployment record | owner | |
 
 ## 5. Problems found
 
