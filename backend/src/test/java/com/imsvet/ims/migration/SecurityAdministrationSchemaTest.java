@@ -66,6 +66,12 @@ class SecurityAdministrationSchemaTest {
                 Map.entry("ageing_buckets", "30,60,90"),
                 Map.entry("backup_time", "02:00"),
                 Map.entry("backup_retention_count", "30"),
-                Map.entry("backup_download_reminder_days", "7")));
+                Map.entry("backup_download_reminder_days", "7"),
+                Map.entry("stamp_duty_rate", "off"),
+                Map.entry("stamp_duty_step", "0.01"),
+                Map.entry("stamp_duty_minimum", "0.00"),
+                Map.entry("stamp_duty_maximum", "none"),
+                Map.entry("stamp_duty_threshold", "0.00"),
+                Map.entry("stamp_duty_on_receipts", "true")));
     }
 }
