@@ -102,7 +102,7 @@ class GoodsReceiptsTest {
                 .andExpect(jsonPath("$.lines[0].conforming").value(true))
                 .andExpect(jsonPath("$.lines[0].lotBlocked").value(false)));
 
-        assertThat(receipt.get("number").asString()).matches("GR-2026-\\d{6}");
+        assertThat(receipt.get("number").asString()).matches("BR-2026-\\d{6}");
         long lot = receipt.get("lines").get(0).get("lotId").asLong();
         assertThat(jdbc.queryForMap("""
                 SELECT CAST(quantity_on_hand AS CHAR) AS qty, CAST(unit_cost AS CHAR) AS cost, supplier_id, status

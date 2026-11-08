@@ -93,7 +93,7 @@ class SaleConfirmationTest {
         long session = openSession("100");
         confirm(receipt, cash(TTC)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("confirmed"))
-                .andExpect(jsonPath("$.number").value(matchesPattern("RCT-\\d{4}-\\d{6}")))
+                .andExpect(jsonPath("$.number").value(matchesPattern("TC-\\d{4}-\\d{6}")))
                 .andExpect(jsonPath("$.issuedAt").isNotEmpty())
                 .andExpect(jsonPath("$.cashSessionId").value(session))
                 .andExpect(jsonPath("$.payments[0].method").value("cash"))
@@ -141,7 +141,7 @@ class SaleConfirmationTest {
     void aDirectInvoiceIsConfirmedWithItsKey() throws Exception {
         long invoice = draftWithLine("{\"docType\":\"invoice\",\"customerId\":" + customer() + "}");
         confirm(invoice, cheque(TTC)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.number").value(startsWith("INV-")));
+                .andExpect(jsonPath("$.number").value(startsWith("FAC-")));
         assertThat(balance()).isEqualByComparingTo("8");
     }
 

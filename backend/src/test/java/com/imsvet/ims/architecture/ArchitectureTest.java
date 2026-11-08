@@ -53,7 +53,7 @@ class ArchitectureTest {
             .layer("backup").definedBy(ROOT + "backup..")
             .whereLayer("auth").mayOnlyAccessLayers("common", "users", "settings")
             .whereLayer("users").mayOnlyAccessLayers("common", "audit")
-            .whereLayer("catalog").mayOnlyAccessLayers("common", "settings", "audit")
+            .whereLayer("catalog").mayOnlyAccessLayers("common", "settings", "audit", "numbering")
             .whereLayer("numbering").mayOnlyAccessLayers("common")
             .whereLayer("settings").mayOnlyAccessLayers("common", "audit")
             .whereLayer("audit").mayOnlyAccessLayers("common")

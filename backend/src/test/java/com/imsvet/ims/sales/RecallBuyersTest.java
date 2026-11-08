@@ -101,13 +101,13 @@ class RecallBuyersTest {
                 .andExpect(jsonPath("$.buyers[0].customerId").value(customer))
                 .andExpect(jsonPath("$.buyers[0].customerName").value(startsWith("Ferme Rappel")))
                 .andExpect(jsonPath("$.buyers[0].phone").value("0550000001"))
-                .andExpect(jsonPath("$.buyers[0].documentNumber").value(startsWith("INV-")))
+                .andExpect(jsonPath("$.buyers[0].documentNumber").value(startsWith("FAC-")))
                 .andExpect(jsonPath("$.buyers[0].documentType").value("invoice"))
                 .andExpect(jsonPath("$.buyers[0].issuedAt").isNotEmpty())
                 .andExpect(jsonPath("$.buyers[0].quantityBase").value("2.000"))
-                .andExpect(jsonPath("$.buyers[1].documentNumber").value(startsWith("DN-")))
+                .andExpect(jsonPath("$.buyers[1].documentNumber").value(startsWith("BL-")))
                 .andExpect(jsonPath("$.anonymousSales.length()").value(1))
-                .andExpect(jsonPath("$.anonymousSales[0].documentNumber").value(startsWith("RCT-")))
+                .andExpect(jsonPath("$.anonymousSales[0].documentNumber").value(startsWith("TC-")))
                 .andExpect(jsonPath("$.remainingStockBase").value("44.000"));
         entities.clear();
         admin.get("/api/lots/" + lot + "/recall-report").andExpect(jsonPath("$.buyers.length()").value(2))

@@ -51,7 +51,7 @@ test('J9: documents, conversion, cancellation, then the recall and its buyers', 
   await expect(page.getByTestId('pos-customer')).toHaveText(customer)
   await expect(page.getByTestId('pos-total')).toContainText('21,80')
   const invoice = await payByCheque(page)
-  expect(invoice).toMatch(/^INV-/)
+  expect(invoice).toMatch(/^FAC-/)
 
   await page.goto('/sales')
   await page.getByLabel('Numéro').fill(cancelled)

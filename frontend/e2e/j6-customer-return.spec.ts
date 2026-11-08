@@ -48,8 +48,8 @@ test('J6: a customer return with a credit note, a restock, a discard and a cash 
   await expect(page.getByTestId('credit-total')).toContainText('21,80')
   await page.getByRole('button', { name: 'Confirmer le retour' }).click()
 
-  await expect(page.getByRole('heading', { level: 1, name: /^CR-\d{4}-\d{6}$/ })).toBeVisible()
-  await expect(page.getByTestId('credit-note')).toContainText(/CN-\d{4}-\d{6}/)
+  await expect(page.getByRole('heading', { level: 1, name: /^RC-\d{4}-\d{6}$/ })).toBeVisible()
+  await expect(page.getByTestId('credit-note')).toContainText(/AV-\d{4}-\d{6}/)
   await expect(page.getByText(/Destruction · Ouvert/)).toBeVisible()
   expect(await expectedCash(page)).toBeCloseTo(beforeRefund - 21.8, 2)
 
@@ -61,7 +61,7 @@ test('J6: a customer return with a credit note, a restock, a discard and a cash 
   await page.getByLabel('Numéro').fill(receipt)
   await page.getByRole('link', { name: receipt }).click()
   await expect(page.getByRole('columnheader', { name: 'Retourné' })).toBeVisible()
-  await expect(page.getByRole('link', { name: /^CR-/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /^RC-/ })).toBeVisible()
   await page.getByRole('link', { name: 'Retour de marchandise' }).click()
   await page.getByLabel('Quantité retournée de E2E Retourval (unité de base)').fill('2')
   await page.getByLabel('Motif du retour').fill('Encore')

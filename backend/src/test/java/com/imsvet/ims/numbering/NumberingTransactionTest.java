@@ -82,14 +82,14 @@ class NumberingTransactionTest {
     @Test
     void aRollbackGivesTheNumberBack() {
         clock.set(Instant.parse("2040-06-01T09:00:00Z"));
-        assertThat(allocate(DocumentKey.PO)).isEqualTo("PO-2040-000001");
+        assertThat(allocate(DocumentKey.PO)).isEqualTo("BC-2040-000001");
 
         assertThatThrownBy(() -> transactions.executeWithoutResult(status -> {
-            assertThat(numbering.next(DocumentKey.PO)).isEqualTo("PO-2040-000002");
+            assertThat(numbering.next(DocumentKey.PO)).isEqualTo("BC-2040-000002");
             throw new IllegalStateException("document insert failed");
         })).hasMessage("document insert failed");
 
-        assertThat(allocate(DocumentKey.PO)).as("no gap").isEqualTo("PO-2040-000002");
+        assertThat(allocate(DocumentKey.PO)).as("no gap").isEqualTo("BC-2040-000002");
     }
 
     @Test
@@ -110,8 +110,8 @@ class NumberingTransactionTest {
         assertThatThrownBy(() -> second.get(1, TimeUnit.SECONDS)).as("waits for the first transaction")
                 .isInstanceOf(TimeoutException.class);
         release.countDown();
-        assertThat(first.get(10, TimeUnit.SECONDS)).isEqualTo("GR-2041-000001");
-        assertThat(second.get(10, TimeUnit.SECONDS)).isEqualTo("GR-2041-000002");
+        assertThat(first.get(10, TimeUnit.SECONDS)).isEqualTo("BR-2041-000001");
+        assertThat(second.get(10, TimeUnit.SECONDS)).isEqualTo("BR-2041-000002");
         pool.shutdown();
     }
 
@@ -132,7 +132,7 @@ class NumberingTransactionTest {
 
         Set<String> expected = new HashSet<>();
         for (int n = 1; n <= ALLOCATIONS; n++) {
-            expected.add("SR-%d-%06d".formatted(year, n));
+            expected.add("RF-%d-%06d".formatted(year, n));
         }
         assertThat(numbers).isEqualTo(expected);
         assertThat(jdbc.queryForObject("SELECT last_number FROM document_sequences WHERE doc_key = 'SR' AND year = ?",
@@ -177,7 +177,7 @@ class NumberingTransactionTest {
         }
         pool.shutdown();
 
-        assertThat(numbers).hasSize(10).allMatch(n -> n.startsWith("GR-"));
+        assertThat(numbers).hasSize(10).allMatch(n -> n.startsWith("BR-"));
         assertThat(jdbc.queryForObject("SELECT SUM(quantity_on_hand) FROM lots WHERE id IN (?, ?)", String.class, a, b))
                 .isEqualTo("180.000");
         StockAssertions.assertLedgerMatchesBalances(jdbc, List.of(a, b));

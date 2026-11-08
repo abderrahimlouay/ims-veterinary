@@ -149,4 +149,17 @@ class SettingFormatTest {
         assertThat(SettingFormat.NONE_OR_MONEY.normalize(" NONE ")).isEqualTo("none");
         assertThatThrownBy(() -> SettingFormat.NONE_OR_MONEY.normalize("off")).isInstanceOf(IllegalArgumentException.class);
     }
+
+    /** ADR-173: {@code sku_prefix}. */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {"PRD|PRD", " art |ART", "A1B2C3D4E5|A1B2C3D4E5", "''|''"})
+    void skuPrefixIsUpToTenLettersOrDigits(String raw, String stored) {
+        assertThat(SettingFormat.SKU_PREFIX.normalize(raw)).isEqualTo(stored);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PR-D", "ABCDEFGHIJK", "é", "P D"})
+    void otherSkuPrefixesAreRejected(String raw) {
+        assertThatThrownBy(() -> SettingFormat.SKU_PREFIX.normalize(raw)).isInstanceOf(IllegalArgumentException.class);
+    }
 }

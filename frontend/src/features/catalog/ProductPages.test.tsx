@@ -139,6 +139,31 @@ describe('product pages', () => {
     expect(router.state.location.pathname).toBe('/products/8')
   })
 
+  it('sends an empty SKU for the server to generate, and requires one on update (ADR-173)', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    let body: Record<string, unknown> = {}
+    server.use(
+      http.post('/api/products', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(aProduct({ id: 9, sku: 'PRD-000001' }), { status: 201 })
+      }),
+      http.get('/api/products/9', () => HttpResponse.json(aProduct({ id: 9, sku: 'PRD-000001' }))),
+    )
+    renderApp('/products/new')
+
+    expect(await screen.findByText('Laissez vide pour générer le code (ex. PRD-000001).')).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Nom commercial'), 'Sans code')
+    await userEvent.type(screen.getByLabelText('Unité de base'), 'ml')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    expect(await screen.findByDisplayValue('PRD-000001')).toBeInTheDocument()
+    expect(body).toMatchObject({ sku: '' })
+
+    await userEvent.clear(screen.getByLabelText('SKU'))
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    expect(await screen.findByText('Ce champ est obligatoire.')).toBeInTheDocument()
+  })
+
   it('is read-only for a reader and offers no archive', async () => {
     serveMe(aUser({ permissions: ['product.read'] }))
     serveReferences()

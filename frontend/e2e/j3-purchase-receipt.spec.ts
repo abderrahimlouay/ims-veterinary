@@ -42,7 +42,7 @@ test('J3: purchase order, goods receipt, lot in stock, receipt cancelled', async
   await page.getByLabel('Quantité').fill('30')
   await page.getByLabel('Prix unitaire').fill('0.5')
   await page.getByRole('button', { name: 'Enregistrer le brouillon' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: /^PO-\d{4}-\d{6}$/ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /^BC-\d{4}-\d{6}$/ })).toBeVisible()
   await expect(page.getByText('TTC 16,35 DA')).toBeVisible()
 
   await page.getByRole('button', { name: 'Valider' }).click()
@@ -57,8 +57,8 @@ test('J3: purchase order, goods receipt, lot in stock, receipt cancelled', async
   await page.getByLabel('Date de péremption').fill('12/2027')
   await page.getByLabel('Coût par unité de base').fill('0.5')
   await page.getByRole('button', { name: 'Confirmer la réception' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: /^GR-\d{4}-\d{6}$/ })).toBeVisible()
-  await expect(page.getByRole('link', { name: /^PO-/ })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /^BR-\d{4}-\d{6}$/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /^BC-/ })).toBeVisible()
   const receiptUrl = page.url()
 
   await page.getByRole('link', { name: 'J3-L1' }).click()
@@ -67,7 +67,7 @@ test('J3: purchase order, goods receipt, lot in stock, receipt cancelled', async
   await expect(page.getByRole('cell', { name: 'Réception', exact: true })).toBeVisible()
 
   await page.goto(receiptUrl)
-  await page.getByRole('link', { name: /^PO-/ }).click()
+  await page.getByRole('link', { name: /^BC-/ }).click()
   await expect(page.getByText('Reçu en partie', { exact: true })).toBeVisible()
 
   await page.goto(receiptUrl)

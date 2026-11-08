@@ -38,24 +38,24 @@ class NumberingServiceTest {
     void numbersFollowEachOtherPerKey() {
         clock.set(Instant.parse("2031-03-10T09:00:00Z"));
 
-        assertThat(numbering.next(DocumentKey.PO)).isEqualTo("PO-2031-000001");
-        assertThat(numbering.next(DocumentKey.PO)).isEqualTo("PO-2031-000002");
-        assertThat(numbering.next(DocumentKey.GR)).isEqualTo("GR-2031-000001");
-        assertThat(numbering.next(DocumentKey.SR)).isEqualTo("SR-2031-000001");
-        assertThat(numbering.next(DocumentKey.PO)).isEqualTo("PO-2031-000003");
+        assertThat(numbering.next(DocumentKey.PO)).isEqualTo("BC-2031-000001");
+        assertThat(numbering.next(DocumentKey.PO)).isEqualTo("BC-2031-000002");
+        assertThat(numbering.next(DocumentKey.GR)).isEqualTo("BR-2031-000001");
+        assertThat(numbering.next(DocumentKey.SR)).isEqualTo("RF-2031-000001");
+        assertThat(numbering.next(DocumentKey.PO)).isEqualTo("BC-2031-000003");
     }
 
     @Test
     void theYearIsTheBusinessYearInAlgiers() {
         clock.set(Instant.parse("2032-12-31T22:30:00Z"));
-        assertThat(numbering.next(DocumentKey.GR)).isEqualTo("GR-2032-000001");
+        assertThat(numbering.next(DocumentKey.GR)).isEqualTo("BR-2032-000001");
 
         clock.set(Instant.parse("2032-12-31T23:30:00Z"));
         assertThat(numbering.next(DocumentKey.GR)).as("31 December 23:30 UTC is 1 January 00:30 in Algiers")
-                .isEqualTo("GR-2033-000001");
-        assertThat(numbering.next(DocumentKey.GR)).isEqualTo("GR-2033-000002");
+                .isEqualTo("BR-2033-000001");
+        assertThat(numbering.next(DocumentKey.GR)).isEqualTo("BR-2033-000002");
 
         clock.set(Instant.parse("2032-12-31T22:59:00Z"));
-        assertThat(numbering.next(DocumentKey.GR)).as("the old year's counter continues").isEqualTo("GR-2032-000002");
+        assertThat(numbering.next(DocumentKey.GR)).as("the old year's counter continues").isEqualTo("BR-2032-000002");
     }
 }
