@@ -141,6 +141,7 @@ Layout: left = product search + scan field + quick results; centre = cart lines 
 | After confirm | success screen with number, "Imprimer le ticket" (prints at once through a hidden frame) and the A4 PDF in a new tab (ADR-139, Phase 10), "new sale" |
 | Offline | not supported (no offline requirement in the Spec `[REC]`); a banner blocks sale when API unreachable |
 | Cash session | if no open session and payments need one → modal to open it (`CASH_SESSION_REQUIRED`) |
+| Stamp duty | for an immediate sale with a cash part, the screen asks `GET /sales/{id}/stamp-duty?cash=` and shows "Droit de timbre" and "Net à payer" when it is above zero; the change is computed on the net; confirm waits for the answer; the payments sent still add up to the TTC (ADR-172). The sale detail and the success screen show the stored stamp duty and net |
 
 **Delivered (Phase 7):** type and customer are chosen before the first line and lock with the draft, since the price depends on the customer and a type never changes; credit stays switchable until confirmation. The change is computed on the screen only (ADR-118). A line is changed in one dialog: quantity, unit, discount (`sale.discount`), lot (`sale.override_fefo`). Printing comes with Phase 10.
 

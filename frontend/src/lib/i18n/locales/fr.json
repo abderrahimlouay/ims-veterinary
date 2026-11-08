@@ -211,7 +211,13 @@
         "ageing_buckets": "Colonnes d'ancienneté des créances (jours)",
         "backup_time": "Heure de la sauvegarde quotidienne",
         "backup_retention_count": "Sauvegardes conservées",
-        "backup_download_reminder_days": "Rappel de téléchargement (jours)"
+        "backup_download_reminder_days": "Rappel de téléchargement (jours)",
+        "stamp_duty_rate": "Droit de timbre : taux (%)",
+        "stamp_duty_step": "Droit de timbre : tranche",
+        "stamp_duty_minimum": "Droit de timbre : minimum",
+        "stamp_duty_maximum": "Droit de timbre : maximum",
+        "stamp_duty_threshold": "Droit de timbre : seuil d'exonération",
+        "stamp_duty_on_receipts": "Droit de timbre sur les tickets de caisse"
       },
       "hints": {
         "expiry_alert_days": "Trois nombres décroissants : avis, avertissement, critique (ex. 60,30,15).",
@@ -221,7 +227,13 @@
         "ageing_buckets": "Trois nombres croissants de jours de retard, par exemple 30,60,90.",
         "backup_time": "Heure HH:mm, fuseau de l'entreprise (ex. 02:00).",
         "backup_retention_count": "Nombre de sauvegardes réussies gardées sur le serveur (ex. 30).",
-        "backup_download_reminder_days": "Jours sans téléchargement d'une sauvegarde avant l'avertissement (ex. 7)."
+        "backup_download_reminder_days": "Jours sans téléchargement d'une sauvegarde avant l'avertissement (ex. 7).",
+        "stamp_duty_rate": "off (aucun droit de timbre), ou le taux appliqué à la part payée en espèces, ex. 1.00. Chiffres à demander au comptable.",
+        "stamp_duty_step": "Le montant en espèces est arrondi à la tranche supérieure avant le taux (ex. 100.00 : chaque tranche de 100 DA commencée compte ; 0.01 : taux simple).",
+        "stamp_duty_minimum": "Droit de timbre le plus petit perçu (ex. 5.00 ; 0.00 : aucun minimum).",
+        "stamp_duty_maximum": "none, ou le droit de timbre le plus élevé perçu.",
+        "stamp_duty_threshold": "Aucun droit de timbre quand la part en espèces est inférieure ou égale à ce montant (0.00 : aucun seuil).",
+        "stamp_duty_on_receipts": "true : tickets et factures ; false : factures seulement."
       }
     },
     "audit": {
@@ -1159,7 +1171,10 @@
     },
     "category": "Catégorie thérapeutique",
     "anyCategory": "Toutes catégories",
-    "addCode": "Ajouter par code"
+    "addCode": "Ajouter par code",
+    "stampDuty": "Droit de timbre",
+    "netToPay": "Net à payer",
+    "stampDutyLine": "Droit de timbre : {{amount}}"
   },
   "sales": {
     "title": "Documents de vente",

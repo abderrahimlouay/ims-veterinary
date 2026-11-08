@@ -25,7 +25,7 @@ function aSale(overrides: Record<string, unknown> = {}) {
     cancelledAt: null,
     cancelReason: null,
     notes: null,
-    totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80' },
+    totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80', stampDuty: '0.00', netToPay: '21.80' },
     lines: [
       { id: 90, productId: 5, productName: 'Vermifuge Démo', lotId: 21, lotNumber: 'L-21', expiryDate: '2027-12-31', unitId: null, unitName: 'tablet', targetSpeciesId: null, quantity: '2.000', quantityBase: '2.000', unitPrice: '10.0000', discountPct: '0.00', vatRate: '9.00', lineHt: '20.00', lineVat: '1.80', lineTtc: '21.80', warnings: [], returnedQuantityBase: '0.000' },
     ],

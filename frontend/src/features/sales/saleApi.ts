@@ -55,7 +55,8 @@ export interface SaleDetail {
   cancelledAt: string | null
   cancelReason: string | null
   notes: string | null
-  totals: { ht: string; discount: string; vat: string; ttc: string }
+  /** `stampDuty` and `netToPay` (TTC + stamp duty): ADR-172. */
+  totals: { ht: string; discount: string; vat: string; ttc: string; stampDuty: string; netToPay: string }
   lines: SaleLine[]
   payments: { id: number; method: PaymentMethod; amount: string; reference: string | null }[]
   cashSessionId: number | null
@@ -98,6 +99,22 @@ const post = <T,>(path: string, json: unknown, headers?: Record<string, string>)
   apiFetch<T>(path, { method: 'POST', json, headers })
 
 export const fetchSale = (id: number) => apiFetch<SaleDetail>(`/api/sales/${id}`)
+
+/** What confirming would charge as stamp duty on `cashPart` of the draft's TTC (ADR-172); the server computes it again. */
+export interface StampDutyPreview {
+  cashPart: string
+  stampDuty: string
+  netToPay: string
+}
+
+export function useStampDuty(saleId: number | null, ttc: string, cashPart: string | null) {
+  return useQuery({
+    queryKey: ['sales', saleId, 'stamp-duty', ttc, cashPart],
+    queryFn: () => apiFetch<StampDutyPreview>(`/api/sales/${saleId}/stamp-duty?cash=${encodeURIComponent(cashPart ?? '')}`),
+    enabled: saleId !== null && cashPart !== null,
+    retry: false,
+  })
+}
 export const createDraft = (draft: DraftWrite) => post<SaleDetail>('/api/sales', draft)
 export const updateDraft = (sale: SaleDetail, creditSale: boolean) =>
   apiFetch<SaleDetail>(`/api/sales/${sale.id}`, {

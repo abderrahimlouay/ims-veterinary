@@ -51,7 +51,7 @@ function aSale(overrides: Record<string, unknown> = {}) {
     cancelledAt: null,
     cancelReason: null,
     notes: null,
-    totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80' },
+    totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80', stampDuty: '0.00', netToPay: '21.80' },
     lines: [aLine()],
     payments: [],
     cashSessionId: null,
@@ -70,8 +70,12 @@ function serveCounter(sale = aSale()) {
     http.get('/api/cash-sessions/current', () => HttpResponse.json(SESSION)),
     http.get('/api/animal-species', () => HttpResponse.json([])),
     http.get('/api/products', () => HttpResponse.json({ content: [PRODUCT], page: { number: 0, size: 10, totalElements: 1, totalPages: 1 } })),
-    http.post('/api/sales', () => HttpResponse.json(aSale({ lines: [], totals: { ht: '0.00', discount: '0.00', vat: '0.00', ttc: '0.00' } }), { status: 201 })),
+    http.post('/api/sales', () => HttpResponse.json(aSale({ lines: [], totals: { ht: '0.00', discount: '0.00', vat: '0.00', ttc: '0.00', stampDuty: '0.00', netToPay: '0.00' } }), { status: 201 })),
     http.post('/api/sales/300/lines', () => HttpResponse.json(sale)),
+    http.get('/api/sales/300/stamp-duty', ({ request }) => {
+      const cash = new URL(request.url).searchParams.get('cash') ?? '0.00'
+      return HttpResponse.json({ cashPart: cash, stampDuty: '0.00', netToPay: sale.totals.ttc })
+    }),
   )
 }
 
@@ -108,6 +112,34 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
     expect(screen.getByRole('link', { name: 'PDF (A4)' })).toHaveAttribute('href', '/api/sales/300/pdf?format=a4')
     expect(body).toEqual({ payments: [{ method: 'cash', amount: '21.80', reference: null }] })
     expect(key).toMatch(/^[0-9a-f-]{36}$/)
+  })
+
+  it('shows the stamp duty of the cash part, takes it in the change and still sends the TTC (ADR-172)', async () => {
+    serveCounter()
+    let body: unknown
+    server.use(
+      http.get('/api/sales/300/stamp-duty', () => HttpResponse.json({ cashPart: '21.80', stampDuty: '1.00', netToPay: '22.80' })),
+      http.post('/api/sales/300/confirm', async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json(
+          aSale({ status: 'confirmed', number: 'RCT-2026-000009', totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80', stampDuty: '1.00', netToPay: '22.80' } }),
+        )
+      }),
+    )
+    renderApp('/pos')
+    await addProduct()
+
+    expect(await screen.findByTestId('pos-stamp-duty')).toHaveTextContent('1,00')
+    expect(screen.getByTestId('pos-net')).toHaveTextContent('22,80')
+    await userEvent.type(screen.getByLabelText('Espèces reçues'), '50')
+    expect(screen.getByTestId('pos-change')).toHaveTextContent('27,20')
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmer la vente' }))
+
+    expect(await screen.findByText('Document RCT-2026-000009')).toBeInTheDocument()
+    expect(screen.getByText(/Droit de timbre : 1,00/)).toBeInTheDocument()
+    expect(screen.getByText(/Total : 22,80/)).toBeInTheDocument()
+    expect(screen.getByText(/Monnaie à rendre : 27,20/)).toBeInTheDocument()
+    expect(body).toEqual({ payments: [{ method: 'cash', amount: '21.80', reference: null }] })
   })
 
   it('keeps one key for a retry of the same payment', async () => {
@@ -169,7 +201,7 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
     expect(screen.getByText(/Péremption proche/)).toBeInTheDocument()
     expect(screen.getByText(/Délai d'attente, Ovin : viande 28 j, lait 7 j/)).toBeInTheDocument()
     expect(screen.getByText('Stock bas après cette vente')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Confirmer la vente' })).toBeEnabled()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirmer la vente' })).toBeEnabled())
   })
 
   it('adds a scanned product in its unit on Enter and goes back to the scan field, by keyboard alone', async () => {

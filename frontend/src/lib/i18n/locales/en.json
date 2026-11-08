@@ -211,7 +211,13 @@
         "ageing_buckets": "Receivables ageing columns (days)",
         "backup_time": "Daily backup time",
         "backup_retention_count": "Backups kept",
-        "backup_download_reminder_days": "Download reminder (days)"
+        "backup_download_reminder_days": "Download reminder (days)",
+        "stamp_duty_rate": "Stamp duty: rate (%)",
+        "stamp_duty_step": "Stamp duty: step",
+        "stamp_duty_minimum": "Stamp duty: minimum",
+        "stamp_duty_maximum": "Stamp duty: maximum",
+        "stamp_duty_threshold": "Stamp duty: exemption threshold",
+        "stamp_duty_on_receipts": "Stamp duty on receipts"
       },
       "hints": {
         "expiry_alert_days": "Three decreasing numbers: notice, warning, critical (e.g. 60,30,15).",
@@ -221,7 +227,13 @@
         "ageing_buckets": "Three increasing numbers of days past due, such as 30,60,90.",
         "backup_time": "Time HH:mm, business time zone (e.g. 02:00).",
         "backup_retention_count": "Successful backups kept on the server (e.g. 30).",
-        "backup_download_reminder_days": "Days without a backup download before the warning (e.g. 7)."
+        "backup_download_reminder_days": "Days without a backup download before the warning (e.g. 7).",
+        "stamp_duty_rate": "off (no stamp duty), or the rate applied to the part paid in cash, e.g. 1.00. Ask the accountant for the figures.",
+        "stamp_duty_step": "The cash amount is rounded up to this step before the rate (e.g. 100.00: each started 100 DA counts; 0.01: a plain rate).",
+        "stamp_duty_minimum": "Smallest stamp duty charged (e.g. 5.00; 0.00: no minimum).",
+        "stamp_duty_maximum": "none, or the largest stamp duty charged.",
+        "stamp_duty_threshold": "No stamp duty when the cash part is at or below this amount (0.00: no threshold).",
+        "stamp_duty_on_receipts": "true: receipts and invoices; false: invoices only."
       }
     },
     "audit": {
@@ -1159,7 +1171,10 @@
     },
     "category": "Therapeutic category",
     "anyCategory": "Any category",
-    "addCode": "Add by code"
+    "addCode": "Add by code",
+    "stampDuty": "Stamp duty",
+    "netToPay": "Net to pay",
+    "stampDutyLine": "Stamp duty: {{amount}}"
   },
   "sales": {
     "title": "Sales documents",

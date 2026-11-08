@@ -93,6 +93,10 @@ public class SalesDocument {
     @Column(name = "total_ttc", nullable = false, precision = 14, scale = 2)
     private BigDecimal totalTtc = BigDecimal.ZERO.setScale(2);
 
+    /** On the cash part of an immediate invoice or receipt, frozen at confirmation (ADR-172); net_to_pay is generated. */
+    @Column(name = "stamp_duty", nullable = false, precision = 14, scale = 2)
+    private BigDecimal stampDuty = BigDecimal.ZERO.setScale(2);
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -177,6 +181,14 @@ public class SalesDocument {
         this.updatedAt = now;
     }
 
+    /** Set before {@link #confirm}, on the cash part of the payment (ADR-172). */
+    public void chargeStampDuty(BigDecimal amount) {
+        if (status != SalesDocStatus.DRAFT) {
+            throw new IllegalStateException("A confirmed document is immutable");
+        }
+        this.stampDuty = amount;
+    }
+
     /** The default of a credit sale confirmed without one (ADR-109). */
     public void dueOn(LocalDate date) {
         this.dueDate = date;
@@ -252,6 +264,15 @@ public class SalesDocument {
 
     public BigDecimal totalTtc() {
         return totalTtc;
+    }
+
+    public BigDecimal stampDuty() {
+        return stampDuty;
+    }
+
+    /** What the customer pays: the TTC and the stamp duty (the generated column net_to_pay, ADR-172). */
+    public BigDecimal netToPay() {
+        return totalTtc.add(stampDuty);
     }
 
     public String notes() {

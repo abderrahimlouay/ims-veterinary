@@ -183,6 +183,34 @@ class SalePdfsTest {
         other.get("/api/sales/" + quote + "/pdf").andExpect(status().isForbidden());
     }
 
+    @Test
+    void aStampedInvoicePrintsTheStampDutyAndTheNetInWords() throws Exception {
+        jdbc.update("UPDATE app_settings SET setting_value = '1.00' WHERE setting_key = 'stamp_duty_rate'");
+        jdbc.update("UPDATE app_settings SET setting_value = '100.00' WHERE setting_key = 'stamp_duty_step'");
+        seller.post("/api/cash-sessions/open", "{\"openingAmount\":\"0\"}").andExpect(status().isCreated());
+        long invoice = sale("{\"docType\":\"invoice\",\"customerId\":" + customer() + "}", "2");
+        seller.post("/api/sales/" + invoice + "/confirm",
+                "{\"payments\":[{\"method\":\"cash\",\"amount\":\"2180.00\"}]}").andExpect(status().isOk());
+
+        String a4 = text(seller.get("/api/sales/" + invoice + "/pdf").andExpect(status().isOk()).andReturn());
+        assertThat(a4).contains("Total TTC").contains("2 180,00 DA").contains("Droit de timbre").contains("22,00 DA")
+                .contains("Net à payer").contains("2 202,00 DA")
+                .contains("Arrêtée la présente facture à la somme de : Deux mille deux cent deux dinars algériens.");
+        String ticket = text(seller.get("/api/sales/" + invoice + "/pdf?format=ticket").andExpect(status().isOk())
+                .andReturn());
+        assertThat(ticket).contains("Droit de timbre").contains("Net à payer").contains("Espèces : 2 202,00 DA");
+    }
+
+    @Test
+    void aSaleWithoutStampDutyPrintsNoStampLine() throws Exception {
+        seller.post("/api/cash-sessions/open", "{\"openingAmount\":\"0\"}").andExpect(status().isCreated());
+        long receipt = sale("{\"docType\":\"receipt\"}", "1");
+        seller.post("/api/sales/" + receipt + "/confirm",
+                "{\"payments\":[{\"method\":\"cash\",\"amount\":\"1090.00\"}]}").andExpect(status().isOk());
+        assertThat(text(seller.get("/api/sales/" + receipt + "/pdf").andExpect(status().isOk()).andReturn()))
+                .doesNotContain("Droit de timbre").doesNotContain("Net à payer");
+    }
+
     private long sale(String draft, String quantity) throws Exception {
         long id = id(seller.post("/api/sales", draft).andExpect(status().isCreated()));
         seller.post("/api/sales/" + id + "/lines", "{\"productId\":" + product + ",\"quantity\":\"" + quantity + "\"}")

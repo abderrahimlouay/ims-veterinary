@@ -25,7 +25,13 @@ public enum SettingDefinition {
     AGEING_BUCKETS("ageing_buckets", SettingFormat.THREE_ASCENDING_DAYS, true, false),
     BACKUP_TIME("backup_time", SettingFormat.TIME_OF_DAY, true, false),
     BACKUP_RETENTION_COUNT("backup_retention_count", SettingFormat.POSITIVE_INTEGER, true, false),
-    BACKUP_DOWNLOAD_REMINDER_DAYS("backup_download_reminder_days", SettingFormat.POSITIVE_INTEGER, true, false);
+    BACKUP_DOWNLOAD_REMINDER_DAYS("backup_download_reminder_days", SettingFormat.POSITIVE_INTEGER, true, false),
+    STAMP_DUTY_RATE("stamp_duty_rate", SettingFormat.OFF_OR_PERCENT, true, false),
+    STAMP_DUTY_STEP("stamp_duty_step", SettingFormat.POSITIVE_MONEY, true, false),
+    STAMP_DUTY_MINIMUM("stamp_duty_minimum", SettingFormat.MONEY, true, false),
+    STAMP_DUTY_MAXIMUM("stamp_duty_maximum", SettingFormat.NONE_OR_MONEY, true, false),
+    STAMP_DUTY_THRESHOLD("stamp_duty_threshold", SettingFormat.MONEY, true, false),
+    STAMP_DUTY_ON_RECEIPTS("stamp_duty_on_receipts", SettingFormat.BOOLEAN, true, false);
 
     private final String key;
     private final SettingFormat format;

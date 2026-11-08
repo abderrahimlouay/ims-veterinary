@@ -152,6 +152,45 @@ public enum SettingFormat {
         }
     },
 
+    /** {@code off}, or a percentage above 0 and up to 100 with at most two decimals (ADR-172). */
+    OFF_OR_PERCENT {
+        @Override
+        public String normalize(String raw) {
+            if (raw.trim().equalsIgnoreCase("off")) {
+                return "off";
+            }
+            BigDecimal value = decimal(raw, "Enter off or a percentage such as 1.00.");
+            if (value.signum() <= 0 || value.compareTo(BigDecimal.valueOf(100)) > 0 || value.stripTrailingZeros().scale() > 2) {
+                throw new IllegalArgumentException("Enter off or a percentage above 0 and up to 100, two decimals at most.");
+            }
+            return value.setScale(2).toPlainString();
+        }
+    },
+
+    /** An amount of money ≥ 0 with at most two decimals (ADR-172). */
+    MONEY {
+        @Override
+        public String normalize(String raw) {
+            return money(raw, false);
+        }
+    },
+
+    /** An amount of money > 0 with at most two decimals (ADR-172). */
+    POSITIVE_MONEY {
+        @Override
+        public String normalize(String raw) {
+            return money(raw, true);
+        }
+    },
+
+    /** {@code none}, or an amount of money ≥ 0 with at most two decimals (ADR-172). */
+    NONE_OR_MONEY {
+        @Override
+        public String normalize(String raw) {
+            return raw.trim().equalsIgnoreCase("none") ? "none" : money(raw, false);
+        }
+    },
+
     /** A time of day {@code HH:mm} in the business time zone, stored with two-digit hours (ADR-078, ADR-086). */
     TIME_OF_DAY {
         @Override
@@ -171,6 +210,24 @@ public enum SettingFormat {
     private static final DateTimeFormatter STORED_TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     public abstract String normalize(String raw);
+
+    private static String money(String raw, boolean positive) {
+        BigDecimal value = decimal(raw, "Enter an amount such as 100.00.");
+        boolean outOfRange = positive ? value.signum() <= 0 : value.signum() < 0;
+        if (outOfRange || value.stripTrailingZeros().scale() > 2 || value.precision() - value.scale() > 12) {
+            throw new IllegalArgumentException(positive ? "Enter an amount above 0 with at most two decimals."
+                    : "Enter an amount of at least 0 with at most two decimals.");
+        }
+        return value.setScale(2).toPlainString();
+    }
+
+    private static BigDecimal decimal(String raw, String message) {
+        try {
+            return new BigDecimal(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(message);
+        }
+    }
 
     private static int parseInt(String raw) {
         try {

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.imsvet.ims.settings.domain.SettingFormat;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -112,5 +113,40 @@ class SettingFormatTest {
     @ValueSource(strings = {"24:00", "12:60", "6h", "06:00:00", ""})
     void otherTimesAreRejected(String raw) {
         assertThatThrownBy(() -> SettingFormat.TIME_OF_DAY.normalize(raw)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /** ADR-172: {@code stamp_duty_rate}. */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {"off|off", " Off |off", "1|1.00", "0.5|0.50", "100|100.00"})
+    void stampDutyRateIsOffOrAPercentage(String raw, String stored) {
+        assertThat(SettingFormat.OFF_OR_PERCENT.normalize(raw)).isEqualTo(stored);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "-1", "100.01", "1.234", "on", ""})
+    void otherStampDutyRatesAreRejected(String raw) {
+        assertThatThrownBy(() -> SettingFormat.OFF_OR_PERCENT.normalize(raw)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /** ADR-172: step, minimum, maximum and threshold of the stamp duty. */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {"0|0.00", " 5 |5.00", "2500.5|2500.50"})
+    void moneyIsStoredWithTwoDecimals(String raw, String stored) {
+        assertThat(SettingFormat.MONEY.normalize(raw)).isEqualTo(stored);
+        assertThat(SettingFormat.NONE_OR_MONEY.normalize(raw)).isEqualTo(stored);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"-0.01", "1.234", "abc", "", "1000000000000"})
+    void otherAmountsAreRejected(String raw) {
+        assertThatThrownBy(() -> SettingFormat.MONEY.normalize(raw)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void aStepIsAboveZeroAndAMaximumMayBeNone() {
+        assertThat(SettingFormat.POSITIVE_MONEY.normalize("100")).isEqualTo("100.00");
+        assertThatThrownBy(() -> SettingFormat.POSITIVE_MONEY.normalize("0")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(SettingFormat.NONE_OR_MONEY.normalize(" NONE ")).isEqualTo("none");
+        assertThatThrownBy(() -> SettingFormat.NONE_OR_MONEY.normalize("off")).isInstanceOf(IllegalArgumentException.class);
     }
 }

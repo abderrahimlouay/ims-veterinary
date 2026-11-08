@@ -31,7 +31,7 @@
 | Depleted (lot) | Lot épuisé | Lot with zero quantity. |
 | Disposition (return) | Devenir du retour | Outcome of returned goods: `restock` (back into the original lot, sellable only if the lot is) or `discard` (logged in and destroyed at once, `return_discard`, with a reason) (ADR-127, ADR-129). |
 | Document number | Numéro de document | Unique human-readable number of an order, invoice, etc. (BR-DOC-001). |
-| Droit de timbre | Droit de timbre | Stamp duty on invoices paid in cash; not computed in Phase 10, to be confirmed by the accountant (ADR-141, DR-043). |
+| Droit de timbre | Droit de timbre | Stamp duty on the cash part of an invoice or receipt paid at confirmation; its figures are settings, off until the administrator enters the accountant's (ADR-172, BR-SALE-017). |
 | Dosage form | Forme galénique | Form of the medicine (injectable, powder, tablet…). |
 | Expiry date | Date de péremption (DLC) | Last date the lot may be used/sold: sellable on this date, expired from the next day (ADR-055); `MM/YYYY` = last day of the month. |
 | FEFO | Premier expiré, premier sorti | First-Expired-First-Out lot selection rule. |
