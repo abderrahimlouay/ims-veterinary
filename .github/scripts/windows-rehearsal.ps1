@@ -1,6 +1,8 @@
 # CI rehearsal of the owner's scripts (deploy/windows) on a real Windows runner, in Windows PowerShell 5.1
 # (.github/workflows/windows.yml; docs/testing.md; ADR-151, ADR-165..167, ADR-169). It runs the shipped scripts, unchanged:
-#   1. install.ps1: the runner's drive is not encrypted, so it must warn and go on (ADR-169);
+#   1. install.ps1, as the owner starts it: lancer-installation.ps1 from an installer folder shaped like
+#      deploy/bundle/make-bundle.sh's (it refuses a certificate made for another computer first); the runner's drive
+#      is not encrypted, so install.ps1 must warn and go on (ADR-169);
 #   2. a backup through the API, copied to the "Google Drive" folder (ADR-167);
 #   3. update.ps1 with a JAR carrying one more migration;
 #   4. update.ps1 with a JAR whose migration fails: the previous JAR and data must come back by themselves;
@@ -36,6 +38,9 @@ function global:Get-Credential([string] $UserName, [string] $Message) {
     $value = if ($UserName -eq 'root') { $RootPassword } else { $KeystorePassword }
     New-Object pscredential($UserName, (ConvertTo-SecureString $value -AsPlainText -Force))
 }
+
+# lancer-installation.ps1 asks for the Google Drive folder with Read-Host; answered the same way.
+function global:Read-Host([string] $Prompt) { $DriveFolder }
 
 # Runs a script as the owner does, without redirecting it (in Windows PowerShell 5.1 a redirection turns a program's
 # stderr line into an error that 'Stop' makes fatal), and reads what it printed from a transcript.
@@ -78,13 +83,24 @@ function Assert-Healthy([string] $When) {
     Check ((Get-Service ims).Status -eq 'Running') "service ims running $When"
 }
 
-Step '1. install.ps1 (ADR-165, ADR-169)'
-$installArguments = @{
-    Jar = $JarA; Keystore = $Keystore; CaCertificate = $CaCertificate; WinSW = $WinSW; DriveFolder = $DriveFolder
-}
-Push-Location $shipped
-$install = Invoke-Captured { & (Join-Path $shipped 'install.ps1') @installArguments }
-Pop-Location
+Step '1. INSTALLER.cmd -> lancer-installation.ps1 -> install.ps1 (ADR-165, ADR-169)'
+# The installer folder of deploy/bundle/make-bundle.sh and make-certificate.sh: JAR, certificates, WinSW, scripts.
+$bundle = Join-Path $env:RUNNER_TEMP 'IMS-installateur'
+New-Item -ItemType Directory -Force (Join-Path $bundle 'scripts') | Out-Null
+Copy-Item (Join-Path $shipped '*.ps1') (Join-Path $bundle 'scripts')
+Copy-Item $JarA (Join-Path $bundle 'ims-rehearsal.jar')
+Copy-Item $Keystore (Join-Path $bundle 'server.p12')
+Copy-Item $CaCertificate (Join-Path $bundle 'ims-ca.crt')
+Copy-Item $WinSW (Join-Path $bundle 'WinSW-x64.exe')
+$launcher = Join-Path $bundle 'scripts\lancer-installation.ps1'
+$identity = Join-Path $bundle 'certificat.txt'
+Set-Content $identity "NOM=AUTRE-PC`r`nADRESSE=127.0.0.1`r`nEXPIRE=-"
+$refused = $null
+try { & $launcher } catch { $refused = $_.Exception.Message }
+Check ($refused -match "fait pour l'ordinateur AUTRE-PC") 'a certificate made for another computer is refused'
+Check (-not (Get-Service ims -ErrorAction SilentlyContinue)) 'nothing was installed before that refusal'
+Set-Content $identity "NOM=$env:COMPUTERNAME`r`nADRESSE=127.0.0.1`r`nEXPIRE=-"
+$install = Invoke-Captured { & $launcher }
 Check ($install.Output -match "n'est pas chiffr.*ADR-169") 'install.ps1 warned that the drive is not encrypted'
 Check ($install.Output -match 'Installation termin') 'install.ps1 reached its end'
 $match = [regex]::Match($install.Output, 'Premier administrateur : admin / (\S+)')

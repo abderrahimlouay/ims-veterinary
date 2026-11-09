@@ -164,7 +164,12 @@ jobs:
 
       - name: WinSW v2.12.0
         shell: powershell
-        run: Invoke-WebRequest 'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe' -OutFile "$env:RUNNER_TEMP\WinSW-x64.exe" -UseBasicParsing
+        run: |
+          Invoke-WebRequest 'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe' -OutFile "$env:RUNNER_TEMP\WinSW-x64.exe" -UseBasicParsing
+          # The SHA-256 pinned in deploy/bundle/make-bundle.sh (WinSW publishes none).
+          $expected = ((Select-String -Path deploy/bundle/make-bundle.sh -Pattern "^WINSW_SHA256='([0-9a-f]{64})'").Matches[0].Groups[1].Value)
+          $actual = (Get-FileHash "$env:RUNNER_TEMP\WinSW-x64.exe" -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne $expected) { throw "WinSW-x64.exe SHA-256 $actual, expected $expected" }
 
       - name: Rehearsal (Windows PowerShell 5.1, as administrator)
         shell: powershell
