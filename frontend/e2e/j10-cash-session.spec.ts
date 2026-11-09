@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { OWN_USER_PASSWORDS } from './fixtures'
 import { logIn, logOut } from './session'
 import { aUser, asOwnUser, logInFirstTime, openCashSession } from './users'
+import { sidebar } from './navigation'
 
 /**
  * J10 (testing.md §8, Phase 9): on the cash session of the journey's own administrator, a manual cash in and a manual
@@ -26,7 +27,7 @@ async function movement(page: Page, direction: 'in' | 'out', amount: string, lab
 
 test('J10: manual movements, a supplier paid in cash, the session report, a manager closing another session', async ({ page }) => {
   const manager = await asOwnUser(page, 'j10')
-  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  const nav = await sidebar(page)
   const bar = page.getByTestId('cash-session')
   await openCashSession(page, '0')
 

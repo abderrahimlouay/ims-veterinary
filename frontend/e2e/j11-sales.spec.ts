@@ -3,6 +3,7 @@ import { ADMIN } from './fixtures'
 import { aLot, addToCart, aProduct, payByCheque } from './sales'
 import { logIn } from './session'
 import { aUser, logInFirstTime } from './users'
+import { sidebar } from './navigation'
 
 /**
  * The sales part of J11 (testing.md §8): a Seller sells at the counter and reads the document, but has no way to cancel
@@ -17,7 +18,7 @@ test('J11 sales: a Seller sells but cannot cancel nor return', async ({ page }) 
   await aLot(page, 'E2E Sellerval', 'J11-LOT', '12/2029', '5')
   const seller = await aUser(page, 'j11.seller', 'Seller')
   await logInFirstTime(page, seller)
-  await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('link', { name: 'Caisse', exact: true }).click()
+  await (await sidebar(page)).getByRole('link', { name: 'Caisse', exact: true }).click()
   await addToCart(page, 'E2E Sellerval', '1')
   await expect(page.getByTestId('pos-line')).toHaveCount(1)
   const number = await payByCheque(page)

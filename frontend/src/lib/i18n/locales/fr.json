@@ -29,7 +29,14 @@
     "supplierInvoices": "Factures fournisseurs",
     "cashSessions": "Sessions de caisse",
     "reports": "Rapports",
-    "backups": "Sauvegardes"
+    "backups": "Sauvegardes",
+    "groups": {
+      "sales": "Ventes",
+      "stock": "Stock",
+      "purchasing": "Achats",
+      "finance": "Finance et rapports",
+      "admin": "Administration"
+    }
   },
   "language": {
     "label": "Langue",

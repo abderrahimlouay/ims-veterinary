@@ -13,5 +13,7 @@ beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 afterEach(() => {
   cleanup()
   server.resetHandlers()
+  // The side navigation's open sections are a device preference (SideNav): no test inherits another's.
+  localStorage.removeItem('ims.nav.open')
 })
 afterAll(() => server.close())

@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { ADMIN } from './fixtures'
 import { aLot, addToCart, aProduct } from './sales'
 import { logIn } from './session'
+import { sidebar } from './navigation'
 
 /**
  * J7 (testing.md §8, Phase 9): two credit invoices for one customer; a cheque on the Account tab settles both, oldest
@@ -32,7 +33,7 @@ test('J7: a payment on account split across two credit invoices, the statement, 
   await aProduct(page, 'E2E-J7-ACC', 'E2E Comptaval', '10.0000')
   await aLot(page, 'E2E Comptaval', 'J7-LOT', '12/2029', '20')
 
-  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  const nav = await sidebar(page)
   await nav.getByRole('link', { name: 'Clients', exact: true }).click()
   await page.getByRole('link', { name: 'Nouveau client' }).click()
   await page.getByLabel('Nom', { exact: true }).fill(CUSTOMER)

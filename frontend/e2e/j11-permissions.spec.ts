@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { ADMIN, SELLER } from './fixtures'
 import { changePassword, logIn, logOut } from './session'
+import { sidebar } from './navigation'
 
 /**
  * J11 (testing.md §8): the administrator creates a Seller; the Seller has no administration entries and
@@ -12,7 +13,7 @@ test.describe.configure({ mode: 'serial', retries: 0 })
 test('J11: a restricted user sees forbidden states; the administrator sees the audit trail', async ({ page }) => {
   await page.goto('/login')
   await logIn(page, ADMIN.username, ADMIN.newPassword)
-  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  const nav = await sidebar(page)
   await expect(nav.getByRole('link', { name: 'Utilisateurs' })).toBeVisible()
   await expect(nav.getByRole('link', { name: "Journal d'audit" })).toBeVisible()
 

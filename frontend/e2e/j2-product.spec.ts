@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { ADMIN } from './fixtures'
 import { logIn } from './session'
+import { sidebar } from './navigation'
 
 /**
  * J2 (testing.md §8): reference data, product creation, ingredient and target species, search by name,
@@ -18,7 +19,7 @@ async function search(page: Page, text: string) {
 test('J2: create, describe, package, scan, find and archive a product', async ({ page }) => {
   await page.goto('/login')
   await logIn(page, ADMIN.username, ADMIN.newPassword)
-  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  const nav = await sidebar(page)
 
   await nav.getByRole('link', { name: 'Données de référence' }).click()
   await page.getByRole('tab', { name: 'Principes actifs (DCI)' }).click()

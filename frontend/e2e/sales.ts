@@ -1,8 +1,9 @@
 import { expect, type Page } from '@playwright/test'
+import { sidebar } from './navigation'
 
 /** A sellable product through the forms, with its first opening-stock lot. */
 export async function aProduct(page: Page, sku: string, name: string, price: string) {
-  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  const nav = await sidebar(page)
   await nav.getByRole('link', { name: 'Produits' }).click()
   await page.getByRole('link', { name: 'Nouveau produit' }).click()
   await page.getByLabel('SKU', { exact: true }).fill(sku)
@@ -15,7 +16,7 @@ export async function aProduct(page: Page, sku: string, name: string, price: str
 
 /** One lot of the product through the opening-stock page. */
 export async function aLot(page: Page, name: string, lot: string, expiry: string, quantity: string) {
-  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  const nav = await sidebar(page)
   await nav.getByRole('link', { name: 'Stock', exact: true }).click()
   await page.getByRole('link', { name: "Stock d'ouverture" }).click()
   await expect(page.getByRole('heading', { level: 1, name: "Stock d'ouverture" })).toBeVisible()

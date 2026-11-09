@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
@@ -44,5 +44,26 @@ describe('AppLayout', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Connexion' })).toBeInTheDocument()
     expect(router.state.location.search).toBe(`?redirect=${encodeURIComponent('/account')}`)
+  })
+
+  it('groups the navigation in sections: the current page section opens by itself, the others on demand, and stay open', async () => {
+    localStorage.removeItem('ims.nav.open')
+    serveMe(aUser({ permissions: ['product.read', 'lot.read', 'supplier.read', 'purchase.read', 'user.read'] }))
+    server.use(http.get('/api/products', () => HttpResponse.json({ content: [], page: { number: 0, size: 20, totalElements: 0, totalPages: 0 } })))
+    renderApp('/products')
+
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' })
+    expect(within(nav).getByRole('button', { name: 'Stock' })).toHaveAttribute('aria-expanded', 'true')
+    expect(within(nav).getByRole('link', { name: 'Lots' })).toBeInTheDocument()
+    const purchasing = within(nav).getByRole('button', { name: 'Achats' })
+    expect(purchasing).toHaveAttribute('aria-expanded', 'false')
+    expect(within(nav).queryByRole('link', { name: 'Fournisseurs' })).not.toBeInTheDocument()
+    expect(within(nav).queryByRole('button', { name: 'Ventes' })).not.toBeInTheDocument()
+
+    await userEvent.click(purchasing)
+    expect(within(nav).getByRole('link', { name: 'Fournisseurs' })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('ims.nav.open') ?? '[]')).toEqual(['stock', 'purchasing'])
+    await userEvent.click(within(nav).getByRole('button', { name: 'Stock' }))
+    expect(within(nav).queryByRole('link', { name: 'Lots' })).not.toBeInTheDocument()
   })
 })
