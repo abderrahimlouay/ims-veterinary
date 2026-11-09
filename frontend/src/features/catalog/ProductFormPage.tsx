@@ -96,10 +96,11 @@ function toWrite(v: Form, withPrices: boolean, version?: number): ProductWrite {
   }
 }
 
-function ReferenceSelect({ path, i18nKey, label, disabled, error, ...register }: {
+function ReferenceSelect({ path, i18nKey, label, hint, disabled, error, ...register }: {
   path: ReferenceListPath
   i18nKey: string
   label: string
+  hint?: string
   disabled?: boolean
   error?: string
 } & ReturnType<ReturnType<typeof useForm<Form>>['register']>) {
@@ -108,6 +109,7 @@ function ReferenceSelect({ path, i18nKey, label, disabled, error, ...register }:
   return (
     <SelectField
       label={label}
+      hint={hint}
       disabled={disabled}
       error={error}
       options={[{ value: '', label: '—' }, ...(items.data ?? []).map((r) => ({ value: String(r.id), label: referenceLabel(r, i18nKey, t) }))]}
@@ -162,11 +164,11 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
       {problem?.code === 'CONCURRENT_MODIFICATION' && <StaleNotice id={product?.id} />}
       <div className="grid grid-cols-2 gap-4">
         <TextField label={t('catalog.products.sku')} hint={product ? undefined : t('catalog.products.skuHint')} disabled={!editable} error={fieldError('sku')} {...register('sku')} />
-        <TextField label={t('catalog.products.name')} disabled={!editable} error={fieldError('commercialName')} {...register('commercialName')} />
-        <ReferenceSelect path="categories" i18nKey="categories" label={t('catalog.products.category')} disabled={!editable} error={fieldError('categoryId')} {...register('categoryId')} />
-        <ReferenceSelect path="dosage-forms" i18nKey="dosageForms" label={t('catalog.products.dosageForm')} disabled={!editable} error={fieldError('dosageFormId')} {...register('dosageFormId')} />
-        <ReferenceSelect path="manufacturers" i18nKey="manufacturers" label={t('catalog.products.manufacturer')} disabled={!editable} error={fieldError('manufacturerId')} {...register('manufacturerId')} />
-        <TextField label={t('catalog.products.baseUnit')} disabled={!editable} error={fieldError('baseUnit')} {...register('baseUnit')} />
+        <TextField label={t('catalog.products.name')} hint={t('help.catalog.products.name')} disabled={!editable} error={fieldError('commercialName')} {...register('commercialName')} />
+        <ReferenceSelect path="categories" i18nKey="categories" label={t('catalog.products.category')} hint={t('help.catalog.products.category')} disabled={!editable} error={fieldError('categoryId')} {...register('categoryId')} />
+        <ReferenceSelect path="dosage-forms" i18nKey="dosageForms" label={t('catalog.products.dosageForm')} hint={t('help.catalog.products.dosageForm')} disabled={!editable} error={fieldError('dosageFormId')} {...register('dosageFormId')} />
+        <ReferenceSelect path="manufacturers" i18nKey="manufacturers" label={t('catalog.products.manufacturer')} hint={t('help.catalog.products.manufacturer')} disabled={!editable} error={fieldError('manufacturerId')} {...register('manufacturerId')} />
+        <TextField label={t('catalog.products.baseUnit')} hint={t('help.catalog.products.baseUnit')} disabled={!editable} error={fieldError('baseUnit')} {...register('baseUnit')} />
         <label className="flex items-center gap-2 text-sm col-span-2">
           <input type="checkbox" disabled={!editable} {...register('divisible')} />
           {t('catalog.products.divisible')}
@@ -175,19 +177,19 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
           <input type="checkbox" disabled={!editable} {...register('returnRestockForbidden')} />
           {t('catalog.products.returnRestockForbidden')}
         </label>
-        <TextField label={t('catalog.products.vatRate')} inputMode="decimal" disabled={!editable} error={fieldError('vatRate')} {...register('vatRate')} />
-        <TextField label={t('catalog.products.minStock')} inputMode="decimal" disabled={!editable} error={fieldError('minStock')} {...register('minStock')} />
+        <TextField label={t('catalog.products.vatRate')} hint={t('help.catalog.products.vatRate')} inputMode="decimal" disabled={!editable} error={fieldError('vatRate')} {...register('vatRate')} />
+        <TextField label={t('catalog.products.minStock')} hint={t('help.catalog.products.minStock')} inputMode="decimal" disabled={!editable} error={fieldError('minStock')} {...register('minStock')} />
         <TextField
           label={t('catalog.products.maxStock')}
           inputMode="decimal"
           disabled={!editable}
           error={fieldError('maxStock')}
-          hint={inconsistent ? t('catalog.products.thresholdsInconsistent') : undefined}
+          hint={inconsistent ? t('catalog.products.thresholdsInconsistent') : t('help.catalog.products.maxStock')}
           {...register('maxStock')}
         />
-        <TextField label={t('catalog.products.reorderPoint')} inputMode="decimal" disabled={!editable} error={fieldError('reorderPoint')} {...register('reorderPoint')} />
-        <TextField label={t('catalog.products.purchasePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('purchasePrice')} {...register('purchasePrice')} />
-        <TextField label={t('catalog.products.salePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('salePrice')} {...register('salePrice')} />
+        <TextField label={t('catalog.products.reorderPoint')} hint={t('help.catalog.products.reorderPoint')} inputMode="decimal" disabled={!editable} error={fieldError('reorderPoint')} {...register('reorderPoint')} />
+        <TextField label={t('catalog.products.purchasePrice')} hint={t('help.catalog.products.purchasePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('purchasePrice')} {...register('purchasePrice')} />
+        <TextField label={t('catalog.products.salePrice')} hint={t('help.catalog.products.salePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('salePrice')} {...register('salePrice')} />
       </div>
       {editable && !canEditPrices && <p className="text-sm text-mute">{t('catalog.products.pricesReadOnly')}</p>}
       {product && (

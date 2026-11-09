@@ -117,8 +117,8 @@ function ManualPrice({ supplierId }: { supplierId: number }) {
       )}
       {add.error instanceof ApiError && add.error.problem.errors.length === 0 && <Alert tone="danger">{problemMessage(add.error.problem, t)}</Alert>}
       <div className="flex flex-wrap gap-4 items-end">
-        <TextField label={t('purchasing.prices.unitPrice')} inputMode="decimal" value={unitPrice} error={errors.unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
-        <TextField label={t('purchasing.prices.discountPct')} inputMode="decimal" value={discount} error={errors.discountPct} onChange={(e) => setDiscount(e.target.value)} />
+        <TextField label={t('purchasing.prices.unitPrice')} hint={t('help.purchasing.prices.unitPrice')} inputMode="decimal" value={unitPrice} error={errors.unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
+        <TextField label={t('purchasing.prices.discountPct')} hint={t('help.purchasing.prices.discountPct')} inputMode="decimal" value={discount} error={errors.discountPct} onChange={(e) => setDiscount(e.target.value)} />
         <Button type="submit" disabled={!product || add.isPending}>
           {t('purchasing.prices.addButton')}
         </Button>

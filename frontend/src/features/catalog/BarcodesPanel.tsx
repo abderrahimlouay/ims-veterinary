@@ -127,6 +127,7 @@ function BarcodeForm({ product }: { product: ProductDetail }) {
         <div className="grid grid-cols-3 gap-4">
           <TextField
             label={t('catalog.barcodes.code')}
+            hint={t('help.catalog.barcodes.code')}
             value={code}
             error={errors.code === undefined ? undefined : t(errors.code)}
             onChange={(e) => setCode(e.target.value)}
@@ -139,6 +140,7 @@ function BarcodeForm({ product }: { product: ProductDetail }) {
           />
           <SelectField
             label={t('catalog.barcodes.unit')}
+            hint={t('help.catalog.barcodes.unit')}
             value={unitId}
             error={errors.unitId === undefined ? undefined : t(errors.unitId)}
             onChange={(e) => setUnitId(e.target.value)}

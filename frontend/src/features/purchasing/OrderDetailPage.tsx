@@ -209,7 +209,7 @@ export function ReasonDialog({ title, pending, error, onClose, onConfirm }: {
     <Dialog title={title} onClose={onClose}>
       <form onSubmit={submit} noValidate className="flex flex-col gap-4">
         {error && error.problem.errors.length === 0 && <Alert tone="danger">{problemMessage(error.problem, t)}</Alert>}
-        <TextField label={t('purchasing.reason')} value={reason} error={missing ? t('fieldErrors.REQUIRED') : undefined} onChange={(e) => setReason(e.target.value)} />
+        <TextField label={t('purchasing.reason')} hint={t('help.purchasing.reason')} value={reason} error={missing ? t('fieldErrors.REQUIRED') : undefined} onChange={(e) => setReason(e.target.value)} />
         <div className="flex gap-2">
           <Button type="submit" disabled={pending}>
             {t('purchasing.confirm')}

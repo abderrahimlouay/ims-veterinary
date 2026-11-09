@@ -62,7 +62,7 @@ function OpenDialog({ onClose }: { onClose: () => void }) {
     <Dialog title={t('pos.session.openTitle')} onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-3">
         {open.error instanceof ApiError && <Alert tone="danger">{problemMessage(open.error.problem, t)}</Alert>}
-        <TextField label={t('pos.session.openingAmount')} inputMode="decimal" required value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <TextField label={t('pos.session.openingAmount')} hint={t('help.pos.session.openingAmount')} inputMode="decimal" required value={amount} onChange={(e) => setAmount(e.target.value)} />
         <Button type="submit" disabled={open.isPending}>
           {t('pos.session.openAction')}
         </Button>
@@ -83,7 +83,7 @@ function CloseDialog({ session, onClose, onClosed }: { session: CashSession; onC
     <Dialog title={t('pos.session.closeTitle')} onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-3">
         {close.error instanceof ApiError && <Alert tone="danger">{problemMessage(close.error.problem, t)}</Alert>}
-        <TextField label={t('pos.session.countedAmount')} inputMode="decimal" required value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <TextField label={t('pos.session.countedAmount')} hint={t('help.pos.session.countedAmount')} inputMode="decimal" required value={amount} onChange={(e) => setAmount(e.target.value)} />
         <Button type="submit" disabled={close.isPending}>
           {t('pos.session.close')}
         </Button>

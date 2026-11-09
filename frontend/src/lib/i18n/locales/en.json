@@ -1596,5 +1596,180 @@
       "description": "Every movement of a lot, its suppliers and its customers."
     },
     "revenueChart": "Revenue excl. VAT by period"
+  },
+  "help": {
+    "admin": {
+      "users": {
+        "username": "The login name, without spaces; it cannot be changed later.",
+        "role": "Decides what the person may do (sales, discounts, stock, finance…).",
+        "initialPassword": "Temporary: the person changes it at first login. At least 12 characters.",
+        "temporaryPassword": "Temporary: give it to the person, who changes it at the next login."
+      },
+      "company": {
+        "fields": {
+          "legalName": "The official name, printed at the top of every document.",
+          "legalForm": "E.g. SARL, EURL, sole trader.",
+          "nif": "Printed in the invoice header.",
+          "nis": "Printed in the invoice header.",
+          "rc": "Printed in the invoice header.",
+          "ai": "Printed in the invoice header.",
+          "approvalNumber": "The veterinary approval number, printed on documents.",
+          "bankAccount": "The bank account printed on invoices for transfers.",
+          "footerText": "Free text at the bottom of every document (hours, notices…)."
+        }
+      }
+    },
+    "auth": {
+      "password": {
+        "new": "At least 12 characters; an easy-to-remember phrase works well."
+      }
+    },
+    "catalog": {
+      "barcodes": {
+        "code": "The code printed under the box's barcode; the scanner reads it at the counter.",
+        "unit": "The unit this code stands for (e.g. the box): the counter then adds that unit."
+      },
+      "products": {
+        "name": "The name as written on the box; it appears on invoices.",
+        "category": "Used to find products, in reports and for counts by category.",
+        "dosageForm": "The medicine's form: injectable, powder, tablet…",
+        "manufacturer": "The laboratory that makes the product.",
+        "baseUnit": "The smallest quantity sold and counted (tablet, ml, vial…); stock and prices are in this unit.",
+        "vatRate": "This product's VAT rate on sale; copied onto each sales line.",
+        "minStock": "Alert level: below it, the product is flagged as low stock.",
+        "maxStock": "The quantity not to exceed; reorder proposals top up to this level.",
+        "reorderPoint": "When stock falls to this level, a reorder proposal is created.",
+        "purchasePrice": "Purchase price excl. tax of one base unit; proposed on orders without a supplier price.",
+        "salePrice": "Sale price excl. tax of one base unit; the counter uses it unless the customer has a special price."
+      },
+      "units": {
+        "nameField": "The selling unit's name, e.g. \"Box of 10\" or \"Carton\".",
+        "factorField": "How many base units it holds, e.g. 10 tablets per box.",
+        "priceField": "Price excl. tax of this unit; empty = base-unit price × the number of units."
+      }
+    },
+    "customers": {
+      "categories": {
+        "discountPct": "Discount given automatically to this category's customers on each line (except special prices)."
+      },
+      "credit": {
+        "amount": "The largest debt allowed; a credit sale going above it is refused."
+      },
+      "type": "Breeder, veterinarian or other: used in reports and to choose the follow-up veterinarian.",
+      "category": "Gives the customer the category's discount (see Customer categories).",
+      "farmingType": "E.g. dairy cattle, poultry, sheep.",
+      "wilaya": "Used in reports by region.",
+      "commune": "Used in reports by region.",
+      "taxId": "Tax identification number; printed on invoices when given.",
+      "nis": "Statistical identification number; printed on invoices when given.",
+      "rc": "Printed on invoices when given.",
+      "ai": "Printed on invoices when given.",
+      "paymentTermsDays": "Days given to pay a credit sale; sets the proposed due date.",
+      "veterinarian": "The veterinarian following this farm (a customer of type Veterinarian).",
+      "prices": {
+        "unitPrice": "This customer's special price excl. tax per base unit; it replaces the normal price and the category discount."
+      }
+    },
+    "account": {
+      "method": "How the money is paid: cash, cheque or transfer.",
+      "reference": "For a cheque or a transfer: its number.",
+      "reason": "Why; kept in the history."
+    },
+    "cash": {
+      "direction": "In: money put into the till; Out: money taken out (bank deposit, purchase…).",
+      "label": "Why, e.g. bank deposit, buying supplies."
+    },
+    "pos": {
+      "session": {
+        "countedAmount": "The money actually counted in the drawer; the difference from the expected amount is recorded.",
+        "openingAmount": "The change put in the drawer at the start of the day."
+      },
+      "method": "How the customer pays.",
+      "amount": "The part paid this way.",
+      "reference": "For a cheque or a transfer: its number.",
+      "docType": "Ticket: counter sale; Invoice: in a customer's name; Delivery note; Quote: a price offer.",
+      "scan": "Scan the barcode or type the product's name or SKU.",
+      "species": "The species treated: filters products and shows withdrawal periods (meat, milk, eggs).",
+      "category": "Shows the products of one therapeutic category.",
+      "globalDiscount": "Amount: taken off the total incl. tax; Percentage: off each line. The VAT goes down too.",
+      "globalDiscountValue": "E.g. 2000 for an amount, or 2 for 2 %.",
+      "line": {
+        "unit": "The unit sold (tablet, box…); the price follows the unit.",
+        "lot": "The lot proposed expires first; taking another needs the permission and a reason.",
+        "reason": "Required: why you are not taking the lot that expires first."
+      }
+    },
+    "supplierInvoices": {
+      "number": "The number written on the supplier's invoice.",
+      "invoiceDate": "The date written on the supplier's invoice.",
+      "dueDateOptional": "The payment deadline, if the supplier gives one.",
+      "totalTtc": "The total incl. tax written on the invoice.",
+      "receipt": "The goods receipt this invoice is for (optional).",
+      "supplierReturn": "For a credit note: the goods return it refunds (optional)."
+    },
+    "stock": {
+      "adjustment": {
+        "type": "Why the stock goes out: breakage, expiry, theft or internal use.",
+        "reason": "What happened; kept in the lot's history."
+      },
+      "opening": {
+        "quantity": "The quantity of this lot on hand today.",
+        "unit": "The unit you count in (box, vial…).",
+        "unitCost": "Purchase price excl. tax of one base unit of this lot; used for the margin."
+      }
+    },
+    "counts": {
+      "grid": {
+        "counted": "The quantity actually found on the shelf, in base units."
+      },
+      "notes": "Optional, e.g. the shelf or area counted."
+    },
+    "lots": {
+      "lotNumber": "The lot number printed on the box."
+    },
+    "purchasing": {
+      "receipts": {
+        "docRef": "The supplier's delivery note number.",
+        "lotNumber": "Required: the lot number printed on the box.",
+        "expiry": "Required: the expiry date printed on the box.",
+        "unitCost": "Purchase price excl. tax of one base unit, discount taken off; used for the margin."
+      },
+      "orders": {
+        "unit": "The unit ordered (box, carton…).",
+        "quantity": "In the chosen unit.",
+        "expectedDate": "Delivery date announced by the supplier (optional).",
+        "unitPrice": "Price excl. tax of one ordered unit; proposed from the supplier's latest price.",
+        "discountPct": "The supplier's discount on this line.",
+        "vatRate": "Taken from the product; change it if the supplier's invoice differs."
+      },
+      "prices": {
+        "unitPrice": "Negotiated price excl. tax per base unit.",
+        "discountPct": "Discount negotiated with the supplier."
+      },
+      "reason": "Why; kept in the history.",
+      "suppliers": {
+        "kind": "Laboratory (the maker) or wholesaler.",
+        "taxId": "The supplier's tax number (optional).",
+        "paymentTermsDays": "Days given to pay its invoices; sets their due date."
+      },
+      "returns": {
+        "quantity": "The quantity of this lot sent back to the supplier."
+      }
+    },
+    "reorder": {
+      "supplier": "The supplier of the chosen proposals: a draft purchase order is created for it."
+    },
+    "reports": {
+      "groupBy": "How to group the report's rows.",
+      "basis": "Stock value at the sale price or at its purchase cost."
+    },
+    "returns": {
+      "findDocument": "The number printed on the invoice or ticket, e.g. FAC-2026-000012 or TC-2026-000045.",
+      "quantityOf": "How much the customer brings back, in base units; 0 if none.",
+      "dispositionOf": "Back into stock if the box is intact and sellable; otherwise Discard.",
+      "discardReasonOf": "Why the goods are discarded; kept in the history.",
+      "discardNote": "A useful detail, especially for the reason \"Other\".",
+      "reason": "Why the customer brings the goods back."
+    }
   }
 }

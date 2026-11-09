@@ -201,6 +201,7 @@ Derived from the prototype; implement as typed, accessible components in `compon
 
 - Zod schema per form; field errors from the server (`errors[].field`) are mapped back onto the matching field (nested paths like `lines[0].lotNumber`).
 - Client rules mirror obvious server rules (required, positive quantity, max length, date formats) to give instant feedback; **business rules (stock, credit, FEFO) are only surfaced from server responses**.
+- **Field help:** an entry field whose meaning is not obvious carries one short sentence under it (`TextField`, `SelectField`, `PasswordInput` prop `hint`, announced with the field through `aria-describedby`, before any error); the texts live in the `help` namespace of the locales, keyed by the field's label key (`help.customers.paymentTermsDays`), in French, English and Arabic. Obvious fields (name, phone, e-mail, address, dates of a period) and the filters of list pages carry none. A help text states what the field is for and what the application does with it, never a rule the server does not enforce.
 - Submit guards: disable while pending; on success invalidate the relevant query keys; on `CONCURRENT_MODIFICATION` offer reload with diff.
 - Unsaved-changes prompt on navigation.
 

@@ -151,7 +151,7 @@ describe('manual adjustment (ADR-085)', () => {
     await userEvent.type(await screen.findByLabelText('Quantité retirée (tablet)'), '3')
     expect(screen.getByText('La quantité dépasse le solde du lot ; le serveur refusera.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: "Enregistrer l'ajustement" }))
-    expect(screen.getByLabelText('Motif')).toHaveAccessibleDescription('Ce champ est obligatoire.')
+    expect(screen.getByLabelText('Motif')).toHaveAccessibleDescription(/Ce champ est obligatoire\.$/)
     await userEvent.type(screen.getByLabelText('Motif'), 'Theft')
     await userEvent.click(screen.getByRole('button', { name: "Enregistrer l'ajustement" }))
     expect(await screen.findByText('Stock insuffisant : 1,000 tablet disponibles sur le lot.')).toBeInTheDocument()

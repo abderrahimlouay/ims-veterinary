@@ -144,15 +144,17 @@ function UnitForm({ product, unit, canEditPrices, onDone }: {
         {saved && <Alert tone="ok">{t('admin.saved')}</Alert>}
         {problem && <Alert tone="danger">{problem.code === 'CONCURRENT_MODIFICATION' ? t('catalog.units.stale') : problemMessage(problem, t)}</Alert>}
         <div className="grid grid-cols-3 gap-4">
-          <TextField label={t('catalog.units.nameField')} error={fieldError('name')} {...register('name')} />
+          <TextField label={t('catalog.units.nameField')} hint={t('help.catalog.units.nameField')} error={fieldError('name')} {...register('name')} />
           <TextField
             label={t('catalog.units.factorField', { baseUnit: product.baseUnit })}
+            hint={t('help.catalog.units.factorField')}
             inputMode="decimal"
             error={fieldError('factorToBase')}
             {...register('factorToBase')}
           />
           <TextField
             label={t('catalog.units.priceField')}
+            hint={t('help.catalog.units.priceField')}
             inputMode="decimal"
             disabled={!canEditPrices}
             error={fieldError('salePrice')}

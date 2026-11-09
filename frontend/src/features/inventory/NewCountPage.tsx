@@ -79,6 +79,7 @@ export function NewCountPage() {
             {scope === 'category' ? (
               <SelectField
                 label={t('catalog.products.category')}
+                hint={t('help.catalog.products.category')}
                 value={categoryId}
                 error={scopeError}
                 onChange={(e) => setCategoryId(e.target.value)}
@@ -89,7 +90,7 @@ export function NewCountPage() {
             )}
           </fieldset>
         )}
-        <TextField label={t('counts.notes')} value={notes} maxLength={1000} onChange={(e) => setNotes(e.target.value)} />
+        <TextField label={t('counts.notes')} hint={t('help.counts.notes')} value={notes} maxLength={1000} onChange={(e) => setNotes(e.target.value)} />
         {problem && <Alert tone="danger">{problemMessage(problem, t)}</Alert>}
         <div>
           <Button type="submit" disabled={open.isPending}>

@@ -164,6 +164,22 @@ describe('product pages', () => {
     expect(await screen.findByText('Ce champ est obligatoire.')).toBeInTheDocument()
   })
 
+  it('explains the fields with a help text announced with each of them', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    renderApp('/products/new')
+
+    expect(await screen.findByLabelText('Unité de base')).toHaveAccessibleDescription(
+      'La plus petite quantité vendue et comptée (comprimé, ml, flacon…) ; stocks et prix sont dans cette unité.',
+    )
+    expect(screen.getByLabelText('Catégorie thérapeutique')).toHaveAccessibleDescription(
+      'Sert à chercher les produits, aux rapports et aux inventaires par catégorie.',
+    )
+    expect(screen.getByLabelText('Seuil de réapprovisionnement')).toHaveAccessibleDescription(
+      'Quand le stock descend à ce niveau, une proposition de commande est créée.',
+    )
+  })
+
   it('is read-only for a reader and offers no archive', async () => {
     serveMe(aUser({ permissions: ['product.read'] }))
     serveReferences()
@@ -313,16 +329,17 @@ describe('product pages', () => {
     )
     renderApp('/products/5')
 
+    const help = 'Quantité à ne pas dépasser ; les propositions de commande complètent jusqu\'à ce niveau.'
     const max = await screen.findByLabelText('Stock maximum')
-    expect(max).not.toHaveAccessibleDescription()
+    expect(max).toHaveAccessibleDescription(help)
     await userEvent.clear(screen.getByLabelText('Seuil de réapprovisionnement'))
     await userEvent.type(screen.getByLabelText('Seuil de réapprovisionnement'), '10')
-    expect(max).not.toHaveAccessibleDescription()
+    expect(max).toHaveAccessibleDescription(help)
     await userEvent.clear(max)
     await userEvent.type(max, '10')
     expect(max).toHaveAccessibleDescription(/stock maximum ≤ seuil de réapprovisionnement/)
     await userEvent.clear(max)
-    expect(max).not.toHaveAccessibleDescription()
+    expect(max).toHaveAccessibleDescription(help)
     await userEvent.type(max, '10')
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 

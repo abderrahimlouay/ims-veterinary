@@ -84,6 +84,7 @@ function ReportView({ definition, canSeeCost }: { definition: ReportDefinition; 
         {definition.groups && (
           <SelectField
             label={t('reports.groupBy')}
+            hint={t('help.reports.groupBy')}
             value={params.groupBy}
             onChange={(e) => set('groupBy', e.target.value)}
             options={definition.groups.map((g, i) => ({ value: i === 0 ? '' : g, label: t(`reports.group.${g}`) }))}
@@ -100,6 +101,7 @@ function ReportView({ definition, canSeeCost }: { definition: ReportDefinition; 
         {has('basis') && (
           <SelectField
             label={t('reports.basis')}
+            hint={t('help.reports.basis')}
             value={params.basis}
             onChange={(e) => set('basis', e.target.value)}
             options={[

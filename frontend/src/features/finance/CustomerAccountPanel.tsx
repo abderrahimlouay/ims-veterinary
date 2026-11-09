@@ -249,13 +249,14 @@ function PaymentDialog({ customerId, invoices, onClose }: { customerId: number; 
         {problem && <Alert tone="danger">{problemMessage(problem, t)}</Alert>}
         <SelectField
           label={t('account.method')}
+          hint={t('help.account.method')}
           value={method}
           onChange={(e) => setMethod(e.target.value as PaymentMethod)}
           options={PAYMENT_METHODS.map((m) => ({ value: m, label: t(`pos.methods.${m}`) }))}
         />
         <TextField label={t('account.amount')} inputMode="decimal" value={amount} error={errors.amount} onChange={(e) => setAmount(e.target.value)} />
         {method !== 'cash' && (
-          <TextField label={t('account.reference')} value={reference} error={errors.reference} onChange={(e) => setReference(e.target.value)} />
+          <TextField label={t('account.reference')} hint={t('help.account.reference')} value={reference} error={errors.reference} onChange={(e) => setReference(e.target.value)} />
         )}
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-medium">{t('account.split')}</legend>
@@ -369,7 +370,7 @@ function ReverseDialog({ customerId, paymentId, onClose }: { customerId: number;
       <form onSubmit={submit} noValidate className="flex flex-col gap-3">
         <p className="text-sm text-mute">{t('account.reverseHint')}</p>
         {problem && <Alert tone="danger">{problemMessage(problem, t)}</Alert>}
-        <TextField label={t('account.reason')} maxLength={500} value={reason} error={error} onChange={(e) => setReason(e.target.value)} />
+        <TextField label={t('account.reason')} hint={t('help.account.reason')} maxLength={500} value={reason} error={error} onChange={(e) => setReason(e.target.value)} />
         <div className="flex gap-2">
           <Button type="submit" disabled={reverse.isPending}>
             {t('account.reverse')}

@@ -117,7 +117,7 @@ function CategoryForm({ category, onDone }: { category?: CustomerCategory; onDon
         <TextField label={t('customers.categories.name')} value={name} error={errors.name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="w-36">
-        <TextField label={t('customers.categories.discountPct')} inputMode="decimal" dir="ltr" value={discount} error={errors.discountPct} onChange={(e) => setDiscount(e.target.value)} />
+        <TextField label={t('customers.categories.discountPct')} hint={t('help.customers.categories.discountPct')} inputMode="decimal" dir="ltr" value={discount} error={errors.discountPct} onChange={(e) => setDiscount(e.target.value)} />
       </div>
       <Button type="submit" disabled={save.isPending}>
         {t('customers.save')}
