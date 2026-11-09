@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   label: string
   error?: string
+  /** Help shown under the field and announced with it (aria-describedby). */
+  hint?: string
   /** Adds a copy button (one-time temporary password, ADR-045); the value is copied without being shown. */
   copyable?: boolean
 }
@@ -17,12 +19,14 @@ const COPY_MESSAGE_MS = 3000
  * The value is only ever held by the input itself (and the clipboard, when the user copies it).
  */
 export const PasswordInput = forwardRef<HTMLInputElement, Props>(function PasswordInput(
-  { label, error, copyable = false, ...input },
+  { label, error, hint, copyable = false, ...input },
   ref,
 ) {
   const { t } = useTranslation()
   const id = useId()
   const errorId = `${id}-error`
+  const hintId = `${id}-hint`
+  const describedBy = [hint !== undefined ? hintId : undefined, error !== undefined ? errorId : undefined].filter(Boolean).join(' ')
   const [visible, setVisible] = useState(false)
   const [copyMessage, setCopyMessage] = useState<'copied' | 'copyFailed'>()
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -80,7 +84,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, Props>(function Passwo
           ref={setRefs}
           id={id}
           aria-invalid={error !== undefined}
-          aria-describedby={error !== undefined ? errorId : undefined}
+          aria-describedby={describedBy === '' ? undefined : describedBy}
           spellCheck={false}
           autoCapitalize="off"
           {...input}
@@ -110,6 +114,11 @@ export const PasswordInput = forwardRef<HTMLInputElement, Props>(function Passwo
       {copyable && (
         <p role="status" className={`text-sm ${copyMessage === 'copyFailed' ? 'text-danger' : 'text-ink'}`}>
           {copyMessage && t(`passwordInput.${copyMessage}`)}
+        </p>
+      )}
+      {hint !== undefined && (
+        <p id={hintId} className="text-xs text-mute">
+          {hint}
         </p>
       )}
       {error !== undefined && (

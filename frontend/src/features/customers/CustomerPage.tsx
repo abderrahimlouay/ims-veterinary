@@ -307,6 +307,7 @@ function CustomerForm({ customer, onSaved }: { customer?: CustomerDetail; onSave
       <TextField label={t('customers.name')} value={values.name} error={errors.name} onChange={(e) => set('name')(e.target.value)} />
       <SelectField
         label={t('customers.type')}
+        hint={t('help.customers.type')}
         value={values.customerType}
         error={errors.customerType}
         onChange={(e) => set('customerType')(e.target.value)}
@@ -314,22 +315,24 @@ function CustomerForm({ customer, onSaved }: { customer?: CustomerDetail; onSave
       />
       <SelectField
         label={t('customers.category')}
+        hint={t('help.customers.category')}
         value={values.categoryId}
         error={errors.categoryId}
         onChange={(e) => set('categoryId')(e.target.value)}
         options={[{ value: '', label: t('customers.noCategory') }, ...(categories.data ?? []).map((c) => ({ value: String(c.id), label: `${c.name} (${c.discountPct} %)` }))]}
       />
-      <TextField label={t('customers.farmingType')} value={values.farmingType} error={errors.farmingType} onChange={(e) => set('farmingType')(e.target.value)} />
-      <TextField label={t('customers.wilaya')} value={values.wilaya} error={errors.wilaya} onChange={(e) => set('wilaya')(e.target.value)} />
-      <TextField label={t('customers.commune')} value={values.commune} error={errors.commune} onChange={(e) => set('commune')(e.target.value)} />
+      <TextField label={t('customers.farmingType')} hint={t('help.customers.farmingType')} value={values.farmingType} error={errors.farmingType} onChange={(e) => set('farmingType')(e.target.value)} />
+      <TextField label={t('customers.wilaya')} hint={t('help.customers.wilaya')} value={values.wilaya} error={errors.wilaya} onChange={(e) => set('wilaya')(e.target.value)} />
+      <TextField label={t('customers.commune')} hint={t('help.customers.commune')} value={values.commune} error={errors.commune} onChange={(e) => set('commune')(e.target.value)} />
       <TextField label={t('customers.phone')} type="tel" dir="ltr" value={values.phone} error={errors.phone} onChange={(e) => set('phone')(e.target.value)} />
       <TextField label={t('customers.email')} type="email" dir="ltr" value={values.email} error={errors.email} onChange={(e) => set('email')(e.target.value)} />
-      <TextField label={t('customers.taxId')} dir="ltr" value={values.taxId} error={errors.taxId} onChange={(e) => set('taxId')(e.target.value)} />
-      <TextField label={t('customers.nis')} dir="ltr" value={values.nis} error={errors.nis} onChange={(e) => set('nis')(e.target.value)} />
-      <TextField label={t('customers.rc')} dir="ltr" value={values.rc} error={errors.rc} onChange={(e) => set('rc')(e.target.value)} />
-      <TextField label={t('customers.ai')} dir="ltr" value={values.ai} error={errors.ai} onChange={(e) => set('ai')(e.target.value)} />
+      <TextField label={t('customers.taxId')} hint={t('help.customers.taxId')} dir="ltr" value={values.taxId} error={errors.taxId} onChange={(e) => set('taxId')(e.target.value)} />
+      <TextField label={t('customers.nis')} hint={t('help.customers.nis')} dir="ltr" value={values.nis} error={errors.nis} onChange={(e) => set('nis')(e.target.value)} />
+      <TextField label={t('customers.rc')} hint={t('help.customers.rc')} dir="ltr" value={values.rc} error={errors.rc} onChange={(e) => set('rc')(e.target.value)} />
+      <TextField label={t('customers.ai')} hint={t('help.customers.ai')} dir="ltr" value={values.ai} error={errors.ai} onChange={(e) => set('ai')(e.target.value)} />
       <TextField
         label={t('customers.paymentTermsDays')}
+        hint={t('help.customers.paymentTermsDays')}
         inputMode="numeric"
         value={values.paymentTermsDays}
         error={errors.paymentTermsDays}
@@ -337,6 +340,7 @@ function CustomerForm({ customer, onSaved }: { customer?: CustomerDetail; onSave
       />
       <SelectField
         label={t('customers.veterinarian')}
+        hint={t('help.customers.veterinarian')}
         value={values.veterinarianId}
         error={errors.veterinarianId}
         onChange={(e) => set('veterinarianId')(e.target.value)}

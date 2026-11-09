@@ -286,6 +286,7 @@ export function PosPage() {
         <section className="flex flex-col gap-3" aria-label={t('pos.summary')}>
           <SelectField
             label={t('pos.docType')}
+            hint={t('help.pos.docType')}
             value={docType}
             disabled={sale !== null}
             onChange={(e) => {
@@ -438,7 +439,7 @@ function ItemEntry({
   return (
     <section className="flex flex-col gap-3" aria-label={t('pos.items')}>
       <form onSubmit={onScan} className="flex flex-col gap-3">
-        <TextField ref={scan} autoFocus type="search" label={t('pos.scan')} value={q} onChange={(e) => { setQ(e.target.value); setUnknownCode(null) }} />
+        <TextField ref={scan} autoFocus type="search" label={t('pos.scan')} hint={t('help.pos.scan')} value={q} onChange={(e) => { setQ(e.target.value); setUnknownCode(null) }} />
         <TextField label={t('pos.quantity')} inputMode="decimal" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
         <Button type="submit" variant="secondary" disabled={disabled}>
           {t('pos.addCode')}
@@ -446,6 +447,7 @@ function ItemEntry({
       </form>
       <SelectField
         label={t('pos.species')}
+        hint={t('help.pos.species')}
         value={speciesId}
         onChange={(e) => onSpecies(e.target.value)}
         options={[
@@ -455,6 +457,7 @@ function ItemEntry({
       />
       <SelectField
         label={t('pos.category')}
+        hint={t('help.pos.category')}
         value={categoryId}
         onChange={(e) => setCategoryId(e.target.value)}
         options={[
@@ -634,6 +637,7 @@ function GlobalDiscountForm({
     <form onSubmit={submit} aria-label={t('pos.globalDiscount')} className="flex flex-wrap items-end gap-2">
       <SelectField
         label={t('pos.globalDiscount')}
+        hint={t('help.pos.globalDiscount')}
         value={kind}
         onChange={(e) => setKind(e.target.value as GlobalDiscountKind)}
         options={[
@@ -641,7 +645,7 @@ function GlobalDiscountForm({
           { value: 'percent', label: t('pos.globalDiscountPercent') },
         ]}
       />
-      <TextField label={t('pos.globalDiscountValue')} inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} />
+      <TextField label={t('pos.globalDiscountValue')} hint={t('help.pos.globalDiscountValue')} inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} />
       <Button type="submit" variant="secondary" disabled={disabled || value.trim() === ''}>
         {t('pos.globalDiscountApply')}
       </Button>
@@ -677,12 +681,13 @@ function Payments({
         <div key={index} className="flex flex-col gap-2">
           <SelectField
             label={t('pos.method')}
+            hint={t('help.pos.method')}
             value={row.method}
             onChange={(e) => update(index, { method: e.target.value as PaymentMethod })}
             options={PAYMENT_METHODS.map((method) => ({ value: method, label: t(`pos.methods.${method}`) }))}
           />
-          {rows.length > 1 && <TextField label={t('pos.amount')} inputMode="decimal" required value={row.amount} onChange={(e) => update(index, { amount: e.target.value })} />}
-          {row.method !== 'cash' && <TextField label={t('pos.reference')} required maxLength={80} value={row.reference} onChange={(e) => update(index, { reference: e.target.value })} />}
+          {rows.length > 1 && <TextField label={t('pos.amount')} hint={t('help.pos.amount')} inputMode="decimal" required value={row.amount} onChange={(e) => update(index, { amount: e.target.value })} />}
+          {row.method !== 'cash' && <TextField label={t('pos.reference')} hint={t('help.pos.reference')} required maxLength={80} value={row.reference} onChange={(e) => update(index, { reference: e.target.value })} />}
         </div>
       ))}
       <Button type="button" variant="secondary" onClick={() => onRows([...rows, EMPTY_ROW])}>

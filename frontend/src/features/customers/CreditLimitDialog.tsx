@@ -85,7 +85,7 @@ export function CreditLimitDialog({ customer, onClose }: { customer: CustomerDet
           ))}
         </fieldset>
         {state === 'limit' && (
-          <TextField label={t('customers.credit.amount')} inputMode="decimal" dir="ltr" value={amount} error={error} onChange={(e) => setAmount(e.target.value)} />
+          <TextField label={t('customers.credit.amount')} hint={t('help.customers.credit.amount')} inputMode="decimal" dir="ltr" value={amount} error={error} onChange={(e) => setAmount(e.target.value)} />
         )}
         {state !== 'limit' && error && <Alert tone="danger">{error}</Alert>}
         {change.error instanceof ApiError && !change.error.problem.errors.some((v) => v.field === 'creditLimit') && (

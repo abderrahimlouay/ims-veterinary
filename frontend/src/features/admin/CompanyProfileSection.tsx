@@ -94,6 +94,7 @@ function CompanyProfileForm({ profile }: { profile: CompanyProfile | null }) {
             <TextField
               key={field}
               label={t(`admin.company.fields.${field}`)}
+              hint={t(`help.admin.company.fields.${field}`, { defaultValue: '' }) || undefined}
               dir={LTR.has(field) ? 'ltr' : undefined}
               type={field === 'email' ? 'email' : undefined}
               value={values[field]}

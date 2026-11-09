@@ -294,6 +294,7 @@ function MovementDialog({ sessionId, onClose }: { sessionId: number; onClose: ()
         {problem && <Alert tone="danger">{problemMessage(problem, t)}</Alert>}
         <SelectField
           label={t('cash.direction')}
+          hint={t('help.cash.direction')}
           value={values.direction}
           onChange={(e) => setValues((v) => ({ ...v, direction: e.target.value as MovementWrite['direction'] }))}
           options={[
@@ -310,6 +311,7 @@ function MovementDialog({ sessionId, onClose }: { sessionId: number; onClose: ()
         />
         <TextField
           label={t('cash.label')}
+          hint={t('help.cash.label')}
           maxLength={200}
           value={values.label}
           error={errors.label}
@@ -341,7 +343,7 @@ function CloseDialog({ session, onClose }: { session: CashSessionView; onClose: 
     <Dialog title={t('cash.closeTitle', { id: session.id })} onClose={onClose}>
       <form onSubmit={submit} noValidate className="flex flex-col gap-3">
         {close.error instanceof ApiError && <Alert tone="danger">{problemMessage(close.error.problem, t)}</Alert>}
-        <TextField label={t('pos.session.countedAmount')} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <TextField label={t('pos.session.countedAmount')} hint={t('help.pos.session.countedAmount')} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
         <div className="flex gap-2">
           <Button type="submit" disabled={close.isPending}>
             {t('pos.session.close')}

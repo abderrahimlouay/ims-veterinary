@@ -1596,5 +1596,180 @@
       "description": "Tous les mouvements d'un lot, ses fournisseurs et ses clients."
     },
     "revenueChart": "Chiffre d'affaires HT par période"
+  },
+  "help": {
+    "admin": {
+      "users": {
+        "username": "Identifiant de connexion, sans espaces ; il ne pourra plus être modifié.",
+        "role": "Détermine ce que la personne peut faire (ventes, remises, stock, finances…).",
+        "initialPassword": "Provisoire : la personne le changera à sa première connexion. Au moins 12 caractères.",
+        "temporaryPassword": "Provisoire : à donner à la personne, qui le changera à sa prochaine connexion."
+      },
+      "company": {
+        "fields": {
+          "legalName": "Le nom officiel, imprimé en tête de chaque document.",
+          "legalForm": "Ex. SARL, EURL, personne physique.",
+          "nif": "Imprimé en tête des factures.",
+          "nis": "Imprimé en tête des factures.",
+          "rc": "Imprimé en tête des factures.",
+          "ai": "Imprimé en tête des factures.",
+          "approvalNumber": "Le numéro d'agrément vétérinaire, imprimé sur les documents.",
+          "bankAccount": "Le RIB imprimé sur les factures pour les paiements par virement.",
+          "footerText": "Texte libre en bas de chaque document (horaires, mentions…)."
+        }
+      }
+    },
+    "auth": {
+      "password": {
+        "new": "Au moins 12 caractères ; une phrase facile à retenir convient bien."
+      }
+    },
+    "catalog": {
+      "barcodes": {
+        "code": "Le code imprimé sous le code-barres de la boîte ; la douchette le lit à la caisse.",
+        "unit": "L'unité que ce code représente (ex. la boîte) : la caisse ajoute alors cette unité."
+      },
+      "products": {
+        "name": "Le nom tel qu'il est écrit sur la boîte ; il apparaît sur les factures.",
+        "category": "Sert à chercher les produits, aux rapports et aux inventaires par catégorie.",
+        "dosageForm": "La forme du médicament : injectable, poudre, comprimé…",
+        "manufacturer": "Le laboratoire qui fabrique le produit.",
+        "baseUnit": "La plus petite quantité vendue et comptée (comprimé, ml, flacon…) ; stocks et prix sont dans cette unité.",
+        "vatRate": "Le taux de TVA de ce produit à la vente ; repris sur chaque ligne de vente.",
+        "minStock": "Seuil d'alerte : en dessous, le produit est signalé en stock bas.",
+        "maxStock": "Quantité à ne pas dépasser ; les propositions de commande complètent jusqu'à ce niveau.",
+        "reorderPoint": "Quand le stock descend à ce niveau, une proposition de commande est créée.",
+        "purchasePrice": "Prix d'achat HT d'une unité de base ; proposé sur les bons de commande sans prix du fournisseur.",
+        "salePrice": "Prix de vente HT d'une unité de base ; la caisse le prend sauf prix spécial du client."
+      },
+      "units": {
+        "nameField": "Le nom de l'unité de vente, ex. « Boîte de 10 » ou « Carton ».",
+        "factorField": "Combien d'unités de base elle contient, ex. 10 comprimés par boîte.",
+        "priceField": "Prix HT de cette unité ; vide = prix de l'unité de base × le nombre d'unités."
+      }
+    },
+    "customers": {
+      "categories": {
+        "discountPct": "Remise donnée automatiquement aux clients de cette catégorie sur chaque ligne (sauf prix spécial)."
+      },
+      "credit": {
+        "amount": "La dette maximale permise ; une vente à crédit qui la dépasse est refusée."
+      },
+      "type": "Éleveur, vétérinaire ou autre : sert aux rapports et au choix du vétérinaire de suivi.",
+      "category": "Donne au client la remise de sa catégorie (voir Catégories de clients).",
+      "farmingType": "Ex. bovins laitiers, volailles, ovins.",
+      "wilaya": "Sert aux rapports par région.",
+      "commune": "Sert aux rapports par région.",
+      "taxId": "Numéro d'identification fiscale ; imprimé sur les factures s'il est renseigné.",
+      "nis": "Numéro d'identification statistique ; imprimé sur les factures s'il est renseigné.",
+      "rc": "Imprimé sur les factures s'il est renseigné.",
+      "ai": "Imprimé sur les factures s'il est renseigné.",
+      "paymentTermsDays": "Jours laissés pour payer une vente à crédit ; donne la date d'échéance proposée.",
+      "veterinarian": "Le vétérinaire qui suit cet élevage (un client de type Vétérinaire).",
+      "prices": {
+        "unitPrice": "Prix spécial HT de ce client par unité de base ; il remplace le prix normal et la remise de catégorie."
+      }
+    },
+    "account": {
+      "method": "Comment l'argent est payé : espèces, chèque ou virement.",
+      "reference": "Pour un chèque ou un virement : son numéro.",
+      "reason": "Pourquoi ; gardé dans l'historique."
+    },
+    "cash": {
+      "direction": "Entrée : argent mis dans la caisse ; Sortie : argent retiré (dépôt en banque, achat…).",
+      "label": "Pourquoi, ex. dépôt à la banque, achat de fournitures."
+    },
+    "pos": {
+      "session": {
+        "countedAmount": "L'argent réellement compté dans le tiroir ; l'écart avec l'attendu est enregistré.",
+        "openingAmount": "La monnaie mise dans le tiroir en début de journée."
+      },
+      "method": "Comment le client paie.",
+      "amount": "La part payée avec ce mode.",
+      "reference": "Pour un chèque ou un virement : son numéro.",
+      "docType": "Ticket : vente au comptoir ; Facture : au nom d'un client ; Bon de livraison ; Devis : une offre de prix.",
+      "scan": "Scannez le code-barres ou tapez le nom ou le SKU du produit.",
+      "species": "L'espèce traitée : filtre les produits et affiche les délais d'attente (viande, lait, œufs).",
+      "category": "Montre les produits d'une catégorie thérapeutique.",
+      "globalDiscount": "Montant : retiré du total TTC ; Pourcentage : de chaque ligne. La TVA baisse aussi.",
+      "globalDiscountValue": "Ex. 2000 pour un montant, ou 2 pour 2 %.",
+      "line": {
+        "unit": "L'unité vendue (comprimé, boîte…) ; le prix suit l'unité.",
+        "lot": "Le lot proposé est celui qui périme en premier ; en prendre un autre demande l'autorisation et un motif.",
+        "reason": "Obligatoire : pourquoi vous ne prenez pas le lot qui périme en premier."
+      }
+    },
+    "supplierInvoices": {
+      "number": "Le numéro écrit sur la facture du fournisseur.",
+      "invoiceDate": "La date écrite sur la facture du fournisseur.",
+      "dueDateOptional": "Date limite de paiement, si le fournisseur en indique une.",
+      "totalTtc": "Le total TTC écrit sur la facture.",
+      "receipt": "La réception de marchandise que cette facture concerne (facultatif).",
+      "supplierReturn": "Pour un avoir : le retour de marchandise qu'il rembourse (facultatif)."
+    },
+    "stock": {
+      "adjustment": {
+        "type": "La raison de la sortie de stock : casse, péremption, vol ou usage interne.",
+        "reason": "Ce qui s'est passé ; gardé dans l'historique du lot."
+      },
+      "opening": {
+        "quantity": "La quantité de ce lot présente aujourd'hui.",
+        "unit": "L'unité dans laquelle vous comptez (boîte, flacon…).",
+        "unitCost": "Prix d'achat HT d'une unité de base de ce lot ; sert à la marge."
+      }
+    },
+    "counts": {
+      "grid": {
+        "counted": "La quantité réellement trouvée en rayon, en unité de base."
+      },
+      "notes": "Facultatif, ex. le rayon ou la zone comptée."
+    },
+    "lots": {
+      "lotNumber": "Le numéro de lot imprimé sur la boîte."
+    },
+    "purchasing": {
+      "receipts": {
+        "docRef": "Le numéro du bon de livraison du fournisseur.",
+        "lotNumber": "Obligatoire : le numéro de lot imprimé sur la boîte.",
+        "expiry": "Obligatoire : la date de péremption imprimée sur la boîte.",
+        "unitCost": "Prix d'achat HT d'une unité de base, remise déduite ; sert à la marge."
+      },
+      "orders": {
+        "unit": "L'unité commandée (boîte, carton…).",
+        "quantity": "Dans l'unité choisie.",
+        "expectedDate": "Date de livraison annoncée par le fournisseur (facultatif).",
+        "unitPrice": "Prix HT d'une unité commandée ; proposé depuis le dernier prix du fournisseur.",
+        "discountPct": "Remise du fournisseur sur cette ligne.",
+        "vatRate": "Repris du produit ; à modifier si la facture du fournisseur diffère."
+      },
+      "prices": {
+        "unitPrice": "Prix négocié HT par unité de base.",
+        "discountPct": "Remise négociée avec le fournisseur."
+      },
+      "reason": "Pourquoi ; gardé dans l'historique.",
+      "suppliers": {
+        "kind": "Laboratoire (le fabricant) ou grossiste.",
+        "taxId": "Le NIF du fournisseur (facultatif).",
+        "paymentTermsDays": "Jours laissés pour payer ses factures ; donne leur échéance."
+      },
+      "returns": {
+        "quantity": "La quantité de ce lot renvoyée au fournisseur."
+      }
+    },
+    "reorder": {
+      "supplier": "Le fournisseur des propositions choisies : un brouillon de bon de commande est créé pour lui."
+    },
+    "reports": {
+      "groupBy": "Comment regrouper les lignes du rapport.",
+      "basis": "Valeur du stock au prix de vente ou à son coût d'achat."
+    },
+    "returns": {
+      "findDocument": "Le numéro imprimé sur la facture ou le ticket, ex. FAC-2026-000012 ou TC-2026-000045.",
+      "quantityOf": "Combien le client rapporte, en unité de base ; 0 si rien.",
+      "dispositionOf": "Remise en stock si la boîte est intacte et vendable ; sinon Destruction.",
+      "discardReasonOf": "Pourquoi la marchandise est détruite ; gardé dans l'historique.",
+      "discardNote": "Un détail utile, surtout pour le motif « Autre ».",
+      "reason": "Pourquoi le client rapporte la marchandise."
+    }
   }
 }

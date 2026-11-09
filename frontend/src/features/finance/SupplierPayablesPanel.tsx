@@ -260,6 +260,7 @@ function PaymentDialog({ supplierId, invoices, onClose }: { supplierId: number; 
         {problem && <Alert tone="danger">{problemMessage(problem, t)}</Alert>}
         <SelectField
           label={t('account.method')}
+          hint={t('help.account.method')}
           value={method}
           onChange={(e) => setMethod(e.target.value as PaymentMethod)}
           options={PAYMENT_METHODS.map((m) => ({ value: m, label: t(`pos.methods.${m}`) }))}
@@ -268,7 +269,7 @@ function PaymentDialog({ supplierId, invoices, onClose }: { supplierId: number; 
         {method === 'cash' ? (
           <p className="text-xs text-mute">{t('supplierPayments.cashHint')}</p>
         ) : (
-          <TextField label={t('account.reference')} value={reference} error={errors.reference} onChange={(e) => setReference(e.target.value)} />
+          <TextField label={t('account.reference')} hint={t('help.account.reference')} value={reference} error={errors.reference} onChange={(e) => setReference(e.target.value)} />
         )}
         <fieldset className="flex flex-col gap-2">
           <legend className="text-sm font-medium">{t('account.split')}</legend>

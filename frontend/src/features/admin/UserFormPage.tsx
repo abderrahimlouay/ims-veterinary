@@ -70,17 +70,19 @@ export function NewUserPage() {
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4 max-w-md">
       <h1 className="text-2xl font-semibold">{t('admin.users.new')}</h1>
       {problem && <Alert tone="danger">{problemMessage(problem, t)}</Alert>}
-      <TextField label={t('admin.users.username')} error={fieldError(formState.errors.username?.message)} {...register('username')} />
+      <TextField label={t('admin.users.username')} hint={t('help.admin.users.username')} error={fieldError(formState.errors.username?.message)} {...register('username')} />
       <TextField label={t('admin.users.fullName')} error={fieldError(formState.errors.fullName?.message)} {...register('fullName')} />
       <TextField label={t('admin.users.email')} type="email" error={fieldError(formState.errors.email?.message)} {...register('email')} />
       <SelectField
         label={t('admin.users.role')}
+        hint={t('help.admin.users.role')}
         error={fieldError(formState.errors.roleId?.message)}
         options={[{ value: '', label: '—' }, ...(roles.data ?? []).map((r) => ({ value: String(r.id), label: r.name }))]}
         {...register('roleId')}
       />
       <PasswordInput
         label={t('admin.users.initialPassword')}
+        hint={t('help.admin.users.initialPassword')}
         autoComplete="new-password"
         error={fieldError(formState.errors.initialPassword?.message)}
         {...register('initialPassword')}
@@ -172,6 +174,7 @@ function UserDetailView({ user }: { user: UserDetail }) {
         <TextField label={t('admin.users.email')} type="email" disabled={!canManage} error={fieldError(formState.errors.email?.message)} {...register('email')} />
         <SelectField
           label={t('admin.users.role')}
+          hint={t('help.admin.users.role')}
           disabled={!canManage}
           error={fieldError(formState.errors.roleId?.message)}
           options={(roles.data ?? [{ id: user.role.id, name: user.role.name }]).map((r) => ({ value: String(r.id), label: r.name }))}
@@ -191,6 +194,7 @@ function UserDetailView({ user }: { user: UserDetail }) {
               <div className="flex flex-col gap-2 text-ink">
                 <PasswordInput
                   label={t('admin.users.temporaryPassword')}
+                  hint={t('help.admin.users.temporaryPassword')}
                   readOnly
                   copyable
                   autoComplete="off"

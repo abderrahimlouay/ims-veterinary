@@ -327,7 +327,7 @@ function ExistingLotForm({ countId, onDone }: { countId: number; onDone: () => v
         </button>
       </p>
       {(errors.lotId ?? errors.productId) && <Alert tone="danger">{errors.lotId ?? errors.productId}</Alert>}
-      <TextField label={t('counts.grid.counted')} inputMode="decimal" value={counted} error={errors.countedQty} onChange={(e) => setCounted(e.target.value)} />
+      <TextField label={t('counts.grid.counted')} hint={t('help.counts.grid.counted')} inputMode="decimal" value={counted} error={errors.countedQty} onChange={(e) => setCounted(e.target.value)} />
       {problem && <Alert tone="danger">{problemMessage(problem, t)}</Alert>}
       <div className="flex gap-3">
         <Button type="submit" disabled={add.isPending || counted.trim() === ''}>
@@ -421,7 +421,7 @@ function UnknownLotForm({ countId, onDone }: { countId: number; onDone: () => vo
         </button>
       </p>
       {errors.productId && <Alert tone="danger">{errors.productId}</Alert>}
-      <TextField label={t('lots.lotNumber')} value={lotNumber} maxLength={60} error={errors.lotNumber} onChange={(e) => setLotNumber(e.target.value)} />
+      <TextField label={t('lots.lotNumber')} hint={t('help.lots.lotNumber')} value={lotNumber} maxLength={60} error={errors.lotNumber} onChange={(e) => setLotNumber(e.target.value)} />
       <TextField
         label={t('stock.opening.expiry')}
         hint={expiryDate !== null ? formatDate(expiryDate) : t('stock.opening.expiryHint')}
@@ -429,8 +429,8 @@ function UnknownLotForm({ countId, onDone }: { countId: number; onDone: () => vo
         error={expiryError ?? errors.expiryDate}
         onChange={(e) => setExpiry(e.target.value)}
       />
-      <TextField label={t('stock.opening.unitCost', { unit: product.baseUnit })} inputMode="decimal" value={unitCost} error={errors.unitCost} onChange={(e) => setUnitCost(e.target.value)} />
-      <TextField label={t('counts.grid.counted')} inputMode="decimal" value={counted} error={errors.countedQty} onChange={(e) => setCounted(e.target.value)} />
+      <TextField label={t('stock.opening.unitCost', { unit: product.baseUnit })} hint={t('help.stock.opening.unitCost')} inputMode="decimal" value={unitCost} error={errors.unitCost} onChange={(e) => setUnitCost(e.target.value)} />
+      <TextField label={t('counts.grid.counted')} hint={t('help.counts.grid.counted')} inputMode="decimal" value={counted} error={errors.countedQty} onChange={(e) => setCounted(e.target.value)} />
       {problem && <Alert tone="danger">{problemMessage(problem, t)}</Alert>}
       <div>
         <Button type="submit" disabled={add.isPending}>

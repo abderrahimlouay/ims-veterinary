@@ -217,7 +217,7 @@ function ReceiptForm({ order }: { order?: PurchaseOrderDetail }) {
           </div>
         )}
         <div className="w-56">
-          <TextField label={t('purchasing.receipts.docRef')} value={docRef} error={errors.supplierDocRef} onChange={(e) => setDocRef(e.target.value)} />
+          <TextField label={t('purchasing.receipts.docRef')} hint={t('help.purchasing.receipts.docRef')} value={docRef} error={errors.supplierDocRef} onChange={(e) => setDocRef(e.target.value)} />
         </div>
       </div>
       {lines.length === 0 ? (
@@ -267,11 +267,12 @@ function ReceiptLineEditor({ line, error, onChange, onSplit, onRemove }: {
       </legend>
       {(error('productId') ?? error('poLineId')) && <p className="w-full text-sm text-danger">{error('productId') ?? error('poLineId')}</p>}
       <div className="w-40">
-        <TextField label={t('purchasing.receipts.lotNumber')} value={line.lotNumber} error={error('lotNumber')} onChange={(e) => onChange({ lotNumber: e.target.value })} />
+        <TextField label={t('purchasing.receipts.lotNumber')} hint={t('help.purchasing.receipts.lotNumber')} value={line.lotNumber} error={error('lotNumber')} onChange={(e) => onChange({ lotNumber: e.target.value })} />
       </div>
       <div className="w-40">
         <TextField
           label={t('purchasing.receipts.expiry')}
+          hint={t('help.purchasing.receipts.expiry')}
           placeholder={t('purchasing.receipts.expiryHint')}
           value={line.expiry}
           error={error('expiryDate') ?? (expired ? t('purchasing.receipts.expired') : undefined)}
@@ -281,6 +282,7 @@ function ReceiptLineEditor({ line, error, onChange, onSplit, onRemove }: {
       <div className="w-36">
         <SelectField
           label={t('purchasing.orders.unit')}
+          hint={t('help.purchasing.orders.unit')}
           value={line.unitId}
           error={error('unitId')}
           onChange={(e) => onChange({ unitId: e.target.value })}
@@ -288,10 +290,10 @@ function ReceiptLineEditor({ line, error, onChange, onSplit, onRemove }: {
         />
       </div>
       <div className="w-28">
-        <TextField label={t('purchasing.orders.quantity')} inputMode="decimal" value={line.quantity} error={error('quantity')} onChange={(e) => onChange({ quantity: e.target.value })} />
+        <TextField label={t('purchasing.orders.quantity')} hint={t('help.purchasing.orders.quantity')} inputMode="decimal" value={line.quantity} error={error('quantity')} onChange={(e) => onChange({ quantity: e.target.value })} />
       </div>
       <div className="w-36">
-        <TextField label={t('purchasing.receipts.unitCost')} inputMode="decimal" value={line.unitCost} error={error('unitCost')} onChange={(e) => onChange({ unitCost: e.target.value })} />
+        <TextField label={t('purchasing.receipts.unitCost')} hint={t('help.purchasing.receipts.unitCost')} inputMode="decimal" value={line.unitCost} error={error('unitCost')} onChange={(e) => onChange({ unitCost: e.target.value })} />
       </div>
       <label className="flex items-center gap-2 h-10 text-sm">
         <input type="checkbox" checked={line.conforming} onChange={(e) => onChange({ conforming: e.target.checked })} />

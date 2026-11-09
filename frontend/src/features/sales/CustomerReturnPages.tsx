@@ -271,7 +271,7 @@ export function NewCustomerReturnPage() {
     <section className="flex flex-col gap-4 max-w-5xl">
       <h1 className="text-2xl font-semibold">{t('returns.new')}</h1>
       <form onSubmit={(e) => void find(e)} className="flex items-end gap-3 max-w-xl">
-        <TextField label={t('returns.findDocument')} value={number} error={findError} onChange={(e) => setNumber(e.target.value)} />
+        <TextField label={t('returns.findDocument')} hint={t('help.returns.findDocument')} value={number} error={findError} onChange={(e) => setNumber(e.target.value)} />
         <Button type="submit" variant="secondary" disabled={number.trim() === ''}>
           {t('returns.find')}
         </Button>
@@ -315,6 +315,7 @@ export function NewCustomerReturnPage() {
                     <td className="w-32">
                       <TextField
                         label={t('returns.quantityOf', { name: line.product.commercialName })}
+                        hint={t('help.returns.quantityOf')}
                         inputMode="decimal"
                         value={s.quantity}
                         error={errors[`row${row}.quantity`] ?? errors[`row${row}.saleLineId`]}
@@ -336,6 +337,7 @@ export function NewCustomerReturnPage() {
                     <td className="flex flex-col gap-2 py-2 w-72">
                       <SelectField
                         label={t('returns.dispositionOf', { name: line.product.commercialName })}
+                        hint={t('help.returns.dispositionOf')}
                         value={s.disposition}
                         error={errors[`row${row}.disposition`]}
                         onChange={(e) => update(line.saleLineId, { disposition: e.target.value as Disposition })}
@@ -350,13 +352,14 @@ export function NewCustomerReturnPage() {
                         <>
                           <SelectField
                             label={t('returns.discardReasonOf', { name: line.product.commercialName })}
+                            hint={t('help.returns.discardReasonOf')}
                             value={s.discardReason}
                             error={errors[`row${row}.discardReason`]}
                             onChange={(e) => update(line.saleLineId, { discardReason: e.target.value as DiscardReason | '' })}
                             options={[{ value: '', label: '—' }, ...DISCARD_REASONS.map((r) => ({ value: r, label: t(`returns.reasons.${r}`) }))]}
                           />
                           {s.discardReason === 'other' && (
-                            <TextField label={t('returns.discardNote')} value={s.discardNote} error={errors[`row${row}.discardNote`]} onChange={(e) => update(line.saleLineId, { discardNote: e.target.value })} />
+                            <TextField label={t('returns.discardNote')} hint={t('help.returns.discardNote')} value={s.discardNote} error={errors[`row${row}.discardNote`]} onChange={(e) => update(line.saleLineId, { discardNote: e.target.value })} />
                           )}
                         </>
                       )}
@@ -367,7 +370,7 @@ export function NewCustomerReturnPage() {
             </tbody>
           </table>
           <div className="w-96">
-            <TextField label={t('returns.reason')} value={reason} error={errors.reason} onChange={(e) => setReason(e.target.value)} />
+            <TextField label={t('returns.reason')} hint={t('help.returns.reason')} value={reason} error={errors.reason} onChange={(e) => setReason(e.target.value)} />
           </div>
           <div>
             <Button type="button" variant="secondary" onClick={() => void doReview()}>
@@ -395,6 +398,7 @@ export function NewCustomerReturnPage() {
                       <div className="w-48">
                         <SelectField
                           label={t('pos.method')}
+                          hint={t('help.pos.method')}
                           value={tender.method}
                           onChange={(e) => setTenders((ts) => ts.map((x, j) => (j === i ? { ...x, method: e.target.value as PaymentMethod } : x)))}
                           options={PAYMENT_METHODS.map((m) => ({ value: m, label: t(`pos.methods.${m}`) }))}
@@ -403,6 +407,7 @@ export function NewCustomerReturnPage() {
                       <div className="w-36">
                         <TextField
                           label={t('pos.amount')}
+                          hint={t('help.pos.amount')}
                           inputMode="decimal"
                           value={tender.amount}
                           error={errors[`refund[${i}].amount`]}
@@ -413,6 +418,7 @@ export function NewCustomerReturnPage() {
                         <div className="w-48">
                           <TextField
                             label={t('pos.reference')}
+                            hint={t('help.pos.reference')}
                             value={tender.reference}
                             error={errors[`refund[${i}].reference`]}
                             onChange={(e) => setTenders((ts) => ts.map((x, j) => (j === i ? { ...x, reference: e.target.value } : x)))}

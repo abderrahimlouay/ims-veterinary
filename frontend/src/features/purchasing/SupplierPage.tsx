@@ -196,14 +196,16 @@ function SupplierForm({ supplier, onSaved }: { supplier?: SupplierDetail; onSave
       <TextField label={t('purchasing.suppliers.name')} value={values.name} error={errors.name} onChange={(e) => set('name')(e.target.value)} />
       <SelectField
         label={t('purchasing.suppliers.kind')}
+        hint={t('help.purchasing.suppliers.kind')}
         value={values.kind}
         error={errors.kind}
         onChange={(e) => set('kind')(e.target.value)}
         options={SUPPLIER_KINDS.map((k) => ({ value: k, label: t(`purchasing.suppliers.kinds.${k}`) }))}
       />
-      <TextField label={t('purchasing.suppliers.taxId')} value={values.taxId} error={errors.taxId} onChange={(e) => set('taxId')(e.target.value)} />
+      <TextField label={t('purchasing.suppliers.taxId')} hint={t('help.purchasing.suppliers.taxId')} value={values.taxId} error={errors.taxId} onChange={(e) => set('taxId')(e.target.value)} />
       <TextField
         label={t('purchasing.suppliers.paymentTermsDays')}
+        hint={t('help.purchasing.suppliers.paymentTermsDays')}
         inputMode="numeric"
         value={values.paymentTermsDays}
         error={errors.paymentTermsDays}

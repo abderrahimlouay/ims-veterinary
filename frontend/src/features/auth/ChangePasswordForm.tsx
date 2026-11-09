@@ -80,6 +80,7 @@ export function ChangePasswordForm({ onChanged }: { onChanged?: () => void }) {
       />
       <PasswordInput
         label={t('auth.password.new')}
+        hint={t('help.auth.password.new')}
         autoComplete="new-password"
         error={fieldError('newPassword')}
         {...register('newPassword')}

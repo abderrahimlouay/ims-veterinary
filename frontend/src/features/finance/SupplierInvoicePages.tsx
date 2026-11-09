@@ -235,15 +235,16 @@ export function NewSupplierInvoicePage() {
           onChange={(e) => setValues((v) => ({ ...v, supplierId: e.target.value, receiptId: '', supplierReturnId: '' }))}
           options={[{ value: '', label: '—' }, ...(suppliers.data?.content ?? []).map((s) => ({ value: String(s.id), label: s.name }))]}
         />
-        <TextField label={t('supplierInvoices.number')} value={values.invoiceNumber} error={errors.invoiceNumber} onChange={(e) => set('invoiceNumber')(e.target.value)} />
+        <TextField label={t('supplierInvoices.number')} hint={t('help.supplierInvoices.number')} value={values.invoiceNumber} error={errors.invoiceNumber} onChange={(e) => set('invoiceNumber')(e.target.value)} />
         <div className="grid grid-cols-2 gap-3">
-          <TextField label={t('supplierInvoices.invoiceDate')} type="date" value={values.invoiceDate} error={errors.invoiceDate} onChange={(e) => set('invoiceDate')(e.target.value)} />
-          <TextField label={t('supplierInvoices.dueDateOptional')} type="date" value={values.dueDate} error={errors.dueDate} onChange={(e) => set('dueDate')(e.target.value)} />
+          <TextField label={t('supplierInvoices.invoiceDate')} hint={t('help.supplierInvoices.invoiceDate')} type="date" value={values.invoiceDate} error={errors.invoiceDate} onChange={(e) => set('invoiceDate')(e.target.value)} />
+          <TextField label={t('supplierInvoices.dueDateOptional')} hint={t('help.supplierInvoices.dueDateOptional')} type="date" value={values.dueDate} error={errors.dueDate} onChange={(e) => set('dueDate')(e.target.value)} />
         </div>
-        <TextField label={t('supplierInvoices.totalTtc')} inputMode="decimal" value={values.totalTtc} error={errors.totalTtc} onChange={(e) => set('totalTtc')(e.target.value)} />
+        <TextField label={t('supplierInvoices.totalTtc')} hint={t('help.supplierInvoices.totalTtc')} inputMode="decimal" value={values.totalTtc} error={errors.totalTtc} onChange={(e) => set('totalTtc')(e.target.value)} />
         {values.supplierId !== '' && (
           <SelectField
             label={t('supplierInvoices.receipt')}
+            hint={t('help.supplierInvoices.receipt')}
             value={values.receiptId}
             error={errors.receiptId}
             onChange={(e) => set('receiptId')(e.target.value)}
@@ -253,6 +254,7 @@ export function NewSupplierInvoicePage() {
         {creditNote && values.supplierId !== '' && (
           <SelectField
             label={t('supplierInvoices.supplierReturn')}
+            hint={t('help.supplierInvoices.supplierReturn')}
             value={values.supplierReturnId}
             error={errors.supplierReturnId}
             onChange={(e) => set('supplierReturnId')(e.target.value)}

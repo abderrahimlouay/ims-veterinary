@@ -180,7 +180,7 @@ function OrderEditor({ order }: { order?: PurchaseOrderDetail }) {
           />
         </div>
         <div className="w-56">
-          <TextField label={t('purchasing.orders.expectedDate')} type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
+          <TextField label={t('purchasing.orders.expectedDate')} hint={t('help.purchasing.orders.expectedDate')} type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
         </div>
       </div>
       <h2 className="text-lg font-semibold">{t('purchasing.orders.lines')}</h2>
@@ -236,6 +236,7 @@ function LineEditor({ line, errors, onChange, onUnit, onRemove }: {
       <div className="w-40">
         <SelectField
           label={t('purchasing.orders.unit')}
+          hint={t('help.purchasing.orders.unit')}
           value={line.unitId}
           error={errors('unitId')}
           onChange={(e) => onUnit(e.target.value)}
@@ -243,16 +244,16 @@ function LineEditor({ line, errors, onChange, onUnit, onRemove }: {
         />
       </div>
       <div className="w-28">
-        <TextField label={t('purchasing.orders.quantity')} inputMode="decimal" value={line.quantity} error={errors('quantity')} onChange={(e) => onChange({ quantity: e.target.value })} />
+        <TextField label={t('purchasing.orders.quantity')} hint={t('help.purchasing.orders.quantity')} inputMode="decimal" value={line.quantity} error={errors('quantity')} onChange={(e) => onChange({ quantity: e.target.value })} />
       </div>
       <div className="w-36">
-        <TextField label={t('purchasing.orders.unitPrice')} inputMode="decimal" value={line.unitPrice} error={errors('unitPrice')} onChange={(e) => onChange({ unitPrice: e.target.value })} />
+        <TextField label={t('purchasing.orders.unitPrice')} hint={t('help.purchasing.orders.unitPrice')} inputMode="decimal" value={line.unitPrice} error={errors('unitPrice')} onChange={(e) => onChange({ unitPrice: e.target.value })} />
       </div>
       <div className="w-28">
-        <TextField label={t('purchasing.orders.discountPct')} inputMode="decimal" value={line.discountPct} error={errors('discountPct')} onChange={(e) => onChange({ discountPct: e.target.value })} />
+        <TextField label={t('purchasing.orders.discountPct')} hint={t('help.purchasing.orders.discountPct')} inputMode="decimal" value={line.discountPct} error={errors('discountPct')} onChange={(e) => onChange({ discountPct: e.target.value })} />
       </div>
       <div className="w-28">
-        <TextField label={t('purchasing.orders.vatRate')} inputMode="decimal" value={line.vatRate} error={errors('vatRate')} onChange={(e) => onChange({ vatRate: e.target.value })} />
+        <TextField label={t('purchasing.orders.vatRate')} hint={t('help.purchasing.orders.vatRate')} inputMode="decimal" value={line.vatRate} error={errors('vatRate')} onChange={(e) => onChange({ vatRate: e.target.value })} />
       </div>
       <Button type="button" variant="secondary" onClick={onRemove} aria-label={t('purchasing.orders.removeLine', { name: line.name })}>
         {t('purchasing.orders.remove')}

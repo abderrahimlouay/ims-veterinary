@@ -155,7 +155,7 @@ export function NewSupplierReturnPage() {
             />
           </div>
           <div className="w-96">
-            <TextField label={t('purchasing.reason')} value={reason} error={errors.reason} onChange={(e) => setReason(e.target.value)} />
+            <TextField label={t('purchasing.reason')} hint={t('help.purchasing.reason')} value={reason} error={errors.reason} onChange={(e) => setReason(e.target.value)} />
           </div>
         </div>
         {lines.map((l, i) => (
@@ -167,6 +167,7 @@ export function NewSupplierReturnPage() {
             <div className="w-40">
               <TextField
                 label={t('purchasing.returns.quantity', { unit: l.lot.product.baseUnit })}
+                hint={t('help.purchasing.returns.quantity')}
                 inputMode="decimal"
                 value={l.quantity}
                 error={errors[`lines[${i}].quantity`]}

@@ -72,6 +72,7 @@ export function PosLineDialog({
         <TextField label={t('pos.quantity')} inputMode="decimal" required value={quantity} onChange={(e) => setQuantity(e.target.value)} />
         <SelectField
           label={t('pos.line.unit')}
+          hint={t('help.pos.line.unit')}
           value={unitId}
           onChange={(e) => setUnitId(e.target.value)}
           options={[
@@ -86,6 +87,7 @@ export function PosLineDialog({
           <>
             <SelectField
               label={t('pos.line.lot')}
+              hint={t('help.pos.line.lot')}
               value={lotId}
               onChange={(e) => setLotId(e.target.value)}
               options={[
@@ -93,7 +95,7 @@ export function PosLineDialog({
                 ...sellable.map((l) => ({ value: String(l.id), label: `${l.lotNumber} · ${formatDate(l.expiryDate)} · ${formatQuantity(l.quantityOnHand)}` })),
               ]}
             />
-            {lotId !== '' && <TextField label={t('pos.line.reason')} required maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />}
+            {lotId !== '' && <TextField label={t('pos.line.reason')} hint={t('help.pos.line.reason')} required maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />}
           </>
         )}
         <Button type="submit" disabled={saving}>

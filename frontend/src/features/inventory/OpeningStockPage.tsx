@@ -205,7 +205,7 @@ function OpeningForm({ productId, onChangeProduct, onDone }: {
           {t('stock.opening.changeProduct')}
         </button>
       </div>
-      <TextField label={t('lots.lotNumber')} value={lotNumber} maxLength={60} error={errors.lotNumber} onChange={(e) => setLotNumber(e.target.value)} />
+      <TextField label={t('lots.lotNumber')} hint={t('help.lots.lotNumber')} value={lotNumber} maxLength={60} error={errors.lotNumber} onChange={(e) => setLotNumber(e.target.value)} />
       <TextField
         label={t('stock.opening.expiry')}
         hint={expiryDate !== null ? formatDate(expiryDate) : t('stock.opening.expiryHint')}
@@ -215,9 +215,10 @@ function OpeningForm({ productId, onChangeProduct, onDone }: {
       />
       {expired && <Alert tone="danger">{t('stock.opening.expired')}</Alert>}
       <div className="grid grid-cols-2 gap-3">
-        <TextField label={t('stock.opening.quantity')} inputMode="decimal" value={quantity} error={errors.quantity} onChange={(e) => setQuantity(e.target.value)} />
+        <TextField label={t('stock.opening.quantity')} hint={t('help.stock.opening.quantity')} inputMode="decimal" value={quantity} error={errors.quantity} onChange={(e) => setQuantity(e.target.value)} />
         <SelectField
           label={t('stock.opening.unit')}
+          hint={t('help.stock.opening.unit')}
           value={unitId}
           error={errors.unitId}
           onChange={(e) => setUnitId(e.target.value)}

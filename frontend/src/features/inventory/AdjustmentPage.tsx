@@ -154,6 +154,7 @@ function AdjustmentForm({ lotId, onChangeLot }: { lotId: number; onChangeLot: ()
       </div>
       <SelectField
         label={t('stock.adjustment.type')}
+        hint={t('help.stock.adjustment.type')}
         value={type}
         error={errors.type}
         onChange={(e) => setType(e.target.value as AdjustmentType)}
@@ -170,6 +171,7 @@ function AdjustmentForm({ lotId, onChangeLot }: { lotId: number; onChangeLot: ()
       {after !== null && isNegativeDecimal(after) && <Alert tone="danger">{t('stock.adjustment.tooMuch')}</Alert>}
       <TextField
         label={t('stock.adjustment.reason')}
+        hint={t('help.stock.adjustment.reason')}
         value={reason}
         maxLength={REASON_MAX}
         error={errors.reason}

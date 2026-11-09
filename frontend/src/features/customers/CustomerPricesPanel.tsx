@@ -131,7 +131,7 @@ function PriceForm({ customerId, productId, current, onDone }: { customerId: num
 
   return (
     <form onSubmit={submit} noValidate className="inline-flex items-end gap-2 text-start">
-      <TextField label={t('customers.prices.unitPrice')} inputMode="decimal" dir="ltr" value={value} error={error} onChange={(e) => setValue(e.target.value)} />
+      <TextField label={t('customers.prices.unitPrice')} hint={t('help.customers.prices.unitPrice')} inputMode="decimal" dir="ltr" value={value} error={error} onChange={(e) => setValue(e.target.value)} />
       <Button type="submit" disabled={save.isPending}>
         {t('customers.prices.save')}
       </Button>

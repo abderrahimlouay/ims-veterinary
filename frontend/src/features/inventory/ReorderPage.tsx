@@ -74,6 +74,7 @@ export function ReorderPage() {
           <div className="w-72">
             <SelectField
               label={t('reorder.supplier')}
+              hint={t('help.reorder.supplier')}
               value={supplierId}
               onChange={(e) => setSupplierId(e.target.value)}
               options={[{ value: '', label: '—' }, ...(suppliers.data?.content ?? []).map((s) => ({ value: String(s.id), label: s.name }))]}
