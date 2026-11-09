@@ -48,6 +48,8 @@ Rules: a feature never imports another feature's internals (only its public `ind
 | `AppLayout` | everything else | sidebar (permission-filtered), top bar (user, search, alerts badge), breadcrumb, content |
 | `PosLayout` | `/pos` | full-screen counter UI, minimal chrome, always-visible cash-session status |
 
+**Sidebar** (`SideNav`, `navigation.ts`): each entry has a flat line icon (`NavIcon`, drawn inline in the text colour, no icon dependency) and, apart from Home and the counter, a section: Sales (documents, customer returns, customers, categories), Stock (products, lots, stock, counts, reorder, reference data), Purchasing (suppliers, orders, receipts, supplier returns, supplier invoices), Finance and reports (cash sessions, reports), Administration (users, roles, settings, audit, backups); "My account" stays at the bottom. Sections collapse; the section of the current page opens by itself and the sections a user opens stay open on the device (`localStorage` key `ims.nav.open`, a preference only). A section without an entry the user may see is not shown. The sidebar stays in place while the page scrolls and mirrors in Arabic.
+
 Guards: `RequireAuth` (redirect to `/login`, preserve target), `RequirePermission(code)` (renders the *Forbidden* page, never a blank), `UnsavedChangesGuard` on dirty forms.
 
 ### 3.1 Route map

@@ -29,7 +29,14 @@
     "supplierInvoices": "فواتير الموردين",
     "cashSessions": "جلسات الصندوق",
     "reports": "التقارير",
-    "backups": "النسخ الاحتياطية"
+    "backups": "النسخ الاحتياطية",
+    "groups": {
+      "sales": "المبيعات",
+      "stock": "المخزون",
+      "purchasing": "المشتريات",
+      "finance": "المالية والتقارير",
+      "admin": "الإدارة"
+    }
   },
   "language": {
     "label": "اللغة",

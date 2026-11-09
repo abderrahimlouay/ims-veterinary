@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { aLot, addToCart, aProduct } from './sales'
 import { asOwnUser } from './users'
+import { sidebar } from './navigation'
 
 /**
  * J4 (testing.md §8): a counter sale spanning two lots by FEFO, paid in cash with change. The cash session is opened
@@ -15,7 +16,7 @@ test('J4: a cash sale across two lots by FEFO, with change', async ({ page }) =>
   await aLot(page, 'E2E Fefoval', 'J4-LATE', '12/2029', '10')
   await aLot(page, 'E2E Fefoval', 'J4-SOON', '12/2028', '3')
 
-  await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('link', { name: 'Caisse', exact: true }).click()
+  await (await sidebar(page)).getByRole('link', { name: 'Caisse', exact: true }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Caisse' })).toBeVisible()
   await addToCart(page, 'E2E Fefoval', '5')
 

@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { ADMIN } from './fixtures'
 import { aLot, addToCart, aProduct, payByCheque } from './sales'
 import { logIn } from './session'
+import { sidebar } from './navigation'
 
 /**
  * J9 (testing.md §8): real documents, then the recall of their lot. A delivery note for a customer, converted to an
@@ -14,7 +15,7 @@ test('J9: documents, conversion, cancellation, then the recall and its buyers', 
   const customer = 'E2E Ferme Rappel'
   await page.goto('/login')
   await logIn(page, ADMIN.username, ADMIN.newPassword)
-  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  const nav = await sidebar(page)
   await nav.getByRole('link', { name: 'Clients', exact: true }).click()
   await page.getByRole('link', { name: 'Nouveau client' }).click()
   await page.getByLabel('Nom', { exact: true }).fill(customer)

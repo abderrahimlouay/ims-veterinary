@@ -29,7 +29,14 @@
     "supplierInvoices": "Supplier invoices",
     "cashSessions": "Cash sessions",
     "reports": "Reports",
-    "backups": "Backups"
+    "backups": "Backups",
+    "groups": {
+      "sales": "Sales",
+      "stock": "Stock",
+      "purchasing": "Purchasing",
+      "finance": "Finance and reports",
+      "admin": "Administration"
+    }
   },
   "language": {
     "label": "Language",

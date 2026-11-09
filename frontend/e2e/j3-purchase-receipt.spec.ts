@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { ADMIN } from './fixtures'
 import { logIn } from './session'
+import { sidebar } from './navigation'
 
 /**
  * J3 (testing.md §8): a supplier, a product, a purchase order validated and sent, its receipt into a new lot, the
@@ -12,7 +13,7 @@ test.describe.configure({ mode: 'serial', retries: 0 })
 test('J3: purchase order, goods receipt, lot in stock, receipt cancelled', async ({ page }) => {
   await page.goto('/login')
   await logIn(page, ADMIN.username, ADMIN.newPassword)
-  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  const nav = await sidebar(page)
 
   await nav.getByRole('link', { name: 'Fournisseurs', exact: true }).click()
   await page.getByRole('link', { name: 'Nouveau fournisseur' }).click()

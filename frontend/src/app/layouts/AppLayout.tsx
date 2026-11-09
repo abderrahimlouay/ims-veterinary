@@ -1,16 +1,13 @@
 import { Suspense, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { NavLink, Outlet, useNavigate } from 'react-router'
+import { Outlet, useNavigate } from 'react-router'
 import { Button } from '../../components/Button'
 import { LanguageSelect } from '../../components/LanguageSelect'
 import { ThemeSwitch } from '../../components/ThemeSwitch'
 import { useCurrentUser, useLogout } from '../../features/auth'
 import { IntegrityBanner } from '../../features/inventory/IntegrityBanner'
 import { usePublicSettings } from '../../features/settings'
-import { NAV_ITEMS, visibleNavItems } from '../navigation'
-
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `block px-3 py-2 rounded-ctl text-sm font-medium ${isActive ? 'bg-brand/10 text-brand' : 'text-ink hover:bg-bg'}`
+import { SideNav } from './SideNav'
 
 /**
  * Back-office layout (frontend.md §3): top bar with the user, the integrity banner for `audit.read` holders (ADR-086),
@@ -50,17 +47,8 @@ export function AppLayout() {
         </div>
       </header>
       {current && !current.mustChangePassword && <IntegrityBanner />}
-      <div className="flex flex-1">
-        <nav aria-label={t('nav.label')} className="w-56 shrink-0 p-3 bg-surface border-e border-line flex flex-col gap-1">
-          {visibleNavItems(NAV_ITEMS, current?.permissions ?? []).map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === '/'} className={linkClass}>
-              {t(item.labelKey)}
-            </NavLink>
-          ))}
-          <NavLink to="/account" className={linkClass}>
-            {t('nav.account')}
-          </NavLink>
-        </nav>
+      <div className="flex flex-1 items-stretch">
+        <SideNav permissions={current?.permissions ?? []} />
         <main className="flex-1 p-6">
           <Suspense fallback={<PageLoading />}>
             <Outlet />

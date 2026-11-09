@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { ADMIN } from './fixtures'
 import { logIn } from './session'
+import { sidebar } from './navigation'
 
 /**
  * J12 (testing.md §8, Phase 6): a customer category, a product, then a customer created through the form; the
@@ -16,7 +17,7 @@ const PHONE = '0100 00 00 12'
 test('J12: create a customer, find them by phone, set a price and a credit limit', async ({ page }) => {
   await page.goto('/login')
   await logIn(page, ADMIN.username, ADMIN.newPassword)
-  const nav = page.getByRole('navigation', { name: 'Navigation principale' })
+  const nav = await sidebar(page)
 
   await nav.getByRole('link', { name: 'Catégories de clients' }).click()
   await page.getByLabel('Nom', { exact: true }).fill('E2E Éleveurs')
