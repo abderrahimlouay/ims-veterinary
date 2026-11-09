@@ -31,8 +31,8 @@ test('J9: documents, conversion, cancellation, then the recall and its buyers', 
   await addToCart(page, 'E2E Rappelval', '2')
   await expect(page.getByTestId('pos-line')).toHaveCount(1)
   await page.getByRole('button', { name: 'Confirmer la vente' }).click()
-  await expect(page.getByText(/Document DN-/)).toBeVisible()
-  const note = ((await page.getByText(/Document DN-/).textContent()) ?? '').replace('Document ', '')
+  await expect(page.getByText(/Document BL-/)).toBeVisible()
+  const note = ((await page.getByText(/Document BL-/).textContent()) ?? '').replace('Document ', '')
   await page.getByRole('button', { name: 'Nouvelle vente' }).click()
 
   await addToCart(page, 'E2E Rappelval', '1')

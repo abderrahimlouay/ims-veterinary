@@ -30,8 +30,8 @@ test('J6: a customer return with a credit note, a restock, a discard and a cash 
   await addToCart(page, 'E2E Ouvertval', '2')
   await expect(page.getByTestId('pos-line')).toHaveCount(2)
   await page.getByRole('button', { name: 'Confirmer la vente' }).click()
-  await expect(page.getByText(/Document RCT-/)).toBeVisible()
-  const receipt = ((await page.getByText(/Document RCT-/).textContent()) ?? '').replace('Document ', '')
+  await expect(page.getByText(/Document TC-/)).toBeVisible()
+  const receipt = ((await page.getByText(/Document TC-/).textContent()) ?? '').replace('Document ', '')
   const beforeRefund = await expectedCash(page)
 
   await page.goto('/sales')
