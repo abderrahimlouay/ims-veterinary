@@ -50,7 +50,7 @@ public final class SalesViews {
             LocalDate expiryDate, Long unitId, String unitName, Integer targetSpeciesId, BigDecimal quantity,
             BigDecimal quantityBase, BigDecimal unitPrice, BigDecimal discountPct, BigDecimal vatRate,
             BigDecimal lineHt, BigDecimal lineVat, BigDecimal lineTtc, List<SaleWarning> warnings,
-            BigDecimal returnedQuantityBase, BigDecimal globalDiscountHt) {
+            BigDecimal returnedQuantityBase, BigDecimal globalDiscountHt, BigDecimal lineTtcBeforeGlobalDiscount) {
     }
 
     /** A customer return of the document and the credit note it issued (W3, ADR-131). */
@@ -94,6 +94,6 @@ public final class SalesViews {
         return new SaleLine(l.id(), l.productId(), productName, l.lotId(), lot == null ? null : lot.lotNumber(),
                 lot == null ? null : lot.expiryDate(), l.unitId(), unitName, l.targetSpeciesId(), l.quantity(),
                 l.quantityBase(), l.unitPrice(), l.discountPct(), l.vatRate(), l.lineHt(), l.lineVat(), l.lineTtc(),
-                warnings, l.returnedQuantityBase(), l.globalDiscountHt());
+                warnings, l.returnedQuantityBase(), l.globalDiscountHt(), l.lineTtcBeforeGlobalDiscount());
     }
 }

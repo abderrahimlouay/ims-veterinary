@@ -87,6 +87,9 @@ class GlobalDiscountSaleTest {
                 .andExpect(jsonPath("$.totals.globalDiscount.ttc").value("277.50"))
                 .andExpect(jsonPath("$.lines[0].globalDiscountHt").value("200.00"))
                 .andExpect(jsonPath("$.lines[0].lineHt").value("1800.00"))
+                .andExpect(jsonPath("$.lines[0].lineTtc").value("1962.00"))
+                .andExpect(jsonPath("$.lines[0].lineTtcBeforeGlobalDiscount").value("2180.00"))
+                .andExpect(jsonPath("$.lines[1].lineTtcBeforeGlobalDiscount").value("595.00"))
                 .andExpect(jsonPath("$.lines[1].globalDiscountHt").value("50.00"));
         assertStoredAmountsMatch(receipt, "2250.00", "2497.50");
     }

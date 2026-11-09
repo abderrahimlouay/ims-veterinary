@@ -14,7 +14,6 @@ import com.imsvet.ims.sales.application.SalesViews.SaleLine;
 import com.imsvet.ims.sales.application.SalesViews.SaleWarning;
 import com.imsvet.ims.settings.application.CompanyIdentity;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SalePdfs {
 
-    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     /** The PDF and the file name it is served under. */
     public record Pdf(byte[] bytes, String fileName) {
@@ -131,9 +129,7 @@ public class SalePdfs {
             line.put("vatRate", PrintFormats.percent(l.vatRate()));
             BigDecimal beforeGlobal = l.lineHt().add(l.globalDiscountHt());
             line.put("ht", PrintFormats.money(beforeGlobal));
-            line.put("ttc", PrintFormats.money(l.globalDiscountHt().signum() == 0 ? l.lineTtc()
-                    : beforeGlobal.add(beforeGlobal.multiply(l.vatRate()).divide(HUNDRED)
-                            .setScale(2, RoundingMode.HALF_UP))));
+            line.put("ttc", PrintFormats.money(l.lineTtcBeforeGlobalDiscount()));
             lines.add(line);
             BigDecimal[] sums = byRate.computeIfAbsent(l.vatRate().stripTrailingZeros(),
                     r -> new BigDecimal[] {BigDecimal.ZERO, BigDecimal.ZERO});

@@ -1224,7 +1224,7 @@
     "globalDiscountValue": "Discount value",
     "globalDiscountApply": "Apply the discount",
     "globalDiscountRemove": "Remove the discount",
-    "globalDiscountLine": "{{label}}: -{{amount}}"
+    "globalDiscountLine": "{{label}}: {{amount}}"
   },
   "sales": {
     "title": "Sales documents",

@@ -10,7 +10,7 @@ import { formatDate, formatDateTime, formatMoney, formatQuantity, formatUnitPric
 import { hasPermission, useCurrentUser } from '../auth'
 import { ReasonDialog } from '../purchasing'
 import { useAbandonSale, useCancelSale, useConvertSale, useSale, type DocType, type SaleDetail } from './saleApi'
-import { globalDiscountLabel } from './globalDiscount'
+import { deduction, globalDiscountLabel } from './globalDiscount'
 import { salePdfUrl } from './printing'
 import { PrintTicketButton } from './PrintTicketButton'
 import { PdfLink } from '../../components/PdfLink'
@@ -123,7 +123,7 @@ export function SaleDetailPage() {
               </td>
               <td className="text-end">{formatUnitPrice(line.unitPrice)}</td>
               <td className="text-end">{line.discountPct} %</td>
-              <td className="text-end">{formatMoney(line.lineTtc)}</td>
+              <td className="text-end">{formatMoney(line.lineTtcBeforeGlobalDiscount)}</td>
               {returnedAny && <td className="text-end">{formatQuantity(line.returnedQuantityBase)}</td>}
             </tr>
           ))}
@@ -136,7 +136,7 @@ export function SaleDetailPage() {
             <dd className="text-end">{formatMoney(sumDecimals([data.totals.ttc, data.totals.globalDiscount.ttc], 2) ?? data.totals.ttc)}</dd>
             <dt>{globalDiscountLabel(data.totals.globalDiscount, t)}</dt>
             <dd className="text-end" data-testid="sale-global-discount">
-              -{formatMoney(data.totals.globalDiscount.ttc)}
+              {deduction(data.totals.globalDiscount.ttc)}
             </dd>
           </>
         )}
