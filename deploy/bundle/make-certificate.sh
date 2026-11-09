@@ -2,7 +2,8 @@
 # The laptop's HTTPS certificate, signed by the shop's CA (docs/deployment.md §2 item 4), written as server.p12 into the
 # installer folder with certificat.txt (name, address, expiry), and the .zip refreshed. It names the laptop, localhost
 # (the scripts check https://localhost) and its fixed address; valid two years. openssl asks for the server.p12
-# password: give it to the owner apart from the file. The server key is deleted once exported.
+# password (or takes it from $IMS_P12_PASSWORD): give it to the owner apart from the file. The server key is deleted
+# once exported.
 #   deploy/bundle/make-certificate.sh PHARMA-PC 192.168.1.20 [installer folder, default ~/IMS-installateur]
 set -euo pipefail
 
@@ -36,9 +37,14 @@ openssl x509 -req -in "$work/server.csr" -CA "$ca_dir/ims-ca.crt" -CAkey "$ca_di
     -CAserial "$ca_dir/ims-ca.srl" -CAcreateserial -days 730 -sha256 \
     -extfile <(printf 'subjectAltName=DNS:%s,DNS:localhost,IP:%s\n' "$name" "$address") \
     -out "$work/server.crt" 2>/dev/null
-echo "Choose the server.p12 password (give it to the owner apart from the file):"
+password=()
+if [ -n "${IMS_P12_PASSWORD:-}" ]; then
+    password=(-passout env:IMS_P12_PASSWORD)
+else
+    echo "Choose the server.p12 password (give it to the owner apart from the file):"
+fi
 openssl pkcs12 -export -in "$work/server.crt" -inkey "$work/server.key" -certfile "$ca_dir/ims-ca.crt" \
-    -out "$out/server.p12"
+    -out "$out/server.p12" "${password[@]}"
 expiry=$(openssl x509 -in "$work/server.crt" -noout -enddate | cut -d= -f2)
 printf 'NOM=%s\nADRESSE=%s\nEXPIRE=%s\n' "$name" "$address" "$expiry" > "$out/certificat.txt"
 
