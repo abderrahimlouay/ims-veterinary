@@ -68,16 +68,19 @@ describe('dashboard charts (ADR-176)', () => {
 
     expect(await screen.findByTestId('sales-30-days')).toHaveTextContent('1 500,00')
     const daily = screen.getByRole('img', { name: 'Ventes par jour, 30 derniers jours' })
-    expect(daily.querySelectorAll('rect')).toHaveLength(30)
+    expect(daily.querySelector('path[fill="none"]')?.getAttribute('d')?.match(/[ML]/g)).toHaveLength(30)
     expect(screen.getByRole('img', { name: 'Ventes par mois, 12 derniers mois' }).querySelectorAll('rect')).toHaveLength(12)
     const today = businessToday()
     expect(seen.find((p) => p.get('groupBy') === 'day')?.get('from')).toBe(addDays(today, -29))
 
     const products = await screen.findByRole('list', { name: 'Les 10 produits les plus vendus ce mois' })
     expect(within(products).getByRole('link', { name: 'Amoxival' })).toHaveAttribute('href', '/products/12')
-    const categories = screen.getByRole('list', { name: 'Ventes par catégorie ce mois' })
-    expect(within(categories).getByText('Antibiotiques')).toBeInTheDocument()
-    expect(within(categories).getByText('Sans catégorie')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Ventes par catégorie ce mois' })).toBeInTheDocument()
+    const categories = screen.getByRole('list', { name: 'Légende : Ventes par catégorie ce mois' })
+    expect(within(categories).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      expect.stringMatching(/^Antibiotiques.*1\s000,00.*66,7\s%$/),
+      expect.stringMatching(/^Sans catégorie.*500,00.*33,3\s%$/),
+    ])
     expect(screen.queryByRole('heading', { name: 'Dettes' })).not.toBeInTheDocument()
   })
 
@@ -90,6 +93,9 @@ describe('dashboard charts (ADR-176)', () => {
     expect(screen.getByText(/Avances des clients déjà déduites : 50,00/)).toBeInTheDocument()
     const lateness = screen.getByRole('img', { name: 'Par retard de paiement' })
     expect([...lateness.querySelectorAll('text')].map((label) => label.textContent)).toEqual(['Non échu', '1–30 j', '31–60 j', '61–90 j', '> 90 j'])
+    expect([...lateness.querySelectorAll('rect')].map((column) => column.getAttribute('class'))).toEqual([
+      'fill-status-good', 'fill-status-warning', 'fill-status-serious', 'fill-status-critical', 'fill-status-critical',
+    ])
     const debtors = screen.getByRole('list', { name: 'Les 5 clients qui doivent le plus' })
     expect(within(debtors).getAllByRole('link').map((link) => link.textContent)).toEqual(['Ferme Benali', 'Cabinet Vétérinaire Sud'])
 

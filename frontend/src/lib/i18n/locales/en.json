@@ -52,7 +52,8 @@
   },
   "chart": {
     "highest": "Highest: {{period}}, {{amount}}",
-    "lowest": "Lowest: {{period}}, {{amount}}"
+    "lowest": "Lowest: {{period}}, {{amount}}",
+    "legend": "Legend: {{title}}"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -67,7 +68,8 @@
       "perMonth": "Sales per month, last {{months}} months",
       "topProducts": "The {{count}} best-selling products this month",
       "byCategory": "Sales by category this month",
-      "noSalesThisMonth": "No sales this month."
+      "noSalesThisMonth": "No sales this month.",
+      "otherCategories": "Other categories"
     },
     "debt": {
       "title": "Debts",
