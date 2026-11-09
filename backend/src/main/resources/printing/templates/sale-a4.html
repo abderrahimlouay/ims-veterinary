@@ -103,8 +103,11 @@
     </td>
     <td>
       <table style="width: 100%; border-collapse: collapse">
-        <tr><td>Total HT</td><td class="num" th:text="${totals.ht}">0,00</td></tr>
+        <tr th:if="${totals.globalLabel == null}"><td>Total HT</td><td class="num" th:text="${totals.ht}">0,00</td></tr>
+        <tr th:if="${totals.globalLabel != null}"><td>Total HT</td><td class="num" th:text="${totals.htBeforeGlobal}">0,00</td></tr>
         <tr th:if="${totals.discount != null}"><td>Dont remises</td><td class="num" th:text="${totals.discount}">0,00</td></tr>
+        <tr th:if="${totals.globalLabel != null}"><td th:text="${totals.globalLabel}">Remise globale</td><td class="num" th:text="${totals.globalHt}">0,00</td></tr>
+        <tr th:if="${totals.globalLabel != null}"><td>Net HT</td><td class="num" th:text="${totals.ht}">0,00</td></tr>
         <tr><td>TVA</td><td class="num" th:text="${totals.vat}">0,00</td></tr>
         <tr class="grand"><td>Total TTC</td><td class="num" th:text="${totals.ttc}">0,00</td></tr>
         <tr th:if="${totals.stampDuty != null}"><td>Droit de timbre</td><td class="num" th:text="${totals.stampDuty}">0,00</td></tr>

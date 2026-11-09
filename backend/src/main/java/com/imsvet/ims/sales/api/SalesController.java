@@ -67,6 +67,10 @@ class SalesController {
     record ConvertRequest(String targetType) {
     }
 
+    /** ADR-175: {@code kind} percent or amount; a {@code null} kind or value removes the global discount. */
+    record GlobalDiscountRequest(String kind, BigDecimal value) {
+    }
+
     record CancelRequest(String reason) {
     }
 
@@ -130,6 +134,12 @@ class SalesController {
     @DeleteMapping("/{id}/lines/{lineId}")
     SaleDetail removeLine(@PathVariable long id, @PathVariable long lineId) {
         return lines.remove(id, lineId);
+    }
+
+    @PutMapping("/{id}/global-discount")
+    SaleDetail giveGlobalDiscount(@PathVariable long id, @RequestBody(required = false) GlobalDiscountRequest body) {
+        return body == null ? lines.giveGlobalDiscount(id, null, null)
+                : lines.giveGlobalDiscount(id, body.kind(), body.value());
     }
 
     @PostMapping("/{id}/confirm")

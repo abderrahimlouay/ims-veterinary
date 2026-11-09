@@ -1177,7 +1177,16 @@
     "addCode": "إضافة بالرمز",
     "stampDuty": "حق الطابع",
     "netToPay": "الصافي للدفع",
-    "stampDutyLine": "حق الطابع: {{amount}}"
+    "stampDutyLine": "حق الطابع: {{amount}}",
+    "subtotal": "المجموع الفرعي",
+    "globalDiscount": "تخفيض إجمالي",
+    "globalDiscountOf": "تخفيض إجمالي ({{rate}} %)",
+    "globalDiscountAmount": "مبلغ",
+    "globalDiscountPercent": "نسبة مئوية",
+    "globalDiscountValue": "قيمة التخفيض",
+    "globalDiscountApply": "تطبيق التخفيض",
+    "globalDiscountRemove": "إلغاء التخفيض",
+    "globalDiscountLine": "{{label}}: -{{amount}}"
   },
   "sales": {
     "title": "مستندات البيع",

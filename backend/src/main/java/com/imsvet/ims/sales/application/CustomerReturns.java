@@ -459,7 +459,8 @@ public class CustomerReturns {
             Credited credited = returnLines.creditedOn(v.sold().id());
             SalesDocumentLine s = v.sold();
             priced.add(new Priced(v, ReturnCredit.of(new SoldLine(s.quantity(), s.quantityBase(), s.unitPrice(),
-                    s.discountPct(), s.vatRate(), s.returnedQuantityBase(), credited.getHt(), credited.getVat()),
+                    s.discountPct(), s.vatRate(), s.returnedQuantityBase(), credited.getHt(), credited.getVat(),
+                    s.globalDiscountHt()),
                     v.quantityBase())));
         }
         return priced;

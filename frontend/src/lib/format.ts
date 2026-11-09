@@ -17,6 +17,13 @@ export function formatQuantity(value: DecimalString): string {
   )
 }
 
+/** `"10.00"` → `"10"`, `"2.50"` → `"2,5"`: a rate, at most two decimals. */
+export function formatRate(value: DecimalString): string {
+  return new Intl.NumberFormat(business().locale, { maximumFractionDigits: 2 }).format(
+    value as Intl.StringNumericLiteral,
+  )
+}
+
 /**
  * A UTC instant from the API shown in the business time zone, on a 24-hour clock whatever the locale's
  * default (`fr-DZ` data uses AM/PM; user decision 2026-10-21, ADR-033).

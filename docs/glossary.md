@@ -20,6 +20,7 @@
 | Blocked (lot) | Lot bloqué | Lot temporarily not sellable. |
 | Cash session | Session de caisse | Period during which a cashier handles the till, from opening to counted closing. |
 | Cash variance | Écart de caisse | Counted amount minus expected amount at closing. |
+| Global discount | Remise globale | A discount on the whole sales document, a percentage or an amount off the total incl. tax, spread over the lines so HT, VAT and TTC go down; needs `sale.discount` (ADR-175, BR-SALE-018). |
 | Discount entitlement | Remise accordée | The discount a customer gets without `sale.discount`: the category discount, or 0 when the customer has an own price for the product (ADR-113); a manual discount replaces it, never adds to it. |
 | Company profile | Identité de l'entreprise | The pharmacy's legal identity printed on documents (name, NIF, NIS, RC, AI, approval number, logo…); versioned, a document prints the version in force at its issue (ADR-140). |
 | Credit limit | Plafond de crédit | Maximum customer debt allowed; empty = no limit, 0 = cash only (ADR-108). |

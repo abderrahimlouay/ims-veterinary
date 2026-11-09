@@ -15,9 +15,16 @@ public final class SalesViews {
     public record CustomerRef(long id, String name) {
     }
 
-    /** {@code stampDuty} and {@code netToPay}: ADR-172 (zero and the TTC without stamp duty). */
+    /**
+     * {@code stampDuty} and {@code netToPay}: ADR-172 (zero and the TTC without stamp duty). {@code ht}, {@code vat} and
+     * {@code ttc} are after the global discount, {@code null} without one (ADR-175).
+     */
     public record Totals(BigDecimal ht, BigDecimal discount, BigDecimal vat, BigDecimal ttc, BigDecimal stampDuty,
-            BigDecimal netToPay) {
+            BigDecimal netToPay, GlobalDiscountView globalDiscount) {
+    }
+
+    /** ADR-175: as entered ({@code kind} percent or amount, {@code value}) and what it took off excl. and incl. tax. */
+    public record GlobalDiscountView(String kind, BigDecimal value, BigDecimal ht, BigDecimal ttc) {
     }
 
     /** A non-blocking warning; only the fields of its {@code code} are set. */
@@ -43,7 +50,7 @@ public final class SalesViews {
             LocalDate expiryDate, Long unitId, String unitName, Integer targetSpeciesId, BigDecimal quantity,
             BigDecimal quantityBase, BigDecimal unitPrice, BigDecimal discountPct, BigDecimal vatRate,
             BigDecimal lineHt, BigDecimal lineVat, BigDecimal lineTtc, List<SaleWarning> warnings,
-            BigDecimal returnedQuantityBase) {
+            BigDecimal returnedQuantityBase, BigDecimal globalDiscountHt) {
     }
 
     /** A customer return of the document and the credit note it issued (W3, ADR-131). */
@@ -77,7 +84,8 @@ public final class SalesViews {
         return new SaleDetail(d.id(), d.docType().code(), d.number(), d.status().code(), customer, d.parentId(),
                 d.creditSale(), d.dueDate(), d.issuedAt(), d.createdAt(), d.cancelledAt(), d.cancelReason(), d.notes(),
                 new Totals(d.totalHt(), d.totalDiscount(), d.totalVat(), d.totalTtc(), d.stampDuty(),
-                        d.netToPay()), lines, payments, d.cashSessionId(),
+                        d.netToPay(), d.globalDiscount().map(g -> new GlobalDiscountView(g.kind().code(), g.value(),
+                                d.globalDiscountHt(), d.globalDiscountTtc())).orElse(null)), lines, payments, d.cashSessionId(),
                 customerBalance, returns, d.version());
     }
 
@@ -86,6 +94,6 @@ public final class SalesViews {
         return new SaleLine(l.id(), l.productId(), productName, l.lotId(), lot == null ? null : lot.lotNumber(),
                 lot == null ? null : lot.expiryDate(), l.unitId(), unitName, l.targetSpeciesId(), l.quantity(),
                 l.quantityBase(), l.unitPrice(), l.discountPct(), l.vatRate(), l.lineHt(), l.lineVat(), l.lineTtc(),
-                warnings, l.returnedQuantityBase());
+                warnings, l.returnedQuantityBase(), l.globalDiscountHt());
     }
 }

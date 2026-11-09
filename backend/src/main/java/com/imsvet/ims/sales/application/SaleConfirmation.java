@@ -19,6 +19,7 @@ import com.imsvet.ims.sales.application.PaymentRecorder.RecordedPayments;
 import com.imsvet.ims.sales.application.PaymentRecorder.Tender;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.sales.domain.Customer;
+import com.imsvet.ims.sales.domain.GlobalDiscount;
 import com.imsvet.ims.sales.domain.SalesDocStatus;
 import com.imsvet.ims.sales.domain.SalesDocType;
 import com.imsvet.ims.sales.domain.SalesDocument;
@@ -123,6 +124,7 @@ public class SaleConfirmation {
         boolean frozen = documents.invoicesADeliveryNote(document);
         boolean movesStock = !frozen && document.docType() != SalesDocType.QUOTE;
         requireLines(document, found, frozen, movesStock);
+        requireGlobalDiscountWithinTotal(document, found);
         Instant now = clock.instant();
         SaleTotals.apply(document, found, now);
         requirePaidInFull(document, paid);
@@ -189,6 +191,16 @@ public class SaleConfirmation {
     }
 
     /** {@code frozen}: already delivered, so an archived product since then does not stop the billing. */
+    /** ADR-175: an amount given before lines were removed may now exceed the total incl. tax. */
+    private static void requireGlobalDiscountWithinTotal(SalesDocument document, List<SalesDocumentLine> found) {
+        BigDecimal total = SaleTotals.ttcBeforeGlobalDiscount(found);
+        document.globalDiscount().filter(d -> d.kind() == GlobalDiscount.Kind.AMOUNT && d.value().compareTo(total) > 0)
+                .ifPresent(d -> {
+                    throw new ValidationException("The global discount is above the total.", List.of(new Violation(
+                            "globalDiscount", "RANGE", "At most " + total.toPlainString() + ".")));
+                });
+    }
+
     private void requireLines(SalesDocument document, List<SalesDocumentLine> found, boolean frozen,
             boolean movesStock) {
         if (found.isEmpty()) {

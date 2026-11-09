@@ -31,6 +31,7 @@ function aLine(overrides: Record<string, unknown> = {}) {
     lineVat: '1.80',
     lineTtc: '21.80',
     returnedQuantityBase: '0.000',
+    globalDiscountHt: '0.00',
     warnings: [],
     ...overrides,
   }
@@ -51,7 +52,7 @@ function aSale(overrides: Record<string, unknown> = {}) {
     cancelledAt: null,
     cancelReason: null,
     notes: null,
-    totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80', stampDuty: '0.00', netToPay: '21.80' },
+    totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80', stampDuty: '0.00', netToPay: '21.80', globalDiscount: null },
     lines: [aLine()],
     payments: [],
     cashSessionId: null,
@@ -70,7 +71,7 @@ function serveCounter(sale = aSale()) {
     http.get('/api/cash-sessions/current', () => HttpResponse.json(SESSION)),
     http.get('/api/animal-species', () => HttpResponse.json([])),
     http.get('/api/products', () => HttpResponse.json({ content: [PRODUCT], page: { number: 0, size: 10, totalElements: 1, totalPages: 1 } })),
-    http.post('/api/sales', () => HttpResponse.json(aSale({ lines: [], totals: { ht: '0.00', discount: '0.00', vat: '0.00', ttc: '0.00', stampDuty: '0.00', netToPay: '0.00' } }), { status: 201 })),
+    http.post('/api/sales', () => HttpResponse.json(aSale({ lines: [], totals: { ht: '0.00', discount: '0.00', vat: '0.00', ttc: '0.00', stampDuty: '0.00', netToPay: '0.00', globalDiscount: null } }), { status: 201 })),
     http.post('/api/sales/300/lines', () => HttpResponse.json(sale)),
     http.get('/api/sales/300/stamp-duty', ({ request }) => {
       const cash = new URL(request.url).searchParams.get('cash') ?? '0.00'
@@ -122,7 +123,7 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
       http.post('/api/sales/300/confirm', async ({ request }) => {
         body = await request.json()
         return HttpResponse.json(
-          aSale({ status: 'confirmed', number: 'RCT-2026-000009', totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80', stampDuty: '1.00', netToPay: '22.80' } }),
+          aSale({ status: 'confirmed', number: 'RCT-2026-000009', totals: { ht: '20.00', discount: '0.00', vat: '1.80', ttc: '21.80', stampDuty: '1.00', netToPay: '22.80', globalDiscount: null } }),
         )
       }),
     )
@@ -140,6 +141,51 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
     expect(screen.getByText(/Total : 22,80/)).toBeInTheDocument()
     expect(screen.getByText(/Monnaie à rendre : 27,20/)).toBeInTheDocument()
     expect(body).toEqual({ payments: [{ method: 'cash', amount: '21.80', reference: null }] })
+  })
+
+  it('gives a global discount with sale.discount, shows it and pays the discounted total (ADR-175)', async () => {
+    serveMe(EXPERT)
+    serveCounter()
+    let given: unknown
+    let paid: unknown
+    const discounted = aSale({
+      totals: { ht: '18.35', discount: '0.00', vat: '1.65', ttc: '20.00', stampDuty: '0.00', netToPay: '20.00', globalDiscount: { kind: 'amount', value: '1.80', ht: '1.65', ttc: '1.80' } },
+      lines: [aLine({ lineHt: '18.35', lineVat: '1.65', lineTtc: '20.00', globalDiscountHt: '1.65' })],
+    })
+    server.use(
+      http.put('/api/sales/300/global-discount', async ({ request }) => {
+        given = await request.json()
+        return HttpResponse.json(discounted)
+      }),
+      http.get('/api/sales/300/stamp-duty', () => HttpResponse.json({ cashPart: '20.00', stampDuty: '0.00', netToPay: '20.00' })),
+      http.post('/api/sales/300/confirm', async ({ request }) => {
+        paid = await request.json()
+        return HttpResponse.json({ ...discounted, status: 'confirmed', number: 'TC-2026-000010' })
+      }),
+    )
+    renderApp('/pos')
+    await addProduct()
+
+    await userEvent.type(screen.getByLabelText('Valeur de la remise'), '1,80')
+    await userEvent.click(screen.getByRole('button', { name: 'Appliquer la remise' }))
+
+    expect(await screen.findByTestId('pos-global-discount')).toHaveTextContent('1,80')
+    expect(screen.getByTestId('pos-total')).toHaveTextContent('20,00')
+    expect(given).toEqual({ kind: 'amount', value: '1.80' })
+    expect(screen.getByRole('button', { name: 'Retirer la remise' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmer la vente' }))
+
+    expect(await screen.findByText('Document TC-2026-000010')).toBeInTheDocument()
+    expect(screen.getByText(/Remise globale : -1,80/)).toBeInTheDocument()
+    expect(paid).toEqual({ payments: [{ method: 'cash', amount: '20.00', reference: null }] })
+  })
+
+  it('offers no global discount without sale.discount', async () => {
+    serveCounter()
+    renderApp('/pos')
+    await addProduct()
+
+    expect(screen.queryByLabelText('Valeur de la remise')).not.toBeInTheDocument()
   })
 
   it('keeps one key for a retry of the same payment', async () => {

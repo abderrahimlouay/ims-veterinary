@@ -1177,7 +1177,16 @@
     "addCode": "Ajouter par code",
     "stampDuty": "Droit de timbre",
     "netToPay": "Net à payer",
-    "stampDutyLine": "Droit de timbre : {{amount}}"
+    "stampDutyLine": "Droit de timbre : {{amount}}",
+    "subtotal": "Sous-total",
+    "globalDiscount": "Remise globale",
+    "globalDiscountOf": "Remise globale ({{rate}} %)",
+    "globalDiscountAmount": "Montant",
+    "globalDiscountPercent": "Pourcentage",
+    "globalDiscountValue": "Valeur de la remise",
+    "globalDiscountApply": "Appliquer la remise",
+    "globalDiscountRemove": "Retirer la remise",
+    "globalDiscountLine": "{{label}} : -{{amount}}"
   },
   "sales": {
     "title": "Documents de vente",

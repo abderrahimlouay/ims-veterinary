@@ -4,11 +4,13 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
+import { sumDecimals } from '../../lib/decimal'
 import { problemMessage } from '../../lib/errors'
 import { formatDate, formatDateTime, formatMoney, formatQuantity, formatUnitPrice } from '../../lib/format'
 import { hasPermission, useCurrentUser } from '../auth'
 import { ReasonDialog } from '../purchasing'
 import { useAbandonSale, useCancelSale, useConvertSale, useSale, type DocType, type SaleDetail } from './saleApi'
+import { globalDiscountLabel } from './globalDiscount'
 import { salePdfUrl } from './printing'
 import { PrintTicketButton } from './PrintTicketButton'
 import { PdfLink } from '../../components/PdfLink'
@@ -128,6 +130,16 @@ export function SaleDetailPage() {
         </tbody>
       </table>
       <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm max-w-xs ms-auto">
+        {data.totals.globalDiscount && (
+          <>
+            <dt>{t('pos.subtotal')}</dt>
+            <dd className="text-end">{formatMoney(sumDecimals([data.totals.ttc, data.totals.globalDiscount.ttc], 2) ?? data.totals.ttc)}</dd>
+            <dt>{globalDiscountLabel(data.totals.globalDiscount, t)}</dt>
+            <dd className="text-end" data-testid="sale-global-discount">
+              -{formatMoney(data.totals.globalDiscount.ttc)}
+            </dd>
+          </>
+        )}
         <dt>{t('pos.ht')}</dt>
         <dd className="text-end">{formatMoney(data.totals.ht)}</dd>
         <dt>{t('pos.vat')}</dt>

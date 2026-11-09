@@ -13,6 +13,7 @@ import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Optional;
 
 /**
  * A sales document (FR-SALE-001/002). Only a draft changes (BR-SALE-004); it has no number until confirmation
@@ -93,6 +94,20 @@ public class SalesDocument {
     @Column(name = "total_ttc", nullable = false, precision = 14, scale = 2)
     private BigDecimal totalTtc = BigDecimal.ZERO.setScale(2);
 
+    /** ADR-175: the global discount as entered, {@code null} without one; spread over the lines by the totals. */
+    @Column(name = "global_discount_kind", length = 10)
+    private String globalDiscountKind;
+
+    @Column(name = "global_discount_value", precision = 14, scale = 2)
+    private BigDecimal globalDiscountValue;
+
+    /** What the global discount took off, excl. and incl. tax (ADR-175). */
+    @Column(name = "global_discount_ht", nullable = false, precision = 14, scale = 2)
+    private BigDecimal globalDiscountHt = BigDecimal.ZERO.setScale(2);
+
+    @Column(name = "global_discount_ttc", nullable = false, precision = 14, scale = 2)
+    private BigDecimal globalDiscountTtc = BigDecimal.ZERO.setScale(2);
+
     /** On the cash part of an immediate invoice or receipt, frozen at confirmation (ADR-172); net_to_pay is generated. */
     @Column(name = "stamp_duty", nullable = false, precision = 14, scale = 2)
     private BigDecimal stampDuty = BigDecimal.ZERO.setScale(2);
@@ -141,6 +156,8 @@ public class SalesDocument {
         SalesDocument derived = new SalesDocument(type, parent.customerId, parent.creditSale, parent.dueDate,
                 parent.notes, createdBy, now);
         derived.parentId = parent.id;
+        derived.globalDiscountKind = parent.globalDiscountKind;
+        derived.globalDiscountValue = parent.globalDiscountValue;
         return derived;
     }
 
@@ -170,6 +187,22 @@ public class SalesDocument {
         this.totalVat = vat;
         this.totalTtc = ttc;
         this.updatedAt = now;
+    }
+
+    /** ADR-175: on a draft; {@code null} removes it. Its spread is applied with the next totals. */
+    public void giveGlobalDiscount(GlobalDiscount discount, Instant now) {
+        if (status != SalesDocStatus.DRAFT) {
+            throw new IllegalStateException("A confirmed document is immutable");
+        }
+        this.globalDiscountKind = discount == null ? null : discount.kind().code();
+        this.globalDiscountValue = discount == null ? null : discount.value();
+        this.updatedAt = now;
+    }
+
+    /** What the spread of the global discount took off, excl. and incl. tax (ADR-175). */
+    public void applyGlobalDiscountTotals(BigDecimal ht, BigDecimal ttc) {
+        this.globalDiscountHt = ht;
+        this.globalDiscountTtc = ttc;
     }
 
     /** Numbered and issued here (ADR-122); {@code cashSessionId} {@code null} without a cash part (ADR-118). */
@@ -268,6 +301,20 @@ public class SalesDocument {
 
     public BigDecimal stampDuty() {
         return stampDuty;
+    }
+
+    public Optional<GlobalDiscount> globalDiscount() {
+        return globalDiscountKind == null ? Optional.empty()
+                : Optional.of(new GlobalDiscount(GlobalDiscount.Kind.fromCode(globalDiscountKind).orElseThrow(),
+                        globalDiscountValue));
+    }
+
+    public BigDecimal globalDiscountHt() {
+        return globalDiscountHt;
+    }
+
+    public BigDecimal globalDiscountTtc() {
+        return globalDiscountTtc;
     }
 
     /** What the customer pays: the TTC and the stamp duty (the generated column net_to_pay, ADR-172). */

@@ -8,11 +8,13 @@ import com.imsvet.ims.common.time.BusinessSettings;
 import com.imsvet.ims.printing.application.PdfRenderer.Paper;
 import com.imsvet.ims.sales.application.PrintableSales;
 import com.imsvet.ims.sales.application.PrintableSales.SalePrint;
+import com.imsvet.ims.sales.application.SalesViews.GlobalDiscountView;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.sales.application.SalesViews.SaleLine;
 import com.imsvet.ims.sales.application.SalesViews.SaleWarning;
 import com.imsvet.ims.settings.application.CompanyIdentity;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class SalePdfs {
+
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     /** The PDF and the file name it is served under. */
     public record Pdf(byte[] bytes, String fileName) {
@@ -125,8 +129,11 @@ public class SalePdfs {
             line.put("discount", l.discountPct() == null || l.discountPct().signum() == 0 ? "—"
                     : PrintFormats.percent(l.discountPct()));
             line.put("vatRate", PrintFormats.percent(l.vatRate()));
-            line.put("ht", PrintFormats.money(l.lineHt()));
-            line.put("ttc", PrintFormats.money(l.lineTtc()));
+            BigDecimal beforeGlobal = l.lineHt().add(l.globalDiscountHt());
+            line.put("ht", PrintFormats.money(beforeGlobal));
+            line.put("ttc", PrintFormats.money(l.globalDiscountHt().signum() == 0 ? l.lineTtc()
+                    : beforeGlobal.add(beforeGlobal.multiply(l.vatRate()).divide(HUNDRED)
+                            .setScale(2, RoundingMode.HALF_UP))));
             lines.add(line);
             BigDecimal[] sums = byRate.computeIfAbsent(l.vatRate().stripTrailingZeros(),
                     r -> new BigDecimal[] {BigDecimal.ZERO, BigDecimal.ZERO});
@@ -139,6 +146,14 @@ public class SalePdfs {
 
         Map<String, Object> totals = new HashMap<>();
         totals.put("ht", PrintFormats.money(d.totals().ht(), currency));
+        GlobalDiscountView global = d.totals().globalDiscount();
+        boolean discounted = global != null && global.ht().signum() > 0;
+        totals.put("htBeforeGlobal", discounted ? PrintFormats.money(d.totals().ht().add(global.ht()), currency) : null);
+        totals.put("globalLabel", discounted ? globalLabel(global) : null);
+        totals.put("globalHt", discounted ? "-" + PrintFormats.money(global.ht(), currency) : null);
+        totals.put("globalTtc", discounted ? "-" + PrintFormats.money(global.ttc(), currency) : null);
+        totals.put("ttcBeforeGlobal", discounted ? PrintFormats.money(d.totals().ttc().add(global.ttc()), currency)
+                : null);
         totals.put("discount", d.totals().discount() == null || d.totals().discount().signum() == 0 ? null
                 : PrintFormats.money(d.totals().discount(), currency));
         totals.put("vat", PrintFormats.money(d.totals().vat(), currency));
@@ -154,6 +169,12 @@ public class SalePdfs {
         model.put("warnings", "credit_note".equals(d.docType()) ? List.of()
                 : print.withdrawals().stream().map(w -> warning(w, names)).toList());
         return model;
+    }
+
+    /** ADR-175: "Remise globale (2 %)" for a percentage, "Remise globale" for an amount. */
+    private static String globalLabel(GlobalDiscountView global) {
+        return "percent".equals(global.kind()) ? "Remise globale (" + PrintFormats.percent(global.value()) + ")"
+                : "Remise globale";
     }
 
     private static String words(SaleDetail d) {
