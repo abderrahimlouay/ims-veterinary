@@ -41,6 +41,8 @@ export interface SaleLine {
   returnedQuantityBase: string
   /** The line's share of the global discount, excl. tax; `lineHt` is after it (ADR-175). */
   globalDiscountHt: string
+  /** The line's total before the global discount: the lines add up to the sub-total shown above it (ADR-175). */
+  lineTtcBeforeGlobalDiscount: string
 }
 
 export type GlobalDiscountKind = 'percent' | 'amount'

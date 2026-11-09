@@ -1224,7 +1224,7 @@
     "globalDiscountValue": "Valeur de la remise",
     "globalDiscountApply": "Appliquer la remise",
     "globalDiscountRemove": "Retirer la remise",
-    "globalDiscountLine": "{{label}} : -{{amount}}"
+    "globalDiscountLine": "{{label}} : {{amount}}"
   },
   "sales": {
     "title": "Documents de vente",

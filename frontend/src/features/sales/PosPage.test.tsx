@@ -32,6 +32,7 @@ function aLine(overrides: Record<string, unknown> = {}) {
     lineTtc: '21.80',
     returnedQuantityBase: '0.000',
     globalDiscountHt: '0.00',
+    lineTtcBeforeGlobalDiscount: '21.80',
     warnings: [],
     ...overrides,
   }
@@ -150,7 +151,7 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
     let paid: unknown
     const discounted = aSale({
       totals: { ht: '18.35', discount: '0.00', vat: '1.65', ttc: '20.00', stampDuty: '0.00', netToPay: '20.00', globalDiscount: { kind: 'amount', value: '1.80', ht: '1.65', ttc: '1.80' } },
-      lines: [aLine({ lineHt: '18.35', lineVat: '1.65', lineTtc: '20.00', globalDiscountHt: '1.65' })],
+      lines: [aLine({ lineHt: '18.35', lineVat: '1.65', lineTtc: '20.00', globalDiscountHt: '1.65', lineTtcBeforeGlobalDiscount: '21.80' })],
     })
     server.use(
       http.put('/api/sales/300/global-discount', async ({ request }) => {
@@ -172,6 +173,8 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
     expect(await screen.findByTestId('pos-global-discount')).toHaveTextContent('1,80')
     expect(screen.getByTestId('pos-total')).toHaveTextContent('20,00')
     expect(given).toEqual({ kind: 'amount', value: '1.80' })
+    expect(screen.getByTestId('pos-line')).toHaveTextContent('21,80')
+    expect(screen.getByLabelText('Valeur de la remise')).toHaveValue('1.8')
     expect(screen.getByRole('button', { name: 'Retirer la remise' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Confirmer la vente' }))
 

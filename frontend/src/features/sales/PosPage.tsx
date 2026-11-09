@@ -40,7 +40,7 @@ import {
   type SaleLine,
   type SaleWarning,
 } from './saleApi'
-import { globalDiscountLabel } from './globalDiscount'
+import { deduction, editableValue, globalDiscountLabel } from './globalDiscount'
 import { salePdfUrl } from './printing'
 import { PrintTicketButton } from './PrintTicketButton'
 import { PdfLink } from '../../components/PdfLink'
@@ -234,7 +234,7 @@ export function PosPage() {
         <h1 className="text-2xl font-semibold">{t('pos.done.title')}</h1>
         <Alert tone="ok">{t('pos.done.number', { number: done.sale.number })}</Alert>
         {done.sale.totals.globalDiscount && (
-          <p>{t('pos.globalDiscountLine', { label: globalDiscountLabel(done.sale.totals.globalDiscount, t), amount: formatMoney(done.sale.totals.globalDiscount.ttc) })}</p>
+          <p>{t('pos.globalDiscountLine', { label: globalDiscountLabel(done.sale.totals.globalDiscount, t), amount: deduction(done.sale.totals.globalDiscount.ttc) })}</p>
         )}
         {Number(done.sale.totals.stampDuty) > 0 && <p>{t('pos.stampDutyLine', { amount: formatMoney(done.sale.totals.stampDuty) })}</p>}
         <p>{t('pos.total', { amount: formatMoney(done.sale.totals.netToPay) })}</p>
@@ -314,7 +314,7 @@ export function PosPage() {
                   <dd className="text-end">{formatMoney(sumDecimals([sale.totals.ttc, sale.totals.globalDiscount.ttc], 2) ?? sale.totals.ttc)}</dd>
                   <dt>{globalDiscountLabel(sale.totals.globalDiscount, t)}</dt>
                   <dd className="text-end" data-testid="pos-global-discount">
-                    -{formatMoney(sale.totals.globalDiscount.ttc)}
+                    {deduction(sale.totals.globalDiscount.ttc)}
                   </dd>
                 </>
               )}
@@ -509,7 +509,7 @@ function Cart({
               {formatQuantity(line.quantity)} {line.unitName} × {formatUnitPrice(line.unitPrice)}
             </span>
             {Number(line.discountPct) > 0 && <span>−{line.discountPct} %</span>}
-            <span className="ms-auto font-medium">{formatMoney(line.lineTtc)}</span>
+            <span className="ms-auto font-medium">{formatMoney(line.lineTtcBeforeGlobalDiscount)}</span>
           </div>
           {line.lotNumber !== null && line.expiryDate !== null && (
             <span className="text-mute">{t('pos.lotOf', { lot: line.lotNumber, expiry: formatDate(line.expiryDate) })}</span>
@@ -628,7 +628,7 @@ function GlobalDiscountForm({
 }) {
   const { t } = useTranslation()
   const [kind, setKind] = useState<GlobalDiscountKind>(current?.kind ?? 'amount')
-  const [value, setValue] = useState(current?.value ?? '')
+  const [value, setValue] = useState(current ? editableValue(current.value) : '')
   const submit = (event: FormEvent) => {
     event.preventDefault()
     void onGive({ kind, value: value.trim().replace(',', '.') })

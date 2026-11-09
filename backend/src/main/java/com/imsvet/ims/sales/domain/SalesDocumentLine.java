@@ -141,6 +141,19 @@ public class SalesDocumentLine {
     }
 
     /**
+     * ADR-175: the line as it reads before the document's global discount, its VAT rounded on that amount (ADR-093), so
+     * the lines add up to the sub-total shown above the discount; a line without a share, or a credit-note line, is its
+     * {@link #lineTtc()}.
+     */
+    public BigDecimal lineTtcBeforeGlobalDiscount() {
+        if (creditedHt != null || globalDiscountHt.signum() == 0) {
+            return lineTtc();
+        }
+        BigDecimal ht = lineHtBeforeGlobalDiscount();
+        return ht.add(SaleAmounts.lineVat(ht, vatRate));
+    }
+
+    /**
      * What the line's own discount took off; the global discount is counted apart (ADR-175). A credit-note line without
      * discount shows none, whatever the rounding of its credited amount.
      */
