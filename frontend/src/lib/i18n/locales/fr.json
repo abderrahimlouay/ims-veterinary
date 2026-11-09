@@ -56,7 +56,36 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "empty": "Aucun module n'est encore disponible."
+    "empty": "Aucun module n'est encore disponible.",
+    "sales": {
+      "title": "Ventes",
+      "excludingTax": "Montants hors taxes, avoirs déduits",
+      "reports": "Tous les rapports",
+      "periodTotal": "Total des {{days}} derniers jours :",
+      "periodTotalMonths": "Total des {{months}} derniers mois :",
+      "perDay": "Ventes par jour, {{days}} derniers jours",
+      "perMonth": "Ventes par mois, {{months}} derniers mois",
+      "topProducts": "Les {{count}} produits les plus vendus ce mois",
+      "byCategory": "Ventes par catégorie ce mois",
+      "noSalesThisMonth": "Aucune vente ce mois."
+    },
+    "debt": {
+      "title": "Dettes",
+      "customers": "Ce que les clients doivent",
+      "suppliers": "Ce que la pharmacie doit aux fournisseurs",
+      "advances": "Avances des clients déjà déduites : {{amount}}",
+      "byLateness": "Par retard de paiement",
+      "notDue": "Non échu",
+      "bucket": "{{from}}–{{to}} j",
+      "beyond": "> {{days}} j",
+      "topCustomers": "Les {{count}} clients qui doivent le plus",
+      "topSuppliers": "Les {{count}} fournisseurs à qui la pharmacie doit le plus",
+      "overdue": "dont en retard : {{amount}}",
+      "customersReport": "Rapport des soldes clients",
+      "suppliersReport": "Rapport des dettes fournisseurs",
+      "openInvoices": "Factures non payées : {{amount}}",
+      "deducted": "Avoirs et avances des fournisseurs déjà déduits : {{amount}}"
+    }
   },
   "notFound": {
     "title": "Page introuvable",

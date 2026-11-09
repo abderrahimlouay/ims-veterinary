@@ -56,7 +56,36 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "empty": "No modules are available yet."
+    "empty": "No modules are available yet.",
+    "sales": {
+      "title": "Sales",
+      "excludingTax": "Amounts excl. tax, credit notes deducted",
+      "reports": "All reports",
+      "periodTotal": "Total of the last {{days}} days:",
+      "periodTotalMonths": "Total of the last {{months}} months:",
+      "perDay": "Sales per day, last {{days}} days",
+      "perMonth": "Sales per month, last {{months}} months",
+      "topProducts": "The {{count}} best-selling products this month",
+      "byCategory": "Sales by category this month",
+      "noSalesThisMonth": "No sales this month."
+    },
+    "debt": {
+      "title": "Debts",
+      "customers": "What customers owe",
+      "suppliers": "What the shop owes suppliers",
+      "advances": "Customer advances already deducted: {{amount}}",
+      "byLateness": "By payment lateness",
+      "notDue": "Not due",
+      "bucket": "{{from}}–{{to}} d",
+      "beyond": "> {{days}} d",
+      "topCustomers": "The {{count}} customers who owe the most",
+      "topSuppliers": "The {{count}} suppliers the shop owes the most",
+      "overdue": "of which overdue: {{amount}}",
+      "customersReport": "Customer balances report",
+      "suppliersReport": "Supplier payables report",
+      "openInvoices": "Unpaid invoices: {{amount}}",
+      "deducted": "Supplier credit notes and advances already deducted: {{amount}}"
+    }
   },
   "notFound": {
     "title": "Page not found",

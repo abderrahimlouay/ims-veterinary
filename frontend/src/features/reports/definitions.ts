@@ -56,7 +56,8 @@ const percent = (value: string | null): Cell => ({ text: value === null ? '—' 
 const col = (label: string, num = false): Column => ({ label, num })
 const blank: Cell = { text: '' }
 
-function dateKey(key: string | null): string {
+/** A day `AAAA-MM-JJ` or a month `AAAA-MM` as the tables show it. */
+export function dateKey(key: string | null): string {
   if (key === null) {
     return ''
   }

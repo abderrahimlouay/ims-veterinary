@@ -56,7 +56,36 @@
   },
   "dashboard": {
     "title": "لوحة القيادة",
-    "empty": "لا تتوفر أي وحدة بعد."
+    "empty": "لا تتوفر أي وحدة بعد.",
+    "sales": {
+      "title": "المبيعات",
+      "excludingTax": "المبالغ دون رسوم، بعد خصم الإشعارات الدائنة",
+      "reports": "كل التقارير",
+      "periodTotal": "مجموع آخر {{days}} يومًا:",
+      "periodTotalMonths": "مجموع آخر {{months}} شهرًا:",
+      "perDay": "المبيعات حسب اليوم، آخر {{days}} يومًا",
+      "perMonth": "المبيعات حسب الشهر، آخر {{months}} شهرًا",
+      "topProducts": "أكثر {{count}} منتجات مبيعًا هذا الشهر",
+      "byCategory": "المبيعات حسب الفئة هذا الشهر",
+      "noSalesThisMonth": "لا مبيعات هذا الشهر."
+    },
+    "debt": {
+      "title": "الديون",
+      "customers": "ما يدين به العملاء",
+      "suppliers": "ما تدين به الصيدلية للموردين",
+      "advances": "تسبيقات العملاء مخصومة: {{amount}}",
+      "byLateness": "حسب التأخر في الدفع",
+      "notDue": "غير مستحق",
+      "bucket": "{{from}}–{{to}} يوم",
+      "beyond": "> {{days}} يوم",
+      "topCustomers": "أكثر {{count}} عملاء مديونية",
+      "topSuppliers": "أكثر {{count}} موردين تدين لهم الصيدلية",
+      "overdue": "منها متأخر: {{amount}}",
+      "customersReport": "تقرير أرصدة العملاء",
+      "suppliersReport": "تقرير ديون الموردين",
+      "openInvoices": "فواتير غير مدفوعة: {{amount}}",
+      "deducted": "الإشعارات الدائنة والتسبيقات للموردين مخصومة: {{amount}}"
+    }
   },
   "notFound": {
     "title": "الصفحة غير موجودة",

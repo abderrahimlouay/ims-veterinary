@@ -44,7 +44,7 @@ export function ColumnChart({ title, points }: { title: string; points: ChartPoi
       <figcaption id={`${id}-title`} className="text-sm font-medium">
         {title}
       </figcaption>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-labelledby={`${id}-title`} className="w-full h-auto">
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-labelledby={`${id}-title`} className="w-full h-auto overflow-visible">
         {points.map((p, i) => {
           const v = values[i]
           const top = v >= 0 ? y(v) : zero
