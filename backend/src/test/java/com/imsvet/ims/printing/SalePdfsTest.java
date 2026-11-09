@@ -106,7 +106,7 @@ class SalePdfsTest {
         long millis = (System.nanoTime() - started) / 1_000_000;
         String text = text(result);
 
-        assertThat(text).contains("FACTURE").contains("INV-").contains("Pharmacie Vétérinaire Démo")
+        assertThat(text).contains("FACTURE").contains("FAC-").contains("Pharmacie Vétérinaire Démo")
                 .contains("NIF 000016001234567").contains("NIF NIF-CLIENT-1").contains("RC RC-CLIENT-1")
                 .contains("Oxyvet Démo 20 %").contains("LOT-PDF-1").contains("Vente à crédit").contains("Échéance")
                 .contains("9 %").contains("2 000,00").contains("2 180,00 DA")

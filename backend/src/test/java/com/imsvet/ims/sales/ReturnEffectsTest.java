@@ -148,8 +148,8 @@ class ReturnEffectsTest {
                 .andExpect(jsonPath("$.lines[1].returnedQuantityBase").value("0.000"))
                 .andExpect(jsonPath("$.returns.length()").value(1))
                 .andExpect(jsonPath("$.returns[0].id").value(returned))
-                .andExpect(jsonPath("$.returns[0].number").value(org.hamcrest.Matchers.startsWith("CR-")))
-                .andExpect(jsonPath("$.returns[0].creditNoteNumber").value(org.hamcrest.Matchers.startsWith("CN-")))
+                .andExpect(jsonPath("$.returns[0].number").value(org.hamcrest.Matchers.startsWith("RC-")))
+                .andExpect(jsonPath("$.returns[0].creditNoteNumber").value(org.hamcrest.Matchers.startsWith("AV-")))
                 .andExpect(jsonPath("$.returns[0].creditNoteTtc").value("10.90"));
     }
 

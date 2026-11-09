@@ -41,7 +41,7 @@ Supplier → Purchase Order → Goods Receipt → Lot Creation → Stock Update 
 | **Preconditions** | Supplier active (BR-PURCH-011); products active (BR-PROD-004); permissions `purchase.create`, `receipt.create`, `supplierinvoice.manage`, `payment.supplier.create` |
 
 ### 1a. Create and validate a purchase order
-1. User selects an active supplier; adds lines (product once per order, unit, quantity, unit price per ordered unit with 4 decimals, discount, VAT prefilled from the product). The price is prefilled from the supplier's latest `supplier_price_history` entry, else `products.purchase_price` (ADR-094, ADR-099, ADR-105). The PO number is assigned at creation (`PO-YYYY-NNNNNN`, ADR-097).
+1. User selects an active supplier; adds lines (product once per order, unit, quantity, unit price per ordered unit with 4 decimals, discount, VAT prefilled from the product). The price is prefilled from the supplier's latest `supplier_price_history` entry, else `products.purchase_price` (ADR-094, ADR-099, ADR-105). The PO number is assigned at creation (`BC-YYYY-NNNNNN`, ADR-097).
 2. Server converts quantities to base units (BR-UNIT-002) and computes line and document totals HT/VAT/TTC per line, HALF_UP (BR-PURCH-002, ADR-093).
 3. `Validate` → `validated`; `Send` → `sent` (printable PO in Phase 10). `Cancel` allowed from draft/validated/sent (audited `PO_CANCEL`). A `partially_received` order can be closed with a reason (audited `PO_CLOSE`, ADR-096).
 4. **DB:** `purchase_orders`, `purchase_order_lines`; number via `document_sequences` (ADR-097).

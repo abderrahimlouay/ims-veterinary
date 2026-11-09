@@ -22,8 +22,8 @@ async function aCreditInvoice(page: Page, quantity: string): Promise<string> {
   await addToCart(page, 'E2E Comptaval', quantity)
   await expect(page.getByTestId('pos-line')).toHaveCount(1)
   await page.getByRole('button', { name: 'Confirmer la vente' }).click()
-  await expect(page.getByText(/Document INV-/)).toBeVisible()
-  return ((await page.getByText(/Document INV-/).textContent()) ?? '').replace('Document ', '')
+  await expect(page.getByText(/Document FAC-/)).toBeVisible()
+  return ((await page.getByText(/Document FAC-/).textContent()) ?? '').replace('Document ', '')
 }
 
 test('J7: a payment on account split across two credit invoices, the statement, then the payment reversed', async ({ page }) => {

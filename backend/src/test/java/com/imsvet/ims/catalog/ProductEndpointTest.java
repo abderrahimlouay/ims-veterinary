@@ -97,6 +97,31 @@ class ProductEndpointTest {
                 .andExpect(jsonPath("$.context.field").value("sku"));
     }
 
+    /** ADR-173: an empty SKU at creation is PREFIX-NNNNNN from a counter that never resets. */
+    @Test
+    void anEmptySkuIsGeneratedFromThePrefixAndTheCounter() throws Exception {
+        String first = JSON.readTree(create(product("", "Généré un", "ml", true)).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("sku").asString();
+        assertThat(first).matches("PRD-\\d{6}");
+        int next = Integer.parseInt(first.substring(4)) + 1;
+        create(product("PRD-%06d".formatted(next), "Saisi à la main", "ml", true)).andExpect(status().isCreated());
+
+        create(product("  ", "Généré deux", "ml", true).replace("\"sku\":\"  \",", ""))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.sku").value("PRD-%06d".formatted(next + 1)));
+
+        jdbc.update("UPDATE app_settings SET setting_value = '' WHERE setting_key = 'sku_prefix'");
+        entityManager.clear();
+        create(product("", "Sans préfixe", "ml", true)).andExpect(jsonPath("$.sku").value("%06d".formatted(next + 2)));
+    }
+
+    @Test
+    void anUpdateStillNeedsTheSku() throws Exception {
+        long id = idOf(create(product("U-3", "Keep SKU", "ml", true)));
+        put(id, product("", "Keep SKU", "ml", true).replace("{", "{\"version\":0,\"vatRate\":\"9\","))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors[0].field").value("sku"));
+    }
+
     @Test
     void invalidProductsAreFieldErrors() throws Exception {
         create(product("B-1", "No unit", " ", true)).andExpect(status().isBadRequest())

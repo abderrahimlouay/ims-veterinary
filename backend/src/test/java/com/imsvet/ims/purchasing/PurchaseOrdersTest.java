@@ -96,7 +96,7 @@ class PurchaseOrdersTest {
                 .andExpect(jsonPath("$.totalVat").value("1.28"))
                 .andExpect(jsonPath("$.totalTtc").value("8.03")));
 
-        assertThat(order.get("number").asString()).matches("PO-2026-\\d{6}");
+        assertThat(order.get("number").asString()).matches("BC-2026-\\d{6}");
         JsonNode second = read(create(oneLine(syrup, "1", "1")).andExpect(status().isCreated()));
         assertThat(sequence(second)).isEqualTo(sequence(order) + 1);
         pharmacist.get("/api/purchase-orders/" + order.get("id").asLong()).andExpect(status().isOk())

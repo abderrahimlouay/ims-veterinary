@@ -118,7 +118,7 @@ class ReorderConversionTest {
         JsonNode first = orders.get(0);
         assertThat(first.get("status").asString()).isEqualTo("draft");
         assertThat(first.get("supplier").get("id").asLong()).isEqualTo(supplier);
-        assertThat(first.get("number").asString()).matches("PO-2026-\\d{6}");
+        assertThat(first.get("number").asString()).matches("BC-2026-\\d{6}");
         assertThat(lines(first)).containsExactly(List.of(priced, "50.000", "0.4000", "5.00"),
                 List.of(plain, "50.000", "0.2500", "0.00"));
         assertThat(orders.get(1).get("supplier").get("id").asLong()).isEqualTo(other);

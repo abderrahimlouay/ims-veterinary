@@ -107,9 +107,9 @@ class CustomerReturnsTest {
 
         JsonNode created = body(create(receipt, "[" + restock(lines[0], "1") + "," + discard(lines[1], "1", "opened",
                 null) + "]", cash("21.80")).andExpect(status().isCreated())
-                .andExpect(jsonPath("$.number").value(org.hamcrest.Matchers.startsWith("CR-")))
+                .andExpect(jsonPath("$.number").value(org.hamcrest.Matchers.startsWith("RC-")))
                 .andExpect(jsonPath("$.document.id").value(receipt))
-                .andExpect(jsonPath("$.creditNote.number").value(org.hamcrest.Matchers.startsWith("CN-")))
+                .andExpect(jsonPath("$.creditNote.number").value(org.hamcrest.Matchers.startsWith("AV-")))
                 .andExpect(jsonPath("$.creditNote.totalTtc").value("21.80"))
                 .andExpect(jsonPath("$.lines[0].disposition").value("restock"))
                 .andExpect(jsonPath("$.lines[0].movementIds.length()").value(1))

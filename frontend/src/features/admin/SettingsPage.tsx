@@ -33,6 +33,7 @@ const LOCAL_CHECKS: Record<string, (value: string) => boolean> = {
   stamp_duty_maximum: (v) => /^none$/i.test(v.trim()) || /^\d+(\.\d{1,2})?$/.test(v.trim()),
   stamp_duty_threshold: (v) => /^\d+(\.\d{1,2})?$/.test(v.trim()),
   stamp_duty_on_receipts: (v) => /^(true|false)$/i.test(v.trim()),
+  sku_prefix: (v) => /^[A-Za-z0-9]{0,10}$/.test(v.trim()),
 }
 
 /**

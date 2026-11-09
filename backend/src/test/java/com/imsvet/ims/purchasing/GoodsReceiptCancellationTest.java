@@ -204,7 +204,7 @@ class GoodsReceiptCancellationTest {
                 stocked)).isEqualTo("8.000");
         assertThat(jdbc.queryForList("""
                 SELECT entity_id FROM audit_log WHERE action = 'LOT_UNBLOCK'
-                  AND JSON_UNQUOTE(JSON_EXTRACT(new_values, '$.reason')) LIKE 'Receipt GR-%cancelled: Cancelled'
+                  AND JSON_UNQUOTE(JSON_EXTRACT(new_values, '$.reason')) LIKE 'Receipt BR-%cancelled: Cancelled'
                 ORDER BY entity_id""", Long.class)).containsExactlyInAnyOrder(untouched, stocked);
     }
 

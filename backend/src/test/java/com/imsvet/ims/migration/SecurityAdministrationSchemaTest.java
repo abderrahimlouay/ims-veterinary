@@ -72,6 +72,7 @@ class SecurityAdministrationSchemaTest {
                 Map.entry("stamp_duty_minimum", "0.00"),
                 Map.entry("stamp_duty_maximum", "none"),
                 Map.entry("stamp_duty_threshold", "0.00"),
-                Map.entry("stamp_duty_on_receipts", "true")));
+                Map.entry("stamp_duty_on_receipts", "true"),
+                Map.entry("sku_prefix", "PRD")));
     }
 }

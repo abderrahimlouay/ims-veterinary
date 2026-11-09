@@ -191,6 +191,18 @@ public enum SettingFormat {
         }
     },
 
+    /** Up to 10 letters or digits, stored in upper case; empty for none (ADR-173). */
+    SKU_PREFIX {
+        @Override
+        public String normalize(String raw) {
+            String value = raw.trim().toUpperCase(Locale.ROOT);
+            if (!value.matches("[A-Z0-9]{0,10}")) {
+                throw new IllegalArgumentException("Enter up to 10 letters or digits, such as PRD, or nothing.");
+            }
+            return value;
+        }
+    },
+
     /** A time of day {@code HH:mm} in the business time zone, stored with two-digit hours (ADR-078, ADR-086). */
     TIME_OF_DAY {
         @Override

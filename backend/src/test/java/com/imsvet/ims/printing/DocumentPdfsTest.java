@@ -89,7 +89,7 @@ class DocumentPdfsTest {
 
         String text = text(admin.get("/api/returns/customer/" + returned + "/pdf").andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "application/pdf")));
-        assertThat(text).contains("AVOIR").contains("CN-").contains("Avoir sur " + invoice.get("number").asString())
+        assertThat(text).contains("AVOIR").contains("AV-").contains("Avoir sur " + invoice.get("number").asString())
                 .contains("Élevage Démo Avoir").contains("1 090,00 DA")
                 .contains("Arrêté le présent avoir à la somme de : Mille quatre-vingt-dix dinars algériens.")
                 .doesNotContain("Délais d'attente");
@@ -107,7 +107,7 @@ class DocumentPdfsTest {
         admin.post("/api/purchase-orders/" + order + "/validate", "").andExpect(status().isOk());
 
         String text = text(admin.get("/api/purchase-orders/" + order + "/pdf").andExpect(status().isOk()));
-        assertThat(text).contains("BON DE COMMANDE").contains("PO-").contains("Grossiste Démo PDF")
+        assertThat(text).contains("BON DE COMMANDE").contains("BC-").contains("Grossiste Démo PDF")
                 .contains("Zone industrielle, Blida").contains("NIF NIF-FOURN-1").contains("PDF-DOC-1")
                 .contains("Ivomec Démo").contains("50,00").doesNotContain("ANNULÉ");
 

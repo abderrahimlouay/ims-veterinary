@@ -217,7 +217,8 @@
         "stamp_duty_minimum": "Stamp duty: minimum",
         "stamp_duty_maximum": "Stamp duty: maximum",
         "stamp_duty_threshold": "Stamp duty: exemption threshold",
-        "stamp_duty_on_receipts": "Stamp duty on receipts"
+        "stamp_duty_on_receipts": "Stamp duty on receipts",
+        "sku_prefix": "Prefix of generated product codes"
       },
       "hints": {
         "expiry_alert_days": "Three decreasing numbers: notice, warning, critical (e.g. 60,30,15).",
@@ -233,7 +234,8 @@
         "stamp_duty_minimum": "Smallest stamp duty charged (e.g. 5.00; 0.00: no minimum).",
         "stamp_duty_maximum": "none, or the largest stamp duty charged.",
         "stamp_duty_threshold": "No stamp duty when the cash part is at or below this amount (0.00: no threshold).",
-        "stamp_duty_on_receipts": "true: receipts and invoices; false: invoices only."
+        "stamp_duty_on_receipts": "true: receipts and invoices; false: invoices only.",
+        "sku_prefix": "Up to 10 letters or digits (e.g. PRD); empty: the number alone. For products created without a code."
       }
     },
     "audit": {
@@ -407,7 +409,8 @@
       "species": "Species",
       "noMatch": "No product matches the search.",
       "inStockOnly": "In stock only",
-      "returnRestockForbidden": "Returned units never go back into sellable stock (e.g. cold chain)"
+      "returnRestockForbidden": "Returned units never go back into sellable stock (e.g. cold chain)",
+      "skuHint": "Leave empty to generate the code (e.g. PRD-000001)."
     },
     "ingredients": {
       "none": "No active ingredient.",

@@ -10,7 +10,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The only issuer of document numbers (BR-DOC-001, ADR-011, ADR-097): {@code KEY-YYYY-NNNNNN}, one counter per key
+ * The only issuer of document numbers (BR-DOC-001, ADR-011, ADR-097): {@code PREFIX-YYYY-NNNNNN} with the key's French
+ * prefix (ADR-174), one counter per key
  * and business year (the year of the business date in the business time zone, never the UTC date). Runs only in
  * the caller's transaction: the counter row stays locked until it commits, so documents of one key are serialised
  * and a rollback gives the number back (no gap). Lock order (database.md §7): the idempotency key if any, this row,
@@ -35,6 +36,21 @@ public class NumberingService {
         DocumentSequence sequence = sequences.findForUpdate(key.name(), year).orElseThrow();
         int value = sequence.increment();
         sequences.flush();
-        return "%s-%04d-%06d".formatted(key.name(), year, value);
+        return "%s-%04d-%06d".formatted(key.prefix(), year, value);
+    }
+
+    /** Series that never reset, in document_sequences with year 0, such as the generated SKUs (ADR-173). */
+    public enum Series {
+        SKU
+    }
+
+    /** The next value of a series that never resets, under the same row lock as the document counters. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public int nextInSeries(Series series) {
+        sequences.createIfAbsent(series.name(), (short) 0);
+        DocumentSequence sequence = sequences.findForUpdate(series.name(), (short) 0).orElseThrow();
+        int value = sequence.increment();
+        sequences.flush();
+        return value;
     }
 }

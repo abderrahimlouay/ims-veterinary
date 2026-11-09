@@ -189,7 +189,7 @@ Derivation chain: `quote → delivery_note → invoice`, `invoice | receipt → 
 | **Money** | Value object | `BigDecimal` + per-line HALF_UP rounding (ADR-093); currency DZD (ADR-033) |
 | **Percentage** | Value object | 0–100 |
 | **LotIdentity** | Value object | (product, lot number); the expiry date must match the existing lot (ADR-070) |
-| **DocumentNumber** | Value object | `KEY-YYYY-NNNNNN`, yearly reset (ADR-097) |
+| **DocumentNumber** | Value object | `PREFIX-YYYY-NNNNNN` with French prefixes (`FAC`, `TC`, `BL`, `AV`, `DEV`, `BC`, `BR`, `RF`, `RC`), yearly reset (ADR-097, ADR-174) |
 | **ExpiryAlertLevel** | Value object | expired / critical / warning / notice derived from thresholds (BR-LOT-010) |
 | **StockService** | Application service (inventory) | The only component that changes `quantity_on_hand` and writes movements (BR-STOCK-002, ADR-088) |
 | **FefoAllocator** | Domain service | Splits a requested quantity over sellable lots in FEFO order (BR-LOT-005) |

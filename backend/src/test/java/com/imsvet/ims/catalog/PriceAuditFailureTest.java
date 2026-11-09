@@ -20,6 +20,7 @@ import com.imsvet.ims.catalog.application.ProductStock;
 import com.imsvet.ims.catalog.infrastructure.ProductRepository;
 import com.imsvet.ims.catalog.infrastructure.ProductSearchRepository;
 import com.imsvet.ims.catalog.infrastructure.TherapeuticCategoryRepository;
+import com.imsvet.ims.numbering.application.NumberingService;
 import com.imsvet.ims.settings.application.SettingsProvider;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -59,7 +60,7 @@ class PriceAuditFailureTest {
         ProductCatalog catalog = new ProductCatalog(products, mock(TherapeuticCategoryRepository.class),
                 mock(DosageFormRepository.class), mock(ManufacturerRepository.class), mock(SettingsProvider.class),
                 audit, Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), mock(ProductSearchRepository.class),
-                mock(ProductStock.class));
+                mock(ProductStock.class), mock(NumberingService.class));
 
         assertThatThrownBy(() -> catalog.update(5, new ProductInput("SKU", "Name", null, null, null, "ml", true,
                 new BigDecimal("9"), null, null, null, null, new BigDecimal("2"), null), 0))

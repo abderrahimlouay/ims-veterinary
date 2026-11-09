@@ -36,9 +36,10 @@ class ProductController {
 
     /**
      * {@code ProductWriteRequest}; {@code version} is required by PUT (ADR-027); prices per base unit are
-     * optional (0 at creation, unchanged on update when omitted), and so is the return restriction (BR-PROD-009).
+     * optional (0 at creation, unchanged on update when omitted), and so is the return restriction (BR-PROD-009). An
+     * empty {@code sku} at creation is generated (ADR-173); on update it is required.
      */
-    record ProductWriteRequest(@NotBlank @Size(max = 40) String sku, @NotBlank @Size(max = 200) String commercialName,
+    record ProductWriteRequest(@Size(max = 40) String sku, @NotBlank @Size(max = 200) String commercialName,
             Integer categoryId, Integer dosageFormId, Integer manufacturerId, @NotBlank @Size(max = 20) String baseUnit,
             @NotNull Boolean divisible, BigDecimal vatRate, BigDecimal minStock, BigDecimal maxStock,
             BigDecimal reorderPoint, BigDecimal purchasePrice, BigDecimal salePrice, Boolean returnRestockForbidden,

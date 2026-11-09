@@ -36,7 +36,7 @@ test('J4: a cash sale across two lots by FEFO, with change', async ({ page }) =>
 
   await page.getByRole('button', { name: 'Confirmer la vente' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Vente confirmée' })).toBeVisible()
-  await expect(page.getByText(/Document RCT-\d{4}-\d{6}/)).toBeVisible()
+  await expect(page.getByText(/Document TC-\d{4}-\d{6}/)).toBeVisible()
   await expect(page.getByText(/Monnaie à rendre/)).toBeVisible()
 
   await page.getByRole('button', { name: 'Nouvelle vente' }).click()

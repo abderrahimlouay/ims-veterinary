@@ -21,6 +21,7 @@ import com.imsvet.ims.common.error.ValidationException.Violation;
 import com.imsvet.ims.common.paging.PageRequests;
 import com.imsvet.ims.common.paging.PageResponse;
 import com.imsvet.ims.common.security.Permissions;
+import com.imsvet.ims.numbering.application.NumberingService;
 import com.imsvet.ims.settings.application.SettingsProvider;
 import com.imsvet.ims.settings.domain.SettingDefinition;
 import java.math.BigDecimal;
@@ -57,6 +58,12 @@ public class ProductCatalog {
             Integer manufacturerId, String baseUnit, boolean divisible, BigDecimal vatRate, BigDecimal minStock,
             BigDecimal maxStock, BigDecimal reorderPoint, BigDecimal purchasePrice, BigDecimal salePrice,
             Boolean returnRestockForbidden) {
+
+        ProductInput withSku(String generated) {
+            return new ProductInput(generated, commercialName, categoryId, dosageFormId, manufacturerId, baseUnit,
+                    divisible, vatRate, minStock, maxStock, reorderPoint, purchasePrice, salePrice,
+                    returnRestockForbidden);
+        }
     }
 
     private static final String PRICE_EDIT = "price.edit";
@@ -72,10 +79,12 @@ public class ProductCatalog {
     private final Clock clock;
     private final ProductSearchRepository search;
     private final ProductStock stock;
+    private final NumberingService numbering;
 
     public ProductCatalog(ProductRepository products, TherapeuticCategoryRepository categories,
             DosageFormRepository dosageForms, ManufacturerRepository manufacturers, SettingsProvider settings,
-            AuditRecorder audit, Clock clock, ProductSearchRepository search, ProductStock stock) {
+            AuditRecorder audit, Clock clock, ProductSearchRepository search, ProductStock stock,
+            NumberingService numbering) {
         this.products = products;
         this.categories = categories;
         this.dosageForms = dosageForms;
@@ -85,6 +94,7 @@ public class ProductCatalog {
         this.clock = clock;
         this.search = search;
         this.stock = stock;
+        this.numbering = numbering;
     }
 
     /** The search criteria of {@code GET /api/products} (ADR-047, ADR-048, barcode exact); all optional. */
@@ -125,7 +135,8 @@ public class ProductCatalog {
     public ProductDetail create(ProductInput input) {
         BigDecimal vat = input.vatRate() != null ? input.vatRate()
                 : new BigDecimal(settings.value(SettingDefinition.DEFAULT_VAT_RATE));
-        Product.Core core = validate(input, vat);
+        ProductInput named = blank(input.sku()) ? input.withSku(generatedSku()) : input;
+        Product.Core core = validate(named, vat);
         BigDecimal purchase = orZero(input.purchasePrice());
         BigDecimal sale = orZero(input.salePrice());
         if ((purchase.signum() != 0 || sale.signum() != 0) && !Permissions.granted(PRICE_EDIT)) {
@@ -148,6 +159,9 @@ public class ProductCatalog {
         }
         if (input.vatRate() == null) {
             throw invalid(List.of(new Violation("vatRate", "REQUIRED", "VAT is required.")));
+        }
+        if (blank(input.sku())) {
+            throw invalid(List.of(new Violation("sku", "REQUIRED", "The SKU is required.")));
         }
         Product.Core core = validate(input, input.vatRate());
         BigDecimal purchase = input.purchasePrice() == null ? product.purchasePrice() : price(input.purchasePrice());
@@ -225,6 +239,24 @@ public class ProductCatalog {
             oldValues.put(field, before.toPlainString());
             newValues.put(field, after.toPlainString());
         }
+    }
+
+    private static boolean blank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    /**
+     * ADR-173: {@code sku_prefix}-NNNNNN from a counter that never resets (under its row lock), skipping a value
+     * already typed by hand for another product.
+     */
+    private String generatedSku() {
+        String prefix = settings.value(SettingDefinition.SKU_PREFIX);
+        String sku;
+        do {
+            int value = numbering.nextInSeries(NumberingService.Series.SKU);
+            sku = prefix.isEmpty() ? "%06d".formatted(value) : "%s-%06d".formatted(prefix, value);
+        } while (products.findBySku(sku).isPresent());
+        return sku;
     }
 
     private static BigDecimal orZero(BigDecimal value) {

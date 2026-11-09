@@ -217,7 +217,8 @@
         "stamp_duty_minimum": "Droit de timbre : minimum",
         "stamp_duty_maximum": "Droit de timbre : maximum",
         "stamp_duty_threshold": "Droit de timbre : seuil d'exonération",
-        "stamp_duty_on_receipts": "Droit de timbre sur les tickets de caisse"
+        "stamp_duty_on_receipts": "Droit de timbre sur les tickets de caisse",
+        "sku_prefix": "Préfixe des codes produit générés"
       },
       "hints": {
         "expiry_alert_days": "Trois nombres décroissants : avis, avertissement, critique (ex. 60,30,15).",
@@ -233,7 +234,8 @@
         "stamp_duty_minimum": "Droit de timbre le plus petit perçu (ex. 5.00 ; 0.00 : aucun minimum).",
         "stamp_duty_maximum": "none, ou le droit de timbre le plus élevé perçu.",
         "stamp_duty_threshold": "Aucun droit de timbre quand la part en espèces est inférieure ou égale à ce montant (0.00 : aucun seuil).",
-        "stamp_duty_on_receipts": "true : tickets et factures ; false : factures seulement."
+        "stamp_duty_on_receipts": "true : tickets et factures ; false : factures seulement.",
+        "sku_prefix": "Jusqu'à 10 lettres ou chiffres (ex. PRD) ; vide : le numéro seul. Pour les produits créés sans code."
       }
     },
     "audit": {
@@ -407,7 +409,8 @@
       "species": "Espèce",
       "noMatch": "Aucun produit ne correspond à la recherche.",
       "inStockOnly": "En stock seulement",
-      "returnRestockForbidden": "Les unités retournées ne reviennent jamais en stock vendable (ex. chaîne du froid)"
+      "returnRestockForbidden": "Les unités retournées ne reviennent jamais en stock vendable (ex. chaîne du froid)",
+      "skuHint": "Laissez vide pour générer le code (ex. PRD-000001)."
     },
     "ingredients": {
       "none": "Aucun principe actif.",

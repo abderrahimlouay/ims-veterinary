@@ -83,7 +83,7 @@ class SupplierReturnsTest {
                 .andExpect(jsonPath("$.lines[0].lotNumber").value("R-ACT"))
                 .andExpect(jsonPath("$.lines[0].quantityBase").value("4.000")));
 
-        assertThat(created.get("number").asString()).matches("SR-2026-\\d{6}");
+        assertThat(created.get("number").asString()).matches("RF-2026-\\d{6}");
         assertThat(balances(active, blocked, recalled, expired)).containsExactly("6.000", "0.000", "9.000", "0.000");
         assertThat(jdbc.queryForList("""
                 SELECT CONCAT(movement_type, ' ', CAST(quantity AS CHAR), ' ', reference_type) FROM stock_movements

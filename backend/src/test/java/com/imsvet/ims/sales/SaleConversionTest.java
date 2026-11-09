@@ -90,7 +90,7 @@ class SaleConversionTest {
     @Test
     void aQuoteIsNumberedAndMovesNothing() throws Exception {
         long quote = draft("quote", false);
-        confirm(quote, "{}").andExpect(status().isOk()).andExpect(jsonPath("$.number").value(startsWith("QUO-")))
+        confirm(quote, "{}").andExpect(status().isOk()).andExpect(jsonPath("$.number").value(startsWith("DEV-")))
                 .andExpect(jsonPath("$.lines[0].lotId").isEmpty());
         assertThat(onHand()).isEqualByComparingTo("10");
         assertThat(movements(quote)).isZero();
@@ -108,7 +108,7 @@ class SaleConversionTest {
     void aDeliveryNoteMovesStockAndTakesNoPayment() throws Exception {
         long note = draft("delivery_note", false);
         confirm(note, cheque(TTC)).andExpect(jsonPath("$.code").value("PAYMENT_TOTAL_MISMATCH"));
-        confirm(note, "{}").andExpect(status().isOk()).andExpect(jsonPath("$.number").value(startsWith("DN-")))
+        confirm(note, "{}").andExpect(status().isOk()).andExpect(jsonPath("$.number").value(startsWith("BL-")))
                 .andExpect(jsonPath("$.payments").isEmpty());
         assertThat(onHand()).isEqualByComparingTo("8");
         assertThat(movements(note)).isOne();
@@ -159,7 +159,7 @@ class SaleConversionTest {
                 .andExpect(jsonPath("$.errors[0].code").value("FROZEN"));
 
         confirm(invoice, "{}").andExpect(jsonPath("$.code").value("PAYMENT_TOTAL_MISMATCH"));
-        confirm(invoice, cheque(TTC)).andExpect(status().isOk()).andExpect(jsonPath("$.number").value(startsWith("INV-")))
+        confirm(invoice, cheque(TTC)).andExpect(status().isOk()).andExpect(jsonPath("$.number").value(startsWith("FAC-")))
                 .andExpect(jsonPath("$.payments[0].amount").value(TTC));
         assertThat(onHand()).isEqualByComparingTo("8");
         assertThat(movements(invoice)).isZero();

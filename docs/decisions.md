@@ -1236,6 +1236,18 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** invoices only; the whole document when any cash is used; a plain rate without steps; refunds on a full return or pro rata; not applicable (no stamp duty).
 - **Consequences:** a Flyway migration (settings, `sales_documents.stamp_duty`, `net_to_pay`), `sales` (`StampDuty`, confirmation, preview endpoint), `finance` (the cash payment), PDFs, the POS and the sale detail, settings page, `api.md`, `database.md`, `business-rules.md`, `glossary.md`, `testing.md`.
 
+## ADR-173 — A product created without a SKU gets a generated one
+- **Status:** Accepted (user decision, 2026-11-08, Phase 12: "Prefix + sequence", prefix `PRD`).
+- **Decision:** At creation an **empty SKU** is filled with `sku_prefix`-`NNNNNN` (six digits; the number alone when the prefix is empty), taken from a counter that **never resets** (`document_sequences` row `SKU`, year 0, under its row lock by `NumberingService`). A value already typed by hand for another product is skipped. A SKU typed by hand still works and stays unique (BR-PROD-001). On update the SKU stays required. Setting `sku_prefix` (up to 10 letters or digits, upper case, empty allowed), seeded `PRD`, editable and audited.
+- **Alternatives:** category code + counter; first letters of the name + counter; a "Générer" button only.
+- **Consequences:** V12_006 (setting), `catalog` may call `numbering` (architecture.md §3, architecture test), `api.md` (`sku` optional at creation), the product form (hint), BR-PROD-001, `database.md`.
+
+## ADR-174 — Document numbers use French prefixes (amends ADR-097, ADR-122, ADR-131)
+- **Status:** Accepted (user decision, 2026-11-08, Phase 12: "French prefixes").
+- **Decision:** Numbers keep the year and six digits with a yearly reset; only the printed prefix changes: `BC` purchase order, `BR` goods receipt, `RF` supplier return, `DEV` quote, `BL` delivery note, `FAC` invoice, `TC` receipt (ticket de caisse), `AV` credit note, `RC` customer return (retour client, not in the user's list; chosen to match). The counters keep their keys (`document_sequences.doc_key` unchanged), so a document type's counter simply continues. Fixed in the code, not a setting. Go-live starts from an empty database (ADR-160), so no real document carries an old prefix; numbers already issued keep theirs.
+- **Alternatives:** prefixes in the settings; prefixes and format in the settings.
+- **Consequences:** `DocumentKey.prefix()`, BR-DOC-001, `database.md`, `api.md`, `domain-model.md`, `testing.md`, tests and journeys asserting numbers.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1495,7 +1507,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
-| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05); owner's Windows laptop → ADR-165 (hosting), ADR-166 (the application serves HTTPS), ADR-167 (Google Drive copy) (2026-11-06); ~~ADR-168~~ (disk encryption required) (2026-11-07) → ADR-169 (recommended only), ADR-170 (rehearsal), ADR-171 (go-live answers, ~~DR-040~~, ~~DR-041~~), ADR-172 (stamp duty, ~~DR-043~~) (2026-11-08) |
+| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05); owner's Windows laptop → ADR-165 (hosting), ADR-166 (the application serves HTTPS), ADR-167 (Google Drive copy) (2026-11-06); ~~ADR-168~~ (disk encryption required) (2026-11-07) → ADR-169 (recommended only), ADR-170 (rehearsal), ADR-171 (go-live answers, ~~DR-040~~, ~~DR-041~~), ADR-172 (stamp duty, ~~DR-043~~), ADR-173 (generated SKU), ADR-174 (French number prefixes) (2026-11-08) |
 | 13 Dark theme | ADR-069 (decided 2026-10-22); ADR-161, ADR-162, ADR-163, ADR-164 (report charts) (2026-11-06) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**

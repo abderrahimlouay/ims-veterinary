@@ -36,7 +36,8 @@ const DECIMAL_3 = /^\d+(\.\d{1,3})?$/
 /** ADR-049: prices per base unit, up to 4 decimals. */
 const PRICE = /^\d+(\.\d{1,4})?$/
 const schema = z.object({
-  sku: z.string().trim().min(1, 'validation.required').max(40, 'validation.tooLong'),
+  /** Empty at creation: the server generates it (ADR-173); required on update. */
+  sku: z.string().trim().max(40, 'validation.tooLong'),
   commercialName: z.string().trim().min(1, 'validation.required').max(200, 'validation.tooLong'),
   categoryId: z.string(),
   dosageFormId: z.string(),
@@ -139,6 +140,10 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
   const inconsistent = thresholdsInconsistent(maxStock ?? '', reorderPoint ?? '')
 
   const onSubmit = handleSubmit((v) => {
+    if (product && v.sku === '') {
+      setError('sku', { message: 'validation.required' })
+      return
+    }
     setProblem(undefined)
     setSaved(false)
     mutation.mutate(toWrite(v, canEditPrices, product?.version), {
@@ -156,7 +161,7 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
       {problem && problem.code !== 'CONCURRENT_MODIFICATION' && <Alert tone="danger">{problemMessage(problem, t)}</Alert>}
       {problem?.code === 'CONCURRENT_MODIFICATION' && <StaleNotice id={product?.id} />}
       <div className="grid grid-cols-2 gap-4">
-        <TextField label={t('catalog.products.sku')} disabled={!editable} error={fieldError('sku')} {...register('sku')} />
+        <TextField label={t('catalog.products.sku')} hint={product ? undefined : t('catalog.products.skuHint')} disabled={!editable} error={fieldError('sku')} {...register('sku')} />
         <TextField label={t('catalog.products.name')} disabled={!editable} error={fieldError('commercialName')} {...register('commercialName')} />
         <ReferenceSelect path="categories" i18nKey="categories" label={t('catalog.products.category')} disabled={!editable} error={fieldError('categoryId')} {...register('categoryId')} />
         <ReferenceSelect path="dosage-forms" i18nKey="dosageForms" label={t('catalog.products.dosageForm')} disabled={!editable} error={fieldError('dosageFormId')} {...register('dosageFormId')} />

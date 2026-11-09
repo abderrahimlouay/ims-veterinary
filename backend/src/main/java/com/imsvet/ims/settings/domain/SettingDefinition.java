@@ -31,7 +31,8 @@ public enum SettingDefinition {
     STAMP_DUTY_MINIMUM("stamp_duty_minimum", SettingFormat.MONEY, true, false),
     STAMP_DUTY_MAXIMUM("stamp_duty_maximum", SettingFormat.NONE_OR_MONEY, true, false),
     STAMP_DUTY_THRESHOLD("stamp_duty_threshold", SettingFormat.MONEY, true, false),
-    STAMP_DUTY_ON_RECEIPTS("stamp_duty_on_receipts", SettingFormat.BOOLEAN, true, false);
+    STAMP_DUTY_ON_RECEIPTS("stamp_duty_on_receipts", SettingFormat.BOOLEAN, true, false),
+    SKU_PREFIX("sku_prefix", SettingFormat.SKU_PREFIX, true, false);
 
     private final String key;
     private final SettingFormat format;
