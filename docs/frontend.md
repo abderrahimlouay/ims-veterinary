@@ -142,6 +142,7 @@ Layout: left = product search + scan field + quick results; centre = cart lines 
 | Offline | not supported (no offline requirement in the Spec `[REC]`); a banner blocks sale when API unreachable |
 | Cash session | if no open session and payments need one → modal to open it (`CASH_SESSION_REQUIRED`) |
 | Stamp duty | for an immediate sale with a cash part, the screen asks `GET /sales/{id}/stamp-duty?cash=` and shows "Droit de timbre" and "Net à payer" when it is above zero; the change is computed on the net; confirm waits for the answer; the payments sent still add up to the TTC (ADR-172). The sale detail and the success screen show the stored stamp duty and net |
+| Global discount | with `sale.discount`, a form under the totals of a draft with lines: amount (off the total incl. tax) or percentage, "Appliquer la remise", and "Retirer la remise" when one is set (`PUT /sales/{id}/global-discount`); the totals then show "Sous-total" and "Remise globale" (incl. tax) before HT, VAT and TTC, which are after it; the confirmation screen and the sale detail show it too (ADR-175) |
 
 **Delivered (Phase 7):** type and customer are chosen before the first line and lock with the draft, since the price depends on the customer and a type never changes; credit stays switchable until confirmation. The change is computed on the screen only (ADR-118). A line is changed in one dialog: quantity, unit, discount (`sale.discount`), lot (`sale.override_fefo`). Printing comes with Phase 10.
 

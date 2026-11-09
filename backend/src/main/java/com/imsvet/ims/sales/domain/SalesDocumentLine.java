@@ -12,7 +12,8 @@ import java.math.BigDecimal;
  * A line of a sales document: one lot (BR-LOT-006), {@code null} on a quote; the price per sold unit (ADR-123) and the
  * VAT rate as they were when the line was added (BR-SALE-008). Amounts are computed, never stored from a client; the
  * generated columns hold the same values (ADR-016). A sold line counts what customers returned of it (ADR-130,
- * BR-RET-001); a credit-note line stores what it credits, which its amounts then are.
+ * BR-RET-001); a credit-note line stores what it credits, which its amounts then are. A line's share of the document's
+ * global discount lowers its amount excl. tax (ADR-175).
  */
 @Entity
 @Table(name = "sales_document_lines")
@@ -54,6 +55,9 @@ public class SalesDocumentLine {
 
     @Column(name = "vat_rate", nullable = false, precision = 5, scale = 2)
     private BigDecimal vatRate;
+
+    @Column(name = "global_discount_ht", nullable = false, precision = 14, scale = 2)
+    private BigDecimal globalDiscountHt = BigDecimal.ZERO.setScale(2);
 
     @Column(name = "returned_quantity_base", nullable = false, precision = 14, scale = 3)
     private BigDecimal returnedQuantityBase = BigDecimal.ZERO.setScale(3);
@@ -101,6 +105,11 @@ public class SalesDocumentLine {
         return credit;
     }
 
+    /** ADR-175: this line's share of the document's global discount, set on a draft by its totals. */
+    public void takeGlobalDiscount(BigDecimal share) {
+        this.globalDiscountHt = share;
+    }
+
     /** BR-RET-001: under the original document's lock; the database refuses more than the sold quantity. */
     public void recordReturn(BigDecimal returnedBase) {
         this.returnedQuantityBase = returnedQuantityBase.add(returnedBase);
@@ -114,8 +123,13 @@ public class SalesDocumentLine {
         return copy;
     }
 
+    /** The amount excl. tax after the line's own discount, before its share of the global discount. */
+    public BigDecimal lineHtBeforeGlobalDiscount() {
+        return SaleAmounts.lineHt(quantity, unitPrice, discountPct);
+    }
+
     public BigDecimal lineHt() {
-        return creditedHt != null ? creditedHt : SaleAmounts.lineHt(quantity, unitPrice, discountPct);
+        return creditedHt != null ? creditedHt : lineHtBeforeGlobalDiscount().subtract(globalDiscountHt);
     }
 
     public BigDecimal lineVat() {
@@ -126,12 +140,20 @@ public class SalesDocumentLine {
         return lineHt().add(lineVat());
     }
 
-    /** A credit-note line without discount shows none, whatever the rounding of its credited amount. */
+    /**
+     * What the line's own discount took off; the global discount is counted apart (ADR-175). A credit-note line without
+     * discount shows none, whatever the rounding of its credited amount.
+     */
     public BigDecimal lineDiscount() {
         if (creditedHt != null && discountPct.signum() == 0) {
             return BigDecimal.ZERO.setScale(2);
         }
-        return SaleAmounts.lineDiscount(quantity, unitPrice, lineHt()).max(BigDecimal.ZERO.setScale(2));
+        BigDecimal ht = creditedHt != null ? creditedHt : lineHtBeforeGlobalDiscount();
+        return SaleAmounts.lineDiscount(quantity, unitPrice, ht).max(BigDecimal.ZERO.setScale(2));
+    }
+
+    public BigDecimal globalDiscountHt() {
+        return globalDiscountHt;
     }
 
     public BigDecimal returnedQuantityBase() {

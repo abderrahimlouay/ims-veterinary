@@ -157,7 +157,7 @@ Audit is written by services in the **same transaction** as the action (BR-AUDIT
 | `USER_CREATE`, `USER_UPDATE`, `USER_DEACTIVATE`, `ROLE_PERMISSION_CHANGE`, `PASSWORD_RESET` | identity administration (re-activation is a `USER_UPDATE`) | REC |
 | `SETTING_CHANGE` | alert thresholds, VAT default, company data | REC |
 | `BACKUP_RUN`, `BACKUP_DOWNLOAD` | backup operations | REC |
-| `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale | REC (ADR-120, BR-SALE-007) |
+| `FEFO_OVERRIDE`, `DISCOUNT_OVERRIDE` | exceptions at sale; `DISCOUNT_OVERRIDE` also when a global discount is given (old and new kind and value) | REC (ADR-120, BR-SALE-007, ADR-175, BR-SALE-018) |
 | `CASH_VARIANCE` | a cash session closed with a non-zero variance; who closed it and whose session it was | REC (W9, ADR-136) |
 | `CASH_MOVEMENT_CREATE` | a manual cash movement: session, direction, amount, label | user decision 2026-11-03 (ADR-136) |
 

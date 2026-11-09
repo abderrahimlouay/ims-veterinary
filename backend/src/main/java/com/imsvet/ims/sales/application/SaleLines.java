@@ -17,6 +17,7 @@ import com.imsvet.ims.inventory.application.SaleLots.LotPick;
 import com.imsvet.ims.inventory.application.SaleLots.Proposal;
 import com.imsvet.ims.sales.application.SalesViews.SaleDetail;
 import com.imsvet.ims.sales.application.SalesViews.SaleWarning;
+import com.imsvet.ims.sales.domain.GlobalDiscount;
 import com.imsvet.ims.sales.domain.PriceResolver.Resolution;
 import com.imsvet.ims.sales.domain.PriceResolver.Source;
 import com.imsvet.ims.sales.domain.SalesDocStatus;
@@ -28,10 +29,12 @@ import com.imsvet.ims.sales.infrastructure.SalesDocumentRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +53,9 @@ public class SaleLines {
     }
 
     private static final String OVERRIDE_FEFO = "sale.override_fefo";
+    private static final String SALE_DISCOUNT = "sale.discount";
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
+    private static final int MONEY_SCALE = 2;
     private static final int PRICE_SCALE = 4;
     private static final int DISCOUNT_SCALE = 2;
     private static final int REASON_MAX = 500;
@@ -103,6 +109,45 @@ public class SaleLines {
         SalesDocument document = draft(documentId);
         lines.delete(line(documentId, lineId));
         lines.flush();
+        return saved(document);
+    }
+
+    /**
+     * ADR-175, BR-SALE-018: gives the draft a global discount, a percentage (above 0, at most 100) or an amount off the
+     * total incl. tax (above 0, at most that total), two decimals at most; {@code null} kind or value removes it. Giving
+     * one needs {@code sale.discount} and is audited {@code DISCOUNT_OVERRIDE}; removing one does not.
+     */
+    @PreAuthorize("hasAuthority('sale.create')")
+    @Transactional
+    public SaleDetail giveGlobalDiscount(long documentId, String kind, BigDecimal value) {
+        SalesDocument document = draft(documentId);
+        Instant now = clock.instant();
+        if (kind == null || kind.isBlank() || value == null) {
+            document.giveGlobalDiscount(null, now);
+            return saved(document);
+        }
+        GlobalDiscount.Kind parsed = GlobalDiscount.Kind.fromCode(kind)
+                .orElseThrow(() -> invalid("kind", "UNKNOWN", "The kind is percent or amount."));
+        if (value.stripTrailingZeros().scale() > MONEY_SCALE) {
+            throw invalid("value", "SCALE", "At most two decimals.");
+        }
+        BigDecimal ceiling = parsed == GlobalDiscount.Kind.PERCENT ? HUNDRED
+                : SaleTotals.ttcBeforeGlobalDiscount(lines.findByDocumentIdOrderByIdAsc(documentId));
+        if (value.signum() <= 0 || value.compareTo(ceiling) > 0) {
+            throw invalid("value", "RANGE", "Above zero and at most " + ceiling.toPlainString() + ".");
+        }
+        if (!Permissions.granted(SALE_DISCOUNT)) {
+            throw new AccessDeniedException("A global discount needs sale.discount");
+        }
+        Map<String, Object> before = new LinkedHashMap<>();
+        document.globalDiscount().ifPresent(d -> {
+            before.put("kind", d.kind().code());
+            before.put("value", d.value().toPlainString());
+        });
+        GlobalDiscount given = new GlobalDiscount(parsed, value.setScale(MONEY_SCALE, RoundingMode.HALF_UP));
+        document.giveGlobalDiscount(given, now);
+        audit.record(AuditAction.DISCOUNT_OVERRIDE, "sales_documents", document.id(), before,
+                Map.of("kind", given.kind().code(), "value", given.value().toPlainString()));
         return saved(document);
     }
 

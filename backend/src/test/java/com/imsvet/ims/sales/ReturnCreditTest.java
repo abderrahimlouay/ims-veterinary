@@ -68,10 +68,29 @@ class ReturnCreditTest {
         assertThat(tiny.ht()).isEqualByComparingTo("0.01");
     }
 
+    @Test
+    void aGlobalDiscountShareIsCreditedInProportion() {
+        // 3 × 100.00, 19 % VAT, global discount share 30.00: the line was 270.00 excl. tax and 51.30 VAT
+        SoldLine line = sold("3", "3", "100.0000", "0", "19", "0", "0.00", "0.00", "30.00");
+
+        Credit one = ReturnCredit.of(line, dec("1"));
+        Credit all = ReturnCredit.of(line, dec("3"));
+
+        assertThat(one.ht()).isEqualByComparingTo("90.00");
+        assertThat(one.vat()).isEqualByComparingTo("17.10");
+        assertThat(all.ht()).isEqualByComparingTo("270.00");
+        assertThat(all.vat()).isEqualByComparingTo("51.30");
+    }
+
     private static SoldLine sold(String quantity, String base, String price, String discount, String vat,
             String returned, String creditedHt, String creditedVat) {
+        return sold(quantity, base, price, discount, vat, returned, creditedHt, creditedVat, "0.00");
+    }
+
+    private static SoldLine sold(String quantity, String base, String price, String discount, String vat,
+            String returned, String creditedHt, String creditedVat, String globalDiscountHt) {
         return new SoldLine(dec(quantity), dec(base), dec(price), dec(discount), dec(vat), dec(returned),
-                dec(creditedHt), dec(creditedVat));
+                dec(creditedHt), dec(creditedVat), dec(globalDiscountHt));
     }
 
     private static BigDecimal dec(String value) {

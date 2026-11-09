@@ -39,6 +39,8 @@
 </table>
 <div class="rule"></div>
 <table>
+  <tr th:if="${totals.globalLabel != null}"><td>Sous-total TTC</td><td class="num" th:text="${totals.ttcBeforeGlobal}">0,00</td></tr>
+  <tr th:if="${totals.globalLabel != null}"><td th:text="${totals.globalLabel}">Remise globale</td><td class="num" th:text="${totals.globalTtc}">0,00</td></tr>
   <tr><td>Total HT</td><td class="num" th:text="${totals.ht}">0,00</td></tr>
   <tr><td>TVA</td><td class="num" th:text="${totals.vat}">0,00</td></tr>
   <tr class="grand"><td>TOTAL TTC</td><td class="num" th:text="${totals.ttc}">0,00</td></tr>

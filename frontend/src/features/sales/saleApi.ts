@@ -39,6 +39,18 @@ export interface SaleLine {
   warnings: SaleWarning[]
   /** What customers returned of the line (ADR-131). */
   returnedQuantityBase: string
+  /** The line's share of the global discount, excl. tax; `lineHt` is after it (ADR-175). */
+  globalDiscountHt: string
+}
+
+export type GlobalDiscountKind = 'percent' | 'amount'
+
+/** ADR-175: as entered, and what it took off excl. and incl. tax. */
+export interface GlobalDiscount {
+  kind: GlobalDiscountKind
+  value: string
+  ht: string
+  ttc: string
 }
 
 export interface SaleDetail {
@@ -55,8 +67,16 @@ export interface SaleDetail {
   cancelledAt: string | null
   cancelReason: string | null
   notes: string | null
-  /** `stampDuty` and `netToPay` (TTC + stamp duty): ADR-172. */
-  totals: { ht: string; discount: string; vat: string; ttc: string; stampDuty: string; netToPay: string }
+  /** `stampDuty` and `netToPay` (TTC + stamp duty): ADR-172; `ht`, `vat`, `ttc` after the global discount (ADR-175). */
+  totals: {
+    ht: string
+    discount: string
+    vat: string
+    ttc: string
+    stampDuty: string
+    netToPay: string
+    globalDiscount: GlobalDiscount | null
+  }
   lines: SaleLine[]
   payments: { id: number; method: PaymentMethod; amount: string; reference: string | null }[]
   cashSessionId: number | null
@@ -127,6 +147,12 @@ export const replaceLine = (id: number, lineId: number, line: LineWrite) =>
   apiFetch<SaleDetail>(`/api/sales/${id}/lines/${lineId}`, { method: 'PUT', json: line })
 export const removeLine = (id: number, lineId: number) =>
   apiFetch<SaleDetail>(`/api/sales/${id}/lines/${lineId}`, { method: 'DELETE' })
+/** ADR-175: `null` removes the global discount; giving one needs `sale.discount`. */
+export const giveGlobalDiscount = (id: number, discount: { kind: GlobalDiscountKind; value: string } | null) =>
+  apiFetch<SaleDetail>(`/api/sales/${id}/global-discount`, {
+    method: 'PUT',
+    json: discount ?? { kind: null, value: null },
+  })
 /** `key`: one per document and payment choice, so a retry never sells twice (BR-SALE-016). */
 export const confirmSale = (id: number, payments: PaymentWrite[], key: string) =>
   post<SaleDetail>(`/api/sales/${id}/confirm`, { payments }, { 'Idempotency-Key': key })

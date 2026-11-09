@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -199,6 +200,25 @@ class SalePdfsTest {
         String ticket = text(seller.get("/api/sales/" + invoice + "/pdf?format=ticket").andExpect(status().isOk())
                 .andReturn());
         assertThat(ticket).contains("Droit de timbre").contains("Net à payer").contains("Espèces : 2 202,00 DA");
+    }
+
+    @Test
+    void aGlobalDiscountPrintsTheGrossTheDiscountAndTheNet() throws Exception {
+        seller.post("/api/cash-sessions/open", "{\"openingAmount\":\"0\"}").andExpect(status().isCreated());
+        long receipt = sale("{\"docType\":\"receipt\"}", "2");
+        admin.perform(MockMvcRequestBuilders.put("/api/sales/" + receipt + "/global-discount")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"kind\":\"percent\",\"value\":\"10\"}"), true)
+                .andExpect(status().isOk());
+        seller.post("/api/sales/" + receipt + "/confirm",
+                "{\"payments\":[{\"method\":\"cash\",\"amount\":\"1962.00\"}]}").andExpect(status().isOk());
+
+        String a4 = text(seller.get("/api/sales/" + receipt + "/pdf").andExpect(status().isOk()).andReturn());
+        assertThat(a4).contains("Total HT").contains("2 000,00 DA").contains("Remise globale (")
+                .contains("-200,00 DA").contains("Net HT").contains("1 800,00 DA").contains("1 962,00 DA");
+        String ticket = text(seller.get("/api/sales/" + receipt + "/pdf?format=ticket").andExpect(status().isOk())
+                .andReturn());
+        assertThat(ticket).contains("Sous-total TTC").contains("2 180,00 DA").contains("-218,00 DA")
+                .contains("1 962,00 DA");
     }
 
     @Test

@@ -22,6 +22,7 @@ import {
   confirmSale,
   createDraft,
   fetchSale,
+  giveGlobalDiscount,
   invalidateSession,
   PAYMENT_METHODS,
   removeLine,
@@ -30,6 +31,8 @@ import {
   useCreditBalance,
   useStampDuty,
   type DocType,
+  type GlobalDiscount,
+  type GlobalDiscountKind,
   type LineWrite,
   type PaymentMethod,
   type PaymentWrite,
@@ -37,6 +40,7 @@ import {
   type SaleLine,
   type SaleWarning,
 } from './saleApi'
+import { globalDiscountLabel } from './globalDiscount'
 import { salePdfUrl } from './printing'
 import { PrintTicketButton } from './PrintTicketButton'
 import { PdfLink } from '../../components/PdfLink'
@@ -229,6 +233,9 @@ export function PosPage() {
       <section className="flex flex-col gap-4 max-w-md m-auto" aria-label={t('pos.done.title')}>
         <h1 className="text-2xl font-semibold">{t('pos.done.title')}</h1>
         <Alert tone="ok">{t('pos.done.number', { number: done.sale.number })}</Alert>
+        {done.sale.totals.globalDiscount && (
+          <p>{t('pos.globalDiscountLine', { label: globalDiscountLabel(done.sale.totals.globalDiscount, t), amount: formatMoney(done.sale.totals.globalDiscount.ttc) })}</p>
+        )}
         {Number(done.sale.totals.stampDuty) > 0 && <p>{t('pos.stampDutyLine', { amount: formatMoney(done.sale.totals.stampDuty) })}</p>}
         <p>{t('pos.total', { amount: formatMoney(done.sale.totals.netToPay) })}</p>
         {done.change !== null && Number(done.change) >= 0 && <p>{t('pos.change', { amount: formatMoney(done.change) })}</p>}
@@ -300,6 +307,16 @@ export function PosPage() {
           {credit && customer && <CreditState customerId={customer.id} enabled={hasPermission(user, 'customer.read')} />}
           {sale && (
             <dl className="grid grid-cols-2 gap-1 text-sm">
+              {sale.totals.globalDiscount && (
+                <>
+                  <dt>{t('pos.subtotal')}</dt>
+                  <dd className="text-end">{formatMoney(sumDecimals([sale.totals.ttc, sale.totals.globalDiscount.ttc], 2) ?? sale.totals.ttc)}</dd>
+                  <dt>{globalDiscountLabel(sale.totals.globalDiscount, t)}</dt>
+                  <dd className="text-end" data-testid="pos-global-discount">
+                    -{formatMoney(sale.totals.globalDiscount.ttc)}
+                  </dd>
+                </>
+              )}
               <dt>{t('pos.ht')}</dt>
               <dd className="text-end">{formatMoney(sale.totals.ht)}</dd>
               <dt>{t('pos.discount')}</dt>
@@ -323,6 +340,14 @@ export function PosPage() {
                 </>
               )}
             </dl>
+          )}
+          {sale && canDiscount && sale.lines.length > 0 && (
+            <GlobalDiscountForm
+              key={`${sale.id}-${sale.totals.globalDiscount?.kind ?? ''}-${sale.totals.globalDiscount?.value ?? ''}`}
+              current={sale.totals.globalDiscount}
+              disabled={busy}
+              onGive={(discount) => run(async () => setSale(await giveGlobalDiscount(sale.id, discount)))}
+            />
           )}
           <form onSubmit={confirm} className="flex flex-col gap-3">
             {immediate && sale && Number(sale.totals.ttc) > 0 && (
@@ -582,6 +607,50 @@ function CreditState({ customerId, enabled }: { customerId: number; enabled: boo
       {t('pos.balance', { amount: formatMoney(balance.data.balance) })} ·{' '}
       {balance.data.availableCredit === null ? t('customers.credit.none') : t('pos.available', { amount: formatMoney(balance.data.availableCredit) })}
     </p>
+  )
+}
+
+/**
+ * The global discount of the draft (ADR-175, BR-SALE-018): an amount off the total incl. tax or a percentage, which
+ * the server spreads over the lines; shown to users with `sale.discount`, who alone may give one.
+ */
+function GlobalDiscountForm({
+  current,
+  disabled,
+  onGive,
+}: {
+  current: GlobalDiscount | null
+  disabled: boolean
+  onGive: (discount: { kind: GlobalDiscountKind; value: string } | null) => Promise<boolean>
+}) {
+  const { t } = useTranslation()
+  const [kind, setKind] = useState<GlobalDiscountKind>(current?.kind ?? 'amount')
+  const [value, setValue] = useState(current?.value ?? '')
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    void onGive({ kind, value: value.trim().replace(',', '.') })
+  }
+  return (
+    <form onSubmit={submit} aria-label={t('pos.globalDiscount')} className="flex flex-wrap items-end gap-2">
+      <SelectField
+        label={t('pos.globalDiscount')}
+        value={kind}
+        onChange={(e) => setKind(e.target.value as GlobalDiscountKind)}
+        options={[
+          { value: 'amount', label: t('pos.globalDiscountAmount') },
+          { value: 'percent', label: t('pos.globalDiscountPercent') },
+        ]}
+      />
+      <TextField label={t('pos.globalDiscountValue')} inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} />
+      <Button type="submit" variant="secondary" disabled={disabled || value.trim() === ''}>
+        {t('pos.globalDiscountApply')}
+      </Button>
+      {current && (
+        <Button type="button" variant="secondary" disabled={disabled} onClick={() => void onGive(null)}>
+          {t('pos.globalDiscountRemove')}
+        </Button>
+      )}
+    </form>
   )
 }
 

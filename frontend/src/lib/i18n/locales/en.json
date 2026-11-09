@@ -1177,7 +1177,16 @@
     "addCode": "Add by code",
     "stampDuty": "Stamp duty",
     "netToPay": "Net to pay",
-    "stampDutyLine": "Stamp duty: {{amount}}"
+    "stampDutyLine": "Stamp duty: {{amount}}",
+    "subtotal": "Subtotal",
+    "globalDiscount": "Global discount",
+    "globalDiscountOf": "Global discount ({{rate}} %)",
+    "globalDiscountAmount": "Amount",
+    "globalDiscountPercent": "Percentage",
+    "globalDiscountValue": "Discount value",
+    "globalDiscountApply": "Apply the discount",
+    "globalDiscountRemove": "Remove the discount",
+    "globalDiscountLine": "{{label}}: -{{amount}}"
   },
   "sales": {
     "title": "Sales documents",
