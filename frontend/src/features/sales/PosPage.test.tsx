@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -175,6 +175,8 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
     expect(given).toEqual({ kind: 'amount', value: '1.80' })
     expect(screen.getByTestId('pos-line')).toHaveTextContent('21,80')
     expect(screen.getByLabelText('Valeur de la remise')).toHaveValue('1.8')
+    const form = screen.getByRole('form', { name: 'Donner une remise globale' })
+    expect(within(form).getByRole('combobox', { name: 'Remise globale' })).toHaveValue('amount')
     expect(screen.getByRole('button', { name: 'Retirer la remise' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Confirmer la vente' }))
 

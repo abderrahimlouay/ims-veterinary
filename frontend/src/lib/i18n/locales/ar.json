@@ -1224,7 +1224,8 @@
     "globalDiscountValue": "قيمة التخفيض",
     "globalDiscountApply": "تطبيق التخفيض",
     "globalDiscountRemove": "إلغاء التخفيض",
-    "globalDiscountLine": "{{label}}: {{amount}}"
+    "globalDiscountLine": "{{label}}: {{amount}}",
+    "globalDiscountForm": "منح تخفيض إجمالي"
   },
   "sales": {
     "title": "مستندات البيع",
