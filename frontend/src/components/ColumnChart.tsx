@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FILL, type ChartTone } from './chartColours'
 
 export interface ChartPoint {
   /** The period as the table shows it ("11/2026", "06/11/2026"). */
@@ -8,6 +9,8 @@ export interface ChartPoint {
   value: string
   /** The amount as the table shows it. */
   display: string
+  /** This column's own colour, when the columns grade something (ADR-177); else the chart's. */
+  tone?: ChartTone
 }
 
 const WIDTH = 720
@@ -17,11 +20,12 @@ const BOTTOM = 28
 const MAX_LABELS = 12
 
 /**
- * A column per period (ADR-164): our own SVG, coloured by tokens only (both themes), under the strict CSP, mirrored in
+ * A column per period (ADR-164), in the chart's colour or each column's (ADR-177): our own SVG, coloured by tokens only
+ * (both themes), under the strict CSP, mirrored in
  * Arabic. Negative columns (a period with more credit notes than sales) go below the zero line in `danger`. A screen
  * aid only: the table under it carries the figures, the PDF and CSV have no chart.
  */
-export function ColumnChart({ title, points }: { title: string; points: ChartPoint[] }) {
+export function ColumnChart({ title, points, tone = 'brand' }: { title: string; points: ChartPoint[]; tone?: ChartTone }) {
   const { t, i18n } = useTranslation()
   const id = useId()
   const rtl = i18n.dir(i18n.language) === 'rtl'
@@ -55,7 +59,7 @@ export function ColumnChart({ title, points }: { title: string; points: ChartPoi
               y={top}
               width={bar}
               height={Math.max(v === 0 ? 0 : 1, Math.abs(y(v) - zero))}
-              className={v < 0 ? 'fill-danger' : 'fill-brand'}
+              className={v < 0 ? 'fill-danger' : FILL[p.tone ?? tone]}
             >
               <title>{`${p.label} : ${p.display}`}</title>
             </rect>

@@ -52,7 +52,8 @@
   },
   "chart": {
     "highest": "Plus haut : {{period}}, {{amount}}",
-    "lowest": "Plus bas : {{period}}, {{amount}}"
+    "lowest": "Plus bas : {{period}}, {{amount}}",
+    "legend": "Légende : {{title}}"
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -67,7 +68,8 @@
       "perMonth": "Ventes par mois, {{months}} derniers mois",
       "topProducts": "Les {{count}} produits les plus vendus ce mois",
       "byCategory": "Ventes par catégorie ce mois",
-      "noSalesThisMonth": "Aucune vente ce mois."
+      "noSalesThisMonth": "Aucune vente ce mois.",
+      "otherCategories": "Autres catégories"
     },
     "debt": {
       "title": "Dettes",

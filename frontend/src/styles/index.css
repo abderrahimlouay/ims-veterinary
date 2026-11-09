@@ -14,6 +14,18 @@
   --color-ok: rgb(var(--ok));
   --color-warn: rgb(var(--warn));
   --color-danger: rgb(var(--danger));
+  --color-chart-1: rgb(var(--chart-1));
+  --color-chart-2: rgb(var(--chart-2));
+  --color-chart-3: rgb(var(--chart-3));
+  --color-chart-4: rgb(var(--chart-4));
+  --color-chart-5: rgb(var(--chart-5));
+  --color-chart-6: rgb(var(--chart-6));
+  --color-chart-7: rgb(var(--chart-7));
+  --color-chart-8: rgb(var(--chart-8));
+  --color-status-good: rgb(var(--status-good));
+  --color-status-warning: rgb(var(--status-warning));
+  --color-status-serious: rgb(var(--status-serious));
+  --color-status-critical: rgb(var(--status-critical));
   --radius-ctl: 8px;
   --radius-card: 14px;
   --font-sans: Figtree, system-ui, -apple-system, 'Segoe UI', 'Noto Sans Arabic', sans-serif;

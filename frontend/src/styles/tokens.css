@@ -4,6 +4,8 @@
  * `line` is for decorative dividers; `control` borders inputs, selects and buttons (3:1, WCAG 1.4.11).
  * Light `ok` and `warn` are darker than the prototype so text on their 10 % tints reaches 4.5:1.
  * Every pair is checked by contrast.test.ts.
+ * `chart-1…8` are the categorical slots of the charts, in their fixed order, stepped per theme and validated as a set
+ * for colour-vision deficiency against `surface` (ADR-177); `status-*` grade a lateness, the same in both themes.
  */
 :root {
   color-scheme: light dark;
@@ -18,6 +20,18 @@
   --ok: 21 120 70;
   --warn: 162 84 7;
   --danger: 192 38 38;
+  --chart-1: 42 120 214;
+  --chart-2: 235 104 52;
+  --chart-3: 27 175 122;
+  --chart-4: 237 161 0;
+  --chart-5: 232 123 164;
+  --chart-6: 0 131 0;
+  --chart-7: 98 80 214;
+  --chart-8: 227 73 72;
+  --status-good: 12 163 12;
+  --status-warning: 250 178 25;
+  --status-serious: 236 131 90;
+  --status-critical: 208 59 59;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,6 +47,18 @@
     --ok: 74 200 130;
     --warn: 240 160 70;
     --danger: 248 113 113;
+    --chart-1: 57 135 229;
+    --chart-2: 217 89 38;
+    --chart-3: 25 158 112;
+    --chart-4: 201 133 0;
+    --chart-5: 213 81 129;
+    --chart-6: 0 131 0;
+    --chart-7: 144 133 233;
+    --chart-8: 230 103 103;
+    --status-good: 12 163 12;
+    --status-warning: 250 178 25;
+    --status-serious: 236 131 90;
+    --status-critical: 208 59 59;
   }
 }
 
@@ -53,4 +79,16 @@
   --ok: 74 200 130;
   --warn: 240 160 70;
   --danger: 248 113 113;
+  --chart-1: 57 135 229;
+  --chart-2: 217 89 38;
+  --chart-3: 25 158 112;
+  --chart-4: 201 133 0;
+  --chart-5: 213 81 129;
+  --chart-6: 0 131 0;
+  --chart-7: 144 133 233;
+  --chart-8: 230 103 103;
+  --status-good: 12 163 12;
+  --status-warning: 250 178 25;
+  --status-serious: 236 131 90;
+  --status-critical: 208 59 59;
 }

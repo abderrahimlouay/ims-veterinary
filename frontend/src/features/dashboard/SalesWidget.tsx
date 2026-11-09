@@ -3,7 +3,11 @@ import { Link } from 'react-router'
 import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { BarListChart } from '../../components/BarListChart'
+import { AreaChart } from '../../components/AreaChart'
 import { ColumnChart, type ChartPoint } from '../../components/ColumnChart'
+import type { ChartTone } from '../../components/chartColours'
+import { SegmentedBar, type Segment } from '../../components/SegmentedBar'
+import { sumDecimals } from '../../lib/decimal'
 import { problemMessage } from '../../lib/errors'
 import { businessToday } from '../../lib/expiry'
 import { formatMoney } from '../../lib/format'
@@ -14,6 +18,32 @@ import { addDays, daysBetween, firstOfMonth, monthsBetween } from './periods'
 const DAYS = 30
 const MONTHS = 12
 const TOP = 10
+/** The categories drawn one by one; the rest fold into "other categories" (ADR-177: at most six parts). */
+const CATEGORIES = 5
+const CATEGORY_TONES: ChartTone[] = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5']
+
+/**
+ * The month's categories as parts of its revenue: the five largest, each in its own slot, and the rest together. A
+ * category keeps its slot while it stays among the five: slots follow the category's id, not its rank, so a change
+ * in the ranking does not repaint the others.
+ */
+function categorySegments(rows: RevenueReport['rows'], noCategory: string, others: string): Segment[] {
+  const positive = rows.filter((row) => Number(row.revenueHt) > 0)
+  const shown = positive.slice(0, CATEGORIES)
+  const byId = [...shown].sort((a, b) => Number(a.key ?? Number.MAX_SAFE_INTEGER) - Number(b.key ?? Number.MAX_SAFE_INTEGER))
+  const segments: Segment[] = shown.map((row) => ({
+    label: row.label ?? noCategory,
+    value: row.revenueHt,
+    display: formatMoney(row.revenueHt),
+    tone: CATEGORY_TONES[byId.indexOf(row)] ?? 'other',
+  }))
+  const rest = positive.slice(CATEGORIES)
+  if (rest.length > 0) {
+    const value = sumDecimals(rest.map((row) => row.revenueHt), 2) ?? '0.00'
+    segments.push({ label: others, value, display: formatMoney(value), tone: 'other' })
+  }
+  return segments
+}
 
 /** A day as `JJ/MM` under a column (the axis has 30 of them); a month as the reports show it. */
 function axisLabel(period: string): string {
@@ -77,7 +107,7 @@ export function SalesWidget() {
                   {formatMoney(daily.data.totalHt)}
                 </span>
               </p>
-              <ColumnChart title={t('dashboard.sales.perDay', { days: DAYS })} points={filled(daysBetween(dayFrom, today), daily.data.rows)} />
+              <AreaChart title={t('dashboard.sales.perDay', { days: DAYS })} points={filled(daysBetween(dayFrom, today), daily.data.rows)} tone="chart-1" />
             </>
           )}
         </div>
@@ -92,6 +122,7 @@ export function SalesWidget() {
               <ColumnChart
                 title={t('dashboard.sales.perMonth', { months: MONTHS })}
                 points={filled(monthsBetween(monthFrom, today), monthly.data.rows)}
+                tone="chart-3"
               />
             </>
           )}
@@ -103,6 +134,7 @@ export function SalesWidget() {
               <p className="text-sm text-mute">{t('dashboard.sales.noSalesThisMonth')}</p>
             ) : (
               <BarListChart
+                tone="chart-2"
                 title={t('dashboard.sales.topProducts', { count: TOP })}
                 items={products.data.rows.slice(0, TOP).map((row) => ({
                   label: row.label ?? '—',
@@ -115,14 +147,10 @@ export function SalesWidget() {
         </div>
         <div>
           <Loading query={categories} />
-          {categories.data && categories.data.rows.length > 0 && (
-            <BarListChart
+          {categories.data && categories.data.rows.some((row) => Number(row.revenueHt) > 0) && (
+            <SegmentedBar
               title={t('dashboard.sales.byCategory')}
-              items={categories.data.rows.map((row) => ({
-                label: row.label ?? t('reports.noCategory'),
-                value: row.revenueHt,
-                display: formatMoney(row.revenueHt),
-              }))}
+              segments={categorySegments(categories.data.rows, t('reports.noCategory'), t('dashboard.sales.otherCategories'))}
             />
           )}
         </div>

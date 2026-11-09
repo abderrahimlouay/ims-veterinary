@@ -4,12 +4,15 @@ import { ApiError } from '../../api/client'
 import { Alert } from '../../components/Alert'
 import { BarListChart, type BarItem } from '../../components/BarListChart'
 import { ColumnChart, type ChartPoint } from '../../components/ColumnChart'
+import type { ChartTone } from '../../components/chartColours'
 import { sumDecimals } from '../../lib/decimal'
 import { problemMessage } from '../../lib/errors'
 import { formatMoney } from '../../lib/format'
 import { useReport, type CustomerBalancesReport, type PayablesReport } from '../reports/api'
 
 const TOP = 5
+/** Not due, then later and later (ADR-177): graded, the label under each column naming it. */
+const LATENESS: ChartTone[] = ['status-good', 'status-warning', 'status-serious', 'status-critical']
 
 function Status({ query }: { query: { isPending: boolean; error: unknown } }) {
   const { t } = useTranslation()
@@ -36,6 +39,7 @@ function ageing(report: CustomerBalancesReport, t: (key: string, options?: Recor
     label: labels[i] ?? '',
     value,
     display: formatMoney(value),
+    tone: LATENESS[Math.min(i, LATENESS.length - 1)],
   }))
 }
 
@@ -91,6 +95,7 @@ export function DebtWidget() {
               <ColumnChart title={t('dashboard.debt.byLateness')} points={ageing(customers.data, t)} />
               {customers.data.rows.some((row) => Number(row.balance) > 0) && (
                 <BarListChart
+                  tone="chart-7"
                   title={t('dashboard.debt.topCustomers', { count: TOP })}
                   items={customers.data.rows
                     .filter((row) => Number(row.balance) > 0)
@@ -128,7 +133,7 @@ export function DebtWidget() {
                 <p className="text-xs text-mute">{t('dashboard.debt.deducted', { amount: formatMoney(deducted(suppliers.data) ?? '0') })}</p>
               )}
               {suppliers.data.rows.length > 0 && (
-                <BarListChart title={t('dashboard.debt.topSuppliers', { count: TOP })} items={topSuppliers(suppliers.data)} />
+                <BarListChart tone="chart-5" title={t('dashboard.debt.topSuppliers', { count: TOP })} items={topSuppliers(suppliers.data)} />
               )}
               <Link to="/reports/supplierPayables" className="text-sm text-brand underline underline-offset-4">
                 {t('dashboard.debt.suppliersReport')}

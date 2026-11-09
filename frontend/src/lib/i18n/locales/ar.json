@@ -52,7 +52,8 @@
   },
   "chart": {
     "highest": "الأعلى: {{period}}، {{amount}}",
-    "lowest": "الأدنى: {{period}}، {{amount}}"
+    "lowest": "الأدنى: {{period}}، {{amount}}",
+    "legend": "مفتاح الرسم: {{title}}"
   },
   "dashboard": {
     "title": "لوحة القيادة",
@@ -67,7 +68,8 @@
       "perMonth": "المبيعات حسب الشهر، آخر {{months}} شهرًا",
       "topProducts": "أكثر {{count}} منتجات مبيعًا هذا الشهر",
       "byCategory": "المبيعات حسب الفئة هذا الشهر",
-      "noSalesThisMonth": "لا مبيعات هذا الشهر."
+      "noSalesThisMonth": "لا مبيعات هذا الشهر.",
+      "otherCategories": "فئات أخرى"
     },
     "debt": {
       "title": "الديون",
