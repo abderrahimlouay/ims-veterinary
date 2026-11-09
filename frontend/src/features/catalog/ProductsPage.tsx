@@ -180,7 +180,7 @@ export function ProductsPage() {
       ) : (
         products.data && (
           <>
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full text-sm border-collapse [&_th]:pe-4 [&_td]:pe-4">
               <thead>
                 <tr className="border-b border-line">
                   <th className="text-start py-2">{t('catalog.products.sku')}</th>
@@ -196,7 +196,7 @@ export function ProductsPage() {
               <tbody>
                 {products.data.content.map((p) => (
                   <tr key={p.id} className="border-b border-line">
-                    <td className="py-2">
+                    <td className="py-2 whitespace-nowrap">
                       <code>{p.sku}</code>
                     </td>
                     <td>

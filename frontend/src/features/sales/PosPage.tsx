@@ -634,7 +634,7 @@ function GlobalDiscountForm({
     void onGive({ kind, value: value.trim().replace(',', '.') })
   }
   return (
-    <form onSubmit={submit} aria-label={t('pos.globalDiscount')} className="flex flex-wrap items-end gap-2">
+    <form onSubmit={submit} aria-label={t('pos.globalDiscountForm')} className="flex flex-wrap items-end gap-2">
       <SelectField
         label={t('pos.globalDiscount')}
         hint={t('help.pos.globalDiscount')}
