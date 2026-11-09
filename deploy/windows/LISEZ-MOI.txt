@@ -1,0 +1,58 @@
+﻿IMS VÉTÉRINAIRE — INSTALLATION SUR LE PORTABLE
+==============================================
+
+Guide complet : docs/deployment.md (chez le développeur). Comptez environ une heure.
+
+1. AVANT DE COMMENCER (avec le développeur)
+   - Donnez au développeur le NOM du portable (Paramètres > Système > Informations
+     > Nom de l'appareil, par exemple PHARMA-PC).
+   - Dans la box Internet de la boutique, réservez une ADRESSE FIXE pour ce portable
+     (réservation DHCP, par exemple 192.168.1.20) et donnez-la au développeur.
+   - Le développeur ajoute alors server.p12 dans ce dossier et vous donne son mot de
+     passe À PART (pas dans le même message que le fichier).
+
+2. PRÉPARER LE PORTABLE
+   a) Windows Update : faites toutes les mises à jour. Paramètres > Windows Update >
+      Options avancées > Heures d'activité = heures d'ouverture de la boutique.
+   b) Conseillé (non obligatoire) : chiffrement du disque (Paramètres >
+      Confidentialité et sécurité > Chiffrement de l'appareil), clé de récupération
+      gardée hors du portable.
+   c) Java 21 : « Eclipse Temurin 21 JDK », fichier MSI x64, en cochant
+      « Set JAVA_HOME » et « Add to PATH ».
+   d) MySQL 8.4 (8.4.11 ou plus récent) : MySQL Installer, « Server only », port 3306,
+      un mot de passe root FORT (à garder), service « MySQL84 » démarré au démarrage.
+      Puis ouvrez le Bloc-notes EN ADMINISTRATEUR, fichier
+      C:\ProgramData\MySQL\MySQL Server 8.4\my.ini, et ajoutez sous [mysqld] :
+          bind-address=127.0.0.1
+          log_bin_trust_function_creators=1
+          default_time_zone='+00:00'
+      Enregistrez, puis redémarrez le service MySQL84 (Services > MySQL84 > Redémarrer).
+   e) Google Drive pour ordinateur : connecté au compte Google de la boutique
+      (validation en deux étapes ACTIVÉE), Préférences > Google Drive > « Mettre en
+      miroir les fichiers ».
+   f) Wi-Fi de la boutique en réseau PRIVÉ (Paramètres > Réseau > le Wi-Fi > Type de
+      profil réseau : Privé).
+   g) Aucun autre serveur web sur le portable (ports 80 et 443 libres).
+
+3. INSTALLER
+   Double-cliquez sur INSTALLER.cmd et acceptez la demande d'administrateur.
+   - Entrée pour accepter le dossier Google Drive proposé (…\IMS-sauvegardes).
+   - Donnez le mot de passe root de MySQL, puis celui de server.p12.
+   - À LA FIN, la fenêtre affiche le mot de passe provisoire de « admin » et d'autres
+     mots de passe : NOTEZ-LES dans le gestionnaire de mots de passe AVANT de fermer.
+
+4. APRÈS L'INSTALLATION
+   a) Sur le portable, ouvrez https://localhost : connexion « admin » avec le mot de
+      passe provisoire, puis choisissez-en un nouveau.
+   b) Paramètres : identité de l'entreprise ; un utilisateur par personne.
+   c) Page Sauvegardes > « Lancer maintenant » : « Copiée » ; le fichier apparaît
+      dans Google Drive.
+   d) Chaque autre appareil : installez ims-ca.crt (double-clic > Installer >
+      Ordinateur local > « Autorités de certification racines de confiance »), puis
+      ouvrez https://NOM-DU-PORTABLE dans Chrome ou Edge et mettez-le en favori.
+   e) AVANT toute vraie donnée : téléchargez cette sauvegarde depuis Google Drive sur
+      un autre appareil et faites le contrôle de restauration avec le développeur.
+
+En cas d'erreur : la fenêtre explique quoi corriger. Ne relancez pas avant d'avoir
+envoyé une photo de l'écran au développeur : une installation interrompue peut avoir
+déjà créé la base de données, à nettoyer avant de recommencer.

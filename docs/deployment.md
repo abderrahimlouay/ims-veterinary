@@ -16,6 +16,14 @@ Folders: `C:\IMS\app` (JAR, WinSW and its file `ims-service.xml`, which holds th
 
 ## 2. What the developer prepares (own machine)
 
+**The installer folder, scripted** (`deploy/bundle`, Linux, needs `openssl`, `zip`, Node and Java 21). It does items 1–6 below:
+1. `deploy/bundle/make-ca.sh`, **once**: the CA in `~/.ims-ca` (`IMS_CA_DIR`). Copy that folder to an offline USB key; `ims-ca.key` never goes on the laptop or into the installer.
+2. `deploy/bundle/make-bundle.sh [folder]` from a clean commit (`SKIP_TESTS=1` only for a commit CI has passed): `~/IMS-installateur` and its `.zip`, holding the release JAR (`ims-…-<commit>.jar`), `scripts\` (`deploy/windows`), `WinSW-x64.exe` (refused unless its SHA-256 is the one pinned in the script: WinSW v2.12.0 publishes none, so the official asset's hash was recorded on 2026-11-09, 18,243,033 bytes as GitHub lists it), `ims-ca.crt`, `INSTALLER.cmd`, `LISEZ-MOI.txt` (the owner's steps in French), `VERSION.txt` and `SHA256SUMS.txt`.
+3. `deploy/bundle/make-certificate.sh <NAME> <ADDRESS>` once the laptop's name and fixed address are known: `server.p12` (it asks for its password) and `certificat.txt` in the folder, the `.zip` refreshed.
+
+On the laptop, after §3, **double-click `INSTALLER.cmd`**: it opens PowerShell as administrator and runs `scripts\lancer-installation.ps1`, which refuses a certificate made for another computer, warns when the laptop does not have the certificate's address yet, proposes the Drive folder of the current account (`Mon Drive\IMS-sauvegardes`; refused on the virtual drive of the "Streaming" mode), then runs `install.ps1` (§4) with the folder's files. The manual steps follow.
+
+
 1. **Release JAR:** from the release tag, `cd frontend && npm ci && npm run build`, then `cd backend && ./mvnw -B -Prelease package` → `backend/target/ims-<version>.jar` (the screens inside; README, *Serving and HTTPS*).
 2. **The laptop's name and address:** the laptop's Windows name (Settings → System → About, e.g. `PHARMA-PC`) and a **fixed address** reserved for it in the shop's router (DHCP reservation, e.g. `192.168.1.20`).
 3. **Private CA**, once, kept offline: `openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout ims-ca.key -out ims-ca.crt -subj "/CN=Pharmacie IMS CA"`.
