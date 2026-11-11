@@ -1286,6 +1286,12 @@ Rule: no decision in this file may be changed silently. A change is recorded as 
 - **Alternatives:** require 8.4 only (uninstall 8.0 on the laptop).
 - **Consequences:** MySQL 8.0 is past end of life (April 2026): no more security fixes, mitigated by `bind-address=127.0.0.1`; move to 8.4 at a later update. The migrations were checked once on `mysql:8.0` by the schema tests. `deployment.md` §3, `LISEZ-MOI.txt`.
 
+## ADR-179 — The installer writes the MySQL settings into my.ini (amends ADR-165, ADR-178)
+- **Status:** Accepted (user request, 2026-11-11, Phase 12: on the owner's laptop the hand edit of `my.ini` did not take effect, "look for an easier solution").
+- **Decision:** when `bind-address=127.0.0.1` or `log_bin_trust_function_creators=1` is not in force, `install.ps1` writes the three settings of `deployment.md` §3 under `[mysqld]` of the `my.ini` named by the service's `--defaults-file` (earlier lines of the same names commented out; a copy `my.ini.avant-ims`, put back if MySQL does not answer after the restart), restarts the service and checks again, naming the setting still wrong. Not `SET PERSIST`: MySQL 8.0 refuses to persist `bind_address` (checked on 8.0.46). The version check has its own message.
+- **Alternatives:** keep the manual edit only; `SET PERSIST` (fails for `bind_address` on 8.0).
+- **Consequences:** the Windows rehearsal starts MySQL without the settings, so CI runs this path. `deployment.md` §3, `LISEZ-MOI.txt`.
+
 # Part B — Open Decisions
 
 Each Open Decision lists the question, the options, an optional author's leaning (**not a decision**), the phase it blocks, and where it matters. Until decided, **no code may depend on an assumption** about it.
@@ -1545,7 +1551,7 @@ Each Open Decision lists the question, the options, an optional author's leaning
 | 9 Payments / Finance | ~~OD-003~~ → ADR-118, ~~OD-016~~ → ADR-132, ADR-133, ADR-134; ADR-135, ADR-136, ADR-137 (all 2026-11-03); ~~OD-011~~ → ADR-108 (payments in the balance); OD-041 registered, not blocking |
 | 10 Documents & Printing | ~~OD-020~~ → ADR-138, ADR-139, ~~OD-026~~ → ADR-140, ~~OD-028 (printing)~~ → ADR-142, ~~OD-008~~ → ADR-033 (documents in French, ADR-138); ADR-141, ADR-143 (all 2026-11-04) |
 | 11 Reports & Audit | ~~OD-021 (backup)~~ → ADR-144, ADR-145, ADR-146; ~~DR-007 (scope)~~ → ADR-147 (all 2026-11-04); ADR-148 (2026-11-05, ageing and payables); ADR-149 (2026-11-05, exports); margin scope follows ADR-117, ADR-118 |
-| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05); owner's Windows laptop → ADR-165 (hosting), ADR-166 (the application serves HTTPS), ADR-167 (Google Drive copy) (2026-11-06); ~~ADR-168~~ (disk encryption required) (2026-11-07) → ADR-169 (recommended only), ADR-170 (rehearsal), ADR-171 (go-live answers, ~~DR-040~~, ~~DR-041~~), ADR-172 (stamp duty, ~~DR-043~~), ADR-173 (generated SKU), ADR-174 (French number prefixes) (2026-11-08); ADR-175 (global discount), ADR-176 (dashboard charts), ADR-177 (chart forms and palette) (2026-11-09); ADR-178 (installer accepts MySQL 8.0.30+) (2026-11-11) |
+| 12 Testing, Security, Deployment | ~~OD-021 (hosting, availability, RTO, operations)~~ → ADR-150, ADR-151 (migrations), ADR-152 (HTTPS), ADR-153 (remote access) (all 2026-11-05); ADR-036 hardening review → ADR-154…157 (2026-11-05); owner's Windows laptop → ADR-165 (hosting), ADR-166 (the application serves HTTPS), ADR-167 (Google Drive copy) (2026-11-06); ~~ADR-168~~ (disk encryption required) (2026-11-07) → ADR-169 (recommended only), ADR-170 (rehearsal), ADR-171 (go-live answers, ~~DR-040~~, ~~DR-041~~), ADR-172 (stamp duty, ~~DR-043~~), ADR-173 (generated SKU), ADR-174 (French number prefixes) (2026-11-08); ADR-175 (global discount), ADR-176 (dashboard charts), ADR-177 (chart forms and palette) (2026-11-09); ADR-178 (installer accepts MySQL 8.0.30+), ADR-179 (installer writes the MySQL settings) (2026-11-11) |
 | 13 Dark theme | ADR-069 (decided 2026-10-22); ADR-161, ADR-162, ADR-163, ADR-164 (report charts) (2026-11-06) |
 
 **Backlog items (not open decisions yet; each waits for a question to the client):**

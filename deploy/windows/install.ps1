@@ -67,18 +67,71 @@ Import-Certificate -FilePath $CaCertificate -CertStoreLocation Cert:\LocalMachin
 Write-Step 'Base de données et comptes MySQL'
 $root = Get-Credential -UserName 'root' -Message 'Mot de passe root de MySQL (choisi à l''installation de MySQL)'
 $rootPassword = $root.GetNetworkCredential().Password
-$settings = Join-Path $env:TEMP 'ims-mysql-settings.txt'
-Invoke-MySqlTool 'mysql.exe' 'root' $rootPassword @('--batch', '--skip-column-names', '--execute',
-    'SELECT @@bind_address, @@log_bin_trust_function_creators, @@version') > $settings
-$actual = (Get-Content $settings -Raw).Trim() -split "`t"
-Remove-Item $settings -Force
+function Get-MySqlSettings {
+    $settings = Join-Path $env:TEMP 'ims-mysql-settings.txt'
+    Invoke-MySqlTool 'mysql.exe' 'root' $rootPassword @('--batch', '--skip-column-names', '--execute',
+        'SELECT @@bind_address, @@log_bin_trust_function_creators, @@version, @@persisted_globals_load') > $settings
+    $values = (Get-Content $settings -Raw).Trim() -split "`t"
+    Remove-Item $settings -Force
+    $values
+}
+$actual = Get-MySqlSettings
 # MySQL 8.4.10 refuses the column name "manual" of migration V09_007: 8.4.11 or later, or 8.0.30 or later (ADR-178,
 # docs/deployment.md §3).
 $mysqlVersion = [regex]::Match($actual[2], '^8\.(0|4)\.(\d+)')
 $mysqlMinimum = @{ '0' = 30; '4' = 11 }
-if ($actual[0] -ne '127.0.0.1' -or $actual[1] -ne '1' -or -not $mysqlVersion.Success -or
+if (-not $mysqlVersion.Success -or
         [int] $mysqlVersion.Groups[2].Value -lt $mysqlMinimum[$mysqlVersion.Groups[1].Value]) {
-    throw "MySQL doit être 8.4.11 ou plus récent (8.4.x), ou 8.0.30 ou plus récent (8.0.x), avec bind-address=127.0.0.1 et log_bin_trust_function_creators=1 dans my.ini (docs/deployment.md §3) ; trouvé : $actual"
+    throw "MySQL doit être 8.4.11 ou plus récent (8.4.x), ou 8.0.30 ou plus récent (8.0.x) ; trouvé : $($actual[2])"
+}
+# The settings of docs/deployment.md §3, written by the installer itself into the my.ini of the MySQL service when
+# they are not in force (ADR-179): bind_address cannot be persisted by SET PERSIST in MySQL 8.0.
+if ($actual[0] -ne '127.0.0.1' -or $actual[1] -ne '1') {
+    $pathName = (Get-CimInstance Win32_Service -Filter "Name='$MySqlService'").PathName
+    $myIni = [regex]::Match($pathName, '--defaults-file=(?:"([^"]+)"|(\S+))').Groups | Select-Object -Skip 1 |
+        Where-Object { $_.Success } | ForEach-Object { $_.Value } | Select-Object -First 1
+    if (-not $myIni -or -not (Test-Path $myIni)) {
+        throw "Fichier my.ini du service $MySqlService introuvable ($pathName) : ajoutez les réglages à la main (docs/deployment.md §3)."
+    }
+    Write-Host "Réglages MySQL (bind-address=$($actual[0]), log_bin_trust_function_creators=$($actual[1])) : écrits dans $myIni, redémarrage de $MySqlService"
+    Copy-Item $myIni "$myIni.avant-ims" -Force
+    $required = @('bind-address=127.0.0.1', 'log_bin_trust_function_creators=1', "default_time_zone='+00:00'")
+    $lines = New-Object System.Collections.Generic.List[string]
+    $section = ''
+    foreach ($line in [IO.File]::ReadAllLines($myIni)) {
+        if ($line -match '^\s*\[(.+)\]\s*$') {
+            $section = $Matches[1].Trim().ToLowerInvariant()
+            $lines.Add($line)
+            if ($section -eq 'mysqld') { $required | ForEach-Object { $lines.Add($_) } }
+            continue
+        }
+        if ($section -eq 'mysqld' -and $line -match '^\s*(bind[-_]address|log[-_]bin[-_]trust[-_]function[-_]creators|default[-_]time[-_]zone)\s*=') {
+            $lines.Add("# $line")
+            continue
+        }
+        $lines.Add($line)
+    }
+    if (-not ($lines -contains '[mysqld]')) {
+        $lines.Add('[mysqld]'); $required | ForEach-Object { $lines.Add($_) }
+    }
+    [IO.File]::WriteAllLines($myIni, $lines, (New-Object Text.UTF8Encoding $false))
+    Restart-Service $MySqlService
+    $ready = $false
+    for ($i = 0; $i -lt 30 -and -not $ready; $i++) {
+        Start-Sleep -Seconds 2
+        try { $actual = Get-MySqlSettings; $ready = $true } catch { }
+    }
+    if (-not $ready) {
+        Copy-Item "$myIni.avant-ims" $myIni -Force
+        Restart-Service $MySqlService
+        throw "MySQL ne répond plus après le redémarrage de $MySqlService : my.ini a été remis comme avant ; ajoutez les réglages à la main (docs/deployment.md §3)."
+    }
+}
+if ($actual[0] -ne '127.0.0.1') {
+    throw "MySQL écoute toujours sur « $($actual[0]) » au lieu de 127.0.0.1 (persisted_globals_load=$($actual[3])) : ajoutez bind-address=127.0.0.1 sous [mysqld] dans my.ini, redémarrez $MySqlService (docs/deployment.md §3)."
+}
+if ($actual[1] -ne '1') {
+    throw "log_bin_trust_function_creators vaut toujours $($actual[1]) : ajoutez log_bin_trust_function_creators=1 sous [mysqld] dans my.ini, redémarrez $MySqlService (docs/deployment.md §3)."
 }
 $appPassword = New-Secret
 $migrationPassword = New-Secret
