@@ -33,9 +33,10 @@ function Check([bool] $Condition, [string] $Message) {
 }
 
 # install.ps1 asks twice with Get-Credential; a function of that name in this (global) scope answers instead of the
-# prompt (functions come before cmdlets in PowerShell's command lookup).
+# prompt (functions come before cmdlets in PowerShell's command lookup). The values are read from this script's scope:
+# a variable of the same name in install.ps1 (names ignore case) would otherwise hide them.
 function global:Get-Credential([string] $UserName, [string] $Message) {
-    $value = if ($UserName -eq 'root') { $RootPassword } else { $KeystorePassword }
+    $value = if ($UserName -eq 'root') { $script:RootPassword } else { $script:KeystorePassword }
     New-Object pscredential($UserName, (ConvertTo-SecureString $value -AsPlainText -Force))
 }
 
