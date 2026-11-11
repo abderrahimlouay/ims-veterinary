@@ -19,7 +19,9 @@ Guide complet : docs/deployment.md (chez le développeur). Comptez environ une h
       gardée hors du portable.
    c) Java 21 : « Eclipse Temurin 21 JDK », fichier MSI x64, en cochant
       « Set JAVA_HOME » et « Add to PATH ».
-   d) MySQL 8.4 (8.4.11 ou plus récent) : MySQL Installer, « Server only », port 3306,
+   d) MySQL 8.4 (8.4.11 ou plus récent ; un MySQL 8.0.30 ou plus récent déjà
+      installé convient aussi : remplacez alors 8.4 par 8.0 et MySQL84 par MySQL80
+      ci-dessous) : MySQL Installer, « Server only », port 3306,
       un mot de passe root FORT (à garder), service « MySQL84 » démarré au démarrage.
       Puis ouvrez le Bloc-notes EN ADMINISTRATEUR, fichier
       C:\ProgramData\MySQL\MySQL Server 8.4\my.ini, et ajoutez sous [mysqld] :

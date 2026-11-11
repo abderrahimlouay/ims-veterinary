@@ -116,10 +116,11 @@ function Find-Java {
 }
 
 function Find-MySqlBin {
-    $bin = Get-ChildItem 'C:\Program Files\MySQL' -Directory -Filter 'MySQL Server 8.4*' -ErrorAction SilentlyContinue |
-        Select-Object -First 1
+    # 8.4 LTS preferred; 8.0.30+ accepted (ADR-178).
+    $bin = Get-ChildItem 'C:\Program Files\MySQL' -Directory -Filter 'MySQL Server 8.*' -ErrorAction SilentlyContinue |
+        Sort-Object Name -Descending | Select-Object -First 1
     if (-not $bin) {
-        throw 'MySQL Server 8.4 introuvable dans C:\Program Files\MySQL (docs/deployment.md §3).'
+        throw 'MySQL Server 8.4 (ou 8.0.30+) introuvable dans C:\Program Files\MySQL (docs/deployment.md §3).'
     }
     Join-Path $bin.FullName 'bin'
 }
