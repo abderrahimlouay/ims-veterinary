@@ -19,7 +19,7 @@
     The folder inside Google Drive for desktop that receives a copy of each backup (ADR-167),
     e.g. 'C:\Users\Owner\Mon Drive\IMS-sauvegardes'. Google Drive must be set to "Mirror files".
 .PARAMETER MySqlService
-    The Windows service of MySQL, MySQL84 by default.
+    The Windows service of MySQL: MySQL84 if it exists, otherwise MySQL80 (ADR-178).
 #>
 param(
     [Parameter(Mandatory)] [string] $Jar,
@@ -27,12 +27,19 @@ param(
     [Parameter(Mandatory)] [string] $CaCertificate,
     [Parameter(Mandatory)] [string] $WinSW,
     [Parameter(Mandatory)] [string] $DriveFolder,
-    [string] $MySqlService = 'MySQL84',
+    [string] $MySqlService = '',
     [string] $AdminUsername = 'admin'
 )
 
 . "$PSScriptRoot\ims-common.ps1"
 Assert-Administrator
+if (-not $MySqlService) {
+    $MySqlService = @('MySQL84', 'MySQL80') | Where-Object { Get-Service $_ -ErrorAction SilentlyContinue } |
+        Select-Object -First 1
+    if (-not $MySqlService) {
+        throw 'Service Windows de MySQL introuvable (MySQL84 ou MySQL80) : indiquez-le avec -MySqlService.'
+    }
+}
 
 if (Get-Service $ImsService -ErrorAction SilentlyContinue) {
     throw 'Le service ims existe déjà : pour une nouvelle version utilisez update.ps1 (docs/operations.md §2).'
@@ -65,10 +72,13 @@ Invoke-MySqlTool 'mysql.exe' 'root' $rootPassword @('--batch', '--skip-column-na
     'SELECT @@bind_address, @@log_bin_trust_function_creators, @@version') > $settings
 $actual = (Get-Content $settings -Raw).Trim() -split "`t"
 Remove-Item $settings -Force
-# MySQL 8.4.10 refuses the column name "manual" of migration V09_007: 8.4.11 or later (docs/deployment.md §3).
-$mysqlVersion = [regex]::Match($actual[2], '^8\.4\.(\d+)')
-if ($actual[0] -ne '127.0.0.1' -or $actual[1] -ne '1' -or -not $mysqlVersion.Success -or [int] $mysqlVersion.Groups[1].Value -lt 11) {
-    throw "MySQL doit être 8.4.11 ou plus récent (8.4.x) avec bind-address=127.0.0.1 et log_bin_trust_function_creators=1 dans my.ini (docs/deployment.md §3) ; trouvé : $actual"
+# MySQL 8.4.10 refuses the column name "manual" of migration V09_007: 8.4.11 or later, or 8.0.30 or later (ADR-178,
+# docs/deployment.md §3).
+$mysqlVersion = [regex]::Match($actual[2], '^8\.(0|4)\.(\d+)')
+$mysqlMinimum = @{ '0' = 30; '4' = 11 }
+if ($actual[0] -ne '127.0.0.1' -or $actual[1] -ne '1' -or -not $mysqlVersion.Success -or
+        [int] $mysqlVersion.Groups[2].Value -lt $mysqlMinimum[$mysqlVersion.Groups[1].Value]) {
+    throw "MySQL doit être 8.4.11 ou plus récent (8.4.x), ou 8.0.30 ou plus récent (8.0.x), avec bind-address=127.0.0.1 et log_bin_trust_function_creators=1 dans my.ini (docs/deployment.md §3) ; trouvé : $actual"
 }
 $appPassword = New-Secret
 $migrationPassword = New-Secret
