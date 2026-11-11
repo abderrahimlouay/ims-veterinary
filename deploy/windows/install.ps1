@@ -53,6 +53,27 @@ foreach ($file in @($Jar, $Keystore, $CaCertificate, $WinSW)) {
     if (-not (Test-Path $file)) { throw "Fichier introuvable : $file" }
 }
 
+# The server.p12 password is checked before anything changes (ADR-179): a mistyped one (e.g. an Arabic keyboard
+# layout) would otherwise leave the service failing to start at the end of the installation.
+Write-Step 'Mot de passe du certificat (server.p12)'
+$check = Join-Path $env:TEMP 'ims-p12-check.txt'
+[void] (Invoke-Program $java @('-XshowSettings:properties', '-version') $check)
+$javaHome = (Get-Content "$check.err" | Where-Object { $_ -match '^\s*java\.home = ' } | Select-Object -First 1) -replace '^\s*java\.home = ', ''
+$keytool = Join-Path ([string] $javaHome).Trim() 'bin\keytool.exe'
+if (-not (Test-Path $keytool)) { throw "keytool introuvable ($keytool) : installez le JDK Temurin 21 (docs/deployment.md §3)." }
+$keystorePassword = $null
+for ($try = 1; $try -le 3 -and $null -eq $keystorePassword; $try++) {
+    $candidate = (Get-Credential -UserName 'server.p12' -Message 'Mot de passe du fichier server.p12 (donné avec le certificat). Clavier en français ou anglais, pas en arabe.').GetNetworkCredential().Password
+    $env:IMS_P12_CHECK = $candidate
+    $valid = (Invoke-Program $keytool @('-list', '-keystore', "`"$Keystore`"", '-storetype', 'PKCS12', '-storepass:env', 'IMS_P12_CHECK') $check) -eq 0
+    Remove-Item Env:\IMS_P12_CHECK
+    if ($valid) { $keystorePassword = $candidate } else { Write-Warning "Mot de passe de server.p12 incorrect (essai $try sur 3)." }
+}
+Remove-Item $check, "$check.err" -Force -ErrorAction SilentlyContinue
+if ($null -eq $keystorePassword) {
+    throw 'Mot de passe de server.p12 incorrect 3 fois : rien n''a été modifié. Vérifiez la disposition du clavier et relancez.'
+}
+
 Write-Step 'Dossiers'
 foreach ($dir in @($ImsApp, $ImsBackups, $ImsLogs, $ImsConfig, $DriveFolder)) {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
@@ -165,7 +186,6 @@ Set-Rights $ImsConfig @('/inheritance:r', '/grant:r', "${Administrators}:(OI)(CI
     'ims-svc:(OI)(CI)R', "${env:USERNAME}:(OI)(CI)F")
 
 Write-Step 'Migration du schéma (ADR-151)'
-$keystorePassword = (Get-Credential -UserName 'server.p12' -Message 'Mot de passe du fichier server.p12 (donné avec le certificat)').GetNetworkCredential().Password
 $environment = [ordered] @{
     SPRING_PROFILES_ACTIVE = 'prod'
     IMS_DB_URL = "jdbc:mysql://127.0.0.1:3306/$ImsSchema"
