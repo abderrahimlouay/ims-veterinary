@@ -48,7 +48,7 @@ On the laptop, after §3, **double-click `INSTALLER.cmd`**: it opens PowerShell 
    log_bin_trust_function_creators=1
    default_time_zone='+00:00'
    ```
-   and restart the service (`Restart-Service MySQL84`). `install.ps1` refuses to continue if these are not in force.
+   and restart the service (`Restart-Service MySQL84`). **Optional since ADR-179:** when they are not in force, `install.ps1` writes them itself into the `my.ini` named by the MySQL service's `--defaults-file` (the earlier lines of the same names commented out, a copy kept as `my.ini.avant-ims`, put back if MySQL does not restart), restarts the service and refuses to continue if they are still not in force (MySQL 8.0 cannot keep `bind_address` by `SET PERSIST`).
 4. **Google Drive for desktop:** signed in with the owner's Google account, **2-step verification on** (ADR-167), "My Drive" set to **Mirror files** (Preferences → Google Drive), so the folder is a real folder the service can write to (e.g. `C:\Users\<owner>\Mon Drive`). Create `IMS-sauvegardes` inside it.
 5. **Ports 443 and 80 free:** no other web server on the laptop (IIS, another application's server); `install.ps1` names the program holding one and stops before changing anything.
 6. The shop's Wi-Fi set as a **Private** network (Settings → Network → the Wi-Fi → Network profile type: Private). Any other network stays Public: the application is then unreachable from it.

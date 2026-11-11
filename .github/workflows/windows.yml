@@ -97,7 +97,7 @@ jobs:
           Add-Content $env:GITHUB_PATH (Join-Path $jdk.FullName 'bin')
           & (Join-Path $jdk.FullName 'bin\java.exe') -version
 
-      - name: MySQL 8.4 (service MySQL84, my.ini of docs/deployment.md §3)
+      - name: MySQL 8.4 (service MySQL84, my.ini without the settings install.ps1 writes)
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
@@ -120,7 +120,8 @@ jobs:
           $base = 'C:\Program Files\MySQL\MySQL Server 8.4'
           $data = 'C:\ProgramData\MySQL\MySQL Server 8.4'
           New-Item -ItemType Directory -Force $data | Out-Null
-          $ini = "[mysqld]`r`nbasedir=`"$($base.Replace('\','/'))`"`r`ndatadir=`"$($data.Replace('\','/'))/Data`"`r`nport=3306`r`nbind-address=127.0.0.1`r`nlog_bin_trust_function_creators=1`r`ndefault_time_zone='+00:00'`r`n"
+          # Without the settings of docs/deployment.md §3: install.ps1 must write them itself (ADR-179).
+          $ini = "[mysqld]`r`nbasedir=`"$($base.Replace('\','/'))`"`r`ndatadir=`"$($data.Replace('\','/'))/Data`"`r`nport=3306`r`n"
           [IO.File]::WriteAllText("$data\my.ini", $ini, (New-Object Text.UTF8Encoding $false))
           $ErrorActionPreference = 'Continue'
           & "$base\bin\mysqld.exe" "--defaults-file=$data\my.ini" --initialize-insecure --console 2>&1 | Out-Host

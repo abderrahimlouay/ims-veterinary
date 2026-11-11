@@ -23,12 +23,8 @@ Guide complet : docs/deployment.md (chez le développeur). Comptez environ une h
       installé convient aussi : remplacez alors 8.4 par 8.0 et MySQL84 par MySQL80
       ci-dessous) : MySQL Installer, « Server only », port 3306,
       un mot de passe root FORT (à garder), service « MySQL84 » démarré au démarrage.
-      Puis ouvrez le Bloc-notes EN ADMINISTRATEUR, fichier
-      C:\ProgramData\MySQL\MySQL Server 8.4\my.ini, et ajoutez sous [mysqld] :
-          bind-address=127.0.0.1
-          log_bin_trust_function_creators=1
-          default_time_zone='+00:00'
-      Enregistrez, puis redémarrez le service MySQL84 (Services > MySQL84 > Redémarrer).
+      Les réglages de my.ini sont écrits par l'installation elle-même (une copie
+      « my.ini.avant-ims » est gardée) ; rien à modifier à la main.
    e) Google Drive pour ordinateur : connecté au compte Google de la boutique
       (validation en deux étapes ACTIVÉE), Préférences > Google Drive > « Mettre en
       miroir les fichiers ».
