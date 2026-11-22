@@ -11,6 +11,7 @@ import { formatDate, formatDateTime, formatMoney, formatQuantity, formatUnitPric
 import { hasPermission, useCurrentUser } from '../auth'
 import { ACTIONS_BY_STATUS, useOrder, useOrderAction, type OrderAction, type PurchaseOrderDetail } from './orderApi'
 import { PdfLink } from '../../components/PdfLink'
+import { vatApplies } from '../../lib/vat'
 
 /**
  * `/purchase-orders/:id` (frontend.md §4.5): lines with the server's amounts per line and totals (ADR-093), received
@@ -117,6 +118,7 @@ export function OrderDetailPage() {
 
 function LinesTable({ order }: { order: PurchaseOrderDetail }) {
   const { t } = useTranslation()
+  const taxed = vatApplies(order.lines)
   return (
     <table className="w-full text-sm border-collapse">
       <thead>
@@ -125,9 +127,9 @@ function LinesTable({ order }: { order: PurchaseOrderDetail }) {
           <th className="text-end">{t('purchasing.orders.quantity')}</th>
           <th className="text-end">{t('purchasing.orders.unitPrice')}</th>
           <th className="text-end">{t('purchasing.orders.discountPct')}</th>
-          <th className="text-end">{t('purchasing.orders.vatRate')}</th>
+          {taxed && <th className="text-end">{t('purchasing.orders.vatRate')}</th>}
           <th className="text-end">{t('purchasing.orders.lineHt')}</th>
-          <th className="text-end">{t('purchasing.orders.lineVat')}</th>
+          {taxed && <th className="text-end">{t('purchasing.orders.lineVat')}</th>}
           <th className="text-end">{t('purchasing.orders.received')}</th>
           <th className="text-end">{t('purchasing.orders.outstanding')}</th>
         </tr>
@@ -139,9 +141,9 @@ function LinesTable({ order }: { order: PurchaseOrderDetail }) {
             <td className="text-end">{`${formatQuantity(l.quantity)} ${l.unit?.name ?? l.product.baseUnit}`}</td>
             <td className="text-end">{formatUnitPrice(l.unitPrice)}</td>
             <td className="text-end">{l.discountPct} %</td>
-            <td className="text-end">{l.vatRate} %</td>
+            {taxed && <td className="text-end">{l.vatRate} %</td>}
             <td className="text-end">{formatMoney(l.lineHt)}</td>
-            <td className="text-end">{formatMoney(l.lineVat)}</td>
+            {taxed && <td className="text-end">{formatMoney(l.lineVat)}</td>}
             <td className="text-end">{formatQuantity(l.receivedBase)}</td>
             <td className="text-end">{`${formatQuantity(l.outstandingBase)} ${l.product.baseUnit}`}</td>
           </tr>
@@ -149,13 +151,13 @@ function LinesTable({ order }: { order: PurchaseOrderDetail }) {
       </tbody>
       <tfoot>
         <tr>
-          <td colSpan={5} className="py-2 text-end font-medium">
+          <td colSpan={taxed ? 5 : 4} className="py-2 text-end font-medium">
             {t('purchasing.orders.totals')}
           </td>
           <td className="text-end">{formatMoney(order.totalHt)}</td>
-          <td className="text-end">{formatMoney(order.totalVat)}</td>
+          {taxed && <td className="text-end">{formatMoney(order.totalVat)}</td>}
           <td colSpan={2} className="text-end font-semibold">
-            {t('purchasing.orders.totalTtcValue', { amount: formatMoney(order.totalTtc) })}
+            {taxed ? t('purchasing.orders.totalTtcValue', { amount: formatMoney(order.totalTtc) }) : null}
           </td>
         </tr>
       </tfoot>

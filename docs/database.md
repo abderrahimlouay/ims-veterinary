@@ -124,7 +124,7 @@ Reference names are unique case- and accent-insensitively and never blank (CHECK
 | supplier_id | BIGINT | NULL FK→suppliers | ADR-180 (V12_008): the laboratory or wholesaler of the product, replacing `manufacturer_id` (V12_009) |
 | base_unit | VARCHAR(20) | NOT NULL | smallest stock unit |
 | is_divisible | BOOLEAN | NOT NULL | ADR-050, SD-115: whole quantities only when false |
-| vat_rate | DECIMAL(5,2) | NOT NULL, CK 0–100 | **no database default**: a new product takes the `default_vat_rate` setting (VAT is never hard-coded, CLAUDE.md §11) |
+| vat_rate | DECIMAL(5,2) | NOT NULL, CK 0–100 | **no database default**: 0 means not subject to VAT; a new product is 0 unless a rate is given (ADR-181); the `default_vat_rate` setting prefills the rate when the form's "Soumis à la TVA" switch is turned on (no rate is hard-coded, CLAUDE.md §11) |
 | purchase_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049); manual reference price, never changed by receipts (ADR-099) |
 | sale_price | DECIMAL(14,4) | NOT NULL DEFAULT 0, CK ≥ 0 | per base unit (ADR-049) |
 | min_stock | DECIMAL(14,3) | NOT NULL DEFAULT 0, CK ≥ 0 | alert level |

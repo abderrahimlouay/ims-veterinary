@@ -117,6 +117,26 @@ class DocumentPdfsTest {
                 .contains("ANNULÉ").contains("Commande en double");
     }
 
+    /** ADR-181: an order whose lines are all at 0 % prints no VAT column and a single total; a taxed one does. */
+    @Test
+    void aPurchaseOrderWithoutTaxedLinePrintsNoVat() throws Exception {
+        long supplier = id(admin.post("/api/suppliers", "{\"name\":\"Labo Démo Exonéré\"}")
+                .andExpect(status().isCreated()));
+        long untaxed = id(admin.post("/api/purchase-orders", "{\"supplierId\":" + supplier + ",\"lines\":[{\"productId\":"
+                + product + ",\"quantity\":\"10\",\"unitPrice\":\"5\",\"vatRate\":\"0\"}]}")
+                .andExpect(status().isCreated()));
+        admin.post("/api/purchase-orders/" + untaxed + "/validate", "").andExpect(status().isOk());
+        assertThat(text(admin.get("/api/purchase-orders/" + untaxed + "/pdf").andExpect(status().isOk())))
+                .contains("Total").contains("50,00").doesNotContain("TVA").doesNotContain("TTC");
+
+        long taxed = id(admin.post("/api/purchase-orders", "{\"supplierId\":" + supplier + ",\"lines\":[{\"productId\":"
+                + product + ",\"quantity\":\"10\",\"unitPrice\":\"5\",\"vatRate\":\"9\"}]}")
+                .andExpect(status().isCreated()));
+        admin.post("/api/purchase-orders/" + taxed + "/validate", "").andExpect(status().isOk());
+        assertThat(text(admin.get("/api/purchase-orders/" + taxed + "/pdf").andExpect(status().isOk())))
+                .contains("TVA").contains("Total TTC").contains("54,50");
+    }
+
     @Test
     void theRecallListNamesTheBuyersWithWhatTheyStillHold() throws Exception {
         long customer = creditCustomer("Ferme Démo Rappel");

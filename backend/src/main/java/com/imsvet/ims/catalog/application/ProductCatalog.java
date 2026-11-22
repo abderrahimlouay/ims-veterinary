@@ -49,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductCatalog {
 
     /**
-     * The request fields. {@code vatRate} {@code null} at creation takes the {@code default_vat_rate} setting; a
+     * The request fields. {@code vatRate} {@code null} at creation is 0, not subject to VAT (ADR-181); a
      * {@code null} price is 0 at creation and unchanged on update; {@code returnRestockForbidden} {@code null} is
      * {@code false} at creation and unchanged on update (BR-PROD-009).
      */
@@ -139,8 +139,7 @@ public class ProductCatalog {
     @PreAuthorize("hasAuthority('product.create')")
     @Transactional
     public ProductDetail create(ProductInput input) {
-        BigDecimal vat = input.vatRate() != null ? input.vatRate()
-                : new BigDecimal(settings.value(SettingDefinition.DEFAULT_VAT_RATE));
+        BigDecimal vat = input.vatRate() != null ? input.vatRate() : BigDecimal.ZERO;
         ProductInput named = blank(input.sku()) ? input.withSku(generatedSku()) : input;
         Product.Core core = validate(named, vat, null);
         BigDecimal purchase = orZero(input.purchasePrice());

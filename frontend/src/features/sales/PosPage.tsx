@@ -44,6 +44,7 @@ import { deduction, editableValue, globalDiscountLabel } from './globalDiscount'
 import { salePdfUrl } from './printing'
 import { PrintTicketButton } from './PrintTicketButton'
 import { PdfLink } from '../../components/PdfLink'
+import { vatApplies } from '../../lib/vat'
 
 const DOC_TYPES: readonly DocType[] = ['receipt', 'invoice', 'delivery_note', 'quote']
 
@@ -318,13 +319,21 @@ export function PosPage() {
                   </dd>
                 </>
               )}
-              <dt>{t('pos.ht')}</dt>
-              <dd className="text-end">{formatMoney(sale.totals.ht)}</dd>
+              {vatApplies(sale.lines) && (
+                <>
+                  <dt>{t('pos.ht')}</dt>
+                  <dd className="text-end">{formatMoney(sale.totals.ht)}</dd>
+                </>
+              )}
               <dt>{t('pos.discount')}</dt>
               <dd className="text-end">{formatMoney(sale.totals.discount)}</dd>
-              <dt>{t('pos.vat')}</dt>
-              <dd className="text-end">{formatMoney(sale.totals.vat)}</dd>
-              <dt className="font-semibold">{t('pos.ttc')}</dt>
+              {vatApplies(sale.lines) && (
+                <>
+                  <dt>{t('pos.vat')}</dt>
+                  <dd className="text-end">{formatMoney(sale.totals.vat)}</dd>
+                </>
+              )}
+              <dt className="font-semibold">{vatApplies(sale.lines) ? t('pos.ttc') : t('pos.totalNoVat')}</dt>
               <dd className="text-end font-semibold" data-testid="pos-total">
                 {formatMoney(sale.totals.ttc)}
               </dd>

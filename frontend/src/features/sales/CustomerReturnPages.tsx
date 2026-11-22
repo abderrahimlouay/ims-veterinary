@@ -380,10 +380,14 @@ export function NewCustomerReturnPage() {
           {review && (
             <section className="flex flex-col gap-3 rounded-ctl border border-line p-4" aria-label={t('returns.creditNote')}>
               <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm max-w-xs">
-                <dt>{t('pos.ht')}</dt>
-                <dd className="text-end">{formatMoney(review.creditNote.totalHt)}</dd>
-                <dt>{t('pos.vat')}</dt>
-                <dd className="text-end">{formatMoney(review.creditNote.totalVat)}</dd>
+                {Number(review.creditNote.totalVat) !== 0 && (
+                  <>
+                    <dt>{t('pos.ht')}</dt>
+                    <dd className="text-end">{formatMoney(review.creditNote.totalHt)}</dd>
+                    <dt>{t('pos.vat')}</dt>
+                    <dd className="text-end">{formatMoney(review.creditNote.totalVat)}</dd>
+                  </>
+                )}
                 <dt className="font-semibold">{t('returns.creditTotal')}</dt>
                 <dd className="text-end font-semibold" data-testid="credit-total">
                   {formatMoney(review.creditNote.totalTtc)}
