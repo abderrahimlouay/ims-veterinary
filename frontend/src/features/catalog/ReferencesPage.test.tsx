@@ -9,8 +9,8 @@ import { server } from '../../test/server'
 
 const PHARMACIST = aUser({ permissions: ['product.read', 'reference.manage'] })
 const SPECIES = [
-  { id: 1, name: 'Bovine', code: 'BOVINE', country: null },
-  { id: 9, name: 'Camelin', code: null, country: null },
+  { id: 1, name: 'Bovine', code: 'BOVINE' },
+  { id: 9, name: 'Camelin', code: null },
 ]
 
 describe('ReferencesPage (ADR-054)', () => {
@@ -38,10 +38,10 @@ describe('ReferencesPage (ADR-054)', () => {
     serveMe(PHARMACIST)
     let attempts = 0
     server.use(
-      http.get('/api/manufacturers', () => HttpResponse.json([])),
-      http.post('/api/manufacturers', async ({ request }) => {
+      http.get('/api/active-ingredients', () => HttpResponse.json([])),
+      http.post('/api/active-ingredients', async ({ request }) => {
         attempts += 1
-        const body = (await request.json()) as { name: string; country: string }
+        const body = (await request.json()) as { name: string }
         return attempts === 1
           ? problem(409, 'DUPLICATE_RESOURCE', { context: { field: 'name' } })
           : HttpResponse.json({ id: 3, code: null, ...body }, { status: 201 })
@@ -49,10 +49,10 @@ describe('ReferencesPage (ADR-054)', () => {
     )
     renderApp('/catalog/references')
 
-    await userEvent.click(await screen.findByRole('tab', { name: 'Laboratoires' }))
+    expect(screen.queryByRole('tab', { name: 'Laboratoires' })).not.toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('tab', { name: 'Principes actifs (DCI)' }))
     expect(await screen.findByText('Aucune entrée pour le moment.')).toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText('Nouvelle entrée'), 'Vétoquinol')
-    await userEvent.type(screen.getByLabelText('Pays'), 'France')
+    await userEvent.type(screen.getByLabelText('Nouvelle entrée'), 'Ivermectine')
     await userEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
     expect(await screen.findByText('Cette valeur est déjà utilisée.')).toBeInTheDocument()
 

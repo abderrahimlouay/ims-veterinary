@@ -69,7 +69,7 @@ class ProductEndpointTest {
                 .andExpect(jsonPath("$.sku").value("AMX-10"))
                 .andExpect(jsonPath("$.category.code").value("ANTIBIOTIC"))
                 .andExpect(jsonPath("$.dosageForm.code").value("TABLET"))
-                .andExpect(jsonPath("$.manufacturer").doesNotExist())
+                .andExpect(jsonPath("$.supplier").doesNotExist())
                 .andExpect(jsonPath("$.divisible").value(false))
                 .andExpect(jsonPath("$.vatRate").value("9.00"))
                 .andExpect(jsonPath("$.salePrice").value("0.0000"))
@@ -203,13 +203,55 @@ class ProductEndpointTest {
     /** ADR-053, deferred from the reference-lists slice: a referenced entry cannot be deleted. */
     @Test
     void aReferenceUsedByAProductCannotBeDeleted() throws Exception {
-        long manufacturer = idOf(pharmacist.post("/api/manufacturers", "{\"name\":\"In Use Labs\"}"));
-        create(product("R-1", "Uses manufacturer", "ml", true).replace("\"manufacturerId\":null",
-                "\"manufacturerId\":" + manufacturer)).andExpect(status().isCreated());
+        long form = idOf(pharmacist.post("/api/dosage-forms", "{\"name\":\"In Use Form\"}"));
+        create(product("R-1", "Uses form", "ml", true).replace(
+                "\"dosageFormId\":" + id("dosage_forms", "TABLET"), "\"dosageFormId\":" + form))
+                .andExpect(status().isCreated());
         startNewRequestScope();
 
-        pharmacist.perform(MockMvcRequestBuilders.delete("/api/manufacturers/" + manufacturer), true)
+        pharmacist.perform(MockMvcRequestBuilders.delete("/api/dosage-forms/" + form), true)
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("RESOURCE_IN_USE"));
+    }
+
+    /** ADR-180: the supplier of a product is a laboratory or a wholesaler, known and active when chosen. */
+    @Test
+    void aProductNamesItsSupplierLaboratoryOrWholesaler() throws Exception {
+        long wholesaler = supplier("Grossiste Atlas", "wholesaler", true);
+        long laboratory = supplier("Labo Vétonord", "laboratory", true);
+        long inactive = supplier("Ancien Grossiste", "wholesaler", false);
+        pharmacist.get("/api/products/supplier-options").andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].name", org.hamcrest.Matchers.contains("Grossiste Atlas", "Labo Vétonord")))
+                .andExpect(jsonPath("$[0].kind").value("wholesaler"))
+                .andExpect(jsonPath("$[1].kind").value("laboratory"));
+
+        long id = idOf(create(withSupplier(product("SUP-1", "From wholesaler", "ml", true), wholesaler))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.supplier.id").value(wholesaler))
+                .andExpect(jsonPath("$.supplier.name").value("Grossiste Atlas"))
+                .andExpect(jsonPath("$.supplier.kind").value("wholesaler")));
+        put(id, withSupplier(product("SUP-1", "From laboratory", "ml", true), laboratory)
+                .replace("{", "{\"version\":0,\"vatRate\":\"9\","))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.supplier.kind").value("laboratory"));
+        pharmacist.get("/api/products?supplierId=" + laboratory)
+                .andExpect(jsonPath("$.content[*].id", org.hamcrest.Matchers.contains((int) id)));
+
+        create(withSupplier(product("SUP-2", "Inactive", "ml", true), inactive)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("supplierId"))
+                .andExpect(jsonPath("$.errors[0].code").value("INACTIVE"));
+        create(withSupplier(product("SUP-3", "Unknown", "ml", true), 999_999)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("UNKNOWN"));
+    }
+
+    /** ADR-180: a supplier deactivated after it was chosen stays on the product through an update. */
+    @Test
+    void aSupplierDeactivatedLaterIsKept() throws Exception {
+        long wholesaler = supplier("Grossiste Sud", "wholesaler", true);
+        long id = idOf(create(withSupplier(product("SUP-4", "Kept", "ml", true), wholesaler)));
+        jdbc.update("UPDATE suppliers SET is_active = FALSE WHERE id = ?", wholesaler);
+
+        put(id, withSupplier(product("SUP-4", "Kept, renamed", "ml", true), wholesaler)
+                .replace("{", "{\"version\":0,\"vatRate\":\"9\","))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.supplier.id").value(wholesaler));
     }
 
     @Test
@@ -243,8 +285,18 @@ class ProductEndpointTest {
     private String product(String sku, String name, String baseUnit, boolean divisible) {
         return "{\"sku\":\"" + sku + "\",\"commercialName\":\"" + name + "\",\"categoryId\":"
                 + id("therapeutic_categories", "ANTIBIOTIC") + ",\"dosageFormId\":" + id("dosage_forms", "TABLET")
-                + ",\"manufacturerId\":null,\"baseUnit\":\"" + baseUnit + "\",\"divisible\":" + divisible
+                + ",\"supplierId\":null,\"baseUnit\":\"" + baseUnit + "\",\"divisible\":" + divisible
                 + ",\"minStock\":\"10\",\"maxStock\":null,\"reorderPoint\":\"0\"}";
+    }
+
+    private static String withSupplier(String product, long supplierId) {
+        return product.replace("\"supplierId\":null", "\"supplierId\":" + supplierId);
+    }
+
+    private long supplier(String name, String kind, boolean active) {
+        jdbc.update("INSERT INTO suppliers (name, supplier_kind, is_active, created_at, updated_at)"
+                + " VALUES (?, ?, ?, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))", name, kind, active);
+        return jdbc.queryForObject("SELECT id FROM suppliers WHERE name = ?", Long.class, name);
     }
 
     private long id(String table, String code) {

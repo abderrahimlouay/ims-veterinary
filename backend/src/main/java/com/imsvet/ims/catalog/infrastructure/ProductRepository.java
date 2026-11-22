@@ -17,7 +17,7 @@ public interface ProductRepository extends Repository<Product, Long> {
 
     void flush();
 
-    @EntityGraph(attributePaths = {"category", "dosageForm", "manufacturer"})
+    @EntityGraph(attributePaths = {"category", "dosageForm"})
     Optional<Product> findById(Long id);
 
     List<Product> findAllByIdIn(Collection<Long> ids);

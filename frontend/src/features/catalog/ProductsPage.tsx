@@ -10,12 +10,12 @@ import { problemMessage } from '../../lib/errors'
 import { formatDate, formatQuantity, formatUnitPrice } from '../../lib/format'
 import { hasPermission, useCurrentUser } from '../auth'
 import { StockStatusBadge } from '../inventory'
-import { findByBarcode, useProducts, type ProductSearch } from './productApi'
+import { findByBarcode, supplierLabel, useProducts, useSupplierOptions, type ProductSearch } from './productApi'
 import { referenceLabel, useReferenceList, type ReferenceListPath } from './referenceApi'
 
 /** frontend.md §15: the query follows the typing after a short pause. */
 const DEBOUNCE_MS = 250
-const FILTERS = ['categoryId', 'manufacturerId', 'ingredientId', 'speciesId'] as const
+const FILTERS = ['categoryId', 'supplierId', 'ingredientId', 'speciesId'] as const
 
 function FilterSelect({ path, i18nKey, label, value, onChange }: {
   path: ReferenceListPath
@@ -36,10 +36,24 @@ function FilterSelect({ path, i18nKey, label, value, onChange }: {
   )
 }
 
+/** The supplier filter (ADR-180): active laboratories and wholesalers, the kind beside each name. */
+function SupplierFilter({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  const { t } = useTranslation()
+  const options = useSupplierOptions()
+  return (
+    <SelectField
+      label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      options={[{ value: '', label: t('admin.all') }, ...(options.data ?? []).map((s) => ({ value: String(s.id), label: supplierLabel(s, t) }))]}
+    />
+  )
+}
+
 /**
  * `/products` (frontend.md §4.1): search anywhere in name, SKU or active ingredient (ADR-048); a scanner's
  * Enter-terminated barcode opens its product (FR-PROD-003); filters by
- * category, manufacturer, ingredient and species (ADR-047), archived on request, in stock only (ADR-090); sellable
+ * category, supplier (ADR-180), ingredient and species (ADR-047), archived on request, in stock only (ADR-090); sellable
  * quantity, stock status and nearest expiry from the server (ADR-089). Criteria live in the URL.
  */
 export function ProductsPage() {
@@ -50,7 +64,7 @@ export function ProductsPage() {
   const search: ProductSearch = {
     q: params.get('q') ?? '',
     categoryId: params.get('categoryId') ?? '',
-    manufacturerId: params.get('manufacturerId') ?? '',
+    supplierId: params.get('supplierId') ?? '',
     ingredientId: params.get('ingredientId') ?? '',
     speciesId: params.get('speciesId') ?? '',
     includeArchived: params.get('includeArchived') === 'true',
@@ -149,7 +163,7 @@ export function ProductsPage() {
           />
         </div>
         <FilterSelect path="categories" i18nKey="categories" label={t('catalog.products.category')} value={controls.categoryId} onChange={(v) => update({ categoryId: v })} />
-        <FilterSelect path="manufacturers" i18nKey="manufacturers" label={t('catalog.products.manufacturer')} value={controls.manufacturerId} onChange={(v) => update({ manufacturerId: v })} />
+        <SupplierFilter label={t('catalog.products.supplier')} value={controls.supplierId} onChange={(v) => update({ supplierId: v })} />
         <FilterSelect path="active-ingredients" i18nKey="ingredients" label={t('catalog.products.ingredient')} value={controls.ingredientId} onChange={(v) => update({ ingredientId: v })} />
         <FilterSelect path="animal-species" i18nKey="species" label={t('catalog.products.species')} value={controls.speciesId} onChange={(v) => update({ speciesId: v })} />
         <label className="flex items-end gap-2 text-sm pb-2">

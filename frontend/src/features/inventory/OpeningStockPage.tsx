@@ -78,7 +78,7 @@ export function OpeningStockPage() {
 function ProductPicker({ onPick }: { onPick: (product: ProductSummary) => void }) {
   const { t } = useTranslation()
   const [q, setQ] = useState('')
-  const products = useProducts({ q, categoryId: '', manufacturerId: '', ingredientId: '', speciesId: '', includeArchived: false, inStockOnly: false, page: 0 }, 10)
+  const products = useProducts({ q, categoryId: '', supplierId: '', ingredientId: '', speciesId: '', includeArchived: false, inStockOnly: false, page: 0 }, 10)
   return (
     <div className="flex flex-col gap-3">
       <TextField label={t('stock.opening.findProduct')} type="search" value={q} onChange={(e) => setQ(e.target.value)} />

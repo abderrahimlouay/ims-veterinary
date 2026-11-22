@@ -366,7 +366,7 @@ function UnknownLotForm({ countId, onDone }: { countId: number; onDone: () => vo
   const [counted, setCounted] = useState('')
   const [expiryError, setExpiryError] = useState<string>()
   const { errors, problem, onError, reset } = useAddLineErrors()
-  const products = useProducts({ q, categoryId: '', manufacturerId: '', ingredientId: '', speciesId: '', includeArchived: false, inStockOnly: false, page: 0 }, 10)
+  const products = useProducts({ q, categoryId: '', supplierId: '', ingredientId: '', speciesId: '', includeArchived: false, inStockOnly: false, page: 0 }, 10)
   const expiryDate = parseExpiry(expiry)
 
   const submit = (e: FormEvent) => {

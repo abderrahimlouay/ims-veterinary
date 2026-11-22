@@ -9,12 +9,9 @@ import java.util.Optional;
 public enum ReferenceList {
 
     CATEGORIES("categories", 100),
-    MANUFACTURERS("manufacturers", 150),
     DOSAGE_FORMS("dosage-forms", 60),
     ACTIVE_INGREDIENTS("active-ingredients", 150),
     ANIMAL_SPECIES("animal-species", 60);
-
-    public static final int COUNTRY_MAX_LENGTH = 80;
 
     private final String path;
     private final int nameMaxLength;

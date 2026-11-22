@@ -104,7 +104,7 @@ Format: **Column | MySQL type | Null / default | Notes**. `PK`, `FK→`, `UQ`, `
 
 ### 3.2 Product catalogue (module 1)
 
-**manufacturers** — `id INT AI PK`, `name VARCHAR(150) NOT NULL UQ`, `country VARCHAR(80) NULL`.
+**manufacturers** — dropped by V12_009 (ADR-180): a product names its supplier instead.
 **therapeutic_categories** — `id INT AI PK`, `name VARCHAR(100) NOT NULL UQ`, `code VARCHAR(40) NULL UQ` (seeded rows, ADR-054).
 **dosage_forms** — `id INT AI PK`, `name VARCHAR(60) NOT NULL UQ`, `code VARCHAR(40) NULL UQ` (seeded rows, ADR-054).
 **active_ingredients** — `id INT AI PK`, `name VARCHAR(150) NOT NULL UQ` (DCI / INN).
@@ -121,7 +121,7 @@ Reference names are unique case- and accent-insensitively and never blank (CHECK
 | commercial_name | VARCHAR(200) | NOT NULL | indexed (SD-010) |
 | dosage_form_id | INT | FK→dosage_forms | |
 | category_id | INT | FK→therapeutic_categories | indexed |
-| manufacturer_id | INT | FK→manufacturers | |
+| supplier_id | BIGINT | NULL FK→suppliers | ADR-180 (V12_008): the laboratory or wholesaler of the product, replacing `manufacturer_id` (V12_009) |
 | base_unit | VARCHAR(20) | NOT NULL | smallest stock unit |
 | is_divisible | BOOLEAN | NOT NULL | ADR-050, SD-115: whole quantities only when false |
 | vat_rate | DECIMAL(5,2) | NOT NULL, CK 0–100 | **no database default**: a new product takes the `default_vat_rate` setting (VAT is never hard-coded, CLAUDE.md §11) |

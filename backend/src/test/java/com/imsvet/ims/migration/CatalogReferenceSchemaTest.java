@@ -48,16 +48,17 @@ class CatalogReferenceSchemaTest {
     }
 
     @Test
-    void manufacturersAndActiveIngredientsStartEmpty() {
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM manufacturers", Integer.class)).isZero();
+    void activeIngredientsStartEmptyAndManufacturersAreGone() {
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM information_schema.tables"
+                + " WHERE table_schema = DATABASE() AND table_name = 'manufacturers'", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM active_ingredients", Integer.class)).isZero();
     }
 
     @Test
     void namesAreUniqueIgnoringCaseAndAccents() {
-        jdbc.update("INSERT INTO manufacturers (name) VALUES ('Vétoquinol')");
+        jdbc.update("INSERT INTO active_ingredients (name) VALUES ('Ivermectine')");
 
-        assertThatThrownBy(() -> jdbc.update("INSERT INTO manufacturers (name) VALUES ('VETOQUINOL')"))
+        assertThatThrownBy(() -> jdbc.update("INSERT INTO active_ingredients (name) VALUES ('IVERMECTINE')"))
                 .isInstanceOf(DuplicateKeyException.class);
         assertThatThrownBy(() -> jdbc.update("INSERT INTO animal_species (name) VALUES ('bovine')"))
                 .isInstanceOf(DuplicateKeyException.class);

@@ -64,24 +64,22 @@ class ReferenceListsEndpointTest {
         pharmacist.get("/api/therapeutic-categories").andExpect(status().isNotFound());
         pharmacist.get("/api/categories").andExpect(jsonPath("$", hasSize(5)));
         pharmacist.get("/api/dosage-forms").andExpect(jsonPath("$", hasSize(5)));
-        pharmacist.get("/api/manufacturers").andExpect(jsonPath("$", hasSize(0)));
+        pharmacist.get("/api/manufacturers").andExpect(status().isNotFound());
         pharmacist.get("/api/active-ingredients").andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test
     void addedEntriesCanBeRenamedAndDeleted() throws Exception {
-        String location = pharmacist.post("/api/manufacturers", "{\"name\":\"Vétoquinol\",\"country\":\"France\"}")
+        String location = pharmacist.post("/api/active-ingredients", "{\"name\":\"Ivermectine\"}")
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Vétoquinol"))
-                .andExpect(jsonPath("$.country").value("France"))
+                .andExpect(jsonPath("$.name").value("Ivermectine"))
                 .andExpect(jsonPath("$.code").doesNotExist())
                 .andReturn().getResponse().getHeader("Location");
 
-        put(location, "{\"name\":\"Vetoquinol SA\",\"country\":null}").andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Vetoquinol SA"))
-                .andExpect(jsonPath("$.country").doesNotExist());
+        put(location, "{\"name\":\"Ivermectin\"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Ivermectin"));
         delete(location).andExpect(status().isNoContent());
-        pharmacist.get("/api/manufacturers").andExpect(jsonPath("$", hasSize(0)));
+        pharmacist.get("/api/active-ingredients").andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test
@@ -120,7 +118,7 @@ class ReferenceListsEndpointTest {
         sellerClient.login(seller.username(), seller.password()).andExpect(status().isOk());
 
         sellerClient.get("/api/animal-species").andExpect(status().isOk());
-        sellerClient.post("/api/manufacturers", "{\"name\":\"X\"}").andExpect(status().isForbidden())
+        sellerClient.post("/api/dosage-forms", "{\"name\":\"X\"}").andExpect(status().isForbidden())
                 .andExpect(header().doesNotExist("Location"));
     }
 

@@ -39,17 +39,11 @@ public abstract class ReferenceEntry {
         return null;
     }
 
-    /** Only manufacturers have a country. */
-    public String country() {
-        return null;
-    }
-
     public boolean seeded() {
         return code() != null;
     }
 
-    /** {@code country} is ignored by lists without one. */
-    public void rename(String newName, String newCountry) {
+    public void rename(String newName) {
         this.name = newName;
     }
 }

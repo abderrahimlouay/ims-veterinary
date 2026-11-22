@@ -82,13 +82,15 @@ class ProductSearchTest {
     }
 
     @Test
-    void filtersByCategoryManufacturerIngredientAndSpecies() throws Exception {
+    void filtersByCategorySupplierIngredientAndSpecies() throws Exception {
         long antibiotic = seeded("therapeutic_categories", "ANTIBIOTIC");
-        long manufacturer = idOf(client.post("/api/manufacturers", "{\"name\":\"Filter Labs\"}"));
+        jdbc.update("INSERT INTO suppliers (name, supplier_kind, created_at, updated_at)"
+                + " VALUES ('Filter Grossiste', 'wholesaler', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))");
+        long supplier = jdbc.queryForObject("SELECT id FROM suppliers WHERE name = 'Filter Grossiste'", Long.class);
         long ingredient = ingredient("Oxytetracycline");
         long bovine = seeded("animal_species", "BOVINE");
         long categorised = product("F-1", "Categorised", "\"categoryId\":" + antibiotic);
-        long made = product("F-2", "Made", "\"manufacturerId\":" + manufacturer);
+        long supplied = product("F-2", "Supplied", "\"supplierId\":" + supplier);
         long withIngredient = product("F-3", "With ingredient");
         ingredients(withIngredient, ingredient);
         long targeted = product("F-4", "Targeted");
@@ -97,7 +99,7 @@ class ProductSearchTest {
         put(withPeriod, "withdrawal-periods", "[{\"speciesId\":" + bovine + ",\"meatDays\":7}]");
 
         names("categoryId=" + antibiotic).andExpect(jsonPath("$.content[*].id", contains((int) categorised)));
-        names("manufacturerId=" + manufacturer).andExpect(jsonPath("$.content[*].id", contains((int) made)));
+        names("supplierId=" + supplier).andExpect(jsonPath("$.content[*].id", contains((int) supplied)));
         names("ingredientId=" + ingredient).andExpect(jsonPath("$.content[*].id", contains((int) withIngredient)));
         names("speciesId=" + bovine).andExpect(jsonPath("$.content[*].id",
                 containsInAnyOrder((int) targeted, (int) withPeriod)));

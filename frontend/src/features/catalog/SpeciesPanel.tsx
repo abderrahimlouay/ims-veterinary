@@ -43,7 +43,7 @@ export function SpeciesPanel({ product, editable }: { product: ProductDetail; ed
     })),
   )
   const [nextKey, setNextKey] = useState(rows.length)
-  const label = (s: { id: number; name: string; code: string | null; country: string | null }) =>
+  const label = (s: { id: number; name: string; code: string | null }) =>
     referenceLabel(s, 'species', t)
   const periodsError = savePeriods.error instanceof ApiError ? savePeriods.error.problem : undefined
 
@@ -177,7 +177,7 @@ function PeriodsTable({
   label,
 }: {
   product: ProductDetail
-  label: (s: { id: number; name: string; code: string | null; country: string | null }) => string
+  label: (s: { id: number; name: string; code: string | null }) => string
 }) {
   const { t } = useTranslation()
   if (product.withdrawalPeriods.length === 0) {

@@ -256,7 +256,7 @@ describe('lot detail and actions (ADR-060, W6)', () => {
 
 describe('lots tab of a product', () => {
   const PRODUCT_DETAIL = {
-    id: 5, sku: 'AMX-10', commercialName: 'Amoxival 500', category: null, dosageForm: null, manufacturer: null,
+    id: 5, sku: 'AMX-10', commercialName: 'Amoxival 500', category: null, dosageForm: null, supplier: null,
     baseUnit: 'tablet', divisible: false, vatRate: '9.00', purchasePrice: '0.0000', salePrice: '0.0125',
     minStock: '0.000', maxStock: null, reorderPoint: '0.000', archived: false, ingredients: [], targetSpecies: [],
     withdrawalPeriods: [], createdAt: '2026-10-20T08:00:00Z', updatedAt: '2026-10-20T08:00:00Z', version: 0,
@@ -267,7 +267,7 @@ describe('lots tab of a product', () => {
       http.get('/api/products/5', () => HttpResponse.json(PRODUCT_DETAIL)),
       http.get('/api/categories', () => HttpResponse.json([])),
       http.get('/api/dosage-forms', () => HttpResponse.json([])),
-      http.get('/api/manufacturers', () => HttpResponse.json([])),
+      http.get('/api/products/supplier-options', () => HttpResponse.json([])),
       http.get('/api/products/5/lots', () => HttpResponse.json(lots)),
     )
   }

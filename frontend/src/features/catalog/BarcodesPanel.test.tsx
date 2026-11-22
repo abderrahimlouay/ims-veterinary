@@ -14,7 +14,7 @@ const PRODUCT = {
   commercialName: 'Amoxival 500',
   category: null,
   dosageForm: null,
-  manufacturer: null,
+  supplier: null,
   baseUnit: 'tablet',
   divisible: false,
   returnRestockForbidden: false,
@@ -41,7 +41,7 @@ function serveProduct(barcodes: unknown[]) {
     http.get('/api/products/5', () => HttpResponse.json(PRODUCT)),
     http.get('/api/categories', () => HttpResponse.json([])),
     http.get('/api/dosage-forms', () => HttpResponse.json([])),
-    http.get('/api/manufacturers', () => HttpResponse.json([])),
+    http.get('/api/products/supplier-options', () => HttpResponse.json([])),
     http.get('/api/products/5/units', () => HttpResponse.json([BOX])),
     http.get('/api/products/5/barcodes', () => HttpResponse.json(barcodes)),
   )

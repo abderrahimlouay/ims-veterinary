@@ -404,7 +404,7 @@ function ItemEntry({
   const [categoryId, setCategoryId] = useState('')
   const species = useReferenceList('animal-species')
   const categories = useReferenceList('categories')
-  const products = useProducts({ q, categoryId, manufacturerId: '', ingredientId: '', speciesId, includeArchived: false, inStockOnly: false, page: 0 }, 10)
+  const products = useProducts({ q, categoryId, supplierId: '', ingredientId: '', speciesId, includeArchived: false, inStockOnly: false, page: 0 }, 10)
 
   const added = () => {
     setQ('')
