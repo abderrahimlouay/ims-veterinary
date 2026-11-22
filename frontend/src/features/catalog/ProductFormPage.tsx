@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { z } from 'zod'
@@ -48,12 +48,18 @@ const schema = z.object({
   baseUnit: z.string().trim().min(1, 'validation.required').max(20, 'validation.tooLong'),
   divisible: z.boolean(),
   returnRestockForbidden: z.boolean(),
-  vatRate: z.string().regex(/^\d{1,3}(\.\d{1,2})?$/, 'fieldErrors.RANGE'),
+  /** ADR-181: not subject to VAT by default; the rate is asked only when subject, and is then > 0. */
+  vatSubject: z.boolean(),
+  vatRate: z.string(),
   minStock: z.string().regex(DECIMAL_3, 'fieldErrors.SCALE'),
   maxStock: z.union([z.literal(''), z.string().regex(DECIMAL_3, 'fieldErrors.SCALE')]),
   reorderPoint: z.string().regex(DECIMAL_3, 'fieldErrors.SCALE'),
   purchasePrice: z.string().regex(PRICE, 'fieldErrors.SCALE'),
   salePrice: z.string().regex(PRICE, 'fieldErrors.SCALE'),
+}).superRefine((v, ctx) => {
+  if (v.vatSubject && !(/^\d{1,3}(\.\d{1,2})?$/.test(v.vatRate) && Number(v.vatRate) > 0 && Number(v.vatRate) <= 100)) {
+    ctx.addIssue({ code: 'custom', path: ['vatRate'], message: 'fieldErrors.RANGE' })
+  }
 })
 type Form = z.infer<typeof schema>
 const FIELDS = ['sku', 'commercialName', 'categoryId', 'dosageFormId', 'supplierId', 'baseUnit', 'vatRate',
@@ -69,7 +75,8 @@ function toForm(p?: ProductDetail, defaultVat?: string): Form {
     baseUnit: p?.baseUnit ?? '',
     divisible: p?.divisible ?? false,
     returnRestockForbidden: p?.returnRestockForbidden ?? false,
-    vatRate: p?.vatRate ?? defaultVat ?? '',
+    vatSubject: p !== undefined && Number(p.vatRate) > 0,
+    vatRate: p !== undefined && Number(p.vatRate) > 0 ? p.vatRate : defaultVat ?? '',
     minStock: p?.minStock ?? '0',
     maxStock: p?.maxStock ?? '',
     reorderPoint: p?.reorderPoint ?? '0',
@@ -90,7 +97,7 @@ function toWrite(v: Form, withPrices: boolean, version?: number): ProductWrite {
     baseUnit: v.baseUnit,
     divisible: v.divisible,
     returnRestockForbidden: v.returnRestockForbidden,
-    vatRate: v.vatRate,
+    vatRate: v.vatSubject ? v.vatRate : '0',
     minStock: v.minStock,
     maxStock: v.maxStock === '' ? null : v.maxStock,
     reorderPoint: v.reorderPoint,
@@ -170,7 +177,7 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
     return message === undefined ? undefined : t(message)
   }
   const mutation = product ? update : create
-  const [maxStock, reorderPoint] = useWatch({ control, name: ['maxStock', 'reorderPoint'] })
+  const [maxStock, reorderPoint, vatSubject] = useWatch({ control, name: ['maxStock', 'reorderPoint', 'vatSubject'] })
   const inconsistent = thresholdsInconsistent(maxStock ?? '', reorderPoint ?? '')
 
   const onSubmit = handleSubmit((v) => {
@@ -209,7 +216,28 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
           <input type="checkbox" disabled={!editable} {...register('returnRestockForbidden')} />
           {t('catalog.products.returnRestockForbidden')}
         </label>
-        <TextField label={t('catalog.products.vatRate')} hint={t('help.catalog.products.vatRate')} inputMode="decimal" disabled={!editable} error={fieldError('vatRate')} {...register('vatRate')} />
+        <Controller
+          control={control}
+          name="vatSubject"
+          render={({ field }) => (
+            <fieldset className="flex flex-col gap-1 text-sm" disabled={!editable}>
+              <legend className="mb-1">{t('catalog.products.vatSubject')}</legend>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input type="radio" name={field.name} checked={field.value} onChange={() => field.onChange(true)} />
+                  {t('catalog.products.yes')}
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="radio" name={field.name} checked={!field.value} onChange={() => field.onChange(false)} />
+                  {t('catalog.products.no')}
+                </label>
+              </div>
+            </fieldset>
+          )}
+        />
+        {vatSubject
+          ? <TextField label={t('catalog.products.vatRate')} hint={t('help.catalog.products.vatRate')} inputMode="decimal" disabled={!editable} error={fieldError('vatRate')} {...register('vatRate')} />
+          : <div />}
         <TextField label={t('catalog.products.minStock')} hint={t('help.catalog.products.minStock')} inputMode="decimal" disabled={!editable} error={fieldError('minStock')} {...register('minStock')} />
         <TextField
           label={t('catalog.products.maxStock')}

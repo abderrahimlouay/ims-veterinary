@@ -71,7 +71,7 @@ class ProductEndpointTest {
                 .andExpect(jsonPath("$.dosageForm.code").value("TABLET"))
                 .andExpect(jsonPath("$.supplier").doesNotExist())
                 .andExpect(jsonPath("$.divisible").value(false))
-                .andExpect(jsonPath("$.vatRate").value("9.00"))
+                .andExpect(jsonPath("$.vatRate").value("0.00"))
                 .andExpect(jsonPath("$.salePrice").value("0.0000"))
                 .andExpect(jsonPath("$.purchasePrice").value("0.0000"))
                 .andExpect(jsonPath("$.minStock").value("10.000"))
@@ -79,13 +79,14 @@ class ProductEndpointTest {
                 .andExpect(jsonPath("$.version").value(0));
     }
 
+    /** ADR-181: a product is not subject to VAT unless a rate is given; the setting is only the form's prefill. */
     @Test
-    void vatDefaultsToTheSettingAndCanBeGiven() throws Exception {
+    void vatDefaultsToZeroAndCanBeGiven() throws Exception {
         jdbc.update("UPDATE app_settings SET setting_value = '19.00' WHERE setting_key = 'default_vat_rate'");
-        create(product("VAT-1", "Vat default", "ml", true)).andExpect(jsonPath("$.vatRate").value("19.00"));
+        create(product("VAT-1", "Vat default", "ml", true)).andExpect(jsonPath("$.vatRate").value("0.00"));
 
-        create(product("VAT-2", "Vat given", "ml", true).replace("\"divisible\":true", "\"divisible\":true,\"vatRate\":\"0\""))
-                .andExpect(jsonPath("$.vatRate").value("0.00"));
+        create(product("VAT-2", "Vat given", "ml", true).replace("\"divisible\":true", "\"divisible\":true,\"vatRate\":\"19\""))
+                .andExpect(jsonPath("$.vatRate").value("19.00"));
     }
 
     @Test

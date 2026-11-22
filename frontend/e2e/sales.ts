@@ -10,6 +10,9 @@ export async function aProduct(page: Page, sku: string, name: string, price: str
   await page.getByLabel('Nom commercial').fill(name)
   await page.getByLabel('Unité de base', { exact: true }).fill('tablet')
   await page.getByLabel('Prix de vente (unité de base)').fill(price)
+  // Subject to VAT at the default rate, so the journeys keep checking taxed totals (ADR-181).
+  await page.getByRole('radio', { name: 'Oui' }).check()
+  await expect(page.getByLabel('TVA (%)')).toHaveValue('9.00')
   await page.getByRole('button', { name: 'Enregistrer' }).click()
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
 }

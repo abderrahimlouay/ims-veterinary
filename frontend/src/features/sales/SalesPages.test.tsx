@@ -109,6 +109,28 @@ describe('sales documents (frontend.md §4.8)', () => {
     expect(screen.getByRole('columnheader', { name: 'Retourné' })).toBeInTheDocument()
   })
 
+  it('shows HT, VAT and TTC when a line is taxed (ADR-181)', async () => {
+    serveMe(READER)
+    serveSale(aSale())
+    renderApp('/sales/300')
+    expect(await screen.findByText('Total TTC')).toBeInTheDocument()
+    expect(screen.getByText('TVA')).toBeInTheDocument()
+  })
+
+  it('shows a single total and no VAT when no line is taxed (ADR-181)', async () => {
+    serveMe(READER)
+    const untaxed = aSale().lines[0]
+    serveSale(aSale({
+      totals: { ht: '20.00', discount: '0.00', vat: '0.00', ttc: '20.00', stampDuty: '0.00', netToPay: '20.00', globalDiscount: null },
+      lines: [{ ...untaxed, vatRate: '0.00', lineVat: '0.00', lineTtc: '20.00', lineTtcBeforeGlobalDiscount: '20.00' }],
+    }))
+    renderApp('/sales/300')
+    expect(await screen.findByText('Total', { selector: 'dt' })).toBeInTheDocument()
+    expect(screen.queryByText('TVA')).not.toBeInTheDocument()
+    expect(screen.queryByText('Total HT')).not.toBeInTheDocument()
+    expect(screen.queryByText('Total TTC')).not.toBeInTheDocument()
+  })
+
   it('offers no return on a delivery note nor without the permission', async () => {
     serveMe(SELLER)
     serveSale(aSale({ docType: 'invoice', number: 'INV-2026-000001' }))

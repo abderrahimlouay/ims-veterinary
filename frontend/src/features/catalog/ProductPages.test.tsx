@@ -107,7 +107,7 @@ describe('product pages', () => {
     expect(await screen.findByText('Aucun produit ne correspond à la recherche.')).toBeInTheDocument()
   })
 
-  it('creates a product with the default VAT and shows server field errors', async () => {
+  it('creates a product not subject to VAT by default and shows server field errors (ADR-181)', async () => {
     serveMe(PHARMACIST)
     serveReferences()
     const bodies: Record<string, unknown>[] = []
@@ -128,15 +128,68 @@ describe('product pages', () => {
     await userEvent.type(screen.getByLabelText('Unité de base'), 'tablet')
     await userEvent.clear(screen.getByLabelText('Stock minimum'))
     await userEvent.type(screen.getByLabelText('Stock minimum'), '2.5')
-    expect(screen.getByLabelText('TVA (%)')).toHaveValue('9.00')
+    expect(screen.getByRole('radio', { name: 'Non' })).toBeChecked()
+    expect(screen.queryByLabelText('TVA (%)')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     expect(await screen.findByText('Ce produit se compte en unités entières.')).toBeInTheDocument()
-    expect(bodies[0]).toMatchObject({ sku: 'AMX-10', categoryId: 1, divisible: false, vatRate: '9.00', minStock: '2.5' })
+    expect(bodies[0]).toMatchObject({ sku: 'AMX-10', categoryId: 1, divisible: false, vatRate: '0', minStock: '2.5' })
 
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Amoxival 500' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/products/8')
+  })
+
+  it('asks the VAT rate only for a product subject to VAT, prefilled from the settings (ADR-181)', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    const bodies: Record<string, unknown>[] = []
+    server.use(
+      http.post('/api/products', async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json(aProduct({ id: 8 }), { status: 201 })
+      }),
+      http.get('/api/products/8', () => HttpResponse.json(aProduct({ id: 8 }))),
+    )
+    renderApp('/products/new')
+
+    await userEvent.type(await screen.findByLabelText('Nom commercial'), 'Amoxival 500')
+    await userEvent.type(screen.getByLabelText('Unité de base'), 'tablet')
+    await userEvent.click(screen.getByRole('radio', { name: 'Oui' }))
+    expect(screen.getByLabelText('TVA (%)')).toHaveValue('9.00')
+    await userEvent.clear(screen.getByLabelText('TVA (%)'))
+    await userEvent.type(screen.getByLabelText('TVA (%)'), '0')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    expect(bodies).toHaveLength(0)
+
+    await userEvent.clear(screen.getByLabelText('TVA (%)'))
+    await userEvent.type(screen.getByLabelText('TVA (%)'), '19')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    await screen.findByRole('heading', { level: 1, name: 'Amoxival 500' })
+    expect(bodies[0]).toMatchObject({ vatRate: '19' })
+  })
+
+  it('opens a taxed product on Oui and sends 0 when switched to Non (ADR-181)', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    let body: Record<string, unknown> = {}
+    server.use(
+      http.get('/api/products/5', () => HttpResponse.json(aProduct())),
+      http.put('/api/products/5', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(aProduct({ version: 1, vatRate: '0.00' }))
+      }),
+    )
+    renderApp('/products/5')
+
+    expect(await screen.findByLabelText('TVA (%)')).toHaveValue('9.00')
+    expect(screen.getByRole('radio', { name: 'Oui' })).toBeChecked()
+    await userEvent.click(screen.getByRole('radio', { name: 'Non' }))
+    expect(screen.queryByLabelText('TVA (%)')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await screen.findByText('Modifications enregistrées.')
+    expect(body).toMatchObject({ vatRate: '0' })
   })
 
   it('names a wholesaler or a laboratory as the supplier, the kind beside each name (ADR-180)', async () => {

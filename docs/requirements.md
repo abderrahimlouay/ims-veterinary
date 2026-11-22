@@ -85,7 +85,7 @@ Module numbering follows the Spec (§2.1 … §2.7). Module codes: `PROD`, `LOT`
 | FR-PROD-006 | Support selling by **packaging unit** (box, bottle) or **sub-unit** (blister, syringe, dose/ml). | `[SRC]` |
 | FR-PROD-007 | **Automatic stock conversion** on retail sale (e.g. a 100 ml bottle sold in 5 ml doses). | `[SRC]` |
 | FR-PROD-008 | Maintain reference lists: therapeutic categories (manufacturers removed by ADR-180), dosage forms, active ingredients, animal species. | `[SCH]` (implied by FR-PROD-002/004/005) |
-| FR-PROD-009 | Per product: VAT rate, purchase price, sale price (per base unit), minimum stock, maximum stock, reorder point. | `[SCH]`, `[SRC §2.3]` |
+| FR-PROD-009 | Per product: subject to VAT or not (Non by default) and then its VAT rate (ADR-181), purchase price, sale price (per base unit), minimum stock, maximum stock, reorder point. | `[SCH]`, `[SRC §2.3]` |
 
 **Inputs.** Product data, barcode values, ingredient links with strength, withdrawal days per species, unit definitions (name, factor to base unit, optional unit sale price, sellable flag).
 **Outputs.** Product sheets, search results, substitution lists (same active ingredient), product stock summary.

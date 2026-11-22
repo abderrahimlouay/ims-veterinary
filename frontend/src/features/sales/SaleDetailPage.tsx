@@ -14,6 +14,7 @@ import { deduction, globalDiscountLabel } from './globalDiscount'
 import { salePdfUrl } from './printing'
 import { PrintTicketButton } from './PrintTicketButton'
 import { PdfLink } from '../../components/PdfLink'
+import { vatApplies } from '../../lib/vat'
 
 /** BR-SALE-001 and W11: what the server would accept; it decides anyway. */
 function conversions(sale: SaleDetail): DocType[] {
@@ -56,6 +57,7 @@ export function SaleDetailPage() {
   const data = sale.data
   const canSell = hasPermission(current, 'sale.create')
   const failure = convert.error ?? abandon.error
+  const taxed = vatApplies(data.lines)
   const returnedAny = data.lines.some((line) => Number(line.returnedQuantityBase) > 0)
   const returnable = data.status === 'confirmed' && (data.docType === 'invoice' || data.docType === 'receipt')
   return (
@@ -140,11 +142,15 @@ export function SaleDetailPage() {
             </dd>
           </>
         )}
-        <dt>{t('pos.ht')}</dt>
-        <dd className="text-end">{formatMoney(data.totals.ht)}</dd>
-        <dt>{t('pos.vat')}</dt>
-        <dd className="text-end">{formatMoney(data.totals.vat)}</dd>
-        <dt className="font-semibold">{t('pos.ttc')}</dt>
+        {taxed && (
+          <>
+            <dt>{t('pos.ht')}</dt>
+            <dd className="text-end">{formatMoney(data.totals.ht)}</dd>
+            <dt>{t('pos.vat')}</dt>
+            <dd className="text-end">{formatMoney(data.totals.vat)}</dd>
+          </>
+        )}
+        <dt className="font-semibold">{taxed ? t('pos.ttc') : t('pos.totalNoVat')}</dt>
         <dd className="text-end font-semibold">{formatMoney(data.totals.ttc)}</dd>
         {Number(data.totals.stampDuty) > 0 && (
           <>

@@ -26,6 +26,8 @@ test('J3: purchase order, goods receipt, lot in stock, receipt cancelled', async
   await page.getByLabel('SKU', { exact: true }).fill('E2E-J3-PUR')
   await page.getByLabel('Nom commercial').fill('E2E Purchaseval')
   await page.getByLabel('Unité de base', { exact: true }).fill('tablet')
+  // Subject to VAT: the order line takes the product's 9 % (ADR-105, ADR-181).
+  await page.getByRole('radio', { name: 'Oui' }).check()
   await page.getByRole('button', { name: 'Enregistrer' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'E2E Purchaseval' })).toBeVisible()
 

@@ -221,6 +221,25 @@ class SalePdfsTest {
                 .contains("1 962,00 DA");
     }
 
+    /** ADR-181: a document none of whose lines is taxed prints no VAT, only a total. */
+    @Test
+    void aDocumentWithoutTaxedLinePrintsNoVat() throws Exception {
+        jdbc.update("UPDATE products SET vat_rate = 0 WHERE id = ?", product);
+        entities.clear();
+        seller.post("/api/cash-sessions/open", "{\"openingAmount\":\"0\"}").andExpect(status().isCreated());
+        long receipt = sale("{\"docType\":\"receipt\"}", "2");
+        seller.post("/api/sales/" + receipt + "/confirm",
+                "{\"payments\":[{\"method\":\"cash\",\"amount\":\"2000.00\"}]}").andExpect(status().isOk());
+
+        String a4 = text(seller.get("/api/sales/" + receipt + "/pdf").andExpect(status().isOk()).andReturn());
+        assertThat(a4).contains("Total").contains("2 000,00 DA").contains("P.U.")
+                .doesNotContain("TVA").doesNotContain("HT").doesNotContain("TTC");
+        String ticket = text(seller.get("/api/sales/" + receipt + "/pdf?format=ticket").andExpect(status().isOk())
+                .andReturn());
+        assertThat(ticket).contains("TOTAL").contains("2 000,00 DA")
+                .doesNotContain("TVA").doesNotContain("HT").doesNotContain("TTC");
+    }
+
     @Test
     void aSaleWithoutStampDutyPrintsNoStampLine() throws Exception {
         seller.post("/api/cash-sessions/open", "{\"openingAmount\":\"0\"}").andExpect(status().isCreated());

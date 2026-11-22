@@ -75,6 +75,7 @@ public class PurchaseOrderPdfs {
             lines.add(line);
         }
         model.put("lines", lines);
+        model.put("taxed", d.lines().stream().anyMatch(l -> l.vatRate().signum() > 0));
         model.put("totals", Map.of("ht", PrintFormats.money(d.totalHt(), currency), "vat",
                 PrintFormats.money(d.totalVat(), currency), "ttc", PrintFormats.money(d.totalTtc(), currency)));
         return new Pdf(renderer.render("purchase-order-a4", model, Paper.A4), d.number() + ".pdf");

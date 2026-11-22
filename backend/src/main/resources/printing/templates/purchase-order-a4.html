@@ -32,8 +32,8 @@
 <table class="lines">
   <thead>
     <tr>
-      <th>Réf.</th><th>Désignation</th><th class="num">Qté</th><th class="num">P.U. HT</th><th class="num">Remise</th>
-      <th class="num">TVA</th><th class="num">Total HT</th>
+      <th>Réf.</th><th>Désignation</th><th class="num">Qté</th><th class="num" th:text="${taxed} ? 'P.U. HT' : 'P.U.'">P.U. HT</th><th class="num">Remise</th>
+      <th class="num" th:if="${taxed}">TVA</th><th class="num" th:text="${taxed} ? 'Total HT' : 'Total'">Total HT</th>
     </tr>
   </thead>
   <tbody>
@@ -43,15 +43,15 @@
       <td class="num" th:text="${l.quantity}">1</td>
       <td class="num" th:text="${l.unitPrice}">0,00</td>
       <td class="num" th:text="${l.discount}">—</td>
-      <td class="num" th:text="${l.vatRate}">9 %</td>
+      <td class="num" th:if="${taxed}" th:text="${l.vatRate}">9 %</td>
       <td class="num" th:text="${l.ht}">0,00</td>
     </tr>
   </tbody>
 </table>
 <table style="width: 45%; margin: 4mm 0 0 auto; border-collapse: collapse">
-  <tr><td>Total HT</td><td class="num" th:text="${totals.ht}">0,00</td></tr>
-  <tr><td>TVA</td><td class="num" th:text="${totals.vat}">0,00</td></tr>
-  <tr class="grand"><td>Total TTC</td><td class="num" th:text="${totals.ttc}">0,00</td></tr>
+  <tr th:if="${taxed}"><td>Total HT</td><td class="num" th:text="${totals.ht}">0,00</td></tr>
+  <tr th:if="${taxed}"><td>TVA</td><td class="num" th:text="${totals.vat}">0,00</td></tr>
+  <tr class="grand"><td th:text="${taxed} ? 'Total TTC' : 'Total'">Total TTC</td><td class="num" th:text="${totals.ttc}">0,00</td></tr>
 </table>
 <div class="footer" th:if="${company != null and company.footer != null}" th:text="${company.footer}">Pied</div>
 </body>
