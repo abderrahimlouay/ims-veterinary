@@ -397,14 +397,12 @@
       "add": "Add",
       "addLabel": "New entry",
       "newName": "New name",
-      "country": "Country",
       "cancel": "Cancel",
       "lists": {
         "species": "Animal species",
         "categories": "Therapeutic categories",
         "dosageForms": "Dosage forms",
-        "ingredients": "Active ingredients (INN)",
-        "manufacturers": "Manufacturers"
+        "ingredients": "Active ingredients (INN)"
       }
     },
     "products": {
@@ -416,7 +414,7 @@
       "name": "Commercial name",
       "category": "Therapeutic category",
       "dosageForm": "Dosage form",
-      "manufacturer": "Manufacturer",
+      "supplier": "Supplier (wholesaler or laboratory)",
       "baseUnit": "Base unit",
       "divisible": "Divisible (ml, g…) — otherwise whole units (tablets, syringes…)",
       "vatRate": "VAT (%)",
@@ -1672,7 +1670,7 @@
         "name": "The name as written on the box; it appears on invoices.",
         "category": "Used to find products, in reports and for counts by category.",
         "dosageForm": "The medicine's form: injectable, powder, tablet…",
-        "manufacturer": "The laboratory that makes the product.",
+        "supplier": "The wholesaler or laboratory the product is bought from.",
         "baseUnit": "The smallest quantity sold and counted (tablet, ml, vial…); stock and prices are in this unit.",
         "vatRate": "This product's VAT rate on sale; copied onto each sales line.",
         "minStock": "Alert level: below it, the product is flagged as low stock.",

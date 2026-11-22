@@ -109,7 +109,7 @@ function ProductScope({ products, onChange, error }: {
 }) {
   const { t } = useTranslation()
   const [q, setQ] = useState('')
-  const found = useProducts({ q, categoryId: '', manufacturerId: '', ingredientId: '', speciesId: '', includeArchived: false, inStockOnly: false, page: 0 }, 10)
+  const found = useProducts({ q, categoryId: '', supplierId: '', ingredientId: '', speciesId: '', includeArchived: false, inStockOnly: false, page: 0 }, 10)
   const chosen = new Set(products.map((p) => p.id))
   return (
     <div className="flex flex-col gap-2">

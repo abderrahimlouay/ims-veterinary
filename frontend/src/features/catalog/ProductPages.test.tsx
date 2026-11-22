@@ -7,7 +7,7 @@ import { renderApp } from '../../test/render'
 import { server } from '../../test/server'
 
 const PHARMACIST = aUser({ permissions: ['product.read', 'product.create', 'product.update', 'product.archive'] })
-const ANTIBIOTIC = { id: 1, name: 'Antibiotic', code: 'ANTIBIOTIC', country: null }
+const ANTIBIOTIC = { id: 1, name: 'Antibiotic', code: 'ANTIBIOTIC' }
 
 function aProduct(overrides: Record<string, unknown> = {}) {
   return {
@@ -16,7 +16,7 @@ function aProduct(overrides: Record<string, unknown> = {}) {
     commercialName: 'Amoxival 500',
     category: ANTIBIOTIC,
     dosageForm: null,
-    manufacturer: null,
+    supplier: null,
     baseUnit: 'tablet',
     divisible: false,
     returnRestockForbidden: false,
@@ -45,7 +45,7 @@ function serveReferences() {
   server.use(
     http.get('/api/categories', () => HttpResponse.json([ANTIBIOTIC])),
     http.get('/api/dosage-forms', () => HttpResponse.json([])),
-    http.get('/api/manufacturers', () => HttpResponse.json([])),
+    http.get('/api/products/supplier-options', () => HttpResponse.json([])),
   )
 }
 
@@ -81,7 +81,7 @@ describe('product pages', () => {
   it('searches after a pause in typing and filters by species, keeping the criteria in the URL', async () => {
     serveMe(PHARMACIST)
     serveReferences()
-    server.use(http.get('/api/animal-species', () => HttpResponse.json([{ id: 1, name: 'Bovine', code: 'BOVINE', country: null }])))
+    server.use(http.get('/api/animal-species', () => HttpResponse.json([{ id: 1, name: 'Bovine', code: 'BOVINE' }])))
     const queries: URLSearchParams[] = []
     server.use(
       http.get('/api/products', ({ request }) => {
@@ -137,6 +137,36 @@ describe('product pages', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Amoxival 500' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/products/8')
+  })
+
+  it('names a wholesaler or a laboratory as the supplier, the kind beside each name (ADR-180)', async () => {
+    serveMe(PHARMACIST)
+    serveReferences()
+    const bodies: Record<string, unknown>[] = []
+    const atlas = { id: 4, name: 'Grossiste Atlas', kind: 'wholesaler', active: true }
+    server.use(
+      http.get('/api/products/supplier-options', () =>
+        HttpResponse.json([atlas, { id: 6, name: 'Labo Vétonord', kind: 'laboratory', active: true }]),
+      ),
+      http.post('/api/products', async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json(aProduct({ id: 8, supplier: atlas }), { status: 201 })
+      }),
+      http.get('/api/products/8', () => HttpResponse.json(aProduct({ id: 8, supplier: atlas }))),
+    )
+    renderApp('/products/new')
+
+    const supplier = await screen.findByLabelText('Fournisseur (grossiste ou laboratoire)')
+    expect(await within(supplier).findByRole('option', { name: 'Grossiste Atlas — Grossiste' })).toBeInTheDocument()
+    expect(within(supplier).getByRole('option', { name: 'Labo Vétonord — Laboratoire' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Laboratoire')).not.toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Nom commercial'), 'Amoxival 500')
+    await userEvent.type(screen.getByLabelText('Unité de base'), 'tablet')
+    await userEvent.selectOptions(supplier, '4')
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() => expect(bodies[0]).toMatchObject({ supplierId: 4 }))
+    expect(bodies[0]).not.toHaveProperty('manufacturerId')
   })
 
   it('sends an empty SKU for the server to generate, and requires one on update (ADR-173)', async () => {
@@ -267,12 +297,12 @@ describe('product pages', () => {
     let saved: unknown
     server.use(
       http.get('/api/products/5', () =>
-        HttpResponse.json(aProduct({ ingredients: [{ ingredient: { id: 3, name: 'Amoxicilline', code: null, country: null }, strength: '500 mg' }] })),
+        HttpResponse.json(aProduct({ ingredients: [{ ingredient: { id: 3, name: 'Amoxicilline', code: null }, strength: '500 mg' }] })),
       ),
       http.get('/api/active-ingredients', () =>
         HttpResponse.json([
-          { id: 3, name: 'Amoxicilline', code: null, country: null },
-          { id: 4, name: 'Acide clavulanique', code: null, country: null },
+          { id: 3, name: 'Amoxicilline', code: null },
+          { id: 4, name: 'Acide clavulanique', code: null },
         ]),
       ),
       http.put('/api/products/5/ingredients', async ({ request }) => {
@@ -352,7 +382,7 @@ describe('product pages', () => {
     serveReferences()
     server.use(
       http.get('/api/products/5', () => HttpResponse.json(aProduct())),
-      http.get('/api/active-ingredients', () => HttpResponse.json([{ id: 3, name: 'Amoxicilline', code: null, country: null }])),
+      http.get('/api/active-ingredients', () => HttpResponse.json([{ id: 3, name: 'Amoxicilline', code: null }])),
       http.put('/api/products/5/ingredients', () =>
         problem(400, 'VALIDATION_FAILED', { errors: [{ field: 'ingredients', code: 'DUPLICATE', message: 'x' }] }),
       ),
@@ -375,8 +405,8 @@ describe('product pages', () => {
       http.get('/api/products/5', () => HttpResponse.json(aProduct())),
       http.get('/api/animal-species', () =>
         HttpResponse.json([
-          { id: 1, name: 'Bovine', code: 'BOVINE', country: null },
-          { id: 2, name: 'Ovine', code: 'OVINE', country: null },
+          { id: 1, name: 'Bovine', code: 'BOVINE' },
+          { id: 2, name: 'Ovine', code: 'OVINE' },
         ]),
       ),
       http.put('/api/products/5/target-species', async ({ request }) => {
@@ -408,7 +438,7 @@ describe('product pages', () => {
     serveReferences()
     server.use(
       http.get('/api/products/5', () =>
-        HttpResponse.json(aProduct({ withdrawalPeriods: [{ species: { id: 1, name: 'Bovine', code: 'BOVINE', country: null }, meatDays: 28, milkDays: null, eggsDays: 0 }] })),
+        HttpResponse.json(aProduct({ withdrawalPeriods: [{ species: { id: 1, name: 'Bovine', code: 'BOVINE' }, meatDays: 28, milkDays: null, eggsDays: 0 }] })),
       ),
     )
     renderApp('/products/5')

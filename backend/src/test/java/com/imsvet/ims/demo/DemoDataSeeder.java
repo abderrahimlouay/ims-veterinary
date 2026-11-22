@@ -119,9 +119,12 @@ class DemoDataSeeder {
     private static final Logger LOG = LoggerFactory.getLogger(DemoDataSeeder.class);
     private static final ZoneId BUSINESS = ZoneId.of("Africa/Algiers");
     private static final String MARKER_SUPPLIER = "Distrimed Ouest";
+    /** The supplier of a demo product, by its {@code Spec.supplier} index: wholesalers and laboratories (ADR-180). */
+    private static final String[] PRODUCT_SUPPLIERS = { "Distrimed Ouest", "Pharmavet Grossiste Centre",
+            "Laboratoires Atlas Vét", "Medivet Méditerranée" };
 
     /** One demo product; {@code units}: name → factor; {@code withdrawal}: species code → meat/milk/eggs days. */
-    private record Spec(String key, String sku, String name, String category, String form, int manufacturer,
+    private record Spec(String key, String sku, String name, String category, String form, int supplier,
             String baseUnit, boolean divisible, String vat, String min, String max, String reorder, String purchase,
             String sale, Map<String, String> units, List<String> species, Map<String, int[]> withdrawal,
             boolean barcode) {
@@ -253,13 +256,13 @@ class DemoDataSeeder {
         createUsers();
         at(-120, 9, 30);
         Map<String, Integer> categories = categories();
-        List<Integer> manufacturers = manufacturers();
+        createSuppliers();
         Map<String, Integer> forms = codes(ReferenceList.DOSAGE_FORMS);
         Map<String, Integer> speciesIds = codes(ReferenceList.ANIMAL_SPECIES);
         for (Spec spec : specs()) {
-            createProduct(spec, categories, manufacturers, forms, speciesIds);
+            createProduct(spec, categories, forms, speciesIds);
         }
-        createSuppliers();
+        supplierPrices();
         at(-110, 10, 0);
         lots.put("IOD-2309", openingStock.enter(new OpeningInput(products.get("iode"), "IOD-2309", today.plusDays(90),
                 new BigDecimal("1000"), null, new BigDecimal("0.0110"))).lot().id());
@@ -306,17 +309,8 @@ class DemoDataSeeder {
 
     private Map<String, Integer> categories() {
         Map<String, Integer> byCode = codes(ReferenceList.CATEGORIES);
-        byCode.put("DISINFECTANT", references.create(ReferenceList.CATEGORIES, "Désinfectants", null).id());
+        byCode.put("DISINFECTANT", references.create(ReferenceList.CATEGORIES, "Désinfectants").id());
         return byCode;
-    }
-
-    private List<Integer> manufacturers() {
-        List<Integer> ids = new ArrayList<>();
-        for (String[] m : new String[][] { { "Atlas Vét (démo)", "Algérie" }, { "Numidia Santé Animale (démo)", "Algérie" },
-                { "Saharavet (démo)", "Algérie" }, { "Medivet Méditerranée (démo)", "France" } }) {
-            ids.add(references.create(ReferenceList.MANUFACTURERS, m[0], m[1]).id());
-        }
-        return ids;
     }
 
     private Map<String, Integer> codes(ReferenceList list) {
@@ -329,10 +323,10 @@ class DemoDataSeeder {
         return byCode;
     }
 
-    private void createProduct(Spec s, Map<String, Integer> categories, List<Integer> manufacturers,
-            Map<String, Integer> forms, Map<String, Integer> speciesIds) {
+    private void createProduct(Spec s, Map<String, Integer> categories, Map<String, Integer> forms,
+            Map<String, Integer> speciesIds) {
         long id = catalog.create(new ProductInput(s.sku(), s.name(), categories.get(s.category()), forms.get(s.form()),
-                manufacturers.get(s.manufacturer()), s.baseUnit(), s.divisible(), new BigDecimal(s.vat()),
+                supplierIds.get(PRODUCT_SUPPLIERS[s.supplier()]), s.baseUnit(), s.divisible(), new BigDecimal(s.vat()),
                 new BigDecimal(s.min()), s.max() == null ? null : new BigDecimal(s.max()), new BigDecimal(s.reorder()),
                 new BigDecimal(s.purchase()), new BigDecimal(s.sale()), "VACCINE".equals(s.category()) ? true : null))
                 .id();
@@ -381,6 +375,9 @@ class DemoDataSeeder {
             supplierIds.put(s[0], suppliers.create(new SupplierInput(s[0], s[1], null, null, s[3],
                     "Adresse fictive de démonstration", Integer.parseInt(s[2]))).id());
         }
+    }
+
+    private void supplierPrices() {
         price("Distrimed Ouest", "amox", "0.0800", "0");
         price("Distrimed Ouest", "oxy", "0.0450", "5");
         price("Pharmavet Grossiste Centre", "enro", "0.0300", "0");

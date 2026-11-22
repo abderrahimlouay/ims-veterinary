@@ -77,7 +77,6 @@ function ReferenceListPanel({ list }: { list: ListSpec }) {
             <li key={item.id} className="flex items-center gap-3 py-2">
               <span className="flex-1">
                 {referenceLabel(item, list.i18nKey, t)}
-                {item.country && <span className="text-mute"> — {item.country}</span>}
               </span>
               {item.code !== null ? (
                 <span className="text-xs text-mute">{t('catalog.references.seeded')}</span>
@@ -118,7 +117,6 @@ function ReferenceForm({ list, editing, onDone }: { list: ListSpec; editing?: Re
   const { t } = useTranslation()
   const save = useSaveReference(list.path)
   const [name, setName] = useState(editing?.name ?? '')
-  const [country, setCountry] = useState(editing?.country ?? '')
   const problem = save.error instanceof ApiError ? save.error.problem : undefined
   const nameError =
     problem?.code === 'DUPLICATE_RESOURCE'
@@ -133,11 +131,10 @@ function ReferenceForm({ list, editing, onDone }: { list: ListSpec; editing?: Re
       onSubmit={(e) => {
         e.preventDefault()
         save.mutate(
-          { id: editing?.id, name, country: list.hasCountry ? country : null },
+          { id: editing?.id, name },
           {
             onSuccess: () => {
               setName('')
-              setCountry('')
               onDone()
             },
           },
@@ -153,11 +150,6 @@ function ReferenceForm({ list, editing, onDone }: { list: ListSpec; editing?: Re
           error={nameError}
         />
       </div>
-      {list.hasCountry && (
-        <div className="w-40">
-          <TextField label={t('catalog.references.country')} value={country} onChange={(e) => setCountry(e.target.value)} />
-        </div>
-      )}
       <Button type="submit" disabled={save.isPending || name.trim() === ''}>
         {editing ? t('admin.save') : t('catalog.references.add')}
       </Button>

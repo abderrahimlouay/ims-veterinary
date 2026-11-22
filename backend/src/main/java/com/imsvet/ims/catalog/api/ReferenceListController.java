@@ -23,11 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
  * api.md §4.3 reference lists; permissions on the service ({@code product.read}, {@code reference.manage}).
  */
 @RestController
-@RequestMapping("/api/{list:categories|manufacturers|dosage-forms|active-ingredients|animal-species}")
+@RequestMapping("/api/{list:categories|dosage-forms|active-ingredients|animal-species}")
 class ReferenceListController {
 
-    /** {@code country} is used by manufacturers only. */
-    record ReferenceEntryRequest(@NotBlank String name, String country) {
+    record ReferenceEntryRequest(@NotBlank String name) {
     }
 
     private final ReferenceLists lists;
@@ -43,14 +42,14 @@ class ReferenceListController {
 
     @PostMapping
     ResponseEntity<ReferenceItemView> create(@PathVariable String list, @Valid @RequestBody ReferenceEntryRequest body) {
-        ReferenceItemView created = lists.create(of(list), body.name(), body.country());
+        ReferenceItemView created = lists.create(of(list), body.name());
         return ResponseEntity.created(URI.create("/api/" + list + "/" + created.id())).body(created);
     }
 
     @PutMapping("/{id}")
     ReferenceItemView rename(@PathVariable String list, @PathVariable int id,
             @Valid @RequestBody ReferenceEntryRequest body) {
-        return lists.rename(of(list), id, body.name(), body.country());
+        return lists.rename(of(list), id, body.name());
     }
 
     @DeleteMapping("/{id}")

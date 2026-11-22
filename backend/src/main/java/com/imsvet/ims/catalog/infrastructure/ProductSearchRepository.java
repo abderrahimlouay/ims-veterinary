@@ -20,14 +20,14 @@ import org.springframework.stereotype.Repository;
 public class ProductSearchRepository {
 
     /** The criteria of ADR-047/048; {@code pattern}/{@code prefix} are escaped with {@code !}; all optional. */
-    public record Criteria(String term, String pattern, String prefix, Integer categoryId, Integer manufacturerId,
+    public record Criteria(String term, String pattern, String prefix, Integer categoryId, Long supplierId,
             Integer ingredientId, Integer speciesId, String barcode, boolean includeArchived) {
     }
 
     private static final String WHERE = """
              WHERE (:includeArchived = true OR p.archived = false)
               AND (:categoryId IS NULL OR p.category.id = :categoryId)
-              AND (:manufacturerId IS NULL OR p.manufacturer.id = :manufacturerId)
+              AND (:supplierId IS NULL OR p.supplierId = :supplierId)
               AND (:ingredientId IS NULL OR p.id IN (
                    SELECT pi.id FROM Product pi JOIN pi.ingredients ii WHERE ii.ingredient.id = :ingredientId))
               AND (:speciesId IS NULL
@@ -100,7 +100,7 @@ public class ProductSearchRepository {
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("includeArchived", c.includeArchived());
         parameters.put("categoryId", c.categoryId());
-        parameters.put("manufacturerId", c.manufacturerId());
+        parameters.put("supplierId", c.supplierId());
         parameters.put("ingredientId", c.ingredientId());
         parameters.put("speciesId", c.speciesId());
         parameters.put("pattern", c.pattern());

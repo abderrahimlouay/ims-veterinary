@@ -397,14 +397,12 @@
       "add": "Ajouter",
       "addLabel": "Nouvelle entrée",
       "newName": "Nouveau nom",
-      "country": "Pays",
       "cancel": "Annuler",
       "lists": {
         "species": "Espèces animales",
         "categories": "Catégories thérapeutiques",
         "dosageForms": "Formes galéniques",
-        "ingredients": "Principes actifs (DCI)",
-        "manufacturers": "Laboratoires"
+        "ingredients": "Principes actifs (DCI)"
       }
     },
     "products": {
@@ -416,7 +414,7 @@
       "name": "Nom commercial",
       "category": "Catégorie thérapeutique",
       "dosageForm": "Forme galénique",
-      "manufacturer": "Laboratoire",
+      "supplier": "Fournisseur (grossiste ou laboratoire)",
       "baseUnit": "Unité de base",
       "divisible": "Divisible (ml, g…) — sinon unités entières (comprimés, seringues…)",
       "vatRate": "TVA (%)",
@@ -1672,7 +1670,7 @@
         "name": "Le nom tel qu'il est écrit sur la boîte ; il apparaît sur les factures.",
         "category": "Sert à chercher les produits, aux rapports et aux inventaires par catégorie.",
         "dosageForm": "La forme du médicament : injectable, poudre, comprimé…",
-        "manufacturer": "Le laboratoire qui fabrique le produit.",
+        "supplier": "Le grossiste ou le laboratoire chez qui le produit est acheté.",
         "baseUnit": "La plus petite quantité vendue et comptée (comprimé, ml, flacon…) ; stocks et prix sont dans cette unité.",
         "vatRate": "Le taux de TVA de ce produit à la vente ; repris sur chaque ligne de vente.",
         "minStock": "Seuil d'alerte : en dessous, le produit est signalé en stock bas.",

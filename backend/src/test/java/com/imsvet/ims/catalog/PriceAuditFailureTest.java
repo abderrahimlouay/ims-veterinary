@@ -12,10 +12,10 @@ import static org.mockito.Mockito.when;
 
 import com.imsvet.ims.audit.application.AuditRecorder;
 import com.imsvet.ims.catalog.application.ProductCatalog;
+import com.imsvet.ims.catalog.application.ProductSuppliers;
 import com.imsvet.ims.catalog.application.ProductCatalog.ProductInput;
 import com.imsvet.ims.catalog.domain.Product;
 import com.imsvet.ims.catalog.infrastructure.DosageFormRepository;
-import com.imsvet.ims.catalog.infrastructure.ManufacturerRepository;
 import com.imsvet.ims.catalog.application.ProductStock;
 import com.imsvet.ims.catalog.infrastructure.ProductRepository;
 import com.imsvet.ims.catalog.infrastructure.ProductSearchRepository;
@@ -58,7 +58,7 @@ class PriceAuditFailureTest {
         SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
                 "pharmacist", null, List.of(new SimpleGrantedAuthority("price.edit"))));
         ProductCatalog catalog = new ProductCatalog(products, mock(TherapeuticCategoryRepository.class),
-                mock(DosageFormRepository.class), mock(ManufacturerRepository.class), mock(SettingsProvider.class),
+                mock(DosageFormRepository.class), mock(ProductSuppliers.class), mock(SettingsProvider.class),
                 audit, Clock.fixed(Instant.EPOCH, ZoneOffset.UTC), mock(ProductSearchRepository.class),
                 mock(ProductStock.class), mock(NumberingService.class));
 

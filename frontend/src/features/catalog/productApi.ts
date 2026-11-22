@@ -1,7 +1,21 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { TFunction } from 'i18next'
 import { ApiError, apiFetch } from '../../api/client'
 import type { PageMetadata } from '../../components/Pager'
 import type { ReferenceItem } from './referenceApi'
+
+/** A supplier a product can name (ADR-180): a laboratory or a wholesaler. */
+export interface SupplierOption {
+  id: number
+  name: string
+  kind: 'laboratory' | 'wholesaler'
+  active: boolean
+}
+
+/** "Name — Grossiste" / "Name — Laboratoire": the kind always beside the name (ADR-180). */
+export function supplierLabel(supplier: SupplierOption, t: TFunction): string {
+  return `${supplier.name} — ${t(`purchasing.suppliers.kinds.${supplier.kind}`)}`
+}
 
 /** api.md §4.3. Decimals are strings (ADR-021): prices 4 decimals, quantities 3, VAT 2. */
 export interface ProductSummary {
@@ -21,7 +35,8 @@ export interface ProductSummary {
 
 export interface ProductDetail extends ProductSummary {
   dosageForm: ReferenceItem | null
-  manufacturer: ReferenceItem | null
+  /** ADR-180: the laboratory or wholesaler the product comes from. */
+  supplier: SupplierOption | null
   divisible: boolean
   /** BR-PROD-009: returned units never go back into an active or blocked lot. */
   returnRestockForbidden: boolean
@@ -57,7 +72,7 @@ export interface ProductWrite {
   commercialName: string
   categoryId: number | null
   dosageFormId: number | null
-  manufacturerId: number | null
+  supplierId: number | null
   baseUnit: string
   divisible: boolean
   returnRestockForbidden: boolean
@@ -81,7 +96,7 @@ export const productKeys = {
 export interface ProductSearch {
   q: string
   categoryId: string
-  manufacturerId: string
+  supplierId: string
   ingredientId: string
   speciesId: string
   includeArchived: boolean
@@ -95,7 +110,7 @@ export function useProducts(search: ProductSearch, pageSize = 20) {
     queryKey: productKeys.list(search),
     queryFn: ({ signal }) => {
       const params = new URLSearchParams({ page: String(search.page), size: String(pageSize) })
-      for (const key of ['q', 'categoryId', 'manufacturerId', 'ingredientId', 'speciesId'] as const) {
+      for (const key of ['q', 'categoryId', 'supplierId', 'ingredientId', 'speciesId'] as const) {
         if (search[key].trim() !== '') {
           params.set(key, search[key].trim())
         }
@@ -109,6 +124,15 @@ export function useProducts(search: ProductSearch, pageSize = 20) {
       return apiFetch<{ content: ProductSummary[]; page: PageMetadata }>(`/api/products?${params}`, { signal })
     },
     placeholderData: keepPreviousData,
+  })
+}
+
+/** The active laboratories and wholesalers a product can name (ADR-180), by name. */
+export function useSupplierOptions() {
+  return useQuery({
+    queryKey: [...productKeys.all, 'supplier-options'],
+    queryFn: () => apiFetch<SupplierOption[]>('/api/products/supplier-options'),
+    staleTime: 60_000,
   })
 }
 

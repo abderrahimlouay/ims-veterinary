@@ -33,7 +33,7 @@ class ModuleSqlBoundaryTest {
     /** Catalog names inventory may write only in the named port implementation. */
     private static final Pattern CATALOG_NAMES = Pattern.compile(
             "\\b(products|product_units|product_barcodes|product_active_ingredients|product_target_species"
-                    + "|product_withdrawal_periods|therapeutic_categories|manufacturers|dosage_forms|active_ingredients"
+                    + "|product_withdrawal_periods|therapeutic_categories|dosage_forms|active_ingredients"
                     + "|animal_species)\\b|\\bFROM Product\\b|\\bJOIN Product\\b|\\bp\\.(minStock|maxStock|reorderPoint"
                     + "|archived|commercialName|sku)\\b");
 

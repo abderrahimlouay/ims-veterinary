@@ -4,6 +4,7 @@ import com.imsvet.ims.catalog.application.ProductCatalog;
 import com.imsvet.ims.catalog.application.ProductCatalog.ProductInput;
 import com.imsvet.ims.catalog.application.ProductIngredients;
 import com.imsvet.ims.catalog.application.ProductSpecies;
+import com.imsvet.ims.catalog.application.ProductSuppliers.SupplierOption;
 import com.imsvet.ims.catalog.application.ReferenceItemView;
 import com.imsvet.ims.catalog.application.ProductViews.ProductDetail;
 import com.imsvet.ims.catalog.application.ProductViews.ProductIngredientView;
@@ -40,13 +41,13 @@ class ProductController {
      * empty {@code sku} at creation is generated (ADR-173); on update it is required.
      */
     record ProductWriteRequest(@Size(max = 40) String sku, @NotBlank @Size(max = 200) String commercialName,
-            Integer categoryId, Integer dosageFormId, Integer manufacturerId, @NotBlank @Size(max = 20) String baseUnit,
+            Integer categoryId, Integer dosageFormId, Long supplierId, @NotBlank @Size(max = 20) String baseUnit,
             @NotNull Boolean divisible, BigDecimal vatRate, BigDecimal minStock, BigDecimal maxStock,
             BigDecimal reorderPoint, BigDecimal purchasePrice, BigDecimal salePrice, Boolean returnRestockForbidden,
             Long version) {
 
         ProductInput input() {
-            return new ProductInput(sku, commercialName, categoryId, dosageFormId, manufacturerId, baseUnit, divisible,
+            return new ProductInput(sku, commercialName, categoryId, dosageFormId, supplierId, baseUnit, divisible,
                     vatRate, minStock, maxStock, reorderPoint, purchasePrice, salePrice, returnRestockForbidden);
         }
     }
@@ -72,12 +73,12 @@ class ProductController {
 
     @GetMapping
     PageResponse<ProductSummary> search(@RequestParam(required = false) String q,
-            @RequestParam(required = false) Integer categoryId, @RequestParam(required = false) Integer manufacturerId,
+            @RequestParam(required = false) Integer categoryId, @RequestParam(required = false) Long supplierId,
             @RequestParam(required = false) Integer ingredientId, @RequestParam(required = false) Integer speciesId,
             @RequestParam(required = false) String barcode, @RequestParam(defaultValue = "false") boolean includeArchived,
             @RequestParam(defaultValue = "false") boolean inStockOnly,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return catalog.search(new ProductCatalog.SearchCriteria(q, categoryId, manufacturerId, ingredientId, speciesId,
+        return catalog.search(new ProductCatalog.SearchCriteria(q, categoryId, supplierId, ingredientId, speciesId,
                 barcode, includeArchived, inStockOnly), page, size);
     }
 
@@ -85,6 +86,12 @@ class ProductController {
     ResponseEntity<ProductDetail> create(@Valid @RequestBody ProductWriteRequest body) {
         ProductDetail created = catalog.create(body.input());
         return ResponseEntity.created(URI.create("/api/products/" + created.id())).body(created);
+    }
+
+    /** The choices of a product's supplier, laboratories and wholesalers (ADR-180). */
+    @GetMapping("/supplier-options")
+    List<SupplierOption> supplierOptions() {
+        return catalog.supplierOptions();
     }
 
     @GetMapping("/{id}")

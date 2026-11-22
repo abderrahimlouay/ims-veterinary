@@ -22,12 +22,15 @@ import { hasPermission, useCurrentUser } from '../auth'
 import { ProductLotsPanel } from '../inventory'
 import { usePublicSettings } from '../settings'
 import {
+  supplierLabel,
   useCreateProduct,
   useProduct,
   useSetArchived,
+  useSupplierOptions,
   useUpdateProduct,
   type ProductDetail,
   type ProductWrite,
+  type SupplierOption,
 } from './productApi'
 import { referenceLabel, useReferenceList, type ReferenceListPath } from './referenceApi'
 import { thresholdsInconsistent } from './thresholds'
@@ -41,7 +44,7 @@ const schema = z.object({
   commercialName: z.string().trim().min(1, 'validation.required').max(200, 'validation.tooLong'),
   categoryId: z.string(),
   dosageFormId: z.string(),
-  manufacturerId: z.string(),
+  supplierId: z.string(),
   baseUnit: z.string().trim().min(1, 'validation.required').max(20, 'validation.tooLong'),
   divisible: z.boolean(),
   returnRestockForbidden: z.boolean(),
@@ -53,7 +56,7 @@ const schema = z.object({
   salePrice: z.string().regex(PRICE, 'fieldErrors.SCALE'),
 })
 type Form = z.infer<typeof schema>
-const FIELDS = ['sku', 'commercialName', 'categoryId', 'dosageFormId', 'manufacturerId', 'baseUnit', 'vatRate',
+const FIELDS = ['sku', 'commercialName', 'categoryId', 'dosageFormId', 'supplierId', 'baseUnit', 'vatRate',
   'minStock', 'maxStock', 'reorderPoint', 'purchasePrice', 'salePrice'] as const
 
 function toForm(p?: ProductDetail, defaultVat?: string): Form {
@@ -62,7 +65,7 @@ function toForm(p?: ProductDetail, defaultVat?: string): Form {
     commercialName: p?.commercialName ?? '',
     categoryId: p?.category ? String(p.category.id) : '',
     dosageFormId: p?.dosageForm ? String(p.dosageForm.id) : '',
-    manufacturerId: p?.manufacturer ? String(p.manufacturer.id) : '',
+    supplierId: p?.supplier ? String(p.supplier.id) : '',
     baseUnit: p?.baseUnit ?? '',
     divisible: p?.divisible ?? false,
     returnRestockForbidden: p?.returnRestockForbidden ?? false,
@@ -83,7 +86,7 @@ function toWrite(v: Form, withPrices: boolean, version?: number): ProductWrite {
     commercialName: v.commercialName,
     categoryId: id(v.categoryId),
     dosageFormId: id(v.dosageFormId),
-    manufacturerId: id(v.manufacturerId),
+    supplierId: id(v.supplierId),
     baseUnit: v.baseUnit,
     divisible: v.divisible,
     returnRestockForbidden: v.returnRestockForbidden,
@@ -113,6 +116,35 @@ function ReferenceSelect({ path, i18nKey, label, hint, disabled, error, ...regis
       disabled={disabled}
       error={error}
       options={[{ value: '', label: '—' }, ...(items.data ?? []).map((r) => ({ value: String(r.id), label: referenceLabel(r, i18nKey, t) }))]}
+      {...register}
+    />
+  )
+}
+
+/**
+ * The product's supplier (ADR-180): an active laboratory or wholesaler, its kind beside its name. A supplier
+ * deactivated since it was chosen stays listed for this product, so an update keeps it.
+ */
+function SupplierSelect({ current, label, hint, disabled, error, ...register }: {
+  current: SupplierOption | null
+  label: string
+  hint?: string
+  disabled?: boolean
+  error?: string
+} & ReturnType<ReturnType<typeof useForm<Form>>['register']>) {
+  const { t } = useTranslation()
+  const options = useSupplierOptions()
+  const suppliers = [...(options.data ?? [])]
+  if (current && !suppliers.some((s) => s.id === current.id)) {
+    suppliers.push(current)
+  }
+  return (
+    <SelectField
+      label={label}
+      hint={hint}
+      disabled={disabled}
+      error={error}
+      options={[{ value: '', label: '—' }, ...suppliers.map((s) => ({ value: String(s.id), label: supplierLabel(s, t) }))]}
       {...register}
     />
   )
@@ -167,7 +199,7 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
         <TextField label={t('catalog.products.name')} hint={t('help.catalog.products.name')} disabled={!editable} error={fieldError('commercialName')} {...register('commercialName')} />
         <ReferenceSelect path="categories" i18nKey="categories" label={t('catalog.products.category')} hint={t('help.catalog.products.category')} disabled={!editable} error={fieldError('categoryId')} {...register('categoryId')} />
         <ReferenceSelect path="dosage-forms" i18nKey="dosageForms" label={t('catalog.products.dosageForm')} hint={t('help.catalog.products.dosageForm')} disabled={!editable} error={fieldError('dosageFormId')} {...register('dosageFormId')} />
-        <ReferenceSelect path="manufacturers" i18nKey="manufacturers" label={t('catalog.products.manufacturer')} hint={t('help.catalog.products.manufacturer')} disabled={!editable} error={fieldError('manufacturerId')} {...register('manufacturerId')} />
+        <SupplierSelect current={product?.supplier ?? null} label={t('catalog.products.supplier')} hint={t('help.catalog.products.supplier')} disabled={!editable} error={fieldError('supplierId')} {...register('supplierId')} />
         <TextField label={t('catalog.products.baseUnit')} hint={t('help.catalog.products.baseUnit')} disabled={!editable} error={fieldError('baseUnit')} {...register('baseUnit')} />
         <label className="flex items-center gap-2 text-sm col-span-2">
           <input type="checkbox" disabled={!editable} {...register('divisible')} />

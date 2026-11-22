@@ -32,7 +32,7 @@ public class Product {
 
     /** The descriptive fields set at creation and by an update, prices excluded (BR-PROD-006). */
     public record Core(String sku, String commercialName, TherapeuticCategory category, DosageForm dosageForm,
-            Manufacturer manufacturer, String baseUnit, boolean divisible, BigDecimal vatRate, BigDecimal minStock,
+            Long supplierId, String baseUnit, boolean divisible, BigDecimal vatRate, BigDecimal minStock,
             BigDecimal maxStock, BigDecimal reorderPoint) {
     }
 
@@ -54,9 +54,9 @@ public class Product {
     @JoinColumn(name = "dosage_form_id")
     private DosageForm dosageForm;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "manufacturer_id")
-    private Manufacturer manufacturer;
+    /** A laboratory or a wholesaler (ADR-180), owned by {@code purchasing}: kept as its id only. */
+    @Column(name = "supplier_id")
+    private Long supplierId;
 
     @Column(name = "base_unit", nullable = false, length = 20)
     private String baseUnit;
@@ -186,7 +186,7 @@ public class Product {
         this.commercialName = core.commercialName();
         this.category = core.category();
         this.dosageForm = core.dosageForm();
-        this.manufacturer = core.manufacturer();
+        this.supplierId = core.supplierId();
         this.baseUnit = core.baseUnit();
         this.divisible = core.divisible();
         this.vatRate = core.vatRate();
@@ -216,8 +216,8 @@ public class Product {
         return dosageForm;
     }
 
-    public Manufacturer manufacturer() {
-        return manufacturer;
+    public Long supplierId() {
+        return supplierId;
     }
 
     public String baseUnit() {

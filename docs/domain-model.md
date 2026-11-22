@@ -24,7 +24,7 @@ A JPA entity is a persistence mapping of a domain entity; it is an implementatio
 | `settings` | **Setting** | app_settings |
 | `audit` | **AuditEntry** (append-only) | audit_log |
 | `numbering` | **DocumentSequence** | document_sequences |
-| `product` | **Product** → Barcode, ActiveIngredientLink, WithdrawalPeriod, ProductUnit; reference lists (**Manufacturer, TherapeuticCategory, DosageForm, ActiveIngredient, AnimalSpecies**) | products, product_*, manufacturers, therapeutic_categories, dosage_forms, active_ingredients, animal_species |
+| `product` | **Product** → Barcode, ActiveIngredientLink, WithdrawalPeriod, ProductUnit; reference lists (**TherapeuticCategory, DosageForm, ActiveIngredient, AnimalSpecies**); its **Supplier** (laboratory or wholesaler, ADR-180) is owned by purchasing | products, product_*, manufacturers, therapeutic_categories, dosage_forms, active_ingredients, animal_species |
 | `inventory` | **Lot** + its **StockMovement** ledger (one consistency boundary); **InventoryCount** → CountLine; **ReorderProposal** | lots, stock_movements, inventories, inventory_lines, reorder_proposals |
 | `supplier` | **Supplier** → PriceHistoryEntry | suppliers, supplier_price_history |
 | `purchasing` | **PurchaseOrder** → OrderLine; **GoodsReceipt** → ReceiptLine | purchase_orders(+lines), goods_receipts(+lines) |
@@ -47,7 +47,7 @@ erDiagram
     PRODUCT }o--o{ ACTIVE_INGREDIENT : "contains"
     PRODUCT ||--o{ WITHDRAWAL_PERIOD : "has"
     ANIMAL_SPECIES ||--o{ WITHDRAWAL_PERIOD : "for"
-    MANUFACTURER ||--o{ PRODUCT : "makes"
+    SUPPLIER |o--o{ PRODUCT : "supplies (ADR-180)"
     THERAPEUTIC_CATEGORY ||--o{ PRODUCT : "classifies"
     DOSAGE_FORM ||--o{ PRODUCT : "form of"
     PRODUCT ||--o{ LOT : "received as"
@@ -99,12 +99,12 @@ For each entity: **purpose · key attributes · relationships (cardinality) · l
 
 | Entity | Purpose / key attributes | Relationships | Lifecycle | Invariants |
 |---|---|---|---|---|
-| **Product** | A medicine: SKU, commercial name, base unit, VAT, purchase price, sale price, min/max/reorder thresholds, archived flag | *→0..1 DosageForm, TherapeuticCategory, Manufacturer; 1—* ProductUnit, Barcode, WithdrawalPeriod; *—* ActiveIngredient; 1—* Lot | active ⇄ archived | SKU unique; base unit set; `min ≤ max`; prices ≥ 0 (BR-PROD-001…005) |
+| **Product** | A medicine: SKU, commercial name, base unit, VAT, purchase price, sale price, min/max/reorder thresholds, archived flag | *→0..1 DosageForm, TherapeuticCategory, Supplier (ADR-180); 1—* ProductUnit, Barcode, WithdrawalPeriod; *—* ActiveIngredient; 1—* Lot | active ⇄ archived | SKU unique; base unit set; `min ≤ max`; prices ≥ 0 (BR-PROD-001…005) |
 | **ProductUnit** | Packaging/sub-unit: name, factor to base unit, optional price (else derived, ADR-063), sellable flag | *→1 Product; 0..* Barcode | created; factor locked once used | factor > 0, whole for non-divisible products; name unique per product (BR-UNIT-001, -004) |
 | **Barcode** | Code + type (EAN13, CODE128, QR) | *→1 Product, *→0..1 ProductUnit of that product (none = base unit, ADR-057) | added / removed | code unique across catalogue, exact match (BR-PROD-002, ADR-058); format by type (BR-PROD-008) |
 | **ActiveIngredient (DCI)** | Active substance; strength per product via link | *—* Product | reference data | name unique |
 | **WithdrawalPeriod** | Meat/milk/egg waiting days per (product, species) | *→1 Product, *→1 AnimalSpecies | maintained with product | one per pair; days ≥ 0 (BR-PROD-007) |
-| **Manufacturer, TherapeuticCategory, DosageForm, AnimalSpecies** | Reference lists | 1—* Product (species via periods) | reference data | name unique |
+| **TherapeuticCategory, DosageForm, AnimalSpecies** | Reference lists | 1—* Product (species via periods) | reference data | name unique |
 
 ### 4.3 Lots and stock
 

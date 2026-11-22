@@ -292,7 +292,7 @@ describe('counter sale (frontend.md §4.7, W2)', () => {
     serveCounter()
     const urls: string[] = []
     server.use(
-      http.get('/api/categories', () => HttpResponse.json([{ id: 3, name: 'Antibiotique', code: null, country: null }])),
+      http.get('/api/categories', () => HttpResponse.json([{ id: 3, name: 'Antibiotique', code: null }])),
       http.get('/api/products', ({ request }) => {
         urls.push(request.url)
         return HttpResponse.json({ content: [PRODUCT], page: { number: 0, size: 10, totalElements: 1, totalPages: 1 } })

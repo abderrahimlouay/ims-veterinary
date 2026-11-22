@@ -1,6 +1,8 @@
 package com.imsvet.ims.purchasing.infrastructure;
 
 import com.imsvet.ims.purchasing.domain.Supplier;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +15,10 @@ public interface SupplierRepository extends Repository<Supplier, Long> {
     Supplier saveAndFlush(Supplier supplier);
 
     Optional<Supplier> findById(Long id);
+
+    List<Supplier> findAllByIdIn(Collection<Long> ids);
+
+    List<Supplier> findAllByActiveTrueOrderByNameAscIdAsc();
 
     /** Case- and accent-insensitive through the column collation (ADR-100). */
     Optional<Supplier> findByName(String name);

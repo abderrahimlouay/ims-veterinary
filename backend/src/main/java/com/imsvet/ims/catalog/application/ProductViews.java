@@ -30,7 +30,7 @@ public final class ProductViews {
     }
 
     public record ProductDetail(long id, String sku, String commercialName, ReferenceItemView category,
-            ReferenceItemView dosageForm, ReferenceItemView manufacturer, String baseUnit, boolean divisible,
+            ReferenceItemView dosageForm, ProductSuppliers.SupplierOption supplier, String baseUnit, boolean divisible,
             BigDecimal vatRate, BigDecimal purchasePrice, BigDecimal salePrice, BigDecimal minStock,
             BigDecimal maxStock, BigDecimal reorderPoint, boolean archived, boolean returnRestockForbidden,
             List<ProductIngredientView> ingredients,
@@ -85,9 +85,10 @@ public final class ProductViews {
         return products.stream().map(p -> summary(p, figures.get(p.id()))).toList();
     }
 
-    static ProductDetail detail(Product p) {
+    /** {@code supplier} is the product's supplier or {@code null} (ADR-180). */
+    static ProductDetail detail(Product p, ProductSuppliers.SupplierOption supplier) {
         return new ProductDetail(p.id(), p.sku(), p.commercialName(), ref(p.category()), ref(p.dosageForm()),
-                ref(p.manufacturer()), p.baseUnit(), p.divisible(), p.vatRate(), p.purchasePrice(), p.salePrice(),
+                supplier, p.baseUnit(), p.divisible(), p.vatRate(), p.purchasePrice(), p.salePrice(),
                 p.minStock(), p.maxStock(), p.reorderPoint(), p.archived(), p.returnRestockForbidden(), ingredients(p),
                 targetSpecies(p),
                 withdrawalPeriods(p), p.createdAt(), p.updatedAt(), p.version());
@@ -121,6 +122,6 @@ public final class ProductViews {
     }
 
     private static ReferenceItemView ref(ReferenceEntry e) {
-        return e == null ? null : new ReferenceItemView(e.id(), e.name(), e.code(), e.country());
+        return e == null ? null : new ReferenceItemView(e.id(), e.name(), e.code());
     }
 }

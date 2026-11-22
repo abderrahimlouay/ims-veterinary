@@ -78,13 +78,13 @@ Module numbering follows the Spec (§2.1 … §2.7). Module codes: `PROD`, `LOT`
 | ID | Requirement | Basis |
 |---|---|---|
 | FR-PROD-001 | Create, modify, consult and **archive** product sheets (fiches médicaments). Archived products are hidden from sale/purchase but remain in history. | `[SRC]` |
-| FR-PROD-002 | Record per product: commercial name, dosage form (injectable, powder, tablet, solution), therapeutic category (antibiotic, antiparasitic, vaccine…), manufacturer. | `[SRC]` |
+| FR-PROD-002 | Record per product: commercial name, dosage form (injectable, powder, tablet, solution), therapeutic category (antibiotic, antiparasitic, vaccine…), manufacturer — **amended by ADR-180:** its supplier, a laboratory or a wholesaler. | `[SRC]` |
 | FR-PROD-003 | Assign a unique identifier (**SKU**) and manage **barcodes / QR codes** (several per product). | `[SRC]` |
 | FR-PROD-004 | Index products by **active ingredient (DCI / INN)** to allow search and fast **substitution** when a product is out of stock. | `[SRC]` |
 | FR-PROD-005 | Record **withdrawal periods** (meat, milk, eggs) per animal species so the legal warning can be printed on sales documents for breeders. | `[SRC]` |
 | FR-PROD-006 | Support selling by **packaging unit** (box, bottle) or **sub-unit** (blister, syringe, dose/ml). | `[SRC]` |
 | FR-PROD-007 | **Automatic stock conversion** on retail sale (e.g. a 100 ml bottle sold in 5 ml doses). | `[SRC]` |
-| FR-PROD-008 | Maintain reference lists: manufacturers, therapeutic categories, dosage forms, active ingredients, animal species. | `[SCH]` (implied by FR-PROD-002/004/005) |
+| FR-PROD-008 | Maintain reference lists: therapeutic categories (manufacturers removed by ADR-180), dosage forms, active ingredients, animal species. | `[SCH]` (implied by FR-PROD-002/004/005) |
 | FR-PROD-009 | Per product: VAT rate, purchase price, sale price (per base unit), minimum stock, maximum stock, reorder point. | `[SCH]`, `[SRC §2.3]` |
 
 **Inputs.** Product data, barcode values, ingredient links with strength, withdrawal days per species, unit definitions (name, factor to base unit, optional unit sale price, sellable flag).

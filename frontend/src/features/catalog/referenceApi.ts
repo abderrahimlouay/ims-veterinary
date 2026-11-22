@@ -4,11 +4,10 @@ import { apiFetch } from '../../api/client'
 
 /** The catalogue reference lists (api.md §4.3) and their i18n key for seeded codes (ADR-054). */
 export const REFERENCE_LISTS = [
-  { path: 'animal-species', i18nKey: 'species', hasCountry: false },
-  { path: 'categories', i18nKey: 'categories', hasCountry: false },
-  { path: 'dosage-forms', i18nKey: 'dosageForms', hasCountry: false },
-  { path: 'active-ingredients', i18nKey: 'ingredients', hasCountry: false },
-  { path: 'manufacturers', i18nKey: 'manufacturers', hasCountry: true },
+  { path: 'animal-species', i18nKey: 'species' },
+  { path: 'categories', i18nKey: 'categories' },
+  { path: 'dosage-forms', i18nKey: 'dosageForms' },
+  { path: 'active-ingredients', i18nKey: 'ingredients' },
 ] as const
 
 export type ReferenceListPath = (typeof REFERENCE_LISTS)[number]['path']
@@ -17,7 +16,6 @@ export interface ReferenceItem {
   id: number
   name: string
   code: string | null
-  country: string | null
 }
 
 /**
@@ -41,10 +39,10 @@ export function useReferenceList(path: ReferenceListPath) {
 export function useSaveReference(path: ReferenceListPath) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, name, country }: { id?: number; name: string; country?: string | null }) =>
+    mutationFn: ({ id, name }: { id?: number; name: string }) =>
       apiFetch<ReferenceItem>(id === undefined ? `/api/${path}` : `/api/${path}/${id}`, {
         method: id === undefined ? 'POST' : 'PUT',
-        json: { name, country: country ?? null },
+        json: { name },
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: referenceKeys.list(path) }),
   })

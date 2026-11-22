@@ -9,7 +9,6 @@ import com.imsvet.ims.catalog.application.ProductViews.ProductSummary;
 import com.imsvet.ims.catalog.domain.Product;
 import com.imsvet.ims.catalog.domain.ReferenceEntry;
 import com.imsvet.ims.catalog.infrastructure.DosageFormRepository;
-import com.imsvet.ims.catalog.infrastructure.ManufacturerRepository;
 import com.imsvet.ims.catalog.infrastructure.ProductRepository;
 import com.imsvet.ims.catalog.infrastructure.ProductSearchRepository;
 import com.imsvet.ims.catalog.infrastructure.ReferenceRepository;
@@ -55,12 +54,12 @@ public class ProductCatalog {
      * {@code false} at creation and unchanged on update (BR-PROD-009).
      */
     public record ProductInput(String sku, String commercialName, Integer categoryId, Integer dosageFormId,
-            Integer manufacturerId, String baseUnit, boolean divisible, BigDecimal vatRate, BigDecimal minStock,
+            Long supplierId, String baseUnit, boolean divisible, BigDecimal vatRate, BigDecimal minStock,
             BigDecimal maxStock, BigDecimal reorderPoint, BigDecimal purchasePrice, BigDecimal salePrice,
             Boolean returnRestockForbidden) {
 
         ProductInput withSku(String generated) {
-            return new ProductInput(generated, commercialName, categoryId, dosageFormId, manufacturerId, baseUnit,
+            return new ProductInput(generated, commercialName, categoryId, dosageFormId, supplierId, baseUnit,
                     divisible, vatRate, minStock, maxStock, reorderPoint, purchasePrice, salePrice,
                     returnRestockForbidden);
         }
@@ -73,7 +72,7 @@ public class ProductCatalog {
     private final ProductRepository products;
     private final TherapeuticCategoryRepository categories;
     private final DosageFormRepository dosageForms;
-    private final ManufacturerRepository manufacturers;
+    private final ProductSuppliers suppliers;
     private final SettingsProvider settings;
     private final AuditRecorder audit;
     private final Clock clock;
@@ -82,13 +81,13 @@ public class ProductCatalog {
     private final NumberingService numbering;
 
     public ProductCatalog(ProductRepository products, TherapeuticCategoryRepository categories,
-            DosageFormRepository dosageForms, ManufacturerRepository manufacturers, SettingsProvider settings,
+            DosageFormRepository dosageForms, ProductSuppliers suppliers, SettingsProvider settings,
             AuditRecorder audit, Clock clock, ProductSearchRepository search, ProductStock stock,
             NumberingService numbering) {
         this.products = products;
         this.categories = categories;
         this.dosageForms = dosageForms;
-        this.manufacturers = manufacturers;
+        this.suppliers = suppliers;
         this.settings = settings;
         this.audit = audit;
         this.clock = clock;
@@ -98,7 +97,7 @@ public class ProductCatalog {
     }
 
     /** The search criteria of {@code GET /api/products} (ADR-047, ADR-048, barcode exact); all optional. */
-    public record SearchCriteria(String q, Integer categoryId, Integer manufacturerId, Integer ingredientId,
+    public record SearchCriteria(String q, Integer categoryId, Long supplierId, Integer ingredientId,
             Integer speciesId, String barcode, boolean includeArchived, boolean inStockOnly) {
     }
 
@@ -117,7 +116,7 @@ public class ProductCatalog {
         String prefix = escaped == null ? null : escaped + "%";
         String barcode = c.barcode() == null || c.barcode().isEmpty() ? null : c.barcode();
         ProductSearchRepository.Criteria criteria = new ProductSearchRepository.Criteria(term, pattern, prefix,
-                c.categoryId(), c.manufacturerId(), c.ingredientId(), c.speciesId(), barcode, c.includeArchived());
+                c.categoryId(), c.supplierId(), c.ingredientId(), c.speciesId(), barcode, c.includeArchived());
         List<Condition> conditions = c.inStockOnly() ? List.of(stock.condition(StockFilter.HAS_SELLABLE)) : List.of();
         List<Product> found = search.search(criteria, conditions, request);
         long total = search.count(criteria, conditions);
@@ -127,7 +126,14 @@ public class ProductCatalog {
     @PreAuthorize("hasAuthority('product.read')")
     @Transactional(readOnly = true)
     public ProductDetail get(long id) {
-        return ProductViews.detail(find(id));
+        return detail(find(id));
+    }
+
+    /** The choices of the product's supplier (ADR-180): the active laboratories and wholesalers, by name. */
+    @PreAuthorize("hasAuthority('product.read')")
+    @Transactional(readOnly = true)
+    public List<ProductSuppliers.SupplierOption> supplierOptions() {
+        return suppliers.active();
     }
 
     @PreAuthorize("hasAuthority('product.create')")
@@ -136,7 +142,7 @@ public class ProductCatalog {
         BigDecimal vat = input.vatRate() != null ? input.vatRate()
                 : new BigDecimal(settings.value(SettingDefinition.DEFAULT_VAT_RATE));
         ProductInput named = blank(input.sku()) ? input.withSku(generatedSku()) : input;
-        Product.Core core = validate(named, vat);
+        Product.Core core = validate(named, vat, null);
         BigDecimal purchase = orZero(input.purchasePrice());
         BigDecimal sale = orZero(input.salePrice());
         if ((purchase.signum() != 0 || sale.signum() != 0) && !Permissions.granted(PRICE_EDIT)) {
@@ -146,7 +152,7 @@ public class ProductCatalog {
         Product product = new Product(core, clock.instant());
         product.setPrices(purchase, sale, clock.instant());
         product.forbidReturnRestock(Boolean.TRUE.equals(input.returnRestockForbidden()), clock.instant());
-        return ProductViews.detail(save(product));
+        return detail(save(product));
     }
 
     /** An archived product stays editable (user decision 2026-10-21). */
@@ -163,7 +169,7 @@ public class ProductCatalog {
         if (blank(input.sku())) {
             throw invalid(List.of(new Violation("sku", "REQUIRED", "The SKU is required.")));
         }
-        Product.Core core = validate(input, input.vatRate());
+        Product.Core core = validate(input, input.vatRate(), product.supplierId());
         BigDecimal purchase = input.purchasePrice() == null ? product.purchasePrice() : price(input.purchasePrice());
         BigDecimal sale = input.salePrice() == null ? product.salePrice() : price(input.salePrice());
         Map<String, Object> oldPrices = new LinkedHashMap<>();
@@ -186,7 +192,7 @@ public class ProductCatalog {
                     Map.of("returnRestockForbidden", restriction));
             product.forbidReturnRestock(restriction, clock.instant());
         }
-        return ProductViews.detail(save(product));
+        return detail(save(product));
     }
 
     @PreAuthorize("hasAuthority('product.archive')")
@@ -196,7 +202,7 @@ public class ProductCatalog {
         if (!product.archived()) {
             product.archive(clock.instant());
         }
-        return ProductViews.detail(save(product));
+        return detail(save(product));
     }
 
     @PreAuthorize("hasAuthority('product.archive')")
@@ -206,7 +212,12 @@ public class ProductCatalog {
         if (product.archived()) {
             product.restore(clock.instant());
         }
-        return ProductViews.detail(save(product));
+        return detail(save(product));
+    }
+
+    private ProductDetail detail(Product product) {
+        Long supplierId = product.supplierId();
+        return ProductViews.detail(product, supplierId == null ? null : suppliers.find(List.of(supplierId)).get(supplierId));
     }
 
     private Product save(Product product) {
@@ -268,7 +279,8 @@ public class ProductCatalog {
         return value.setScale(4);
     }
 
-    private Product.Core validate(ProductInput in, BigDecimal vat) {
+    /** {@code currentSupplierId}: the supplier kept on update, which may have been deactivated since (ADR-180). */
+    private Product.Core validate(ProductInput in, BigDecimal vat, Long currentSupplierId) {
         List<Violation> violations = new ArrayList<>();
         priceViolation("purchasePrice", in.purchasePrice(), violations);
         priceViolation("salePrice", in.salePrice(), violations);
@@ -284,12 +296,25 @@ public class ProductCatalog {
         }
         var category = reference(categories, in.categoryId(), "categoryId", violations);
         var dosageForm = reference(dosageForms, in.dosageFormId(), "dosageFormId", violations);
-        var manufacturer = reference(manufacturers, in.manufacturerId(), "manufacturerId", violations);
+        supplierViolation(in.supplierId(), currentSupplierId, violations);
         if (!violations.isEmpty()) {
             throw invalid(violations);
         }
-        return new Product.Core(in.sku().trim(), in.commercialName().trim(), category, dosageForm, manufacturer,
+        return new Product.Core(in.sku().trim(), in.commercialName().trim(), category, dosageForm, in.supplierId(),
                 in.baseUnit().trim(), in.divisible(), vat.setScale(2), min, max, reorder);
+    }
+
+    /** ADR-180: a known supplier, active unless it is the one the product already has. */
+    private void supplierViolation(Long supplierId, Long currentSupplierId, List<Violation> violations) {
+        if (supplierId == null) {
+            return;
+        }
+        ProductSuppliers.SupplierOption supplier = suppliers.find(List.of(supplierId)).get(supplierId);
+        if (supplier == null) {
+            violations.add(new Violation("supplierId", "UNKNOWN", "This supplier does not exist."));
+        } else if (!supplier.active() && !supplierId.equals(currentSupplierId)) {
+            violations.add(new Violation("supplierId", "INACTIVE", "This supplier is inactive."));
+        }
     }
 
     /** ADR-049: ≥ 0 with at most 4 decimals. */
