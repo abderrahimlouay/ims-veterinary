@@ -4,8 +4,10 @@
 #      deploy/bundle/make-bundle.sh's (it refuses a certificate made for another computer first); the runner's drive
 #      is not encrypted, so install.ps1 must warn and go on (ADR-169);
 #   2. a backup through the API, copied to the "Google Drive" folder (ADR-167);
-#   3. update.ps1 with a JAR carrying one more migration;
-#   4. update.ps1 with a JAR whose migration fails: the previous JAR and data must come back by themselves;
+#   3. update.ps1 with a JAR carrying one more migration, as the owner starts it: lancer-mise-a-jour.ps1 from a new
+#      installer folder (METTRE-A-JOUR.cmd), which first says an identical JAR is already installed and changes nothing
+#      unless OUI is typed;
+#   4. update.ps1 with a JAR whose migration fails, the same way: the previous JAR and data must come back by themselves;
 #   5. restore.ps1 with the Drive copy of step 2.
 param(
     [Parameter(Mandatory)] [string] $JarA,
@@ -151,8 +153,29 @@ function Get-SchemaVersion {
 $versionA = Get-SchemaVersion
 Write-Host "  schema version after the installation: $versionA"
 
-Step '3. update.ps1 with a new version (one more migration)'
-$update = Invoke-Captured { & (Join-Path $shipped 'update.ps1') -Jar $JarB }
+# A new installer folder as the developer sends it for an update: the scripts and one JAR (deploy/bundle/make-bundle.sh).
+function New-UpdateBundle([string] $Name, [string] $Jar) {
+    $folder = Join-Path $env:RUNNER_TEMP $Name
+    New-Item -ItemType Directory -Force (Join-Path $folder 'scripts') | Out-Null
+    Copy-Item (Join-Path $shipped '*.ps1') (Join-Path $folder 'scripts')
+    Copy-Item $Jar (Join-Path $folder 'ims-rehearsal.jar')
+    Join-Path $folder 'scripts\lancer-mise-a-jour.ps1'
+}
+# lancer-mise-a-jour.ps1 asks the owner to type OUI with Read-Host; answered by $global:UpdateAnswer.
+$global:UpdateAnswer = 'OUI'
+function global:Read-Host([string] $Prompt) { if ($Prompt -match 'OUI') { $global:UpdateAnswer } else { $DriveFolder } }
+
+Step '3. METTRE-A-JOUR.cmd -> lancer-mise-a-jour.ps1 -> update.ps1 with a new version (one more migration)'
+$same = Invoke-Captured { & (New-UpdateBundle 'IMS-meme-version' $JarA) }
+Check ($same.ExitCode -eq 0 -and $same.Output -match 'd.j. install.e') 'the version already installed is recognised'
+Check ((Get-Sha 'C:\IMS\app\ims.jar') -eq (Get-Sha $JarA)) 'nothing changed for the same version'
+$launcherB = New-UpdateBundle 'IMS-mise-a-jour' $JarB
+$global:UpdateAnswer = 'non'
+$cancelled = Invoke-Captured { & $launcherB }
+Check ($cancelled.ExitCode -eq 0 -and $cancelled.Output -match 'Mise . jour annul') 'without OUI the update is cancelled'
+Check ((Get-Sha 'C:\IMS\app\ims.jar') -eq (Get-Sha $JarA)) 'nothing changed without OUI'
+$global:UpdateAnswer = 'OUI'
+$update = Invoke-Captured { & $launcherB }
 Check ($update.ExitCode -eq 0 -and $update.Output -match 'Mise . jour termin') 'update.ps1 finished'
 Check ((Get-Sha 'C:\IMS\app\ims.jar') -eq (Get-Sha $JarB)) 'the new JAR is in place'
 Check ((Get-Sha 'C:\IMS\app\ims.jar.previous') -eq (Get-Sha $JarA)) 'the previous JAR is kept'
@@ -161,8 +184,8 @@ Check (Test-Table 'ci_update_marker') 'the new version''s table exists'
 Check (@(Get-ChildItem 'C:\IMS\backups' -Filter 'avant-mise-a-jour-*.sql').Count -ge 1) 'the database was saved before the update'
 Assert-Healthy 'after the update'
 
-Step '4. update.ps1 with a failing migration: the previous version and data come back'
-$failed = Invoke-Captured { & (Join-Path $shipped 'update.ps1') -Jar $JarFailing }
+Step '4. lancer-mise-a-jour.ps1 -> update.ps1 with a failing migration: the previous version and data come back'
+$failed = Invoke-Captured { & (New-UpdateBundle 'IMS-mise-a-jour-en-echec' $JarFailing) }
 Check ($failed.ExitCode -eq 1) "update.ps1 reports the failure (exit $($failed.ExitCode))"
 Check ($failed.Output -match 'La version pr.c.dente fonctionne de nouveau') 'it says the previous version works again'
 Check ((Get-Sha 'C:\IMS\app\ims.jar') -eq (Get-Sha $JarB)) 'the previous JAR is back'

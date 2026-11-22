@@ -63,12 +63,10 @@ déjà créé la base de données, à nettoyer avant de recommencer.
    Rien d'autre à réinstaller : Java, MySQL, le certificat et Google Drive restent.
    a) Après la fermeture : tous les appareils déconnectés de l'application.
    b) Décompressez le nouveau dossier reçu du développeur (par ex. sur le Bureau).
-   c) Menu Démarrer > tapez « PowerShell » > clic droit > « Exécuter en tant
-      qu'administrateur », depuis le MÊME compte Windows que l'installation.
-   d) Tapez ces deux lignes (remplacez <dossier> par le chemin du dossier décompressé,
-      par ex. C:\Users\Pharmacie\Desktop\IMS-installateur) :
-          cd "<dossier>"
-          powershell -ExecutionPolicy Bypass -File .\scripts\update.ps1 -Jar (Resolve-Path .\ims-*.jar)
+   c) Depuis le MÊME compte Windows que l'installation, double-cliquez sur
+      METTRE-A-JOUR.cmd dans ce dossier et acceptez la demande d'administrateur.
+   d) La fenêtre affiche la nouvelle version : tapez OUI puis Entrée. (Si elle dit
+      « déjà installée », il n'y a rien à faire.)
    e) Le script fait tout seul : sauvegarde de la base (C:\IMS\backups\
       avant-mise-a-jour-….sql), arrêt, nouvelle version, démarrage, vérification.
       Comptez quelques minutes ; ne fermez pas la fenêtre avant la fin.
@@ -79,3 +77,7 @@ déjà créé la base de données, à nettoyer avant de recommencer.
    remis l'ancienne version et les données d'avant la mise à jour ; la boutique
    fonctionne comme avant. Envoyez une photo de l'écran au développeur et ne relancez
    pas la mise à jour.
+
+   Sans METTRE-A-JOUR.cmd (ancien dossier) : PowerShell en administrateur, puis
+          cd "<dossier>"
+          powershell -ExecutionPolicy Bypass -File .\scripts\update.ps1 -Jar (Resolve-Path .\ims-*.jar)
