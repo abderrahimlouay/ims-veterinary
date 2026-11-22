@@ -16,7 +16,7 @@
 ## 2. Update to a new version (ADR-151, `update.ps1`)
 
 1. The developer: the release tag green in CI (including the volume workflow when reports or migrations changed); builds the release JAR (`deployment.md` §2) and sends it with a note of what changes.
-2. The owner, after closing time, all devices logged out: `.\update.ps1 -Jar <path>\ims-<version>.jar`.
+2. The owner, after closing time, all devices logged out, from the installing Windows account: unzips the new installer folder and **double-clicks `METTRE-A-JOUR.cmd`**. It opens PowerShell as administrator (execution policy bypassed, as `INSTALLER.cmd`) and runs `scripts\lancer-mise-a-jour.ps1`, which finds the folder's one JAR, shows `VERSION.txt`, says when that JAR is already installed and stops, and runs `update.ps1` only after the owner types **OUI** (a double-click by mistake during opening hours stops nothing). Without it (an older folder): `powershell -ExecutionPolicy Bypass -File .\scripts\update.ps1 -Jar (Resolve-Path .\ims-*.jar)` in PowerShell as administrator. The steps in French are in `LISEZ-MOI.txt` §5 (`deployment.md` §2).
 3. The script saves the database (`C:\IMS\backups\avant-mise-a-jour-….sql`), stops the service, keeps the previous JAR (`ims.jar.previous`), migrates, starts and checks `https://localhost` answers.
 4. **If it fails** it puts the previous version and the saved data back by itself and says "Appelez le développeur": the shop works as before; the developer fixes forward (a migration is never undone by editing it).
 5. Then log in, a test search, the backups page.

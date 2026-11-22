@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the installer folder for the owner's Windows laptop from the current commit (docs/deployment.md §2):
-# the release JAR (screens inside), the scripts, WinSW (SHA-256 checked), the CA's public certificate, INSTALLER.cmd
-# and LISEZ-MOI.txt, plus a .zip of the folder. server.p12 is added by make-certificate.sh once the laptop's name and
+# the release JAR (screens inside), the scripts, WinSW (SHA-256 checked), the CA's public certificate, INSTALLER.cmd,
+# METTRE-A-JOUR.cmd and LISEZ-MOI.txt, plus a .zip of the folder. server.p12 is added by make-certificate.sh once the laptop's name and
 # fixed address are known.
 #   deploy/bundle/make-bundle.sh [output folder]     default ~/IMS-installateur; CA from $IMS_CA_DIR (~/.ims-ca)
 #   SKIP_TESTS=1 deploy/bundle/make-bundle.sh         only for a commit CI has already passed
@@ -46,7 +46,7 @@ mkdir -p "$out/scripts"
 base=$(basename "$jar" .jar)
 cp "$jar" "$out/$base-$commit.jar"
 cp "$repo"/deploy/windows/*.ps1 "$out/scripts/"
-cp "$repo/deploy/windows/INSTALLER.cmd" "$repo/deploy/windows/LISEZ-MOI.txt" "$out/"
+cp "$repo/deploy/windows/INSTALLER.cmd" "$repo/deploy/windows/METTRE-A-JOUR.cmd" "$repo/deploy/windows/LISEZ-MOI.txt" "$out/"
 cp "$ca_dir/ims-ca.crt" "$out/"
 curl -fsSL --retry 5 -o "$out/WinSW-x64.exe" "$WINSW_URL"
 if [ "$(sha256sum "$out/WinSW-x64.exe" | cut -d' ' -f1)" != "$WINSW_SHA256" ]; then
