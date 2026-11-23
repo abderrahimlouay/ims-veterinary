@@ -248,8 +248,8 @@ function ProductForm({ product, onSaved }: { product?: ProductDetail; onSaved: (
           {...register('maxStock')}
         />
         <TextField label={t('catalog.products.reorderPoint')} hint={t('help.catalog.products.reorderPoint')} inputMode="decimal" disabled={!editable} error={fieldError('reorderPoint')} {...register('reorderPoint')} />
-        <TextField label={t('catalog.products.purchasePrice')} hint={t('help.catalog.products.purchasePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('purchasePrice')} {...register('purchasePrice')} />
-        <TextField label={t('catalog.products.salePrice')} hint={t('help.catalog.products.salePrice')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('salePrice')} {...register('salePrice')} />
+        <TextField label={t('catalog.products.purchasePrice')} hint={t(vatSubject ? 'help.catalog.products.purchasePrice' : 'help.catalog.products.purchasePriceNoVat')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('purchasePrice')} {...register('purchasePrice')} />
+        <TextField label={t('catalog.products.salePrice')} hint={t(vatSubject ? 'help.catalog.products.salePrice' : 'help.catalog.products.salePriceNoVat')} inputMode="decimal" disabled={!canEditPrices} error={fieldError('salePrice')} {...register('salePrice')} />
       </div>
       {editable && !canEditPrices && <p className="text-sm text-mute">{t('catalog.products.pricesReadOnly')}</p>}
       {product && (

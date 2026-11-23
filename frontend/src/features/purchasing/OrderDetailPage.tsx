@@ -128,7 +128,7 @@ function LinesTable({ order }: { order: PurchaseOrderDetail }) {
           <th className="text-end">{t('purchasing.orders.unitPrice')}</th>
           <th className="text-end">{t('purchasing.orders.discountPct')}</th>
           {taxed && <th className="text-end">{t('purchasing.orders.vatRate')}</th>}
-          <th className="text-end">{t('purchasing.orders.lineHt')}</th>
+          <th className="text-end">{t(taxed ? 'purchasing.orders.lineHt' : 'purchasing.orders.lineTotal')}</th>
           {taxed && <th className="text-end">{t('purchasing.orders.lineVat')}</th>}
           <th className="text-end">{t('purchasing.orders.received')}</th>
           <th className="text-end">{t('purchasing.orders.outstanding')}</th>
