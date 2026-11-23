@@ -934,6 +934,7 @@
       "removeLine": "Retirer {{name}}",
       "saveDraft": "Enregistrer le brouillon",
       "lineHt": "Montant HT",
+      "lineTotal": "Montant",
       "lineVat": "TVA",
       "received": "Reçu",
       "outstanding": "Reste à recevoir",
@@ -1681,7 +1682,9 @@
         "maxStock": "Quantité à ne pas dépasser ; les propositions de commande complètent jusqu'à ce niveau.",
         "reorderPoint": "Quand le stock descend à ce niveau, une proposition de commande est créée.",
         "purchasePrice": "Prix d'achat HT d'une unité de base ; proposé sur les bons de commande sans prix du fournisseur.",
-        "salePrice": "Prix de vente HT d'une unité de base ; la caisse le prend sauf prix spécial du client."
+        "salePrice": "Prix de vente HT d'une unité de base ; la caisse le prend sauf prix spécial du client.",
+        "purchasePriceNoVat": "Prix d'achat d'une unité de base ; proposé sur les bons de commande sans prix du fournisseur.",
+        "salePriceNoVat": "Prix de vente d'une unité de base ; la caisse le prend sauf prix spécial du client."
       },
       "units": {
         "nameField": "Le nom de l'unité de vente, ex. « Boîte de 10 » ou « Carton ».",

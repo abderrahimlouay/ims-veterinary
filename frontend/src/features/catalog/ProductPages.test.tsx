@@ -130,6 +130,8 @@ describe('product pages', () => {
     await userEvent.type(screen.getByLabelText('Stock minimum'), '2.5')
     expect(screen.getByRole('radio', { name: 'Non' })).toBeChecked()
     expect(screen.queryByLabelText('TVA (%)')).not.toBeInTheDocument()
+    expect(screen.getByText(/^Prix de vente d'une unité de base/)).toBeInTheDocument()
+    expect(screen.queryByText(/HT d'une unité de base/)).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     expect(await screen.findByText('Ce produit se compte en unités entières.')).toBeInTheDocument()
@@ -157,6 +159,7 @@ describe('product pages', () => {
     await userEvent.type(screen.getByLabelText('Unité de base'), 'tablet')
     await userEvent.click(screen.getByRole('radio', { name: 'Oui' }))
     expect(screen.getByLabelText('TVA (%)')).toHaveValue('9.00')
+    expect(screen.getByText(/^Prix de vente HT d'une unité de base/)).toBeInTheDocument()
     await userEvent.clear(screen.getByLabelText('TVA (%)'))
     await userEvent.type(screen.getByLabelText('TVA (%)'), '0')
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))

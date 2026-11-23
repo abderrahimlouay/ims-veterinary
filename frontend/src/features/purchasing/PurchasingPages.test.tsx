@@ -192,6 +192,17 @@ describe('purchase orders (frontend.md §4.5)', () => {
     expect(results.violations).toEqual([])
   })
 
+  it('names the line amount HT only on an order with a taxed line (ADR-181)', async () => {
+    serveMe(BUYER)
+    const untaxed = { ...anOrder().lines[0], vatRate: '0.00', lineVat: '0.00' }
+    server.use(http.get('/api/purchase-orders/41', () => HttpResponse.json(anOrder({ lines: [untaxed], totalVat: '0.00', totalTtc: '3.35' }))))
+    renderApp('/purchase-orders/41')
+
+    expect(await screen.findByRole('columnheader', { name: 'Montant' })).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Montant HT' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'TVA (%)' })).not.toBeInTheDocument()
+  })
+
   it('shows no action to a reader and hides purchasing from the menu without the permissions', async () => {
     serveMe(READER)
     server.use(http.get('/api/purchase-orders/41', () => HttpResponse.json(anOrder({ status: 'partially_received' }))))

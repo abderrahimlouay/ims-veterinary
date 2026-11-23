@@ -934,6 +934,7 @@
       "removeLine": "Remove {{name}}",
       "saveDraft": "Save draft",
       "lineHt": "Amount excl. VAT",
+      "lineTotal": "Amount",
       "lineVat": "VAT",
       "received": "Received",
       "outstanding": "Outstanding",
@@ -1681,7 +1682,9 @@
         "maxStock": "The quantity not to exceed; reorder proposals top up to this level.",
         "reorderPoint": "When stock falls to this level, a reorder proposal is created.",
         "purchasePrice": "Purchase price excl. tax of one base unit; proposed on orders without a supplier price.",
-        "salePrice": "Sale price excl. tax of one base unit; the counter uses it unless the customer has a special price."
+        "salePrice": "Sale price excl. tax of one base unit; the counter uses it unless the customer has a special price.",
+        "purchasePriceNoVat": "Purchase price of one base unit; proposed on orders without a supplier price.",
+        "salePriceNoVat": "Sale price of one base unit; the counter uses it unless the customer has a special price."
       },
       "units": {
         "nameField": "The selling unit's name, e.g. \"Box of 10\" or \"Carton\".",
